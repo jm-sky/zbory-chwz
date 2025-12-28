@@ -34,105 +34,55 @@ const congregationId = route.params.id as string
 const loading = ref(true)
 const congregationFull = ref<ICongregationFull | null>(null)
 
-// Basic info schema
-const basicInfoSchema = z.object({
+// Combined schema for all form fields
+const formSchema = z.object({
+  // Basic info
   name: z.string().min(1, t('congregations.edit.nameRequired', 'Nazwa jest wymagana')),
   description: z.string().optional(),
   status: z.enum(['draft', 'published', 'published_unverified', 'need_verification']),
-})
-
-// Address schema
-const addressSchema = z.object({
+  // Address
   street: z.string().nullable().optional(),
   city: z.string().min(1, t('congregations.edit.address.cityRequired', 'Miasto jest wymagane')),
   postal_code: z.string().nullable().optional(),
   province: z.string().nullable().optional(),
   country: z.string().default('Poland'),
-  status: z.enum(['draft', 'published', 'published_unverified']).optional(),
+  address_status: z.enum(['draft', 'published', 'published_unverified']).optional(),
 })
 
-// Service time schema
-const serviceTimeSchema = z.object({
-  day: z.string().min(1, t('congregations.edit.serviceTime.dayRequired', 'Dzień jest wymagany')),
-  time: z.string().min(1, t('congregations.edit.serviceTime.timeRequired', 'Godzina jest wymagana')),
-  order: z.number().default(0),
-})
-
-// Contact person schema
-const contactPersonSchema = z.object({
-  name: z.string().min(1, t('congregations.edit.contactPerson.nameRequired', 'Imię i nazwisko jest wymagane')),
-  title: z.string().nullable().optional(),
-  email: z.string().email().nullable().optional().or(z.literal('')),
-  phone: z.string().nullable().optional(),
-  order: z.number().default(0),
-})
-
-// Form schemas
-const basicInfoForm = useForm({
-  validationSchema: toTypedSchema(basicInfoSchema),
+// Single form instance for all fields
+const form = useForm({
+  validationSchema: toTypedSchema(formSchema),
   initialValues: {
     name: '',
     description: '',
     status: 'draft' as const,
-  },
-})
-
-const addressForm = useForm({
-  validationSchema: toTypedSchema(addressSchema),
-  initialValues: {
     street: null,
     city: '',
     postal_code: null,
     province: null,
     country: 'Poland',
-    status: 'draft' as const,
+    address_status: 'draft' as const,
   },
 })
 
-const serviceTimesFormSchema = z.object({
-  serviceTimes: z.array(serviceTimeSchema),
-})
-
-const serviceTimesForm = useForm({
-  validationSchema: toTypedSchema(serviceTimesFormSchema),
-  initialValues: {
-    serviceTimes: [] as Array<{ day: string; time: string; order: number }>,
-  },
-})
-
-// Use refs for dynamic arrays since useFieldArray has context issues with multiple forms
+// Use refs for dynamic arrays since they're not part of the main form
 const serviceTimeFields = ref<Array<{ key: string; day: string; time: string; order: number }>>([])
 const contactPersonFields = ref<Array<{ key: string; name: string; title: string | null; email: string | null; phone: string | null; order: number }>>([])
 
 function pushServiceTime(value: { day: string; time: string; order: number }) {
   serviceTimeFields.value.push({ ...value, key: `st-${Date.now()}-${Math.random()}` })
-  serviceTimesForm.setFieldValue('serviceTimes', serviceTimeFields.value.map(f => ({ day: f.day, time: f.time, order: f.order })))
 }
 
 function removeServiceTime(index: number) {
   serviceTimeFields.value.splice(index, 1)
-  serviceTimesForm.setFieldValue('serviceTimes', serviceTimeFields.value.map(f => ({ day: f.day, time: f.time, order: f.order })))
 }
-
-const contactPersonsFormSchema = z.object({
-  contactPersons: z.array(contactPersonSchema),
-})
-
-const contactPersonsForm = useForm({
-  validationSchema: toTypedSchema(contactPersonsFormSchema),
-  initialValues: {
-    contactPersons: [] as Array<{ name: string; title: string | null; email: string | null; phone: string | null; order: number }>,
-  },
-})
 
 function pushContactPerson(value: { name: string; title: string | null; email: string | null; phone: string | null; order: number }) {
   contactPersonFields.value.push({ ...value, key: `cp-${Date.now()}-${Math.random()}` })
-  contactPersonsForm.setFieldValue('contactPersons', contactPersonFields.value.map(f => ({ name: f.name, title: f.title, email: f.email, phone: f.phone, order: f.order })))
 }
 
 function removeContactPerson(index: number) {
   contactPersonFields.value.splice(index, 1)
-  contactPersonsForm.setFieldValue('contactPersons', contactPersonFields.value.map(f => ({ name: f.name, title: f.title, email: f.email, phone: f.phone, order: f.order })))
 }
 
 // Load congregation data
@@ -141,11 +91,6 @@ async function loadCongregation() {
   try {
     // Load tenant basic info
     const tenant = await congregationApiService.getTenant(congregationId)
-    basicInfoForm.setValues({
-      name: tenant.name,
-      description: tenant.description || '',
-      status: (tenant.status || 'draft') as 'draft' | 'published' | 'published_unverified' | 'need_verification',
-    })
 
     // Load full congregation data
     congregationFull.value = await congregationApiService.getCongregationFull(congregationId)
@@ -154,17 +99,18 @@ async function loadCongregation() {
       throw new Error('Failed to load congregation data')
     }
 
-    // Set address form
-    if (congregationFull.value.address) {
-      addressForm.setValues({
-        street: congregationFull.value.address.street,
-        city: congregationFull.value.address.city,
-        postal_code: congregationFull.value.address.postal_code,
-        province: congregationFull.value.address.province,
-        country: congregationFull.value.address.country,
-        status: congregationFull.value.address.status as 'draft' | 'published' | 'published_unverified',
-      })
-    }
+    // Set all form values at once
+    form.setValues({
+      name: tenant.name,
+      description: tenant.description || '',
+      status: (tenant.status || 'draft') as 'draft' | 'published' | 'published_unverified' | 'need_verification',
+      street: congregationFull.value.address?.street ?? null,
+      city: congregationFull.value.address?.city ?? '',
+      postal_code: congregationFull.value.address?.postal_code ?? null,
+      province: congregationFull.value.address?.province ?? null,
+      country: congregationFull.value.address?.country ?? 'Poland',
+      address_status: (congregationFull.value.address?.status as 'draft' | 'published' | 'published_unverified') ?? 'draft',
+    })
 
     // Set service times
     const serviceTimesData = (congregationFull.value.service_times || []).map(st => ({
@@ -172,9 +118,6 @@ async function loadCongregation() {
       time: st.time,
       order: st.order,
     }))
-    serviceTimesForm.setValues({
-      serviceTimes: serviceTimesData,
-    })
     serviceTimeFields.value = serviceTimesData.map((st, idx) => ({
       ...st,
       key: `st-${idx}-${st.day}-${st.time}`,
@@ -188,9 +131,6 @@ async function loadCongregation() {
       phone: cp.phone ?? null,
       order: cp.order,
     }))
-    contactPersonsForm.setValues({
-      contactPersons: contactPersonsData,
-    })
     contactPersonFields.value = contactPersonsData.map((cp, idx) => ({
       ...cp,
       key: `cp-${idx}-${cp.name}`,
@@ -205,7 +145,7 @@ async function loadCongregation() {
 }
 
 // Save functions
-const saveBasicInfo = basicInfoForm.handleSubmit(async (values) => {
+const saveBasicInfo = form.handleSubmit(async (values) => {
   try {
     await congregationApiService.updateCongregation(congregationId, {
       name: values.name,
@@ -215,11 +155,11 @@ const saveBasicInfo = basicInfoForm.handleSubmit(async (values) => {
     toast.success(t('congregations.edit.basicInfo.saveSuccess', 'Podstawowe informacje zostały zapisane'))
   } catch (error) {
     console.error('Failed to save basic info:', error)
-    handleError(error, { setErrors: basicInfoForm.setErrors, fallbackMessage: t('congregations.edit.basicInfo.saveError', 'Nie udało się zapisać podstawowych informacji') })
+    handleError(error, { setErrors: form.setErrors, fallbackMessage: t('congregations.edit.basicInfo.saveError', 'Nie udało się zapisać podstawowych informacji') })
   }
 })
 
-const saveAddress = addressForm.handleSubmit(async (values) => {
+const saveAddress = form.handleSubmit(async (values) => {
   try {
     if (congregationFull.value?.address) {
       await congregationApiService.updateAddress(congregationId, {
@@ -228,7 +168,7 @@ const saveAddress = addressForm.handleSubmit(async (values) => {
         postal_code: values.postal_code,
         province: values.province,
         country: values.country,
-        status: values.status,
+        status: values.address_status,
       })
     } else {
       await congregationApiService.createOrUpdateAddress(congregationId, {
@@ -237,14 +177,14 @@ const saveAddress = addressForm.handleSubmit(async (values) => {
         postal_code: values.postal_code,
         province: values.province,
         country: values.country,
-        status: values.status,
+        status: values.address_status,
       })
     }
     toast.success(t('congregations.edit.address.saveSuccess', 'Adres został zapisany'))
     await loadCongregation()
   } catch (error) {
     console.error('Failed to save address:', error)
-    handleError(error, { setErrors: addressForm.setErrors, fallbackMessage: t('congregations.edit.address.saveError', 'Nie udało się zapisać adresu') })
+    handleError(error, { setErrors: form.setErrors, fallbackMessage: t('congregations.edit.address.saveError', 'Nie udało się zapisać adresu') })
   }
 })
 
@@ -520,7 +460,7 @@ onMounted(() => {
               </FormItem>
             </FormField>
 
-            <FormField v-slot="{ componentField }" name="status">
+            <FormField v-slot="{ componentField }" name="address_status">
               <FormItem>
                 <FormLabel>
                   {{ t('congregations.edit.address.status', 'Status adresu') }}
