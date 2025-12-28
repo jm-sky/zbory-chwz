@@ -39,3 +39,34 @@ export interface ICreateTenantMembershipRequest {
 export interface IUpdateTenantMembershipRequest {
   role: string
 }
+
+export interface IAddress {
+  id: string
+  tenant_id: string
+  street?: string | null
+  city: string
+  postal_code?: string | null
+  province?: string | null
+  country: string
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface IAddressUpdateRequest {
+  street?: string | null
+  city?: string | null
+  postal_code?: string | null
+  province?: string | null
+  country?: string | null
+  status?: string | null
+}
+
+export interface IAddressCreateRequest {
+  street?: string | null
+  city: string
+  postal_code?: string | null
+  province?: string | null
+  country?: string
+  status?: string
+}

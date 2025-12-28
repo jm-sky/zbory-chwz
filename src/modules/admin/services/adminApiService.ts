@@ -1,6 +1,10 @@
+import { isAxiosError } from 'axios'
 import { apiClient } from '@/shared/services/apiClient'
 import type { IAdminUser } from '../types/admin.types'
 import type {
+  IAddress,
+  IAddressCreateRequest,
+  IAddressUpdateRequest,
   IAdminTenant,
   IAdminTenantMembership,
   ICreateTenantMembershipRequest,
@@ -75,6 +79,29 @@ class AdminApiService {
 
   async deleteTenantMembership(tenantId: string, userId: string): Promise<void> {
     await apiClient.delete(`/admin/tenants/${tenantId}/memberships/${userId}`)
+  }
+
+  // Address management
+  async getAddress(tenantId: string): Promise<IAddress | null> {
+    try {
+      const response = await apiClient.get<IAddress>(`/congregations/${tenantId}/address`)
+      return response.data
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  async createOrUpdateAddress(tenantId: string, data: IAddressCreateRequest): Promise<IAddress> {
+    const response = await apiClient.post<IAddress>(`/congregations/${tenantId}/address`, data)
+    return response.data
+  }
+
+  async updateAddress(tenantId: string, data: IAddressUpdateRequest): Promise<IAddress> {
+    const response = await apiClient.patch<IAddress>(`/congregations/${tenantId}/address`, data)
+    return response.data
   }
 }
 

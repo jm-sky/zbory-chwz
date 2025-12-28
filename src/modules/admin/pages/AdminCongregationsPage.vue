@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Church, MoreHorizontal, Plus, Trash2, Users } from 'lucide-vue-next'
+import { Church, EyeOff, Globe, MoreHorizontal, Plus, Trash2, Users } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -36,7 +36,7 @@ import TableEmptyDecorated from '@/components/ui/table/TableEmptyDecorated.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { IAdminUser } from '../types/admin.types'
-import type { IAdminTenant, IAdminTenantMembership } from '../types/tenant.types'
+import type { IAddress, IAdminTenant, IAdminTenantMembership } from '../types/tenant.types'
 import { adminApiService } from '../services/adminApiService'
 import type { ColumnDef } from '@tanstack/vue-table'
 
@@ -51,11 +51,18 @@ const selectedTenant = ref<IAdminTenant | null>(null)
 const memberships = ref<IAdminTenantMembership[]>([])
 const allUsers = ref<IAdminUser[]>([])
 const loadingMemberships = ref(false)
+const loadingAddress = ref(false)
+const currentAddress = ref<IAddress | null>(null)
 
 const formData = ref({
   name: '',
   description: '',
   status: 'draft',
+  address: {
+    street: '',
+    city: '',
+    postal_code: '',
+  },
 })
 
 const membershipFormData = ref({
@@ -113,6 +120,26 @@ async function updateTenant() {
       description: formData.value.description.trim() || undefined,
       status: formData.value.status,
     })
+    
+    // Update address
+    if (formData.value.address.city.trim()) {
+      if (currentAddress.value) {
+        await adminApiService.updateAddress(selectedTenant.value.id, {
+          street: formData.value.address.street.trim() || null,
+          city: formData.value.address.city.trim(),
+          postal_code: formData.value.address.postal_code.trim() || null,
+        })
+      } else {
+        await adminApiService.createOrUpdateAddress(selectedTenant.value.id, {
+          street: formData.value.address.street.trim() || null,
+          city: formData.value.address.city.trim(),
+          postal_code: formData.value.address.postal_code.trim() || null,
+          country: 'Poland',
+          status: 'draft',
+        })
+      }
+    }
+    
     toast.success(t('admin.congregations.updateSuccess', 'Congregation updated successfully'))
     editDialogOpen.value = false
     selectedTenant.value = null
@@ -121,6 +148,34 @@ async function updateTenant() {
   } catch (error) {
     console.error('Failed to update tenant:', error)
     handleError(error, { fallbackMessage: t('admin.congregations.updateError', 'Failed to update congregation') })
+  }
+}
+
+// Publish tenant
+async function publishTenant(tenant: IAdminTenant) {
+  try {
+    await adminApiService.updateTenant(tenant.id, {
+      status: 'published',
+    })
+    toast.success(t('admin.congregations.publishSuccess', 'Congregation published successfully'))
+    await loadTenants()
+  } catch (error) {
+    console.error('Failed to publish tenant:', error)
+    handleError(error, { fallbackMessage: t('admin.congregations.publishError', 'Failed to publish congregation') })
+  }
+}
+
+// Unpublish tenant
+async function unpublishTenant(tenant: IAdminTenant) {
+  try {
+    await adminApiService.updateTenant(tenant.id, {
+      status: 'draft',
+    })
+    toast.success(t('admin.congregations.unpublishSuccess', 'Congregation unpublished successfully'))
+    await loadTenants()
+  } catch (error) {
+    console.error('Failed to unpublish tenant:', error)
+    handleError(error, { fallbackMessage: t('admin.congregations.unpublishError', 'Failed to unpublish congregation') })
   }
 }
 
@@ -141,14 +196,37 @@ async function deleteTenant(tenantId: string) {
 }
 
 // Open edit dialog
-function openEditDialog(tenant: IAdminTenant) {
+async function openEditDialog(tenant: IAdminTenant) {
   selectedTenant.value = tenant
   formData.value = {
     name: tenant.name,
     description: tenant.description || '',
     status: tenant.status || 'draft',
+    address: {
+      street: '',
+      city: '',
+      postal_code: '',
+    },
   }
   editDialogOpen.value = true
+  
+  // Load address
+  loadingAddress.value = true
+  try {
+    currentAddress.value = await adminApiService.getAddress(tenant.id)
+    if (currentAddress.value) {
+      formData.value.address = {
+        street: currentAddress.value.street || '',
+        city: currentAddress.value.city || '',
+        postal_code: currentAddress.value.postal_code || '',
+      }
+    }
+  } catch (error) {
+    // 404 is handled in service (returns null), only log other errors
+    handleError(error, { fallbackMessage: t('admin.congregations.address.loadError', 'Failed to load address') })
+  } finally {
+    loadingAddress.value = false
+  }
 }
 
 // Open memberships dialog
@@ -242,8 +320,14 @@ function resetForm() {
     name: '',
     description: '',
     status: 'draft',
+    address: {
+      street: '',
+      city: '',
+      postal_code: '',
+    },
   }
   selectedTenant.value = null
+  currentAddress.value = null
 }
 
 function resetMembershipForm() {
@@ -435,6 +519,50 @@ onMounted(() => {
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <!-- Address Section -->
+            <div class="space-y-4 pt-4 border-t">
+              <h4 class="font-semibold text-sm">
+                {{ t('admin.congregations.address.title', 'Address') }}
+              </h4>
+              <div v-if="loadingAddress" class="text-sm text-muted-foreground">
+                {{ t('admin.congregations.address.loading', 'Loading address...') }}
+              </div>
+              <div v-else class="space-y-4">
+                <div class="space-y-2">
+                  <Label for="edit-address-street">
+                    {{ t('admin.congregations.address.street', 'Street') }}
+                  </Label>
+                  <Input
+                    id="edit-address-street"
+                    v-model="formData.address.street"
+                    :placeholder="t('admin.congregations.address.streetPlaceholder', 'Enter street address')"
+                  />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="space-y-2">
+                    <Label for="edit-address-city">
+                      {{ t('admin.congregations.address.city', 'City') }}
+                    </Label>
+                    <Input
+                      id="edit-address-city"
+                      v-model="formData.address.city"
+                      :placeholder="t('admin.congregations.address.cityPlaceholder', 'Enter city')"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="edit-address-postal-code">
+                      {{ t('admin.congregations.address.postalCode', 'Postal Code') }}
+                    </Label>
+                    <Input
+                      id="edit-address-postal-code"
+                      v-model="formData.address.postal_code"
+                      :placeholder="t('admin.congregations.address.postalCodePlaceholder', 'Enter postal code')"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -636,6 +764,21 @@ onMounted(() => {
               <DropdownMenuItem @click="openMembershipsDialog(row.original)">
                 <Users class="size-4" />
                 <span>{{ t('admin.congregations.manageMembers', 'Manage Members') }}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                v-if="row.original.status !== 'published'"
+                @click="publishTenant(row.original)"
+              >
+                <Globe class="size-4" />
+                <span>{{ t('admin.congregations.publish', 'Publish') }}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                v-if="row.original.status === 'published'"
+                @click="unpublishTenant(row.original)"
+              >
+                <EyeOff class="size-4" />
+                <span>{{ t('admin.congregations.unpublish', 'Unpublish') }}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
