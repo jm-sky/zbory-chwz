@@ -25,12 +25,6 @@ import LocaleToggle from '@/shared/i18n/components/LocaleToggle.vue'
             >
               Zaloguj się
             </RouterLink>
-            <RouterLink
-              to="/auth/register"
-              class="text-sm bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/80"
-            >
-              Zarejestruj się
-            </RouterLink>
             <LocaleToggle />
             <DarkModeToggle />
           </div>

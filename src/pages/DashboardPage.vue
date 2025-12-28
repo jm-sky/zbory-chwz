@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Church, LogIn, UserPlus } from 'lucide-vue-next'
+import { Church, LogIn } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import WelcomeQuickActions from '@/components/layout/WelcomeQuickActions.vue'
 import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
@@ -43,10 +43,6 @@ const { isAuthenticated } = useAuth()
             <ButtonLink :to="AuthRoutePaths.login">
               <LogIn class="size-4" />
               {{ t('auth.login') }}
-            </ButtonLink>
-            <ButtonLink :to="AuthRoutePaths.register" variant="outline">
-              <UserPlus class="size-4" />
-              {{ t('auth.register') }}
             </ButtonLink>
           </div>
         </div>

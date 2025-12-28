@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LogIn, LogOut, SettingsIcon, ShieldIcon, UserIcon, UserPlusIcon } from 'lucide-vue-next'
+import { LogIn, LogOut, SettingsIcon, ShieldIcon, UserIcon } from 'lucide-vue-next'
 import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -174,10 +174,6 @@ const handleLogout = () => {
         <DropdownMenuItemLink :to="AuthRoutePaths.login">
           <LogIn class="size-4 mr-2" />
           {{ t('auth.login', 'Login') }}
-        </DropdownMenuItemLink>
-        <DropdownMenuItemLink :to="AuthRoutePaths.register">
-          <UserPlusIcon class="size-4 mr-2" />
-          {{ t('auth.register', 'Register') }}
         </DropdownMenuItemLink>
       </template>
     </DropdownMenuContent>

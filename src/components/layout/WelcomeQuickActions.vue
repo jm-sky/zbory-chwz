@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LogInIcon, UserPlusIcon } from 'lucide-vue-next'
+import { LogInIcon } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/modules/auth/composables/useAuth'
@@ -31,7 +31,7 @@ const props = defineProps<{
 
     <Separator v-if="!isAuthenticated && config.backend.enabled" />
 
-    <!-- Login, Register (only if not authenticated) -->
+    <!-- Login (only if not authenticated) -->
     <div v-if="!isAuthenticated && config.backend.enabled" class="flex flex-col items-center justify-center sm:flex-row gap-4 w-full mt-2">
       <ButtonLink
         size="lg"
@@ -41,15 +41,6 @@ const props = defineProps<{
       >
         <LogInIcon class="size-5" />
         {{ t('auth.login', 'Log In') }}
-      </ButtonLink>
-      <ButtonLink
-        size="lg"
-        variant="outline"
-        class="flex-1"
-        :to="AuthRoutePaths.register"
-      >
-        <UserPlusIcon class="size-5" />
-        {{ t('auth.register', 'Sign Up') }}
       </ButtonLink>
     </div>
   </div>

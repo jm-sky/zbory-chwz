@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LogIn, UserPlus } from 'lucide-vue-next'
+import { LogIn } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import Alert from '@/components/ui/alert/Alert.vue'
 import AlertDescription from '@/components/ui/alert/AlertDescription.vue'
@@ -25,15 +25,6 @@ const { t } = useI18n()
         >
           <LogIn class="size-4" />
           {{ t('user.profile.login_button') }}
-        </ButtonLink>
-        <ButtonLink
-          size="sm"
-          variant="outline"
-          class="w-full sm:w-auto text-foreground"
-          :to="AuthRoutePaths.register"
-        >
-          <UserPlus class="size-4" />
-          {{ t('user.profile.register_button') }}
         </ButtonLink>
       </div>
     </AlertDescription>
