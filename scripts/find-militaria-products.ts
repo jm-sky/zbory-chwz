@@ -660,7 +660,7 @@ test.describe('Find products on militaria.pl', () => {
           console.log(`   Found ${productLinks.length} URLs before filtering`)
 
           const searchQueryLower = searchQuery.toLowerCase()
-          const productNameWords = product.name.toLowerCase().split(' ').filter(w => w.length > 3)
+          const productNameWords = product.name.toLowerCase().split(' ').filter((w: string) => w.length > 3)
           const brandLower = product.brand?.toLowerCase() ?? ''
           const modelLower = product.model?.toLowerCase() ?? ''
 
@@ -768,7 +768,7 @@ test.describe('Find products on militaria.pl', () => {
             let modelMatch = false
             let modelWords: string[] = []
             if (modelLower && modelLower.length > 3) {
-              modelWords = modelLower.split(' ').filter(w => w.length > 2)
+              modelWords = modelLower.split(' ').filter((w: string) => w.length > 2)
               // Penalize generic model words like "classic", "standard", "basic"
               const genericModelWords = ['classic', 'standard', 'basic', 'regular', 'normal', 'simple']
               const isGenericModel = genericModelWords.some(gw => modelLower.includes(gw))
@@ -937,8 +937,8 @@ test.describe('Find products on militaria.pl', () => {
 
             // Score based on product name words (excluding generic words)
             const genericNameWords = ['classic', 'standard', 'basic', 'regular', 'normal', 'simple', 'black', 'green', 'red', 'blue', 'olive', 'tan', 'brown']
-            const specificNameWords = productNameWords.filter(w => !genericNameWords.includes(w))
-            const matchedNameWords = specificNameWords.filter(word => urlLower.includes(word))
+            const specificNameWords = productNameWords.filter((w: string) => !genericNameWords.includes(w))
+            const matchedNameWords = specificNameWords.filter((word: string) => urlLower.includes(word))
             const nameMatches = matchedNameWords.length
             const nameScore = nameMatches * 4
             score += nameScore

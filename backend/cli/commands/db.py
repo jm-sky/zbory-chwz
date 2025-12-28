@@ -555,10 +555,17 @@ async def _seed_congregations(db: "AsyncSession") -> None:
         result = await db.execute(select(TenantDB).where(TenantDB.name == name))
         existing_tenant = result.scalar_one_or_none()
 
+        # Get address, service times, and contact person data
+        address_data = cong_data.get("address")
+        service_times = cong_data.get("service_times", [])
+        contact_person = cong_data.get("contact_person")
+        status = cong_data.get("status", "draft")
+
         if existing_tenant:
             # Update existing tenant
             existing_tenant.description = full_description
             existing_tenant.owner_id = owner.id
+            tenant_id = existing_tenant.id
             updated_count += 1
             console.print(f"[yellow]  Updated tenant: {name}[/yellow]")
         else:
@@ -583,45 +590,42 @@ async def _seed_congregations(db: "AsyncSession") -> None:
             created_count += 1
             console.print(f"[green]  Created tenant: {name} (ID: {tenant_id})[/green]")
 
-            # Create address, service times, and contact person
-            address_data = cong_data.get("address")
-            service_times = cong_data.get("service_times", [])
-            contact_person = cong_data.get("contact_person")
-            status = cong_data.get("status", "draft")
+        # Create or update address, service times, and contact person (for both new and existing tenants)
+        # Create/update address
+        if address_data:
+            address = await congregation_repo.create_or_update_address(
+                tenant_id=tenant_id,
+                street=address_data.get("street"),
+                city=address_data.get("city", "Unknown"),
+                postal_code=address_data.get("postal_code"),
+                province=address_data.get("province"),
+                country=address_data.get("country", "Poland"),
+                status=status,
+            )
+            console.print(f"[cyan]    Created/updated address: {address.city}[/cyan]")
 
-            # Create address
-            if address_data:
-                address = await congregation_repo.create_or_update_address(
+        # Delete existing service times and create new ones
+        if service_times:
+            await congregation_repo.delete_all_service_times(tenant_id)
+            for idx, st in enumerate(service_times):
+                await congregation_repo.create_service_time(
                     tenant_id=tenant_id,
-                    street=address_data.get("street"),
-                    city=address_data.get("city", "Unknown"),
-                    postal_code=address_data.get("postal_code"),
-                    province=address_data.get("province"),
-                    country=address_data.get("country", "Poland"),
-                    status=status,
+                    day=st.get("day", ""),
+                    time=st.get("time", ""),
+                    order=idx,
                 )
-                console.print(f"[cyan]    Created address: {address.city}[/cyan]")
+            times_str = ", ".join([f"{st['day']} {st['time']}" for st in service_times])
+            console.print(f"[cyan]    Created service times: {times_str}[/cyan]")
 
-            # Create service times
-            if service_times:
-                for idx, st in enumerate(service_times):
-                    await congregation_repo.create_service_time(
-                        tenant_id=tenant_id,
-                        day=st.get("day", ""),
-                        time=st.get("time", ""),
-                        order=idx,
-                    )
-                times_str = ", ".join([f"{st['day']} {st['time']}" for st in service_times])
-                console.print(f"[cyan]    Created service times: {times_str}[/cyan]")
-
-            # Create contact person
-            if contact_person:
-                await congregation_repo.create_contact_person(
-                    tenant_id=tenant_id,
-                    name=contact_person.get("name", ""),
-                    title=contact_person.get("title"),
-                )
-                console.print(f"[cyan]    Created contact person: {contact_person.get('name')} ({contact_person.get('title')})[/cyan]")
+        # Delete existing contact persons and create new ones
+        if contact_person:
+            await congregation_repo.delete_all_contact_persons(tenant_id)
+            await congregation_repo.create_contact_person(
+                tenant_id=tenant_id,
+                name=contact_person.get("name", ""),
+                title=contact_person.get("title"),
+            )
+            console.print(f"[cyan]    Created contact person: {contact_person.get('name')} ({contact_person.get('title')})[/cyan]")
 
     await db.commit()
     console.print(f"[bold green]✓ Created {created_count}, updated {updated_count} congregations[/bold green]")
