@@ -1,8 +1,6 @@
 import { adminRoutes } from '@/modules/admin/routes'
 import { aiRoutes } from '@/modules/ai/routes'
 import { AuthRouteNames, AuthRoutePaths, authRoutes } from '@/modules/auth/config/routes'
-import { billingRoutes } from '@/modules/billing/routes'
-import { gearRoutes } from '@/modules/gear/routes'
 import { settingsRoutes } from '@/modules/settings/routes'
 import { userRoutes } from '@/modules/user/routes'
 import { publicRoutes } from '@/router/publicRoutes'
@@ -24,8 +22,6 @@ export const routes: RouteRecordRaw[] = [
   ...authRoutes,
   ...adminRoutes,
   ...aiRoutes,
-  ...billingRoutes,
-  ...gearRoutes,
   ...settingsRoutes,
   ...userRoutes,
   // 404 catch-all route - must be last

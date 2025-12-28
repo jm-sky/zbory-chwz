@@ -2,14 +2,14 @@ services:
   # PostgreSQL Database
   db:
     image: postgres:17-alpine
-    container_name: gear-stack-db
+    container_name: zbory-chwz-db
     restart: unless-stopped
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-backend}
       - POSTGRES_USER=${POSTGRES_USER:-backend}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-gear-stack-db-secret}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-zbory-chwz-db-secret}
     volumes:
-      - gear_stack_postgres_data:/var/lib/postgresql/data
+      - zbory_chwz_postgres_data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:${DB_FORWARD_PORT:-5432}:5432"  # Only localhost access
     healthcheck:
@@ -23,27 +23,27 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - gearstack-network
+      - zbory-chwz-network
 
   # Redis (for token blacklist and challenge storage)
   redis:
     image: redis:8-alpine
-    container_name: gear-stack-redis
+    container_name: zbory-chwz-redis
     restart: unless-stopped
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-gear-stack-redis-secret}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-zbory-chwz-redis-secret}
     ports:
       - "127.0.0.1:${REDIS_FORWARD_PORT:-6379}:6379"  # Only localhost access
     volumes:
-      - gear_stack_redis_data:/data
+      - zbory_chwz_redis_data:/data
     command: >
       redis-server
       --appendonly yes
-      --requirepass ${REDIS_PASSWORD:-gear-stack-redis-secret}
+      --requirepass ${REDIS_PASSWORD:-zbory-chwz-redis-secret}
       --maxmemory 256mb
       --maxmemory-policy allkeys-lru
     healthcheck:
-      test: ["CMD", "sh", "-c", "redis-cli -a $${REDIS_PASSWORD:-gear-stack-redis-secret} ping | grep PONG"]
+      test: ["CMD", "sh", "-c", "redis-cli -a $${REDIS_PASSWORD:-zbory-chwz-redis-secret} ping | grep PONG"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -53,7 +53,7 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - gearstack-network
+      - zbory-chwz-network
 
   # Application (Development Mode)
   app:
@@ -61,7 +61,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     image: backend:dev
-    container_name: gear-stack-app
+    container_name: zbory-chwz-app
     restart: unless-stopped
     depends_on:
       db:
@@ -74,8 +74,8 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PROJECT_NAME=${PROJECT_NAME:-backend}
       - APP_PORT=${APP_PORT:-8000}
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-backend}:${POSTGRES_PASSWORD:-gear-stack-db-secret}@db:5432/${POSTGRES_DB:-backend}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-gear-stack-redis-secret}@redis:6379/0
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-backend}:${POSTGRES_PASSWORD:-zbory-chwz-db-secret}@db:5432/${POSTGRES_DB:-backend}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-zbory-chwz-redis-secret}@redis:6379/0
       - SECRET_KEY=${SECRET_KEY}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000"]}
@@ -123,24 +123,24 @@ services:
       - ./cli.py:/app/cli.py:ro,delegated
       - ./images:/app/images:ro,delegated
       # Mount uploads directory for persistent file storage
-      - gear_stack_uploads:/app/uploads
+      - zbory_chwz_uploads:/app/uploads
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
     networks:
-      - gearstack-network
+      - zbory-chwz-network
 
 networks:
-  gearstack-network:
-    name: gearstack-network
+  zbory-chwz-network:
+    name: zbory-chwz-network
     external: true
 
 volumes:
-  gear_stack_postgres_data:
+  zbory_chwz_postgres_data:
     driver: local
-  gear_stack_redis_data:
+  zbory_chwz_redis_data:
     driver: local
-  gear_stack_uploads:
+  zbory_chwz_uploads:
     driver: local

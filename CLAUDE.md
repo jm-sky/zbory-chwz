@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Gear Stack is a Vue 3 application for managing survival gear and bug-out bag equipment. The app uses a hybrid architecture with both client-side localStorage and backend API integration for features like authentication, AI assistance, and admin functionality.
+Zbory CHWZ is a Vue 3 application for managing and publicly presenting CHWZ (Chrześcijańska Wspólnota Wolnych Zielonoświątkowców) congregation data. The app uses a multi-tenant architecture with backend API integration for authentication, data management, and admin functionality.
 
 ## Commands
 
@@ -36,7 +36,7 @@ This project uses **pnpm** (version 10.18.3+). Always use `pnpm` instead of `npm
 ### Backend Development
 
 **CRITICAL - Docker Safety Rule:**
-- **NEVER run Docker commands if the project directory name starts with underscore (e.g., `_gear-stack-dev`)**
+- **NEVER run Docker commands if the project directory name starts with underscore (e.g., `_zbory-chwz-dev`)**
 - Underscore prefix indicates a development directory on the production server
 - Running Docker in such directories can cause conflicts with production services
 - If the current working directory starts with `_`, do not execute any `docker` or `docker compose` commands
@@ -58,7 +58,7 @@ The backend uses **pytest** for testing with async support via `pytest-asyncio`.
 **Running tests:**
 ```bash
 # Option 1: Using Docker (recommended - ensures consistent environment)
-docker exec gear-stack-app python -m pytest tests/ -v
+docker exec zbory-chwz-app python -m pytest tests/ -v
 
 # Option 2: Using venv (if dependencies are installed)
 cd backend
@@ -66,21 +66,11 @@ source .venv/bin/activate
 python -m pytest tests/ -v
 
 # Run specific test file
-docker exec gear-stack-app python -m pytest tests/integration/gear/test_containers_crud.py -v
-
-# Run single test
-docker exec gear-stack-app python -m pytest tests/integration/gear/test_containers_crud.py::TestContainerCreate::test_create_container_minimal_data -v
+docker exec zbory-chwz-app python -m pytest tests/integration/congregations/test_congregations_crud.py -v
 
 # Run with coverage
-docker exec gear-stack-app python -m pytest tests/ --cov=app --cov-report=html
+docker exec zbory-chwz-app python -m pytest tests/ --cov=app --cov-report=html
 ```
-
-**Test structure:**
-- `backend/tests/` - Test files
-  - `integration/gear/` - Integration tests for gear module (PHASE 0 baseline tests)
-  - `conftest.py` - Pytest configuration and fixtures
-
-**Note:** Current test setup uses in-memory SQLite, but some models use PostgreSQL-specific types (JSONB). Test database configuration may need adjustment for full compatibility.
 
 ## Architecture
 
@@ -91,19 +81,18 @@ The application follows a **modular architecture** where each feature is self-co
 - `pages/` - Vue page components
 - `components/` - Module-specific components
 - `store/` - Pinia stores for state management
-- `services/` - Business logic layer (e.g., `gearService.ts`)
+- `services/` - Business logic layer
 - `composables/` - Reusable composition functions
 - `types/` - TypeScript type definitions
 - `routes.ts` - Module route definitions
 - `i18n/` - Module-specific translations
 
 Current modules:
-- `gear` - Core gear/container management
+- `auth` - Authentication with WebAuthn/passkeys support
 - `user` - User profile management
 - `settings` - Application settings
-- `auth` - Authentication with WebAuthn/passkeys support
-- `ai` - AI assistance with chat, history, and context management
-- `admin` - Admin dashboard for managing users and containers
+- `admin` - Admin dashboard for managing users and congregations
+- `ai` - AI assistance with chat and context management
 - `stats` - Statistics and analytics
 
 ### Core Directories
@@ -134,39 +123,24 @@ The app uses a dual state management approach:
 - **Pinia stores** handle client-side state persistence with localStorage sync
 - **Service classes** contain business logic, validation, and calculations
 
-Example:
-```typescript
-// Service creates/validates, store persists
-const container = gearService.createContainer(data)
-// Service handles weight calculations
-const totalWeight = gearService.calculateTotalWeight(containerId)
-```
-
 **2. Server State (TanStack Query)**
 - **@tanstack/vue-query** manages server state with caching and invalidation
-- Used for authentication, AI features, admin operations
+- Used for authentication, AI features, admin operations, congregation data
 - Provides automatic background refetching, optimistic updates, and error handling
 
 Example:
 ```typescript
 const { data, isLoading, error } = useQuery({
-  queryKey: ['user'],
-  queryFn: fetchUser,
+  queryKey: ['congregations'],
+  queryFn: fetchCongregations,
   staleTime: 5 * 60 * 1000,
 })
 ```
 
 ### Data Persistence
 
-The app uses a hybrid persistence model:
-
-**Client-Side (localStorage)**
-- Gear containers: `gear-stack:containers`
-- Settings: `gear-stack:settings`
-- AI chat history and context
-- Stores handle load/save operations automatically
-
 **Server-Side (Backend API)**
+- Congregation data and metadata
 - User authentication and session tokens
 - User profiles and preferences
 - Admin data and analytics
@@ -179,8 +153,8 @@ Routes are defined per-module and merged in `src/router/routes.ts`. Each route s
 
 ```typescript
 {
-  path: '/gear',
-  component: () => import('@/modules/gear/pages/ContainersListPage.vue'),
+  path: '/congregations',
+  component: () => import('@/modules/congregations/pages/CongregationsListPage.vue'),
   meta: { layout: 'authenticated' }
 }
 ```
@@ -189,7 +163,7 @@ Available layouts: `authenticated`, `guest`, `public`
 
 **Route Guards:**
 - Authentication guard checks user session before accessing protected routes
-- Admin guard restricts access to admin-only pages (e.g., `src/modules/admin/guards/adminGuard.ts`)
+- Admin guard restricts access to admin-only pages
 - Guards are applied per-module and can be composed
 
 ### Internationalization (i18n)
@@ -274,7 +248,7 @@ Locale is persisted in localStorage and synced via `useLocale()` composable.
 ### TypeScript Conventions
 
 - Use `@/` alias for absolute imports from `src/`
-- Create **dedicated union types** instead of inline definitions (per global CLAUDE.md)
+- Create **dedicated union types** instead of inline definitions
 - Prefer interfaces for object shapes, types for unions/primitives
 - All types are defined in module-specific `types/` directories
 
@@ -282,7 +256,7 @@ Locale is persisted in localStorage and synced via `useLocale()` composable.
 
 - Use `<script setup lang="ts">` for all components
 - Import order: external packages → internal modules (alphabetical, enforced by ESLint)
-- Use composables for reusable logic (e.g., `useGearStore`, `useLocale`)
+- Use composables for reusable logic (e.g., `useAuthStore`, `useLocale`)
 - Layouts are rendered via `<RouterView />` in App.vue
 
 ### Vue 3.5+ Best Practices
@@ -294,7 +268,7 @@ Locale is persisted in localStorage and synced via `useLocale()` composable.
 
 **Reactive Destructured Props:**
 - Destructured props are reactive in Vue 3.5+ (no need for `toRefs`)
-- ✅ Use: `const { item } = defineProps<{ item: IGearItem }>()`
+- ✅ Use: `const { item } = defineProps<{ item: ICongregation }>()`
 - Props can be used directly in computed/watch without losing reactivity
 
 **Prop Shortcuts:**
@@ -316,8 +290,8 @@ Locale is persisted in localStorage and synced via `useLocale()` composable.
 
 **Routing:**
 - Use route helper functions from `routes.ts` instead of hardcoded paths
-- ✅ Use: `GearRoutePath.ItemEditById(containerId, itemId)`
-- ❌ Avoid: `` `/gear/${containerId}/items/${itemId}/edit` ``
+- ✅ Use: `CongregationRoutePath.Detail(congregationId)`
+- ❌ Avoid: `` `/congregations/${congregationId}` ``
 
 ## Environment & Configuration
 
@@ -330,122 +304,49 @@ The Vite config proxies `/api` requests to the configured backend URL.
 ### Node.js Requirements
 - Node.js `^20.19.0` or `>=22.12.0` (specified in package.json)
 
-## Key Features
+## Key Features (Planned)
 
-### Gear Management
-1. **Container Management** - Create/edit multiple gear lists (bug-out bags, EDC, etc.)
-2. **Item Tracking** - Track items with status (owned/missing/toBuy), priority, weight, expiration
-3. **Weight Calculations** - Automatic total pack weight calculation (supports g/kg units)
-4. **Readiness Indicators** - Kit completeness tracking
-5. **Data Import/Export** - JSON and Markdown import/export for backup/restore
-6. **Category Organization** - Organize items by categories with custom icons
+### Public Views
+1. **Homepage** - Landing page with congregation search
+2. **Congregation Search** - Filter and search congregations
+3. **Map View** - Google Maps with congregation markers
+4. **Public Profiles** - Read-only congregation detail pages
+
+### Congregation Management
+5. **Congregation CRUD** - Create, read, update, delete congregation data
+6. **Contact Persons** - Manage people associated with congregations
+7. **Service Times** - Track multiple service times per congregation
+8. **Multi-tenant Access** - Users can manage multiple congregations with different roles
 
 ### Authentication & Security
-7. **WebAuthn/Passkeys** - Modern passwordless authentication
-8. **JWT Tokens** - Secure token-based authentication with auto-refresh
-9. **Route Guards** - Protected routes for authenticated and admin users
-10. **Session Management** - Automatic token refresh and logout on expiration
-
-### AI Assistance
-11. **AI Chat** - Conversational AI for gear recommendations and advice
-12. **Context Management** - AI maintains context of your gear setup
-13. **History Tracking** - Chat history persistence
-14. **Multiple AI Models** - Support for different AI models
+9. **WebAuthn/Passkeys** - Modern passwordless authentication
+10. **JWT Tokens** - Secure token-based authentication with auto-refresh
+11. **Route Guards** - Protected routes for authenticated and admin users
+12. **Session Management** - Automatic token refresh and logout on expiration
 
 ### Admin Features
-15. **User Management** - Admin dashboard for managing users
-16. **Container Management** - Admin oversight of all containers
-17. **Analytics** - Statistics and usage analytics
+13. **User Management** - Admin dashboard for managing users
+14. **Congregation Management** - Admin oversight of all congregations
+15. **Analytics** - Statistics and usage analytics
 
 ### User Experience
-18. **Progressive Web App** - Installable as native app with offline support
-19. **Dark Mode** - System-synced theme via settings store
-20. **Multi-language** - English and Polish (extensible via i18n registry)
-21. **Responsive Design** - Mobile-first design with tablet/desktop optimization
-22. **Advanced Tables** - Sortable, filterable tables with TanStack Table
+16. **Progressive Web App** - Installable as native app with offline support
+17. **Dark Mode** - System-synced theme via settings store
+18. **Multi-language** - Polish and English (extensible via i18n registry)
+19. **Responsive Design** - Mobile-first design with tablet/desktop optimization
+20. **Advanced Tables** - Sortable, filterable tables with TanStack Table
 
 ## Important Notes
 
-- **Hybrid Architecture** - App uses both client-side localStorage (gear data) and backend API (auth, AI, admin)
-- **Data Persistence** - Client-side data stored in localStorage; server-side data via API
+- **Multi-Tenant Architecture** - Users can be assigned to multiple congregations with different roles
+- **Data Persistence** - All data stored server-side via API
 - **API Integration** - Backend API proxied at `/api/*` (configured in vite.config.ts)
-- **Authentication Required** - Many features require backend authentication (WebAuthn/passkeys)
+- **Authentication Required** - Most features require backend authentication (WebAuthn/passkeys)
 - **Module Independence** - Modules should be self-contained and reusable
 - **Service Layer** - Business logic belongs in service classes, not in stores or components
 - **Type Safety** - All data structures have TypeScript interfaces in `types/` directories
 - **Guard Composition** - Route guards can be composed for complex authorization logic
 - **PWA Offline Support** - Service workers cache assets for offline functionality
-
-## UI Component Notes
-
-### Action Icons
-
-**CRITICAL:** Action icons must use the centralized mapping from `src/modules/gear/utils/actionIcons.ts`. This is the single source of truth for all action icons.
-
-✅ **Correct usage:**
-```vue
-<script setup>
-import { getActionIcon } from '@/modules/gear/utils/actionIcons'
-
-const ExportIcon = getActionIcon('exportToPrompt')
-const CreateIcon = getActionIcon('create')
-</script>
-
-<template>
-  <Button>
-    <ExportIcon class="size-4" />
-    Export to Prompt
-  </Button>
-</template>
-```
-
-❌ **Incorrect usage:**
-```vue
-<!-- DO NOT import icons directly -->
-<script setup>
-import { MessageSquare, Sparkles } from 'lucide-vue-next'
-</script>
-
-<template>
-  <Button>
-    <MessageSquare class="size-4" />
-    Export to Prompt
-  </Button>
-</template>
-```
-
-**Notes:**
-- Always use `getActionIcon(actionKey)` instead of importing icons directly
-- This ensures consistency across the application (e.g., `exportToPrompt` always uses `Sparkles`, not `MessageSquare`)
-- Available action keys: `back`, `moreActions`, `create`, `addItem`, `addContainer`, `edit`, `delete`, `deleteAll`, `export`, `import`, `importFromMarkdown`, `exportToPrompt`, `exportAllToPrompt`, `recognizeParameters`, `recognizeParametersAll`
-- Similar pattern exists for category icons in `src/modules/gear/utils/categoryIcons.ts`
-
-### Reka-ui / shadcn-vue Checkbox
-
-**CRITICAL:** In Reka-ui (shadcn-vue), Checkbox uses standard `v-model`, **NOT** `v-model:checked`.
-
-✅ **Correct usage:**
-```vue
-<script setup>
-const checked = ref(true)
-</script>
-
-<template>
-  <Checkbox v-model="checked" />
-</template>
-```
-
-❌ **Incorrect usage:**
-```vue
-<!-- DOES NOT WORK -->
-<Checkbox v-model:checked="checked" />
-<Checkbox :checked="checked" @update:checked="..." />
-```
-
-**Notes:**
-- `v-model:checked` only works with `defineModel()` (as in `ContainersFilters.vue`)
-- For regular `ref`, use standard `v-model`
-- Checkbox in Reka-ui uses `modelValue` and `@update:model-value` under the hood
 
 ## TailwindCSS Best Practices
 
@@ -467,4 +368,11 @@ const checked = ref(true)
 - Add desktop variants using Tailwind breakpoint prefixes (eg. `sm:`)
 - Example: `text-sm sm:text-base lg:text-lg` (small on mobile, base on tablet, large on desktop)
 - Consider spacing, typography, layout, and visibility across breakpoints
-- Run `python -m black .` and `python -m mypy .` in backend/ dir before commiting Python code.
+
+## Backend Development Notes
+
+- Run `python -m black .` and `python -m mypy .` in backend/ dir before committing Python code.
+- Backend uses FastAPI with async/await pattern
+- PostgreSQL database with SQLAlchemy ORM
+- Redis for session management and caching
+- Multi-tenant data isolation at application level
