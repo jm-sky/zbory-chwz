@@ -30,7 +30,7 @@ export const authEn = {
     back_to_login: 'Back to Login',
     reset_token: 'Reset Token',
     reset_code: 'Reset Code',
-    email_placeholder: 'your.email@example.com',
+    email_placeholder: 'Your e-mail address',
     password_requirements: 'Password must be at least 8 characters long',
     token_placeholder: 'Enter the token from your email',
     enter_new_password: 'Enter your new password',

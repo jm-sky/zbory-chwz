@@ -30,7 +30,7 @@ export const authPl = {
     back_to_login: 'Powrót do logowania',
     reset_token: 'Token resetowania',
     reset_code: 'Kod resetowania',
-    email_placeholder: 'twoj.email@example.com',
+    email_placeholder: 'Twój adres email',
     password_requirements: 'Hasło musi mieć co najmniej 8 znaków',
     token_placeholder: 'Wprowadź token z emaila',
     enter_new_password: 'Wprowadź nowe hasło',

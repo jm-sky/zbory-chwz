@@ -30,7 +30,7 @@ export const authRu = {
     back_to_login: 'Вернуться к входу',
     reset_token: 'Токен сброса',
     reset_code: 'Код сброса',
-    email_placeholder: 'ваш.email@example.com',
+    email_placeholder: 'Ваш email',
     password_requirements: 'Пароль должен быть не менее 8 символов',
     token_placeholder: 'Введите токен из email',
     enter_new_password: 'Введите новый пароль',

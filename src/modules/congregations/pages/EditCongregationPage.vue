@@ -145,14 +145,14 @@ async function loadCongregation() {
       description: tenant.description || '',
       status: (tenant.status || 'draft') as 'draft' | 'published' | 'published_unverified' | 'need_verification',
     })
-    
+
     // Load full congregation data
     congregationFull.value = await congregationApiService.getCongregationFull(congregationId)
-    
+
     if (!congregationFull.value) {
       throw new Error('Failed to load congregation data')
     }
-    
+
     // Set address form
     if (congregationFull.value.address) {
       addressForm.setValues({
@@ -164,7 +164,7 @@ async function loadCongregation() {
         status: congregationFull.value.address.status as 'draft' | 'published' | 'published_unverified',
       })
     }
-    
+
     // Set service times
     const serviceTimesData = (congregationFull.value.service_times || []).map(st => ({
       day: st.day,
@@ -178,7 +178,7 @@ async function loadCongregation() {
       ...st,
       key: `st-${idx}-${st.day}-${st.time}`,
     }))
-    
+
     // Set contact persons
     const contactPersonsData = (congregationFull.value.contact_persons || []).map(cp => ({
       name: cp.name,
@@ -251,12 +251,12 @@ async function saveServiceTimes() {
   try {
     // Get current service times
     const currentServiceTimes = congregationFull.value?.service_times || []
-    
+
     // For simplicity, delete all and recreate
     for (const st of currentServiceTimes) {
       await congregationApiService.deleteServiceTime(congregationId, st.id)
     }
-    
+
     // Create new service times from refs
     for (const st of serviceTimeFields.value) {
       await congregationApiService.createServiceTime(congregationId, {
@@ -265,7 +265,7 @@ async function saveServiceTimes() {
         order: st.order,
       })
     }
-    
+
     toast.success(t('congregations.edit.serviceTimes.saveSuccess', 'Godziny nabożeństw zostały zapisane'))
     await loadCongregation()
   } catch (error) {
@@ -278,12 +278,12 @@ async function saveContactPersons() {
   try {
     // Get current contact persons
     const currentContactPersons = congregationFull.value?.contact_persons || []
-    
+
     // For simplicity, delete all and recreate
     for (const cp of currentContactPersons) {
       await congregationApiService.deleteContactPerson(congregationId, cp.id)
     }
-    
+
     // Create new contact persons from refs
     for (const cp of contactPersonFields.value) {
       await congregationApiService.createContactPerson(congregationId, {
@@ -294,7 +294,7 @@ async function saveContactPersons() {
         order: cp.order,
       })
     }
-    
+
     toast.success(t('congregations.edit.contactPersons.saveSuccess', 'Osoby kontaktowe zostały zapisane'))
     await loadCongregation()
   } catch (error) {
@@ -331,7 +331,7 @@ onMounted(() => {
         {{ t('common.loading', 'Ładowanie...') }}
       </p>
     </div>
-    
+
     <div v-else class="space-y-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
@@ -361,7 +361,7 @@ onMounted(() => {
             <h2 class="text-xl font-semibold">
               {{ t('congregations.edit.basicInfo.title', 'Podstawowe informacje') }}
             </h2>
-            
+
             <FormField v-slot="{ componentField }" name="name">
               <FormItem>
                 <FormLabel required>
@@ -437,7 +437,7 @@ onMounted(() => {
             <h2 class="text-xl font-semibold">
               {{ t('congregations.edit.address.title', 'Adres') }}
             </h2>
-            
+
             <FormField v-slot="{ componentField }" name="street">
               <FormItem>
                 <FormLabel>
@@ -691,7 +691,7 @@ onMounted(() => {
                     </FormLabel>
                     <Input
                       type="email"
-                      :placeholder="t('congregations.edit.contactPerson.emailPlaceholder', 'email@example.com')"
+                      :placeholder="t('congregations.edit.contactPerson.emailPlaceholder', 'Your e-mail address')"
                       :model-value="field.email ?? ''"
                       @update:model-value="field.email = (typeof $event === 'string' ? $event : null) || null"
                     />
