@@ -691,7 +691,7 @@ onMounted(() => {
                     </FormLabel>
                     <Input
                       type="email"
-                      :placeholder="t('congregations.edit.contactPerson.emailPlaceholder', 'Your e-mail address')"
+                      :placeholder="t('congregations.edit.contactPerson.emailPlaceholder', 'Your email address')"
                       :model-value="field.email ?? ''"
                       @update:model-value="field.email = (typeof $event === 'string' ? $event : null) || null"
                     />

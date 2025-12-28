@@ -102,8 +102,8 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
         :key="congregation.id"
         :class="[
           'group rounded-lg border p-6 transition-all hover:shadow-md',
-          congregation.status === 'published_unverified' 
-            ? 'bg-muted/30 border-muted-foreground/20 hover:border-muted-foreground/40 opacity-90' 
+          congregation.status === 'published_unverified'
+            ? 'bg-muted/30 border-muted-foreground/20 hover:border-muted-foreground/40 opacity-90'
             : 'bg-card hover:border-primary/50'
         ]"
       >
@@ -114,7 +114,7 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
-              <h3 
+              <h3
                 :class="[
                   'text-lg font-semibold leading-tight',
                   congregation.status === 'published_unverified' ? 'text-muted-foreground' : 'text-foreground'
@@ -122,16 +122,16 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
               >
                 {{ congregation.name }}
               </h3>
-              <Badge 
-                v-if="congregation.status === 'published_unverified'" 
-                variant="outline" 
+              <Badge
+                v-if="congregation.status === 'published_unverified'"
+                variant="outline"
                 class="opacity-60 text-muted-foreground border-muted-foreground/50"
               >
                 {{ t('congregations.status.unverified', 'Draft') }}
               </Badge>
             </div>
-            <p 
-              v-if="congregation.description" 
+            <p
+              v-if="congregation.description"
               :class="[
                 'mt-1 text-sm line-clamp-2',
                 congregation.status === 'published_unverified' ? 'text-muted-foreground/70' : 'text-muted-foreground'
