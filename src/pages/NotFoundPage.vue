@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CongregationRoutePaths } from '@/modules/congregations/routes'
 
 const { t } = useI18n()
 </script>
@@ -24,8 +25,8 @@ const { t } = useI18n()
           </p>
           <div class="flex flex-col gap-2">
             <Button as-child variant="default">
-              <RouterLink to="/gear">
-                {{ t('notFound.goToContainers') }}
+              <RouterLink :to="CongregationRoutePaths.list">
+                {{ t('notFound.goToCongregations') }}
               </RouterLink>
             </Button>
             <Button as-child variant="outline">

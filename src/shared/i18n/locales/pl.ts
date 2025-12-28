@@ -358,7 +358,7 @@ export default {
     title: 'Strona nie została znaleziona',
     description: 'Strona, której szukasz, nie istnieje.',
     suggestions: 'Oto kilka pomocnych linków:',
-    goToContainers: 'Przejdź do Kontenerów',
+    goToCongregations: 'Przejdź do Zborów',
     goToDashboard: 'Przejdź do Dashboardu',
     goToSettings: 'Przejdź do Ustawień',
   },

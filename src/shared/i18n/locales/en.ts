@@ -358,7 +358,7 @@ export default {
     title: 'Page Not Found',
     description: 'The page you are looking for does not exist.',
     suggestions: 'Here are some helpful links:',
-    goToContainers: 'Go to Containers',
+    goToCongregations: 'Go to Congregations',
     goToDashboard: 'Go to Dashboard',
     goToSettings: 'Go to Settings',
   },

@@ -358,7 +358,7 @@ export default {
     title: 'Страница не найдена',
     description: 'Страница, которую вы ищете, не существует.',
     suggestions: 'Вот несколько полезных ссылок:',
-    goToContainers: 'Перейти к контейнерам',
+    goToCongregations: 'Перейти к собраниям',
     goToDashboard: 'Перейти к панели управления',
     goToSettings: 'Перейти к настройкам',
   },
