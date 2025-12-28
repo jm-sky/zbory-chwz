@@ -59,6 +59,9 @@ class UserResponse(BaseModel):
     name: str
     role: str
     isActive: bool
+    isAdmin: bool = False
+    isOwner: bool = False
+    isPremium: bool = False
     avatarUrl: Optional[str] = None
     createdAt: datetime
     updatedAt: datetime

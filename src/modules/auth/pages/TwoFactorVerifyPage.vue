@@ -9,6 +9,7 @@ import GuestLayoutCentered from '@/layouts/GuestLayoutCentered.vue'
 import TotpVerifyForm from '@/modules/auth/components/TotpVerifyForm.vue'
 import WebAuthnVerifyForm from '@/modules/auth/components/WebAuthnVerifyForm.vue'
 import { AuthRouteNames, AuthRoutePaths } from '@/modules/auth/config/routes'
+import { PublicRoutePaths } from '@/router/publicRoutes'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import type { ITwoFactorService } from '@/modules/auth/types/twoFactor.type'
 
@@ -68,8 +69,8 @@ onMounted(() => {
 
 const handleVerificationSuccess = async (_accessToken: string) => {
   // Token is already set in store by the verification composable
-  // Redirect to dashboard or intended page
-  const redirectTo = typeof route.query.redirectTo === 'string' ? route.query.redirectTo : AuthRoutePaths.dashboard
+  // Redirect to landing page or intended page
+  const redirectTo = typeof route.query.redirectTo === 'string' ? route.query.redirectTo : PublicRoutePaths.landing
   await router.push(redirectTo)
 }
 </script>

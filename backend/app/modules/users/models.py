@@ -49,6 +49,9 @@ class User(BaseModel):
     role: str = "user"  # user, admin, etc.
     isActive: bool = True
     isEmailVerified: bool = True
+    isAdmin: bool = False
+    isOwner: bool = False
+    isPremium: bool = False
     avatarUrl: str | None = None
     createdAt: datetime
     updatedAt: datetime
@@ -62,6 +65,9 @@ class User(BaseModel):
             "role": self.role,
             "isActive": self.isActive,
             "isEmailVerified": self.isEmailVerified,
+            "isAdmin": getattr(self, "isAdmin", False),
+            "isOwner": getattr(self, "isOwner", False),
+            "isPremium": getattr(self, "isPremium", False),
             "avatarUrl": getattr(self, "avatarUrl", None),
             "createdAt": self.createdAt,
             "updatedAt": self.updatedAt,

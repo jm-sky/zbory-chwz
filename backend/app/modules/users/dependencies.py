@@ -34,6 +34,9 @@ def _map_auth_user(auth_user: AuthUser) -> User:
         name=auth_user.name,
         role=role,
         isActive=auth_user.isActive,
+        isAdmin=getattr(auth_user, "isAdmin", False),
+        isOwner=getattr(auth_user, "isOwner", False),
+        isPremium=getattr(auth_user, "isPremium", False),
         createdAt=auth_user.createdAt,
         updatedAt=auth_user.createdAt,
     )

@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AuthRoutePaths } from '@/modules/auth/config/routes'
+import { PublicRoutePaths } from '@/router/publicRoutes'
 import { authService } from '@/modules/auth/services/authService'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useRecaptcha } from '@/shared/composables/useRecaptcha'
@@ -95,7 +96,7 @@ onMounted(async () => {
       avatarUrl: authResponse.user.avatarUrl,
     })
     toast.success(t('auth.oauth.callback.success', { provider: providerParam }))
-    await router.push(AuthRoutePaths.dashboard)
+    await router.push(PublicRoutePaths.landing)
   } catch (err: unknown) {
     console.error('OAuth callback error:', err)
 

@@ -565,6 +565,7 @@ async def _seed_congregations(db: "AsyncSession") -> None:
             # Update existing tenant
             existing_tenant.description = full_description
             existing_tenant.owner_id = owner.id
+            existing_tenant.status = status
             tenant_id = existing_tenant.id
             updated_count += 1
             console.print(f"[yellow]  Updated tenant: {name}[/yellow]")
@@ -576,6 +577,7 @@ async def _seed_congregations(db: "AsyncSession") -> None:
                 name=name,
                 description=full_description,
                 owner_id=owner.id,
+                status=status,
             )
             db.add(tenant)
 

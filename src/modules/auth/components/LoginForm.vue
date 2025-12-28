@@ -11,6 +11,7 @@ import OAuthFacebookButton from '@/modules/auth/components/OAuthFacebookButton.v
 import OAuthGoogleButton from '@/modules/auth/components/OAuthGoogleButton.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRouteNames, AuthRoutePaths } from '@/modules/auth/config/routes'
+import { PublicRoutePaths } from '@/router/publicRoutes'
 import { loginSchema } from '@/modules/auth/validation/login.schema'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import { useRecaptcha } from '@/shared/composables/useRecaptcha'
@@ -57,7 +58,7 @@ const onSubmit = handleSubmit(async (values: LoginCredentials) => {
       // Redirect to 2FA verification page
       await router.push({
         name: AuthRouteNames.twoFactorVerify,
-        query: { redirectTo: typeof route.query.redirectTo === 'string' ? route.query.redirectTo : AuthRoutePaths.dashboard },
+        query: { redirectTo: typeof route.query.redirectTo === 'string' ? route.query.redirectTo : PublicRoutePaths.landing },
       })
       return
     }
@@ -69,10 +70,10 @@ const onSubmit = handleSubmit(async (values: LoginCredentials) => {
       return
     }
 
-    // Normal login success - emit success event and redirect to dashboard
+    // Normal login success - emit success event and redirect to landing page
     emit('success')
     const redirectTo = typeof route.query.redirectTo === 'string' ? route.query.redirectTo : undefined
-    await router.push(redirectTo ?? AuthRoutePaths.dashboard)
+    await router.push(redirectTo ?? PublicRoutePaths.landing)
   } catch (err: unknown) {
     console.error('Login error:', err)
     handleUnauthorizedFormError(err, setErrors)
