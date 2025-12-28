@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
 </script>
 
 <template>
-  <component :is="props.as" :class="cn('text-2xl font-bold text-transparent bg-clip-text bg-linear-to-r from-primary via-red-700 to-primary', props.class)">
+  <component :is="props.as" :class="cn('text-2xl font-bold text-transparent bg-clip-text bg-linear-to-r from-primary via-sky-800 to-primary', props.class)">
     {{ config.app.name }}
   </component>
 </template>
