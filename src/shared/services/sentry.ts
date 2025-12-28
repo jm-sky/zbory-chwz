@@ -53,3 +53,25 @@ export function initSentry(app: App, router: Router): void {
   })
 }
 
+/**
+ * Set user context for Sentry error tracking
+ * Call this when a user logs in to associate errors with their account
+ *
+ * @param user - User information to set in Sentry context
+ */
+export function setSentryUser(user: { id: string; email?: string; username?: string } | null): void {
+  if (!config.sentry.enabled) {
+    return
+  }
+
+  if (user) {
+    Sentry.setUser({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    })
+  } else {
+    Sentry.setUser(null)
+  }
+}
+

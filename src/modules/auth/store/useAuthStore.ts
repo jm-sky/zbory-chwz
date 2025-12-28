@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useUserStore } from '@/modules/user/store/useUserStore'
 import { JWT_STORE_KEY } from '@/shared/config/config'
+import { setSentryUser } from '@/shared/services/sentry'
 import type { User } from '@/modules/auth/types/user.type'
 
 const TWO_FACTOR_TOKEN_KEY = 'vbr_2fa_token'
@@ -51,6 +52,17 @@ export const useAuthStore = defineStore('auth', () => {
 
   const setUser = (newUser: User | null) => {
     user.value = newUser
+
+    // Set Sentry user context for error tracking
+    if (newUser) {
+      setSentryUser({
+        id: newUser.id,
+        email: newUser.email,
+        username: newUser.name,
+      })
+    } else {
+      setSentryUser(null)
+    }
 
     // Sync with userStore for profile page
     if (newUser) {
@@ -105,6 +117,8 @@ export const useAuthStore = defineStore('auth', () => {
     clearRefreshToken()
     clearTwoFactorToken()
     clearUser()
+    // Clear Sentry user context on logout
+    setSentryUser(null)
   }
 
   return {
