@@ -41,14 +41,30 @@ class TenantRepository:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
+    async def list_published(self) -> list[TenantDB]:
+        """List only tenants with status 'published'."""
+        stmt = (
+            select(TenantDB)
+            .where(TenantDB.status == "published")
+            .order_by(TenantDB.created_at)
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
     async def create_tenant(
-        self, *, name: str, description: str | None, owner_user_id: str
+        self,
+        *,
+        name: str,
+        description: str | None,
+        owner_user_id: str,
+        status: str = "draft"
     ) -> tuple[TenantDB, TenantMembershipDB]:
         tenant_id = generate_id()
         tenant = TenantDB(
             id=tenant_id,
             name=name,
             description=description,
+            status=status,
             owner_id=owner_user_id,
         )
         membership = TenantMembershipDB(

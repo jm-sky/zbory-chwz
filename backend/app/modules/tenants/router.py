@@ -14,6 +14,7 @@ from app.modules.tenants.schemas import (
 
 
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
+congregations_router = APIRouter(prefix="/congregations", tags=["Congregations"])
 
 
 @router.get("", response_model=TenantListResponse)
@@ -53,3 +54,22 @@ async def create_tenant(
         role=membership.role,
         createdAt=tenant.created_at,
     )
+
+
+@congregations_router.get("", response_model=TenantListResponse)
+async def list_congregations(
+    repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+) -> TenantListResponse:
+    """Public endpoint to list only published congregations (tenants)."""
+    tenants = await repo.list_published()
+    congregations = [
+        TenantResponse(
+            id=tenant.id,
+            name=tenant.name,
+            description=tenant.description,
+            role="",  # Public endpoint doesn't include role
+            createdAt=tenant.created_at,
+        )
+        for tenant in tenants
+    ]
+    return TenantListResponse(tenants=congregations)

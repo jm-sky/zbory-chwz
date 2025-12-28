@@ -6,13 +6,13 @@ import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import UserNav from '@/components/layout/UserNav.vue'
 import LogoText from '@/components/ui/LogoText.vue'
-import { SidebarTrigger } from '@/components/ui/sidebar'
 import { AdminRoutePaths } from '@/modules/admin/routes'
 import { useAuth } from '@/modules/auth/composables/useAuth'
-import { AuthRouteNames, AuthRoutePaths } from '@/modules/auth/config/routes'
+import { AuthRouteNames } from '@/modules/auth/config/routes'
 import { SettingsRoutePaths } from '@/modules/settings/routes'
 import { useUser } from '@/modules/user/composables/useUser'
 import { UserRoutePaths } from '@/modules/user/routes'
+import { PublicRoutePaths } from '@/router/publicRoutes'
 import DarkModeToggle from '@/shared/components/DarkModeToggle.vue'
 import { usePermissions } from '@/shared/composables/usePermissions'
 import LocaleToggle from '@/shared/i18n/components/LocaleToggle.vue'
@@ -70,10 +70,9 @@ const handleLogout = async () => {
 
 <template>
   <header class="fixed left-0 top-0 z-50 w-full border-b bg-background/75 backdrop-blur-sm">
-    <div class="mx-auto flex h-(--header-height) items-center">
-      <div class="w-(--sidebar-width) flex items-center justify-start gap-6">
-        <SidebarTrigger class="ml-2.5 opacity-80" />
-        <RouterLink :to="AuthRoutePaths.dashboard" class="flex items-center gap-2 hover:brightness-80 hover:scale-103 transition-all ease-in-out duration-300">
+    <div class="mx-auto flex h-(--header-height) items-center px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-start gap-6">
+        <RouterLink :to="PublicRoutePaths.landing" class="flex items-center gap-2 hover:brightness-80 hover:scale-103 transition-all ease-in-out duration-300">
           <LogoText />
         </RouterLink>
       </div>

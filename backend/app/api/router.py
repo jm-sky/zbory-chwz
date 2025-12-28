@@ -10,7 +10,10 @@ from app.modules.auth.router import router as auth_router
 from app.modules.logs.router import router as logs_router
 from app.modules.settings.router import router as settings_router
 from app.modules.stats.router import router as stats_router
-from app.modules.tenants.router import router as tenants_router
+from app.modules.tenants.router import (
+    congregations_router,
+    router as tenants_router,
+)
 from app.modules.users.router import router as users_router
 
 # Main API router
@@ -37,6 +40,7 @@ api_router.include_router(stats_router, prefix="/stats", tags=["Statistics"])
 api_router.include_router(users_router, prefix="/users", tags=["Users"])
 api_router.include_router(settings_router, prefix="/me/settings", tags=["Settings"])
 api_router.include_router(tenants_router)
+api_router.include_router(congregations_router)
 
 # Register Two-Factor module (optional, added during development)
 try:
