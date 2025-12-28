@@ -32,7 +32,7 @@ CONGREGATIONS = [
             "title": "Diakon",
         },
         # Status (to be implemented in addresses module)
-        "status": "draft",  # Will be set to 'need_verification' when addresses module is ready
+        "status": "published",  # Published congregation
     },
     {
         "name": "Zbór w Łodzi",
