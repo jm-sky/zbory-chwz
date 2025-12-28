@@ -1,5 +1,9 @@
 import { apiClient } from '@/shared/services/apiClient'
-import type { ICongregation } from '../types/congregation.types'
+import type {
+  ICongregation,
+  ICongregationDetailed,
+  ICongregationDetailedListResponse,
+} from '../types/congregation.types'
 
 /**
  * Backend API response type
@@ -51,6 +55,22 @@ class CongregationApiService {
         console.warn('Failed to fetch congregations:', error)
         return []
       }
+    }
+  }
+
+  /**
+   * Get detailed list of congregations with address, service times, and contact info (public endpoint)
+   */
+  async getCongregationsDetailed(): Promise<ICongregationDetailed[]> {
+    try {
+      const response = await apiClient.get<ICongregationDetailedListResponse>(
+        '/congregations/detailed',
+      )
+      return response.data.congregations
+    } catch (error) {
+      console.warn('Failed to fetch detailed congregations:', error)
+      // Fallback to basic list
+      return this.getCongregations()
     }
   }
 }

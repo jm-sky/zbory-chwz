@@ -8,9 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import GuestLayoutCentered from '@/layouts/GuestLayoutCentered.vue'
 import TotpVerifyForm from '@/modules/auth/components/TotpVerifyForm.vue'
 import WebAuthnVerifyForm from '@/modules/auth/components/WebAuthnVerifyForm.vue'
-import { AuthRouteNames, AuthRoutePaths } from '@/modules/auth/config/routes'
-import { PublicRoutePaths } from '@/router/publicRoutes'
+import { AuthRouteNames } from '@/modules/auth/config/routes'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import { PublicRoutePaths } from '@/router/publicRoutes'
 import type { ITwoFactorService } from '@/modules/auth/types/twoFactor.type'
 
 const props = defineProps<{

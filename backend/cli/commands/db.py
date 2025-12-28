@@ -591,14 +591,24 @@ async def _seed_congregations(db: "AsyncSession") -> None:
 
             created_count += 1
             console.print(f"[green]  Created tenant: {name} (ID: {tenant_id})[/green]")
+            
+            # Commit tenant and membership first so foreign keys work
+            await db.commit()
+            await db.refresh(tenant)
 
         # Create or update address, service times, and contact person (for both new and existing tenants)
         # Create/update address
         if address_data:
+            # City is required, use "Unknown" if not provided
+            city = address_data.get("city")
+            if not city:
+                # Try to extract city from name if available
+                city = "Unknown"
+            
             address = await congregation_repo.create_or_update_address(
                 tenant_id=tenant_id,
                 street=address_data.get("street"),
-                city=address_data.get("city", "Unknown"),
+                city=city,
                 postal_code=address_data.get("postal_code"),
                 province=address_data.get("province"),
                 country=address_data.get("country", "Poland"),

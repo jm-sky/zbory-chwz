@@ -30,6 +30,29 @@ class TenantListResponse(BaseModel):
     tenants: list[TenantResponse]
 
 
+class PublicCongregationResponse(BaseModel):
+    """Public congregation data with basic address, service times, and contact info."""
+    id: str
+    name: str
+    description: str | None = None
+    createdAt: datetime
+    # Address info
+    city: str | None = None
+    street: str | None = None
+    postal_code: str | None = None
+    # Service times (first few)
+    service_times: list[dict[str, str]] = []  # [{"day": "niedziela", "time": "11:00"}]
+    # Contact person (first one)
+    contact_name: str | None = None
+    contact_title: str | None = None
+    contact_phone: str | None = None
+    contact_email: str | None = None
+
+
+class PublicCongregationListResponse(BaseModel):
+    congregations: list[PublicCongregationResponse]
+
+
 class TenantMembershipResponse(BaseModel):
     tenant_id: str
     user_id: str

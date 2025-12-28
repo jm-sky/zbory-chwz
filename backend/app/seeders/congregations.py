@@ -1,135 +1,724 @@
 """Congregation seeder data.
 
 This seeder creates initial congregation data for development/testing.
+Includes data scraped from chwz.info.pl/lista-zborow/ with status "need_verification".
 """
 
 CONGREGATIONS = [
     {
-        "name": "Zbór Warszawa I",
-        "description": "Zbór Warszawa I - chwz.waw.pl",
-        "owner_email": "jan.madeyski@gmail.com",  # Will create user if doesn't exist
-        "owner_name": "Jan Madeyski",
-        "owner_role": "diakon",  # Will be stored as user role or tenant membership role
-        # Address data (to be implemented in addresses module)
+        "name": 'Zbór Warszawa I',
+        "description": 'Zbór Warszawa I - chwz.waw.pl',
+        "owner_email": 'jan.madeyski@gmail.com',
+        "owner_name": 'Jan Madeyski',
+        "owner_role": 'diakon',
         "address": {
-            "street": "ul. Przyce 21",
-            "city": "Warszawa",
-            "postal_code": None,  # Not provided
-            "province": None,  # Not provided
-            "country": "Poland",
+            "street": 'ul. Przyce 21',
+            "city": 'Warszawa',
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
         },
-        # Service times (to be implemented in service_times module)
         "service_times": [
-            {"day": "niedziela", "time": "11:00"},
-            {"day": "środa", "time": "19:00"},
-            {"day": "piątek", "time": "19:00"},
+            {"day": 'niedziela', "time": '11:00'},
+            {"day": 'środa', "time": '19:00'},
+            {"day": 'piątek', "time": '19:00'},
         ],
-        # Website
-        "website": "chwz.waw.pl",
-        # Contact person (to be implemented in contact_persons module)
+        "website": 'chwz.waw.pl',
         "contact_person": {
-            "name": "Jan Madeyski",
-            "title": "Diakon",
+            "name": 'Jan Madeyski',
+            "title": 'Diakon',
         },
-        # Status (to be implemented in addresses module)
-        "status": "published",  # Published congregation
+        "status": 'published',
     },
     {
-        "name": "Zbór w Łodzi",
-        "description": "Zbór w Łodzi",
-        "owner_email": "leszek.bijak@example.com",  # Placeholder email
-        "owner_name": "Leszek Bijak",
-        "owner_role": "pastor",
-        # Address data (to be implemented in addresses module)
+        "name": 'ZBÓR ,,GENEZARET” W BARLINKU',
+        "description": 'ZBÓR ,,GENEZARET” W BARLINKU',
+        "owner_email": 'arkadiusz.wawrzyniak@op.pl',
+        "owner_name": 'Arkadiusz Wawrzyniak',
+        "owner_role": 'pastor',
         "address": {
-            "street": "ul. Rogozińskiego",
-            "city": "Łódź",
-            "postal_code": None,
+            "street": 'ul. Tunelowa 6',
+            "city": 'Barlinek',
+            "postal_code": '74-320',
             "province": None,
-            "country": "Poland",
+            "country": 'Poland',
         },
-        # Service times (to be implemented in service_times module)
-        "service_times": [],
-        # Website
+        "service_times": [
+            {"day": 'piątek', "time": '18:00'},
+        ],
         "website": None,
-        # Contact person (to be implemented in contact_persons module)
         "contact_person": {
-            "name": "Leszek Bijak",
-            "title": "Pastor",
+            "name": 'Arkadiusz Wawrzyniak',
+            "title": 'Pastor',
+            "email": 'arkadiusz.wawrzyniak@op.pl',
+            "phone": '669 570 797',
         },
-        # Status (to be implemented in addresses module)
-        "status": "need_verification",  # Placeholder - will be set when addresses module is ready
+        "status": 'need_verification',
     },
     {
-        "name": "Zbór w Legnicy",
-        "description": "Zbór w Legnicy",
-        "owner_email": "zbior.legnica@example.com",  # Placeholder email
-        "owner_name": "Zbór w Legnicy",
-        "owner_role": "member",
-        # Address data (to be implemented in addresses module)
+        "name": 'ZBÓR W BRZEGU',
+        "description": 'ZBÓR W BRZEGU',
+        "owner_email": 'jbkoszt@wp.pl',
+        "owner_name": 'Jacek Kosztowniak',
+        "owner_role": 'pastor',
         "address": {
-            "street": None,  # Not provided
-            "city": "Legnica",
-            "postal_code": None,
+            "street": 'ul. Garbarska 15',
+            "city": 'Brzeg',
+            "postal_code": '49-306',
             "province": None,
-            "country": "Poland",
+            "country": 'Poland',
         },
-        # Service times (to be implemented in service_times module)
-        "service_times": [],
-        # Website
+        "service_times": [
+            {"day": 'piątek', "time": '18:00'},
+        ],
         "website": None,
-        # Contact person (to be implemented in contact_persons module)
-        "contact_person": None,
-        # Status (to be implemented in addresses module)
-        "status": "need_verification",  # Placeholder - will be set when addresses module is ready
-    },
-    {
-        "name": "Zbór w Zabrzu",
-        "description": "Zbór w Zabrzu",
-        "owner_email": "zbior.zabrze@example.com",  # Placeholder email
-        "owner_name": "Zbór w Zabrzu",
-        "owner_role": "member",
-        # Address data (to be implemented in addresses module)
-        "address": {
-            "street": None,  # Not provided
-            "city": "Zabrze",
-            "postal_code": None,
-            "province": None,
-            "country": "Poland",
-        },
-        # Service times (to be implemented in service_times module)
-        "service_times": [],
-        # Website
-        "website": None,
-        # Contact person (to be implemented in contact_persons module)
-        "contact_person": None,
-        # Status (to be implemented in addresses module)
-        "status": "need_verification",  # Placeholder - will be set when addresses module is ready
-    },
-    {
-        "name": "Zbór w Gołdapi",
-        "description": "Zbór w Gołdapi",
-        "owner_email": "jacek.romanowski@example.com",  # Placeholder email
-        "owner_name": "Jacek Romanowski",
-        "owner_role": "pastor",
-        # Address data (to be implemented in addresses module)
-        "address": {
-            "street": "ul. Bagienna",
-            "city": "Gołdap",
-            "postal_code": None,
-            "province": None,
-            "country": "Poland",
-        },
-        # Service times (to be implemented in service_times module)
-        "service_times": [],
-        # Website
-        "website": None,
-        # Contact person (to be implemented in contact_persons module)
         "contact_person": {
-            "name": "Jacek Romanowski",
-            "title": "Pastor",
+            "name": 'Jacek Kosztowniak',
+            "title": 'Pastor',
+            "email": 'jbkoszt@wp.pl',
+            "phone": '661 115 904',
         },
-        # Status (to be implemented in addresses module)
-        "status": "need_verification",  # Placeholder - will be set when addresses module is ready
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W BYSTRZYCY KŁODZKIEJ',
+        "description": 'ZBÓR W BYSTRZYCY KŁODZKIEJ',
+        "owner_email": 'zbior.zbr-w-bystrzycy-kodzkiej@example.com',
+        "owner_name": 'Andrzej Walawski',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Okrzei 20',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'niedziela', "time": '11:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Andrzej Walawski',
+            "title": 'Pastor',
+            "phone": '883 718 990',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W DANKOWICACH',
+        "description": 'ZBÓR W DANKOWICACH',
+        "owner_email": 'lupus-40@o2.pl',
+        "owner_name": 'Jarosław Wilczek',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Podlesie 1',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'piątek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Jarosław Wilczek',
+            "title": 'Pastor',
+            "email": 'lupus-40@o2.pl',
+            "phone": '604 394 624',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W GDAŃSKU',
+        "description": 'ZBÓR W GDAŃSKU',
+        "owner_email": 'arkadiusz.borejszo@chwz.org.pl',
+        "owner_name": 'Arkadiusz Borejszo',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Synów Pułku 55',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'piątek', "time": '19:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Arkadiusz Borejszo',
+            "title": 'Pastor',
+            "email": 'arkadiusz.borejszo@chwz.org.pl',
+            "phone": '516 041 271',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W GLIWICACH- ŁABĘDACH',
+        "description": 'ZBÓR W GLIWICACH- ŁABĘDACH',
+        "owner_email": 'w.swiderski@chwz.gliwice',
+        "owner_name": 'Wiesław Świderski',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Staromiejska 4b',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'środa', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Wiesław Świderski',
+            "title": 'Pastor',
+            "email": 'w.swiderski@chwz.gliwice',
+            "phone": '664 022 401',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W GOŁDAPI',
+        "description": 'ZBÓR W GOŁDAPI',
+        "owner_email": 'jacek.romanowski@chwz.org.pl',
+        "owner_name": 'Jacek Romanowski',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Partyzantów 18A',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'piątek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Jacek Romanowski',
+            "title": 'Pastor',
+            "email": 'jacek.romanowski@chwz.org.pl',
+            "phone": '698 500 107',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W GRABÓWCE',
+        "description": 'ZBÓR W GRABÓWCE',
+        "owner_email": 'zborgrabowka@wp.pl',
+        "owner_name": 'Siergiej Zazulka',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Białostocka 44',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'piątek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Siergiej Zazulka',
+            "title": 'Pastor',
+            "email": 'zborgrabowka@wp.pl',
+            "phone": '794 431 354',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W KĘDZIERZYNIE-KOŹLU',
+        "description": 'ZBÓR W KĘDZIERZYNIE-KOŹLU',
+        "owner_email": 'kedzierzynchwz@wp.pl',
+        "owner_name": 'Grzegorz Ostrowski',
+        "owner_role": 'pastor',
+        "address": {
+            "street": None,
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'czwartek', "time": '16:30'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Grzegorz Ostrowski',
+            "title": 'Pastor',
+            "email": 'kedzierzynchwz@wp.pl',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W KĘTRZYNIE',
+        "description": 'ZBÓR W KĘTRZYNIE',
+        "owner_email": 'miroslawa.kruba@gmail.com',
+        "owner_name": 'Mirosław Kruba',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Zjazdowa 9',
+            "city": 'Kętrzyn',
+            "postal_code": '11-400',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'środa', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Mirosław Kruba',
+            "title": 'Pastor',
+            "email": 'miroslawa.kruba@gmail.com',
+            "phone": '790 592 925',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W KŁODZKU',
+        "description": 'ZBÓR W KŁODZKU',
+        "owner_email": 'kwiecien@post.pl',
+        "owner_name": 'Krzysztof Kwiecień',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Rodzinna 73-75',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'czwartek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Krzysztof Kwiecień',
+            "title": 'Pastor',
+            "email": 'kwiecien@post.pl',
+            "phone": '500 813 774',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W KOSTRZYNIE',
+        "description": 'ZBÓR W KOSTRZYNIE',
+        "owner_email": 'marek.kalata@wp.pl',
+        "owner_name": 'Marek Kalata',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Żeglarska 54',
+            "city": 'Kostrzyn',
+            "postal_code": '66-470',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'piątek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Marek Kalata',
+            "title": 'Pastor',
+            "email": 'marek.kalata@wp.pl',
+            "phone": '506 002 498',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W LEGNICY',
+        "description": 'ZBÓR W LEGNICY',
+        "owner_email": 'roman.jawdyk@chwz.org.pl',
+        "owner_name": 'Roman Jawdyk',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Sudecka 3',
+            "city": 'Legnica',
+            "postal_code": '59-220',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'czwartek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Roman Jawdyk',
+            "title": 'Pastor',
+            "email": 'roman.jawdyk@chwz.org.pl',
+            "phone": '518 018 095',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W LESZNIE',
+        "description": 'ZBÓR W LESZNIE',
+        "owner_email": 'h.mroz@tlen.pl',
+        "owner_name": 'Henryk Mróz',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Edwarda Raczyńskiego 8',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'środa', "time": '19:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Henryk Mróz',
+            "title": 'Pastor',
+            "email": 'h.mroz@tlen.pl',
+            "phone": '502 515 060',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W LUBINIE',
+        "description": 'ZBÓR W LUBINIE',
+        "owner_email": 'remig11@wp.pl',
+        "owner_name": 'Remigiusz Mamrosz',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Budowniczych LGOM 10',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'piątek', "time": '18:30'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Remigiusz Mamrosz',
+            "title": 'Pastor',
+            "email": 'remig11@wp.pl',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W LUBSKU',
+        "description": 'ZBÓR W LUBSKU',
+        "owner_email": 'mariuszs71@wp.pl',
+        "owner_name": 'Mariusz Sawron',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Budowlanych 2',
+            "city": 'Lubsko',
+            "postal_code": '66-300',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'piątek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Mariusz Sawron',
+            "title": 'Pastor',
+            "email": 'mariuszs71@wp.pl',
+            "phone": '602 414 198',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W ŁODZI',
+        "description": 'ZBÓR W ŁODZI',
+        "owner_email": 'bellux@op.pl',
+        "owner_name": 'Leszek Bijak',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Rogozińskiego 23',
+            "city": 'Łódź',
+            "postal_code": '90-001',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'środa', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Leszek Bijak',
+            "title": 'Pastor',
+            "email": 'bellux@op.pl',
+            "phone": '603 064 015',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W MARKTREDWITZ (Freie Christengemeinde)',
+        "description": 'ZBÓR W MARKTREDWITZ (Freie Christengemeinde)',
+        "owner_email": 'zbior.zbr-w-marktredwitz-freie-christengemeinde@example.com',
+        "owner_name": 'Wiesław Chmielewski',
+        "owner_role": 'pastor',
+        "address": {
+            "street": None,
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'piątek', "time": '19:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Wiesław Chmielewski',
+            "title": 'Pastor',
+            "phone": '0049 172 568',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W OLSZTYNIE',
+        "description": 'ZBÓR W OLSZTYNIE',
+        "owner_email": 'jacek.fi6@wp.pl',
+        "owner_name": 'Jacek Frąckowiak',
+        "owner_role": 'pastor',
+        "address": {
+            "street": None,
+            "city": 'Olsztyn',
+            "postal_code": '10-516',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'sobota', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Jacek Frąckowiak',
+            "title": 'Pastor',
+            "email": 'jacek.fi6@wp.pl',
+            "phone": '601 614 930',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W PRZEMKOWIE',
+        "description": 'ZBÓR W PRZEMKOWIE',
+        "owner_email": 'zbior.zbr-w-przemkowie@example.com',
+        "owner_name": 'Stefan Andrasz',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Akacjowa 7',
+            "city": 'Przemków',
+            "postal_code": '59-170',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'czwartek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Stefan Andrasz',
+            "title": 'Pastor',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W RUDZIE ŚLĄSKIEJ',
+        "description": 'ZBÓR W RUDZIE ŚLĄSKIEJ',
+        "owner_email": 'baohel@wp.pl',
+        "owner_name": 'Daniel Wawrzyczek',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Chorzowska 8',
+            "city": 'Ruda Śląska',
+            "postal_code": '41-709',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'czwartek', "time": '17:30'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Daniel Wawrzyczek',
+            "title": 'Pastor',
+            "email": 'baohel@wp.pl',
+            "phone": '792 727 266',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W ŚWIEBODZINIE',
+        "description": 'ZBÓR W ŚWIEBODZINIE',
+        "owner_email": 'lukasz.tyc@wp.pl',
+        "owner_name": 'Łukasz Tyc',
+        "owner_role": 'pastor',
+        "address": {
+            "street": None,
+            "city": 'Rzuchowa',
+            "postal_code": '33-114',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'sobota', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Łukasz Tyc',
+            "title": 'Pastor',
+            "email": 'lukasz.tyc@wp.pl',
+            "phone": '600 284 205',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W TRZEBINI',
+        "description": 'ZBÓR W TRZEBINI',
+        "owner_email": 'zimeryt@interia.pl',
+        "owner_name": 'Andrzej Nazimek',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Piłsudskiego 122',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'czwartek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Andrzej Nazimek',
+            "title": 'Pastor',
+            "email": 'zimeryt@interia.pl',
+            "phone": '606 997 912',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W WARSZAWIE',
+        "description": 'ZBÓR W WARSZAWIE',
+        "owner_email": 'zbior.zbr-w-warszawie@example.com',
+        "owner_name": 'Tomasz Smykowski',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Przyce 21',
+            "city": 'Warszawa',
+            "postal_code": '01-252',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'piątek', "time": '19:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Tomasz Smykowski',
+            "title": 'Pastor',
+            "phone": '577 106 606',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR WE WROCŁAWIU',
+        "description": 'ZBÓR WE WROCŁAWIU',
+        "owner_email": 'tomaszpekala02@gmail.com',
+        "owner_name": 'Tomasz Pękala',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Niedźwiedzia 17',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'czwartek', "time": '19:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Tomasz Pękala',
+            "title": 'Pastor',
+            "email": 'tomaszpekala02@gmail.com',
+            "phone": '530 501 816',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W WYSOWEJ',
+        "description": 'ZBÓR W WYSOWEJ',
+        "owner_email": 'zbior.zbr-w-wysowej@example.com',
+        "owner_name": 'Józef Poręba',
+        "owner_role": 'pastor',
+        "address": {
+            "street": None,
+            "city": 'Wysowa',
+            "postal_code": '38-316',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'środa', "time": '16:30'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Józef Poręba',
+            "title": 'Pastor',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W ZABRZU',
+        "description": 'ZBÓR W ZABRZU',
+        "owner_email": 'pandre@poczta.onet.pl',
+        "owner_name": 'Andrzej Poręba',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Sienkiewicza 30',
+            "city": None,
+            "postal_code": None,
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'czwartek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Andrzej Poręba',
+            "title": 'Pastor',
+            "email": 'pandre@poczta.onet.pl',
+            "phone": '661 680 334',
+        },
+        "status": 'need_verification',
+    },
+    {
+        "name": 'ZBÓR W ŻORACH',
+        "description": 'ZBÓR W ŻORACH',
+        "owner_email": 'artlik@onet.eu',
+        "owner_name": 'Ryszard Arlt',
+        "owner_role": 'pastor',
+        "address": {
+            "street": 'ul. Osińska 30b',
+            "city": 'Żory',
+            "postal_code": '44-240',
+            "province": None,
+            "country": 'Poland',
+        },
+        "service_times": [
+            {"day": 'czwartek', "time": '18:00'},
+        ],
+        "website": None,
+        "contact_person": {
+            "name": 'Ryszard Arlt',
+            "title": 'Pastor',
+            "email": 'artlik@onet.eu',
+            "phone": '606 143 474',
+        },
+        "status": 'need_verification',
     },
 ]
