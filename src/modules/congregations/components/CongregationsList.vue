@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Church, Clock, Mail, MapPin, Phone, User } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { useCongregations } from '../composables/useCongregations'
 
 const { t } = useI18n()
@@ -50,7 +51,12 @@ function formatServiceTimes(serviceTimes?: Array<{ day: string; time: string }>)
       <div
         v-for="congregation in congregations"
         :key="congregation.id"
-        class="group rounded-lg border bg-card p-6 transition-all hover:border-primary/50 hover:shadow-md"
+        :class="[
+          'group rounded-lg border p-6 transition-all hover:shadow-md',
+          congregation.status === 'published_unverified' 
+            ? 'bg-muted/30 border-muted-foreground/20 hover:border-muted-foreground/40 opacity-90' 
+            : 'bg-card hover:border-primary/50'
+        ]"
       >
         <!-- Header -->
         <div class="mb-4 flex items-start gap-4">
@@ -58,10 +64,30 @@ function formatServiceTimes(serviceTimes?: Array<{ day: string; time: string }>)
             <Church class="size-6 text-primary" />
           </div>
           <div class="flex-1 min-w-0">
-            <h3 class="text-lg font-semibold text-foreground leading-tight">
-              {{ congregation.name }}
-            </h3>
-            <p v-if="congregation.description" class="mt-1 text-sm text-muted-foreground line-clamp-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 
+                :class="[
+                  'text-lg font-semibold leading-tight',
+                  congregation.status === 'published_unverified' ? 'text-muted-foreground' : 'text-foreground'
+                ]"
+              >
+                {{ congregation.name }}
+              </h3>
+              <Badge 
+                v-if="congregation.status === 'published_unverified'" 
+                variant="outline" 
+                class="opacity-60 text-muted-foreground border-muted-foreground/50"
+              >
+                {{ t('congregations.status.unverified', 'Draft') }}
+              </Badge>
+            </div>
+            <p 
+              v-if="congregation.description" 
+              :class="[
+                'mt-1 text-sm line-clamp-2',
+                congregation.status === 'published_unverified' ? 'text-muted-foreground/70' : 'text-muted-foreground'
+              ]"
+            >
               {{ congregation.description }}
             </p>
           </div>

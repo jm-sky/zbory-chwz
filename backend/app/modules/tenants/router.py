@@ -93,42 +93,46 @@ async def list_congregations_detailed(
 ) -> PublicCongregationListResponse:
     """Public endpoint to list published congregations with detailed info (address, service times, contact).
     
-    Note: Currently uses tenant.status for filtering. In the future, this should
-    filter by congregation/address status when that module is implemented.
+    Returns congregations with status 'published' or 'published_unverified'.
+    Uses address.status for filtering (address status takes precedence over tenant status).
     """
-    tenants = await repo.list_published()
+    # Get all tenants (we'll filter by address status)
+    all_tenants = await repo.list_all()
     congregations = []
     
-    for tenant in tenants:
+    for tenant in all_tenants:
         # Get address
         address = await congregation_repo.get_address_by_tenant_id(tenant.id)
         
-        # Get service times (limit to first 3)
-        service_times_db = await congregation_repo.get_service_times_by_tenant_id(tenant.id)
-        service_times = [
-            {"day": st.day, "time": st.time}
-            for st in service_times_db[:3]  # Limit to first 3
-        ]
-        
-        # Get first contact person
-        contact_persons_db = await congregation_repo.get_contact_persons_by_tenant_id(tenant.id)
-        contact_person = contact_persons_db[0] if contact_persons_db else None
-        
-        congregations.append(
-            PublicCongregationResponse(
-                id=tenant.id,
-                name=tenant.name,
-                description=tenant.description,
-                createdAt=tenant.created_at,
-                city=address.city if address else None,
-                street=address.street if address else None,
-                postal_code=address.postal_code if address else None,
-                service_times=service_times,
-                contact_name=contact_person.name if contact_person else None,
-                contact_title=contact_person.title if contact_person else None,
-                contact_phone=contact_person.phone if contact_person else None,
-                contact_email=contact_person.email if contact_person else None,
+        # Filter by address status: only 'published' or 'published_unverified'
+        if address and address.status in ('published', 'published_unverified'):
+            # Get service times (limit to first 3)
+            service_times_db = await congregation_repo.get_service_times_by_tenant_id(tenant.id)
+            service_times = [
+                {"day": st.day, "time": st.time}
+                for st in service_times_db[:3]  # Limit to first 3
+            ]
+            
+            # Get first contact person
+            contact_persons_db = await congregation_repo.get_contact_persons_by_tenant_id(tenant.id)
+            contact_person = contact_persons_db[0] if contact_persons_db else None
+            
+            congregations.append(
+                PublicCongregationResponse(
+                    id=tenant.id,
+                    name=tenant.name,
+                    description=tenant.description,
+                    status=address.status,
+                    createdAt=tenant.created_at,
+                    city=address.city if address else None,
+                    street=address.street if address else None,
+                    postal_code=address.postal_code if address else None,
+                    service_times=service_times,
+                    contact_name=contact_person.name if contact_person else None,
+                    contact_title=contact_person.title if contact_person else None,
+                    contact_phone=contact_person.phone if contact_person else None,
+                    contact_email=contact_person.email if contact_person else None,
+                )
             )
-        )
     
     return PublicCongregationListResponse(congregations=congregations)

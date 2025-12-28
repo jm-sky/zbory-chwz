@@ -53,7 +53,7 @@ CONGREGATIONS = [
             "email": 'arkadiusz.wawrzyniak@op.pl',
             "phone": '669 570 797',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W BRZEGU',
@@ -78,7 +78,7 @@ CONGREGATIONS = [
             "email": 'jbkoszt@wp.pl',
             "phone": '661 115 904',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W BYSTRZYCY KŁODZKIEJ',
@@ -102,7 +102,7 @@ CONGREGATIONS = [
             "title": 'Pastor',
             "phone": '883 718 990',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W DANKOWICACH',
@@ -127,7 +127,7 @@ CONGREGATIONS = [
             "email": 'lupus-40@o2.pl',
             "phone": '604 394 624',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W GDAŃSKU',
@@ -152,7 +152,7 @@ CONGREGATIONS = [
             "email": 'arkadiusz.borejszo@chwz.org.pl',
             "phone": '516 041 271',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W GLIWICACH- ŁABĘDACH',
@@ -177,7 +177,7 @@ CONGREGATIONS = [
             "email": 'w.swiderski@chwz.gliwice',
             "phone": '664 022 401',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W GOŁDAPI',
@@ -202,7 +202,7 @@ CONGREGATIONS = [
             "email": 'jacek.romanowski@chwz.org.pl',
             "phone": '698 500 107',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W GRABÓWCE',
@@ -227,7 +227,7 @@ CONGREGATIONS = [
             "email": 'zborgrabowka@wp.pl',
             "phone": '794 431 354',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W KĘDZIERZYNIE-KOŹLU',
@@ -251,7 +251,7 @@ CONGREGATIONS = [
             "title": 'Pastor',
             "email": 'kedzierzynchwz@wp.pl',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W KĘTRZYNIE',
@@ -276,7 +276,7 @@ CONGREGATIONS = [
             "email": 'miroslawa.kruba@gmail.com',
             "phone": '790 592 925',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W KŁODZKU',
@@ -301,7 +301,7 @@ CONGREGATIONS = [
             "email": 'kwiecien@post.pl',
             "phone": '500 813 774',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W KOSTRZYNIE',
@@ -326,7 +326,7 @@ CONGREGATIONS = [
             "email": 'marek.kalata@wp.pl',
             "phone": '506 002 498',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W LEGNICY',
@@ -351,7 +351,7 @@ CONGREGATIONS = [
             "email": 'roman.jawdyk@chwz.org.pl',
             "phone": '518 018 095',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W LESZNIE',
@@ -376,7 +376,7 @@ CONGREGATIONS = [
             "email": 'h.mroz@tlen.pl',
             "phone": '502 515 060',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W LUBINIE',
@@ -400,7 +400,7 @@ CONGREGATIONS = [
             "title": 'Pastor',
             "email": 'remig11@wp.pl',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W LUBSKU',
@@ -425,7 +425,7 @@ CONGREGATIONS = [
             "email": 'mariuszs71@wp.pl',
             "phone": '602 414 198',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W ŁODZI',
@@ -450,7 +450,7 @@ CONGREGATIONS = [
             "email": 'bellux@op.pl',
             "phone": '603 064 015',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W MARKTREDWITZ (Freie Christengemeinde)',
@@ -474,7 +474,7 @@ CONGREGATIONS = [
             "title": 'Pastor',
             "phone": '0049 172 568',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W OLSZTYNIE',
@@ -499,7 +499,7 @@ CONGREGATIONS = [
             "email": 'jacek.fi6@wp.pl',
             "phone": '601 614 930',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W PRZEMKOWIE',
@@ -522,7 +522,7 @@ CONGREGATIONS = [
             "name": 'Stefan Andrasz',
             "title": 'Pastor',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W RUDZIE ŚLĄSKIEJ',
@@ -547,7 +547,7 @@ CONGREGATIONS = [
             "email": 'baohel@wp.pl',
             "phone": '792 727 266',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W ŚWIEBODZINIE',
@@ -572,7 +572,7 @@ CONGREGATIONS = [
             "email": 'lukasz.tyc@wp.pl',
             "phone": '600 284 205',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W TRZEBINI',
@@ -597,7 +597,7 @@ CONGREGATIONS = [
             "email": 'zimeryt@interia.pl',
             "phone": '606 997 912',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W WARSZAWIE',
@@ -621,7 +621,7 @@ CONGREGATIONS = [
             "title": 'Pastor',
             "phone": '577 106 606',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR WE WROCŁAWIU',
@@ -646,7 +646,7 @@ CONGREGATIONS = [
             "email": 'tomaszpekala02@gmail.com',
             "phone": '530 501 816',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W WYSOWEJ',
@@ -669,7 +669,7 @@ CONGREGATIONS = [
             "name": 'Józef Poręba',
             "title": 'Pastor',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W ZABRZU',
@@ -694,7 +694,7 @@ CONGREGATIONS = [
             "email": 'pandre@poczta.onet.pl',
             "phone": '661 680 334',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
     {
         "name": 'ZBÓR W ŻORACH',
@@ -719,6 +719,6 @@ CONGREGATIONS = [
             "email": 'artlik@onet.eu',
             "phone": '606 143 474',
         },
-        "status": 'need_verification',
+        "status": 'published_unverified',
     },
 ]

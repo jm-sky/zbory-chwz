@@ -2,11 +2,14 @@
  * Congregation (Zbór) types
  */
 
+export type CongregationStatus = 'draft' | 'published' | 'published_unverified' | 'need_verification'
+
 export interface ICongregation {
   id: string
   name: string
   description?: string
   role?: string
+  status?: CongregationStatus
   createdAt: string
 }
 

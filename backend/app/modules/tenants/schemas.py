@@ -35,6 +35,7 @@ class PublicCongregationResponse(BaseModel):
     id: str
     name: str
     description: str | None = None
+    status: str | None = None
     createdAt: datetime
     # Address info
     city: str | None = None

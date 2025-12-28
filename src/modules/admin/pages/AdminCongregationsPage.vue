@@ -128,6 +128,7 @@ async function updateTenant() {
           street: formData.value.address.street.trim() || null,
           city: formData.value.address.city.trim(),
           postal_code: formData.value.address.postal_code.trim() || null,
+          status: formData.value.status,
         })
       } else {
         await adminApiService.createOrUpdateAddress(selectedTenant.value.id, {
@@ -135,9 +136,14 @@ async function updateTenant() {
           city: formData.value.address.city.trim(),
           postal_code: formData.value.address.postal_code.trim() || null,
           country: 'Poland',
-          status: 'draft',
+          status: formData.value.status,
         })
       }
+    } else if (currentAddress.value) {
+      // Update address status even if city is not provided
+      await adminApiService.updateAddress(selectedTenant.value.id, {
+        status: formData.value.status,
+      })
     }
     
     toast.success(t('admin.congregations.updateSuccess', 'Congregation updated successfully'))
@@ -454,6 +460,9 @@ onMounted(() => {
                     <SelectItem value="published">
                       {{ t('admin.congregations.statusPublished', 'Published') }}
                     </SelectItem>
+                    <SelectItem value="published_unverified">
+                      {{ t('admin.congregations.statusPublishedUnverified', 'Published (Unverified)') }}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -516,6 +525,9 @@ onMounted(() => {
                   </SelectItem>
                   <SelectItem value="published">
                     {{ t('admin.congregations.statusPublished', 'Published') }}
+                  </SelectItem>
+                  <SelectItem value="published_unverified">
+                    {{ t('admin.congregations.statusPublishedUnverified', 'Published (Unverified)') }}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -739,6 +751,9 @@ onMounted(() => {
           <Badge v-if="row.original.status === 'published'" variant="default">
             {{ t('admin.congregations.statusPublished', 'Published') }}
           </Badge>
+          <Badge v-else-if="row.original.status === 'published_unverified'" variant="outline" class="opacity-60">
+            {{ t('admin.congregations.statusPublishedUnverified', 'Published (Unverified)') }}
+          </Badge>
           <Badge v-else variant="secondary">
             {{ t('admin.congregations.statusDraft', 'Draft') }}
           </Badge>
@@ -767,14 +782,14 @@ onMounted(() => {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                v-if="row.original.status !== 'published'"
+                v-if="row.original.status !== 'published' && row.original.status !== 'published_unverified'"
                 @click="publishTenant(row.original)"
               >
                 <Globe class="size-4" />
                 <span>{{ t('admin.congregations.publish', 'Publish') }}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                v-if="row.original.status === 'published'"
+                v-if="row.original.status === 'published' || row.original.status === 'published_unverified'"
                 @click="unpublishTenant(row.original)"
               >
                 <EyeOff class="size-4" />
