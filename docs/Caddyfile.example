@@ -1,10 +1,10 @@
-# Example Caddyfile configuration for Gear Stack
+# Example Caddyfile configuration for Zbory CHWZ
 # Place this file in /etc/caddy/Caddyfile or your Caddy configuration directory
 # Adjust domain names and paths according to your setup
 
-gear-stack.ovh {
+zbory.chwz.waw.pl, adresy.chwz.waw.pl {
   # Root directory where static files are served from
-  root * /var/www/gear-stack
+  root * /var/www/zbory-chwz
 
   # Enable gzip compression
   encode gzip zstd
@@ -60,7 +60,7 @@ gear-stack.ovh {
 
   # API routes - proxy to FastAPI backend
   handle /api/* {
-      reverse_proxy localhost:8000 {
+      reverse_proxy localhost:8001 {
           # Optional: add headers for backend
           header_up X-Real-IP {remote_host}
           header_up X-Forwarded-For {remote_host}

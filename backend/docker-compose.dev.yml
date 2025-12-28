@@ -11,7 +11,7 @@ services:
     volumes:
       - zbory_chwz_postgres_data:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:${DB_FORWARD_PORT:-5432}:5432"  # Only localhost access
+      - "127.0.0.1:${DB_FORWARD_PORT:-5433}:5432"  # Only localhost access
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-backend}"]
       interval: 10s
@@ -33,7 +33,7 @@ services:
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-zbory-chwz-redis-secret}
     ports:
-      - "127.0.0.1:${REDIS_FORWARD_PORT:-6379}:6379"  # Only localhost access
+      - "127.0.0.1:${REDIS_FORWARD_PORT:-6380}:6379"  # Only localhost access
     volumes:
       - zbory_chwz_redis_data:/data
     command: >
@@ -109,7 +109,7 @@ services:
       - STRIPE_PRO_PLUS_MONTHLY_PRICE_ID=${STRIPE_PRO_PLUS_MONTHLY_PRICE_ID}
       - STRIPE_PRO_PLUS_ANNUAL_PRICE_ID=${STRIPE_PRO_PLUS_ANNUAL_PRICE_ID}
     ports:
-      - "127.0.0.1:${APP_PORT:-8000}:8000"  # Only localhost access (Caddy proxy)
+      - "127.0.0.1:${APP_PORT:-8001}:8000"  # Only localhost access (Caddy proxy)
     volumes:
       # Mount source code for hot reload
       # Paths are relative to docker-compose.dev.yml location (backend/ directory)
