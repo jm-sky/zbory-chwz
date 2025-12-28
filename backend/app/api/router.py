@@ -42,7 +42,9 @@ api_router.include_router(users_router, prefix="/users", tags=["Users"])
 api_router.include_router(settings_router, prefix="/me/settings", tags=["Settings"])
 api_router.include_router(tenants_router)
 api_router.include_router(public_congregations_router)  # Public congregations list
-api_router.include_router(congregations_router)  # Authenticated congregation management (addresses, service times, contact persons)
+api_router.include_router(
+    congregations_router
+)  # Authenticated congregation management (addresses, service times, contact persons)
 
 # Register Two-Factor module (optional, added during development)
 try:

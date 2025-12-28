@@ -203,9 +203,10 @@ async def update_tenant_admin(
     tenant = await repo.get_tenant(tenant_id)
     if not tenant:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Tenant {tenant_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tenant {tenant_id} not found",
         )
-    
+
     # Update fields
     if payload.name is not None:
         tenant.name = payload.name
@@ -213,10 +214,10 @@ async def update_tenant_admin(
         tenant.description = payload.description
     if payload.status is not None:
         tenant.status = payload.status
-    
+
     await repo.db.commit()
     await repo.db.refresh(tenant)
-    
+
     return TenantResponse(
         id=tenant.id,
         name=tenant.name,
@@ -242,9 +243,10 @@ async def delete_tenant_admin(
     tenant = await repo.get_tenant(tenant_id)
     if not tenant:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Tenant {tenant_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tenant {tenant_id} not found",
         )
-    
+
     await repo.db.delete(tenant)
     await repo.db.commit()
 
@@ -266,16 +268,20 @@ async def get_tenant_memberships(
     tenant = await repo.get_tenant(tenant_id)
     if not tenant:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Tenant {tenant_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tenant {tenant_id} not found",
         )
-    
+
     from sqlalchemy import select
-    stmt = select(TenantMembershipDB).where(
-        TenantMembershipDB.tenant_id == tenant_id
-    ).order_by(TenantMembershipDB.created_at)
+
+    stmt = (
+        select(TenantMembershipDB)
+        .where(TenantMembershipDB.tenant_id == tenant_id)
+        .order_by(TenantMembershipDB.created_at)
+    )
     result = await repo.db.execute(stmt)
     memberships = result.scalars().all()
-    
+
     membership_responses = []
     for membership in memberships:
         user = await user_repo.get_user_by_id(membership.user_id)
@@ -289,7 +295,7 @@ async def get_tenant_memberships(
                 createdAt=membership.created_at,
             )
         )
-    
+
     return membership_responses
 
 
@@ -311,21 +317,23 @@ async def add_tenant_membership(
     tenant = await repo.get_tenant(tenant_id)
     if not tenant:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Tenant {tenant_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tenant {tenant_id} not found",
         )
-    
+
     user = await user_repo.get_user_by_id(payload.user_id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {payload.user_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User {payload.user_id} not found",
         )
-    
+
     membership = await repo.add_member(
         tenant_id=tenant_id,
         user_id=payload.user_id,
         role=payload.role,
     )
-    
+
     return TenantMembershipResponse(
         tenant_id=membership.tenant_id,
         user_id=membership.user_id,
@@ -352,23 +360,24 @@ async def update_tenant_membership(
 ) -> TenantMembershipResponse:
     """Update tenant membership (admin only)."""
     from sqlalchemy import select
+
     stmt = select(TenantMembershipDB).where(
         TenantMembershipDB.tenant_id == tenant_id,
         TenantMembershipDB.user_id == user_id,
     )
     result = await repo.db.execute(stmt)
     membership = result.scalar_one_or_none()
-    
+
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Membership not found for tenant {tenant_id} and user {user_id}",
         )
-    
+
     membership.role = payload.role
     await repo.db.commit()
     await repo.db.refresh(membership)
-    
+
     user = await user_repo.get_user_by_id(user_id)
     return TenantMembershipResponse(
         tenant_id=membership.tenant_id,
@@ -394,18 +403,19 @@ async def remove_tenant_membership(
 ) -> None:
     """Remove tenant membership (admin only)."""
     from sqlalchemy import select
+
     stmt = select(TenantMembershipDB).where(
         TenantMembershipDB.tenant_id == tenant_id,
         TenantMembershipDB.user_id == user_id,
     )
     result = await repo.db.execute(stmt)
     membership = result.scalar_one_or_none()
-    
+
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Membership not found for tenant {tenant_id} and user {user_id}",
         )
-    
+
     await repo.db.delete(membership)
     await repo.db.commit()

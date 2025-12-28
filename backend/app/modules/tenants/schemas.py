@@ -32,6 +32,7 @@ class TenantListResponse(BaseModel):
 
 class PublicCongregationResponse(BaseModel):
     """Public congregation data with basic address, service times, and contact info."""
+
     id: str
     name: str
     description: str | None = None
