@@ -88,10 +88,12 @@ const addressForm = useForm({
   },
 })
 
+const serviceTimesFormSchema = z.object({
+  serviceTimes: z.array(serviceTimeSchema),
+})
+
 const serviceTimesForm = useForm({
-  validationSchema: z.object({
-    serviceTimes: z.array(serviceTimeSchema),
-  }),
+  validationSchema: toTypedSchema(serviceTimesFormSchema),
   initialValues: {
     serviceTimes: [] as Array<{ day: string; time: string; order: number }>,
   },
@@ -111,10 +113,12 @@ function removeServiceTime(index: number) {
   serviceTimesForm.setFieldValue('serviceTimes', serviceTimeFields.value.map(f => ({ day: f.day, time: f.time, order: f.order })))
 }
 
+const contactPersonsFormSchema = z.object({
+  contactPersons: z.array(contactPersonSchema),
+})
+
 const contactPersonsForm = useForm({
-  validationSchema: z.object({
-    contactPersons: z.array(contactPersonSchema),
-  }),
+  validationSchema: toTypedSchema(contactPersonsFormSchema),
   initialValues: {
     contactPersons: [] as Array<{ name: string; title: string | null; email: string | null; phone: string | null; order: number }>,
   },
