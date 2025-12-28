@@ -1,8 +1,8 @@
-# Cursor Rules for Gear Stack
+# Cursor Rules for Zbory CHWZ
 
 ## Docker Safety Rule
 
-**CRITICAL:** **NEVER run Docker commands if the project directory name starts with underscore (e.g., `_gear-stack-dev`)**
+**CRITICAL:** **NEVER run Docker commands if the project directory name starts with underscore (e.g., `_zbory-chwz-dev`)**
 
 - Underscore prefix indicates a development directory on the production server
 - Running Docker in such directories can cause conflicts with production services
@@ -10,16 +10,16 @@
 
 ## Project Architecture
 
-**Hybrid Architecture:**
-- Client-side: localStorage (gear data, settings, AI history)
-- Server-side: Backend API (auth, user profiles, admin, AI models)
+**Multi-tenant Architecture:**
+- Client-side: Settings, preferences (localStorage)
+- Server-side: Backend API (auth, user profiles, congregations, admin, AI models)
 - API proxy: `/api/*` → backend (configured in vite.config.ts)
 
-**Modules:** gear, user, settings, auth, ai, admin, stats
+**Modules:** auth, user, settings, admin, ai, stats
 
 **State Management:**
-- Pinia → client-side state (gear, settings)
-- TanStack Query → server state (auth, AI, admin)
+- Pinia → client-side state (settings, user preferences)
+- TanStack Query → server state (auth, congregations, AI, admin)
 
 ## Roadmap Docs
 
@@ -80,34 +80,12 @@ const checked = ref(true)
 - `v-model:checked` only works with `defineModel()` (as in `ContainersFilters.vue`)
 - For regular `ref`, use standard `v-model` or `:model-value` / `@update:model-value`
 
-## Action Icons
+## Icons
 
-**CRITICAL:** Action icons must use the centralized mapping from `src/modules/gear/utils/actionIcons.ts`. This is the single source of truth for all action icons.
-
-✅ **Correct usage:**
-```vue
-<script setup>
-import { getActionIcon } from '@/modules/gear/utils/actionIcons'
-const ExportIcon = getActionIcon('exportToPrompt')
-</script>
-<template>
-  <Button><ExportIcon class="size-4" />Export</Button>
-</template>
-```
-
-❌ **Incorrect usage:**
-```vue
-<!-- DO NOT import icons directly -->
-<script setup>
-import { MessageSquare, Sparkles } from 'lucide-vue-next'
-</script>
-```
-
-**Notes:**
-- Always use `getActionIcon(actionKey)` instead of importing icons directly
-- Ensures consistency (e.g., `exportToPrompt` always uses `Sparkles`, not `MessageSquare`)
-- Available keys: `back`, `moreActions`, `create`, `addItem`, `addContainer`, `edit`, `delete`, `deleteAll`, `export`, `import`, `importFromMarkdown`, `exportToPrompt`, `exportAllToPrompt`, `recognizeParameters`, `recognizeParametersAll`
-- Similar pattern for category icons in `categoryIcons.ts`
+**Icon Usage:**
+- Use `lucide-vue-next` icons directly
+- Import icons as needed: `import { User, Settings } from 'lucide-vue-next'`
+- Use consistent icon sizes: `class="size-4"` for small icons, `size-6` for medium, etc.
 
 ## TypeScript Conventions
 
@@ -118,8 +96,8 @@ import { MessageSquare, Sparkles } from 'lucide-vue-next'
 
 **Import Alias:**
 - Always use `@/` alias for absolute imports from `src/`
-- ✅ Use: `import { useGearStore } from '@/modules/gear/store'`
-- ❌ Avoid: `import { useGearStore } from '../../modules/gear/store'`
+- ✅ Use: `import { useUserStore } from '@/modules/user/store'`
+- ❌ Avoid: `import { useUserStore } from '../../modules/user/store'`
 
 **Type Definitions:**
 - All types in module-specific `types/` directories
@@ -139,8 +117,7 @@ import { MessageSquare, Sparkles } from 'lucide-vue-next'
 
 - Always use `v-model` for Checkbox components with regular `ref` variables
 - Use `v-model:checked` only when using `defineModel()` in component props
-- When in doubt, check existing usage in `ContainersFilters.vue` or `columns-full.ts`
-- Always use `getActionIcon()` from `actionIcons.ts` for action icons, never import icons directly
+- When in doubt, check existing usage in similar components
 
 ## Code Formatting
 
@@ -189,7 +166,7 @@ else {
 
 **Reactive Destructured Props:**
 - Destructured props are reactive in Vue 3.5+ (no need for `toRefs`)
-- ✅ Use: `const { item } = defineProps<{ item: IGearItem }>()`
+- ✅ Use: `const { congregation } = defineProps<{ congregation: ICongregation }>()`
 - Props can be used directly in computed/watch without losing reactivity
 
 **Prop Shortcuts:**
@@ -211,8 +188,8 @@ else {
 
 **Routing:**
 - Use route helper functions from `routes.ts` instead of hardcoded paths
-- ✅ Use: `GearRoutePath.ItemEditById(containerId, itemId)`
-- ❌ Avoid: `` `/gear/${containerId}/items/${itemId}/edit` ``
+- ✅ Use: `CongregationRoutePath.Detail(congregationId)` or route helper functions from module routes
+- ❌ Avoid: `` `/congregations/${congregationId}` `` (hardcoded paths)
 
 ## TailwindCSS Best Practices
 
@@ -277,28 +254,29 @@ const { data, isLoading } = useQuery({
 
 ✅ **Correct:**
 ```typescript
-// Service handles calculation
-const totalWeight = gearService.calculateTotalWeight(containerId)
-// Store persists data
-gearStore.updateContainer(container)
+// Service handles business logic
+const congregation = await congregationService.getById(id)
+// Store persists data (if client-side)
+settingsStore.updateSettings(settings)
 ```
 
 ❌ **Avoid:**
 ```typescript
 // Don't put business logic in stores or components
-gearStore.calculateAndUpdateWeight(containerId)
+congregationStore.calculateAndValidate(congregationId)
 ```
 
 ## Internationalization (i18n)
 
 **Translation Keys:**
 - Use `t()` from `useI18n()` composable
-- Keys: `moduleName.section.key` (e.g., `gear.containers.title`)
+- Keys: `moduleName.section.key` (e.g., `congregations.list.title`, `admin.users.title`)
 - Module translations in `src/modules/{module}/i18n/locales/{lang}.ts`
 
 **Locale Management:**
 - Persisted in localStorage
 - Use `useLocale()` composable for switching
+- Supported languages: Polish (pl), English (en)
 
 ## FastAPI Dependencies (Backend)
 

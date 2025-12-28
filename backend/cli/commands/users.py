@@ -41,15 +41,13 @@ def users_callback(ctx: typer.Context) -> None:
 @users_app.command("create")
 def users_create(
     email: str | None = typer.Option(None, "--email", "-e", help="User email address"),
-    name: str | None = typer.Option(None, "--name", "-n", help="User full name"),
+    name: str | None = typer.Option(None, "--name", "-n", help="User full name (blank to guess from email)"),
     password: str | None = typer.Option(
         None,
         "--password",
         help="User password (not recommended, will prompt if not provided)",
     ),
-    admin: bool = typer.Option(False, "--admin", "-a", help="Create as administrator"),
-    owner: bool = typer.Option(False, "--owner", "-o", help="Create as owner"),
-    premium: bool = typer.Option(False, "--premium", "-p", help="Create as premium user"),
+    role: str | None = typer.Option(None, "--role", "-r", help="User role: admin or owner"),
     no_input: bool = typer.Option(False, "--no-input", help="Skip interactive prompts (requires all options)"),
 ) -> None:
     """Create a new user interactively with rich prompts and validation.
@@ -59,31 +57,26 @@ def users_create(
         python -m cli users create
 
         # Create admin user
-        python -m cli users create --admin
+        python -m cli users create --role admin
 
         # Create owner user
-        python -m cli users create --owner
-
-        # Create premium user
-        python -m cli users create --premium
+        python -m cli users create --role owner
 
         # Non-interactive mode (for scripts)
         python -m cli users create --no-input \\
             --email admin@example.com \\
             --name "Admin User" \\
             --password "SecurePass123!" \\
-            --admin
+            --role admin
     """
-    asyncio.run(_users_create_async(email, name, password, admin, owner, premium, no_input))
+    asyncio.run(_users_create_async(email, name, password, role, no_input))
 
 
 async def _users_create_async(
     email: str | None,
     name: str | None,
     password: str | None,
-    admin: bool,
-    owner: bool,
-    premium: bool,
+    role: str | None,
     no_input: bool,
 ) -> None:
     """Async implementation of user creation."""
@@ -94,14 +87,16 @@ async def _users_create_async(
 
     # Get user details interactively if not provided
     email_value = await _get_email(console, email, no_input)
-    name_value = await _get_name(console, name, no_input)
+    name_value = await _get_name(console, name, no_input, email_value)
     password_value = await _get_password(console, password, no_input)
-    is_admin = await _get_admin_status(console, admin, no_input)
-    is_owner = owner  # Owner role is typically set via CLI flag only
-    is_premium = premium  # Premium role is typically set via CLI flag only
+    role_value = await _get_role(console, role, no_input)
+
+    # Determine role flags
+    is_admin = role_value == "admin"
+    is_owner = role_value == "owner"
 
     # Show summary
-    _show_user_summary(console, email_value, name_value, is_admin, is_owner, is_premium)
+    _show_user_summary(console, email_value, name_value, is_admin, is_owner)
 
     # Confirm creation
     if not no_input:
@@ -112,13 +107,13 @@ async def _users_create_async(
     # Create user with spinner
     try:
         with console.status("[bold green]Creating user...", spinner="dots"):
-            user = await _create_user_in_db(email_value, name_value, password_value, is_admin, is_owner, is_premium)
+            user = await _create_user_in_db(email_value, name_value, password_value, is_admin, is_owner)
 
         # Show success message
         console.print("\n[bold green]✓[/bold green] User created successfully!\n")
 
         # Show user info panel
-        role_str = "Owner" if user.get("isOwner") else ("Administrator" if user.get("isAdmin") else ("Premium" if user.get("isPremium") else "User"))
+        role_str = "Owner" if user.get("isOwner") else ("Administrator" if user.get("isAdmin") else "User")
         user_info = f"""[bold]Email:[/bold] {user['email']}
 [bold]Name:[/bold] {user['name']}
 [bold]Role:[/bold] {role_str}
@@ -157,8 +152,8 @@ async def _get_email(console: Any, email: str | None, no_input: bool) -> str:
         return email_input
 
 
-async def _get_name(console: Any, name: str | None, no_input: bool) -> str:
-    """Get user name."""
+async def _get_name(console: Any, name: str | None, no_input: bool, email: str | None = None) -> str:
+    """Get user name (can be blank to guess from email)."""
     if name:
         return name
 
@@ -166,11 +161,20 @@ async def _get_name(console: Any, name: str | None, no_input: bool) -> str:
         raise ValueError("Name is required when --no-input is used")
 
     while True:
-        name_input = Prompt.ask("[cyan]Full name[/cyan]", default=name or "")
+        name_input = Prompt.ask("[cyan]Full name (blank to guess from email)[/cyan]", default=name or "")
 
         if not name_input:
-            console.print("[red]Name is required[/red]")
-            continue
+            # Guess name from email
+            if email:
+                # Extract name from email (part before @)
+                name_from_email = email.split("@")[0]
+                # Capitalize and replace dots/underscores with spaces
+                guessed_name = name_from_email.replace(".", " ").replace("_", " ").title()
+                console.print(f"[dim]Using guessed name: {guessed_name}[/dim]")
+                return guessed_name
+            else:
+                console.print("[red]Cannot guess name without email[/red]")
+                continue
 
         if len(name_input) < 2:
             console.print("[red]Name must be at least 2 characters[/red]")
@@ -214,17 +218,49 @@ async def _get_password(console: Any, password: str | None, no_input: bool) -> s
         return password_input
 
 
-async def _get_admin_status(console: Any, admin: bool, no_input: bool) -> bool:
-    """Get admin status."""
+async def _get_role(console: Any, role: str | None, no_input: bool) -> str:
+    """Get user role (admin or owner)."""
+    VALID_ROLES = ["admin", "owner"]
+
+    if role:
+        role_lower = role.lower().strip()
+        if role_lower not in VALID_ROLES:
+            raise ValueError(f"Invalid role: {role}. Valid roles are: {', '.join(VALID_ROLES)}")
+        return role_lower
+
     if no_input:
-        return admin
+        raise ValueError("Role is required when --no-input is used")
 
-    return Confirm.ask("[cyan]Create as administrator?[/cyan]", default=admin)
+    console.print("\n[bold cyan]Available roles:[/bold cyan]\n")
+    console.print("  1. [yellow]Admin[/yellow] - Administrator")
+    console.print("  2. [bold magenta]Owner[/bold magenta] - Owner")
+    console.print()
+
+    while True:
+        role_input = Prompt.ask(
+            "[cyan]Select role[/cyan] (1-2 or name)",
+            default="",
+        ).strip().lower()
+
+        # Try to parse as number
+        if role_input.isdigit():
+            role_num = int(role_input)
+            if 1 <= role_num <= len(VALID_ROLES):
+                return VALID_ROLES[role_num - 1]
+            else:
+                console.print(f"[red]Invalid number. Please enter 1-{len(VALID_ROLES)}[/red]")
+                continue
+
+        # Try to parse as role name
+        if role_input in VALID_ROLES:
+            return role_input
+
+        console.print(f"[red]Invalid role. Please enter 1-{len(VALID_ROLES)} or one of: {', '.join(VALID_ROLES)}[/red]")
 
 
-def _show_user_summary(console: Any, email: str, name: str, is_admin: bool, is_owner: bool = False, is_premium: bool = False) -> None:
+def _show_user_summary(console: Any, email: str, name: str, is_admin: bool, is_owner: bool = False) -> None:
     """Show user creation summary."""
-    role_str = "Owner" if is_owner else ("Administrator" if is_admin else ("Premium" if is_premium else "User"))
+    role_str = "Owner" if is_owner else ("Administrator" if is_admin else "User")
     summary = f"""[bold]Email:[/bold] {email}
 [bold]Name:[/bold] {name}
 [bold]Role:[/bold] {role_str}"""
@@ -233,7 +269,7 @@ def _show_user_summary(console: Any, email: str, name: str, is_admin: bool, is_o
     console.print(panel)
 
 
-async def _create_user_in_db(email: str, name: str, password: str, is_admin: bool, is_owner: bool = False, is_premium: bool = False) -> dict[str, Any]:
+async def _create_user_in_db(email: str, name: str, password: str, is_admin: bool, is_owner: bool = False) -> dict[str, Any]:
     """Create user in database.
 
     Args:
@@ -242,7 +278,6 @@ async def _create_user_in_db(email: str, name: str, password: str, is_admin: boo
         password: User password (will be hashed)
         is_admin: Whether user is admin
         is_owner: Whether user is owner
-        is_premium: Whether user is premium
 
     Returns:
         dict: Created user data
@@ -261,9 +296,8 @@ async def _create_user_in_db(email: str, name: str, password: str, is_admin: boo
             user = await repo.create_user(email=email, password=password, full_name=name, is_admin=is_admin)
 
             # Update role flags if needed
-            if is_owner or is_premium:
+            if is_owner:
                 user.isOwner = is_owner
-                user.isPremium = is_premium
                 user = await repo.update_user(user)
 
             user.isEmailVerified = True

@@ -72,6 +72,61 @@ docker exec zbory-chwz-app python -m pytest tests/integration/congregations/test
 docker exec zbory-chwz-app python -m pytest tests/ --cov=app --cov-report=html
 ```
 
+### Backend CLI Commands
+The backend includes a CLI tool for administrative tasks located in `backend/cli/`.
+
+**Running CLI commands:**
+```bash
+# Using Docker (recommended)
+docker exec zbory-chwz-app python -m cli <command>
+
+# Using venv (if dependencies are installed)
+cd backend
+source .venv/bin/activate
+python -m cli <command>
+```
+
+**User Management Commands:**
+```bash
+# Create a new user (interactive mode)
+python -m cli users create
+
+# Create user with role flag
+python -m cli users create --role admin
+python -m cli users create --role owner
+
+# Create user non-interactively
+python -m cli users create --no-input \
+    --email user@example.com \
+    --name "User Name" \
+    --password "SecurePass123!" \
+    --role admin
+
+# List all users
+python -m cli users list
+
+# List users with filters
+python -m cli users list --admins --detailed
+
+# Delete a user
+python -m cli users delete user@example.com
+
+# Toggle admin status
+python -m cli users toggle-admin user@example.com
+
+# Set user role (user, premium, admin, owner)
+python -m cli users set-role user@example.com --role admin
+
+# Verify user email
+python -m cli users verify-email user@example.com --confirm
+```
+
+**CLI User Creation Details:**
+- **Email**: Required, validated for proper format
+- **Name**: Optional, can be left blank to auto-guess from email (extracts part before @, capitalizes, replaces dots/underscores with spaces)
+- **Password**: Required, validated for strength, confirmed in interactive mode
+- **Role**: Required, must be `admin` or `owner` (interactive menu shows options 1-2 or accepts role name)
+
 ## Architecture
 
 ### Module-Based Structure
