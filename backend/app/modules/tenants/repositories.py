@@ -42,7 +42,11 @@ class TenantRepository:
         return list(result.scalars().all())
 
     async def list_published(self) -> list[TenantDB]:
-        """List only tenants with status 'published'."""
+        """List only tenants with status 'published'.
+        
+        Note: This is temporary - status should be on congregation/address level in the future.
+        Keeping this for backward compatibility until congregation/address module is implemented.
+        """
         stmt = (
             select(TenantDB)
             .where(TenantDB.status == "published")

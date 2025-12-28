@@ -30,7 +30,8 @@ import { test } from '@playwright/test'
 import { createWriteStream, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import * as readline from 'readline'
-import type { CatalogueItem } from '../backend/app/seeders/catalogue_items.types'
+// import type { CatalogueItem } from '../backend/app/seeders/catalogue_items.types' // Removed - catalogue seeder deleted
+type CatalogueItem = any // Temporary type - catalogue seeder was removed
 
 const MIN_SCORE = 70
 

@@ -1,10 +1,18 @@
 import { apiClient } from '@/shared/services/apiClient'
 import type { IAdminUser } from '../types/admin.types'
+import type {
+  IAdminTenant,
+  IAdminTenantMembership,
+  ICreateTenantMembershipRequest,
+  ICreateTenantRequest,
+  IUpdateTenantMembershipRequest,
+  IUpdateTenantRequest,
+} from '../types/tenant.types'
 import type { TUUID } from '@/shared/types/base.type'
 
 /**
  * Admin API Service
- * Handles API calls for admin operations (users management)
+ * Handles API calls for admin operations (users and tenants management)
  */
 class AdminApiService {
   // Users management
@@ -27,6 +35,46 @@ class AdminApiService {
 
   async deleteUser(id: TUUID): Promise<void> {
     await apiClient.delete(`/admin/users/${id}`)
+  }
+
+  // Tenants/Congregations management
+  async getTenants(): Promise<IAdminTenant[]> {
+    const response = await apiClient.get<{ tenants: IAdminTenant[] }>('/admin/tenants')
+    return response.data.tenants
+  }
+
+  async createTenant(data: ICreateTenantRequest): Promise<IAdminTenant> {
+    const response = await apiClient.post<IAdminTenant>('/admin/tenants', data)
+    return response.data
+  }
+
+  async updateTenant(id: string, data: IUpdateTenantRequest): Promise<IAdminTenant> {
+    const response = await apiClient.patch<IAdminTenant>(`/admin/tenants/${id}`, data)
+    return response.data
+  }
+
+  async deleteTenant(id: string): Promise<void> {
+    await apiClient.delete(`/admin/tenants/${id}`)
+  }
+
+  // Tenant Memberships management
+  async getTenantMemberships(tenantId: string): Promise<IAdminTenantMembership[]> {
+    const response = await apiClient.get<IAdminTenantMembership[]>(`/admin/tenants/${tenantId}/memberships`)
+    return response.data
+  }
+
+  async createTenantMembership(tenantId: string, data: ICreateTenantMembershipRequest): Promise<IAdminTenantMembership> {
+    const response = await apiClient.post<IAdminTenantMembership>(`/admin/tenants/${tenantId}/memberships`, data)
+    return response.data
+  }
+
+  async updateTenantMembership(tenantId: string, userId: string, data: IUpdateTenantMembershipRequest): Promise<IAdminTenantMembership> {
+    const response = await apiClient.patch<IAdminTenantMembership>(`/admin/tenants/${tenantId}/memberships/${userId}`, data)
+    return response.data
+  }
+
+  async deleteTenantMembership(tenantId: string, userId: string): Promise<void> {
+    await apiClient.delete(`/admin/tenants/${tenantId}/memberships/${userId}`)
   }
 }
 

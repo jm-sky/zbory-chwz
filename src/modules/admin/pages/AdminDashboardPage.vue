@@ -31,7 +31,7 @@ if (!canAccessAdminPanel.value) {
       </div>
 
       <!-- Quick Links -->
-      <div class="grid gap-4 md:grid-cols-1">
+      <div class="grid gap-4 md:grid-cols-2">
         <Card class="p-6">
           <div class="flex flex-col gap-4 flex-1">
             <div class="flex-1">
@@ -45,6 +45,23 @@ if (!canAccessAdminPanel.value) {
             <RouterLink :to="AdminRoutePaths.users">
               <Button class="w-full">
                 {{ t('admin.dashboard.users.button', 'Manage Users') }}
+              </Button>
+            </RouterLink>
+          </div>
+        </Card>
+        <Card class="p-6">
+          <div class="flex flex-col gap-4 flex-1">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold">
+                {{ t('admin.dashboard.congregations.title', 'Congregations') }}
+              </h3>
+              <p class="text-sm text-muted-foreground">
+                {{ t('admin.dashboard.congregations.description', 'Manage congregations and their members') }}
+              </p>
+            </div>
+            <RouterLink :to="AdminRoutePaths.congregations">
+              <Button class="w-full">
+                {{ t('admin.dashboard.congregations.button', 'Manage Congregations') }}
               </Button>
             </RouterLink>
           </div>

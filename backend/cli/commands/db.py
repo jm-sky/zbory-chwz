@@ -469,13 +469,12 @@ def migrate_unmark(
 
 @db_app.command("seed")
 def seed_database(
-    seeder: str = typer.Argument(..., help="Seeder name (e.g., 'catalogue')"),
+    seeder: str = typer.Argument(..., help="Seeder name (e.g., 'congregations')"),
 ) -> None:
     """Seed database with initial data.
 
     This command populates the database with predefined seed data.
     Currently supports:
-    - catalogue: Catalogue items (global gear catalogue)
     - congregations: Congregations/churches with addresses and service times
     """
 
@@ -484,13 +483,11 @@ def seed_database(
 
         # Get database session
         async for db in get_db():
-            if seeder == "catalogue":
-                await _seed_catalogue(db)
-            elif seeder == "congregations":
+            if seeder == "congregations":
                 await _seed_congregations(db)
             else:
                 console.print(f"[red]Unknown seeder: {seeder}[/red]")
-                console.print("[yellow]Available seeders: catalogue, congregations[/yellow]")
+                console.print("[yellow]Available seeders: congregations[/yellow]")
                 raise typer.Exit(1)
 
             break  # Exit after first db session
@@ -500,165 +497,12 @@ def seed_database(
     console.print("[bold green]✓ Database seeding complete[/bold green]")
 
 
-async def _seed_catalogue(db: "AsyncSession") -> None:
-    """Seed catalogue items, updating existing items by id."""
-    from app.common.id_utils import generate_id
-    from app.modules.gear.db_models import CatalogueItemImageDB, GlobalCatalogueItemDB
-    from app.seeders import CATALOGUE_ITEMS
-    from sqlalchemy import select
-    from pathlib import Path
-    from ulid import ULID
-
-    console.print("[bold cyan]Seeding catalogue items...[/bold cyan]")
-
-    # Create system user for seeded items (use first owner, or admin if no owner, or create placeholder)
-    from app.modules.auth.db_models import UserDB
-
-    # First try to find an owner
-    result = await db.execute(select(UserDB).where(UserDB.is_owner == True).limit(1))
-    user = result.scalar_one_or_none()
-
-    # If no owner, fall back to admin
-    if not user:
-        result = await db.execute(select(UserDB).where(UserDB.is_admin == True).limit(1))
-        user = result.scalar_one_or_none()
-
-    if not user:
-        console.print("[yellow]No owner or admin user found. Creating placeholder 'system' user...[/yellow]")
-        system_user = UserDB(
-            id=generate_id(),
-            email="system@gearstack.local",
-            name="System User",
-            is_admin=True,
-            is_active=True,
-        )
-        db.add(system_user)
-        await db.commit()
-        await db.refresh(system_user)
-        creator_id = str(system_user.id)
-    else:
-        creator_id = str(user.id)
-
-    # Get existing items by id for quick lookup
-    items_result = await db.execute(select(GlobalCatalogueItemDB))
-    existing_items: dict[str, GlobalCatalogueItemDB] = {item.id: item for item in items_result.scalars().all()}
-
-    created_count = 0
-    updated_count = 0
-    images_count = 0
-
-    for item_data in CATALOGUE_ITEMS:
-        item_id = item_data.get("id")
-        if not item_id or not isinstance(item_id, str):
-            console.print("[yellow]Skipping item without id[/yellow]")
-            continue
-
-        item_name = item_data.get("name")
-        image_filename = item_data.get("image_filename")  # Extract image filename from item data
-
-        # Map seeder field names to model field names
-        # Exclude fields that shouldn't be saved to database (like image_filename)
-        mapped_data = {}
-        for key, value in item_data.items():
-            # Skip fields that are not part of the database model
-            if key == "image_filename":
-                continue
-            # Map price_currency to currency
-            if key == "price_currency":
-                mapped_data["currency"] = value
-            else:
-                mapped_data[key] = value
-
-        # Check if item exists by id
-        existing_item = existing_items.get(item_id)
-
-        if existing_item is not None:
-            # Update existing item
-            for key, value in mapped_data.items():
-                if key != "id":  # Don't update id as it's the primary key
-                    setattr(existing_item, key, value)
-            existing_item.updated_at = datetime.now(UTC)
-            updated_count += 1
-        else:
-            # Create new item
-            catalogue_item = GlobalCatalogueItemDB(
-                **mapped_data,
-                created_by=creator_id,
-            )
-            db.add(catalogue_item)
-            created_count += 1
-
-        # Handle images - upload if image_filename is provided
-        if image_filename and isinstance(image_filename, str):
-            # Build path relative to backend directory (works both locally and in Docker)
-            source_path = Path(__file__).resolve().parent.parent.parent / "images" / "global-catalogue" / image_filename
-
-            if not source_path.exists():
-                console.print(f"[yellow]  Image file not found: {source_path}[/yellow]")
-                console.print(f"[yellow]  Item: {item_name}, Expected image: {image_filename}[/yellow]")
-                continue
-
-            # Check if primary image already exists
-            result = await db.execute(
-                select(CatalogueItemImageDB).where(
-                    CatalogueItemImageDB.catalogue_item_id == item_id,
-                    CatalogueItemImageDB.is_primary == True,
-                )
-            )
-            existing_image = result.scalar_one_or_none()
-
-            if not existing_image:
-                # Upload image to storage (S3 or local)
-                from app.core.storage import get_storage_adapter
-
-                storage = get_storage_adapter()
-
-                # Get file size and MIME type
-                file_size = source_path.stat().st_size
-                mime_type = "image/jpeg" if image_filename.endswith(".jpg") else "image/png" if image_filename.endswith(".png") else "image/webp" if image_filename.endswith(".webp") else "image/jpeg"
-
-                # Upload file to storage
-                relative_path = f"global-catalogue/{image_filename}"
-
-                with open(source_path, "rb") as f:
-                    file_content = f.read()
-                    await storage.upload(file_content, relative_path, mime_type)
-
-                console.print(f"[cyan]  Uploaded {image_filename} to storage[/cyan]")
-
-                # Determine storage type
-                storage_type = "s3" if hasattr(storage, "bucket_name") else "local"
-
-                # Create image record
-                image = CatalogueItemImageDB(
-                    id=str(ULID()),
-                    catalogue_item_id=item_id,
-                    user_id=creator_id,
-                    storage_type=storage_type,
-                    file_path=relative_path,
-                    file_name=image_filename,
-                    file_size=file_size,
-                    mime_type=mime_type,
-                    is_primary=True,
-                    order=0,
-                    is_processed=True,
-                )
-                db.add(image)
-                images_count += 1
-
-    await db.commit()
-    console.print(f"[bold green]✓ Created {created_count}, updated {updated_count} catalogue items with {images_count} new images[/bold green]")
-
-
 async def _seed_congregations(db: "AsyncSession") -> None:
-    """Seed congregations with addresses, service times, and contact persons.
-
-    Note: Address, service times, and contact person data structures are prepared
-    but will be fully implemented when those modules are created.
-    """
+    """Seed congregations with addresses, service times, and contact persons."""
     from app.common.id_utils import generate_id
     from app.modules.auth.db_models import UserDB
     from app.modules.auth.repositories import UserRepository
+    from app.modules.congregations.repositories import CongregationRepository
     from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
     from app.seeders import CONGREGATIONS
     from sqlalchemy import select
@@ -666,6 +510,7 @@ async def _seed_congregations(db: "AsyncSession") -> None:
     console.print("[bold cyan]Seeding congregations...[/bold cyan]")
 
     user_repo = UserRepository(db)
+    congregation_repo = CongregationRepository(db)
 
     created_count = 0
     updated_count = 0
@@ -684,12 +529,6 @@ async def _seed_congregations(db: "AsyncSession") -> None:
                 full_description += f" | Website: {website}"
             else:
                 full_description = f"Website: {website}"
-
-        # Add note about future data
-        if full_description:
-            full_description += " | Note: Address, service times, and contact person data will be added when those modules are implemented"
-        else:
-            full_description = "Note: Address, service times, and contact person data will be added when those modules are implemented"
 
         # Find or create owner user
         owner = await user_repo.get_user_by_email(owner_email)
@@ -744,38 +583,58 @@ async def _seed_congregations(db: "AsyncSession") -> None:
             created_count += 1
             console.print(f"[green]  Created tenant: {name} (ID: {tenant_id})[/green]")
 
-            # Log address and service times data (for future implementation)
+            # Create address, service times, and contact person
             address_data = cong_data.get("address")
             service_times = cong_data.get("service_times", [])
             contact_person = cong_data.get("contact_person")
             status = cong_data.get("status", "draft")
 
+            # Create address
             if address_data:
-                street = address_data.get("street", "N/A")
-                city = address_data.get("city", "N/A")
-                console.print(f"[cyan]    Address data (to be implemented): {street}, {city}[/cyan]")
+                address = await congregation_repo.create_or_update_address(
+                    tenant_id=tenant_id,
+                    street=address_data.get("street"),
+                    city=address_data.get("city", "Unknown"),
+                    postal_code=address_data.get("postal_code"),
+                    province=address_data.get("province"),
+                    country=address_data.get("country", "Poland"),
+                    status=status,
+                )
+                console.print(f"[cyan]    Created address: {address.city}[/cyan]")
+
+            # Create service times
             if service_times:
+                for idx, st in enumerate(service_times):
+                    await congregation_repo.create_service_time(
+                        tenant_id=tenant_id,
+                        day=st.get("day", ""),
+                        time=st.get("time", ""),
+                        order=idx,
+                    )
                 times_str = ", ".join([f"{st['day']} {st['time']}" for st in service_times])
-                console.print(f"[cyan]    Service times (to be implemented): {times_str}[/cyan]")
+                console.print(f"[cyan]    Created service times: {times_str}[/cyan]")
+
+            # Create contact person
             if contact_person:
-                console.print(f"[cyan]    Contact person (to be implemented): {contact_person['name']} ({contact_person['title']})[/cyan]")
-            if status:
-                console.print(f"[cyan]    Status (to be implemented): {status}[/cyan]")
+                await congregation_repo.create_contact_person(
+                    tenant_id=tenant_id,
+                    name=contact_person.get("name", ""),
+                    title=contact_person.get("title"),
+                )
+                console.print(f"[cyan]    Created contact person: {contact_person.get('name')} ({contact_person.get('title')})[/cyan]")
 
     await db.commit()
     console.print(f"[bold green]✓ Created {created_count}, updated {updated_count} congregations[/bold green]")
-    console.print("[yellow]Note: Address, service times, and contact person data structures are prepared but not yet stored in database[/yellow]")
 
 
 @db_app.command("seed-remove")
 def remove_seeder(
-    seeder: str = typer.Argument(..., help="Seeder name to remove (e.g., 'catalogue')"),
+    seeder: str = typer.Argument(..., help="Seeder name to remove (e.g., 'congregations')"),
 ) -> None:
     """Remove seeded data from database.
 
     This command removes seeded data from the database.
     Currently supports:
-    - catalogue: Remove all catalogue items
     - congregations: Remove seeded congregations (WARNING: Also removes associated users if created by seeder)
     """
 
@@ -784,13 +643,11 @@ def remove_seeder(
 
         # Get database session
         async for db in get_db():
-            if seeder == "catalogue":
-                await _remove_catalogue(db)
-            elif seeder == "congregations":
+            if seeder == "congregations":
                 await _remove_congregations(db)
             else:
                 console.print(f"[red]Unknown seeder: {seeder}[/red]")
-                console.print("[yellow]Available seeders: catalogue, congregations[/yellow]")
+                console.print("[yellow]Available seeders: congregations[/yellow]")
                 raise typer.Exit(1)
 
             break  # Exit after first db session
@@ -802,32 +659,6 @@ def remove_seeder(
     console.print(f"[bold yellow]Removing '{seeder}' data...[/bold yellow]")
     asyncio.run(_remove())
     console.print("[bold green]✓ Data removal complete[/bold green]")
-
-
-async def _remove_catalogue(db: "AsyncSession") -> None:
-    """Remove all catalogue items and their images."""
-    from app.modules.gear.db_models import CatalogueItemImageDB, GlobalCatalogueItemDB
-    from sqlalchemy import delete, select
-
-    # Count items before deletion
-    result = await db.execute(select(GlobalCatalogueItemDB))
-    items_count = len(result.scalars().all())
-
-    result = await db.execute(select(CatalogueItemImageDB))
-    images_count = len(result.scalars().all())
-
-    if items_count == 0:
-        console.print("[yellow]No catalogue items found[/yellow]")
-        return
-
-    console.print(f"[yellow]Deleting {items_count} catalogue items and {images_count} images...[/yellow]")
-
-    # Delete images first (CASCADE should handle this, but let's be explicit)
-    await db.execute(delete(CatalogueItemImageDB))
-    await db.execute(delete(GlobalCatalogueItemDB))
-    await db.commit()
-
-    console.print(f"[bold green]✓ Removed {items_count} catalogue items and {images_count} images[/bold green]")
 
 
 async def _remove_congregations(db: "AsyncSession") -> None:

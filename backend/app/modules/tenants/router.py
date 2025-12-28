@@ -14,7 +14,8 @@ from app.modules.tenants.schemas import (
 
 
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
-congregations_router = APIRouter(prefix="/congregations", tags=["Congregations"])
+# Public congregations router (for listing published congregations)
+public_congregations_router = APIRouter(prefix="/congregations", tags=["Congregations"])
 
 
 @router.get("", response_model=TenantListResponse)
@@ -56,11 +57,15 @@ async def create_tenant(
     )
 
 
-@congregations_router.get("", response_model=TenantListResponse)
+@public_congregations_router.get("", response_model=TenantListResponse)
 async def list_congregations(
     repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> TenantListResponse:
-    """Public endpoint to list only published congregations (tenants)."""
+    """Public endpoint to list only published congregations (tenants).
+    
+    Note: Currently uses tenant.status for filtering. In the future, this should
+    filter by congregation/address status when that module is implemented.
+    """
     tenants = await repo.list_published()
     congregations = [
         TenantResponse(

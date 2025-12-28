@@ -52,6 +52,10 @@ Each migration has two files:
 - **Created**: 2025-XX-XX
 - **Description**: Creates feature limits table for account limits
 
+### 034_add_status_to_tenants
+- **Created**: 2025-XX-XX
+- **Description**: Adds status column to tenants table for draft/published status
+
 ## Usage
 
 ### Option 1: CLI Migration Commands (Recommended)
@@ -148,6 +152,7 @@ python cli.py db migrate-status
 | 025     | 2025-XX-XX | Add owner and premium roles        | ✓      |
 | 028     | 2025-XX-XX | Add OAuth connections table        | ✓      |
 | 033     | 2025-XX-XX | Add feature limits table           | ✓      |
+| 034     | 2025-XX-XX | Add status column to tenants       | ✓      |
 
 ## Future: Setting Up Alembic
 
