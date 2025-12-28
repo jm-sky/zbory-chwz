@@ -44,7 +44,7 @@ export interface UserNavProps {
 
 const { t } = useI18n()
 const { isAuthenticated } = useAuth()
-const { isAdmin } = usePermissions()
+const { canAccessAdminPanel } = usePermissions()
 
 const props = defineProps<UserNavProps>()
 
@@ -67,7 +67,7 @@ const defaultCoreLinks = computed<Link[]>(() => [
     to: AdminRoutePaths.dashboard,
     label: t('admin.dashboard.title', 'Admin Dashboard'),
     icon: ShieldIcon,
-    hidden: !isAdmin.value,
+    hidden: !canAccessAdminPanel.value,
   }
 ])
 
@@ -98,7 +98,7 @@ const handleLogout = () => {
       <Avatar
         role="button"
         :aria-label="t('user.menu.title', 'User menu')"
-        :class="cn('cursor-pointer hover:brightness-95 transition-all duration-300', !isAuthenticated && 'ring-2 ring-muted-foreground/30', isAuthenticated && isAdmin && 'ring-2 ring-primary ring-offset-2 ring-offset-background')"
+        :class="cn('cursor-pointer hover:brightness-95 transition-all duration-300', !isAuthenticated && 'ring-2 ring-muted-foreground/30', isAuthenticated && canAccessAdminPanel && 'ring-2 ring-primary ring-offset-2 ring-offset-background')"
       >
         <AvatarImage
           :src="avatarUrl ?? ''"

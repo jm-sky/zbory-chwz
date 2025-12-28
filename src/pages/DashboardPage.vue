@@ -1,14 +1,27 @@
 <script setup lang="ts">
 import { Church, LogIn } from 'lucide-vue-next'
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import WelcomeQuickActions from '@/components/layout/WelcomeQuickActions.vue'
 import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRoutePaths } from '@/modules/auth/config/routes'
+import { PublicRoutePaths } from '@/router/publicRoutes'
+import { usePermissions } from '@/shared/composables/usePermissions'
 
 const { t } = useI18n()
 const { isAuthenticated } = useAuth()
+const { canAccessAdminPanel } = usePermissions()
+const router = useRouter()
+
+// Redirect regular users to congregations list (landing page)
+onMounted(() => {
+  if (isAuthenticated.value && !canAccessAdminPanel.value) {
+    router.replace(PublicRoutePaths.landing)
+  }
+})
 </script>
 
 <template>
