@@ -1,7 +1,7 @@
 // shared/config/config.ts
 
 // Supported locales type (defined here to avoid cyclic dependencies)
-export type SupportedLocale = 'en' | 'pl'
+export type SupportedLocale = 'en' | 'pl' | 'ru'
 export type TGearWeightUnit = 'g' | 'kg' | 'oz' | 'lb'
 
 export interface IAiModelPricing {

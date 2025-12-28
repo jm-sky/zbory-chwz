@@ -14,12 +14,16 @@ const { isAuthenticated } = useAuth()
 <template>
   <AuthenticatedLayout>
     <div class="container mx-auto p-6">
-      <h1 class="mb-6 text-3xl font-bold">{{ t('navigation.dashboard') }}</h1>
+      <h1 class="mb-6 text-3xl font-bold">
+        {{ t('navigation.dashboard') }}
+      </h1>
 
       <!-- Welcome section for authenticated users -->
       <div v-if="isAuthenticated" class="mb-8">
         <div class="rounded-lg border bg-card p-6">
-          <h2 class="mb-4 text-xl font-semibold">{{ t('common.welcome') }}</h2>
+          <h2 class="mb-4 text-xl font-semibold">
+            {{ t('common.welcome') }}
+          </h2>
           <p class="text-muted-foreground">
             Witaj w systemie zarządzania zborami CHWZ. W przyszłości tutaj zobaczysz statystyki i
             szybki dostęp do swoich zborów.
@@ -32,7 +36,9 @@ const { isAuthenticated } = useAuth()
         <div class="rounded-lg border bg-card p-6">
           <div class="mb-4 flex items-center gap-3">
             <Church class="size-8 text-primary" />
-            <h2 class="text-2xl font-semibold">Zbory CHWZ</h2>
+            <h2 class="text-2xl font-semibold">
+              Zbory CHWZ
+            </h2>
           </div>
           <p class="mb-4 text-muted-foreground">
             System zarządzania i publicznej prezentacji zborów Chrześcijańskiej Wspólnoty Wolnych

@@ -25,7 +25,6 @@ const { authService } = defineProps<{
     </template>
 
     <GuestLayoutCard :title="t('auth.sign_in_to_account')">
-
       <LoginForm :auth-service :default-email />
 
       <template #footer>

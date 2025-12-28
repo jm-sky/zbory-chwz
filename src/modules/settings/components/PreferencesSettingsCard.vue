@@ -161,6 +161,9 @@ const onSubmit = handleSubmit(async (values) => {
                         <SelectItem value="pl">
                           {{ t('settings.page.sections.locale.options.pl') }}
                         </SelectItem>
+                        <SelectItem value="ru">
+                          {{ t('settings.page.sections.locale.options.ru') }}
+                        </SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>

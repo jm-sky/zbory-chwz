@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 export const settingsSchema = z.object({
   darkMode: z.enum(['light', 'dark']),
-  locale: z.enum(['en', 'pl']),
+  locale: z.enum(['en', 'pl', 'ru']),
   profilePublic: z.boolean().optional(),
   emailPublic: z.boolean().optional(),
   imageProcessingMode: z.enum(['high_quality', 'balanced', 'storage_saver']).optional().nullable(),

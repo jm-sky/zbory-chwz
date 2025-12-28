@@ -32,7 +32,9 @@ if (!config.backend.enabled) {
         <p v-if="isAuthenticated && user" class="text-2xl font-semibold text-muted-foreground">
           {{ t('landing.welcomeBack', { name: user.name }) }}
         </p>
-        <h1 class="text-5xl font-bold tracking-tight">Zbory CHWZ</h1>
+        <h1 class="text-5xl font-bold tracking-tight">
+          Zbory CHWZ
+        </h1>
         <p class="mx-auto max-w-lg text-xl text-muted-foreground">
           Aplikacja do zarządzania i publicznej prezentacji zborów Chrześcijańskiej Wspólnoty
           Wolnych Zielonoświątkowców
@@ -44,19 +46,25 @@ if (!config.backend.enabled) {
     <div class="w-full max-w-2xl space-y-8 text-center">
       <div class="grid grid-cols-1 gap-6 py-4 md:grid-cols-3">
         <div class="space-y-2">
-          <h3 class="text-lg font-semibold">Zarządzanie</h3>
+          <h3 class="text-lg font-semibold">
+            Zarządzanie
+          </h3>
           <p class="text-sm text-muted-foreground">
             Zarządzaj danymi swoich zborów w jednym miejscu
           </p>
         </div>
         <div class="space-y-2">
-          <h3 class="text-lg font-semibold">Publiczna prezentacja</h3>
+          <h3 class="text-lg font-semibold">
+            Publiczna prezentacja
+          </h3>
           <p class="text-sm text-muted-foreground">
             Udostępniaj informacje o zborach publicznie
           </p>
         </div>
         <div class="space-y-2">
-          <h3 class="text-lg font-semibold">Multi-tenant</h3>
+          <h3 class="text-lg font-semibold">
+            Multi-tenant
+          </h3>
           <p class="text-sm text-muted-foreground">
             Różne role i uprawnienia dla użytkowników
           </p>
