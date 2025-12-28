@@ -48,7 +48,9 @@ class EmailAuditLog(Base):
     id: Mapped[str] = mapped_column(String(26), primary_key=True, default=generate_id)
 
     # Recipients
-    recipient_email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    recipient_email: Mapped[str] = mapped_column(
+        String(255), nullable=False, index=True
+    )
     sender_email: Mapped[str | None] = mapped_column(String(255))
 
     # Content
@@ -62,7 +64,9 @@ class EmailAuditLog(Base):
 
     # Status & Tracking
     # Status: pending, sent, failed, bounced
-    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True, default="pending")
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, index=True, default="pending"
+    )
     adapter: Mapped[str] = mapped_column(String(50), nullable=False)
 
     # Timestamps

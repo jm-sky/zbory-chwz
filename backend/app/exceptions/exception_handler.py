@@ -14,7 +14,9 @@ from app.exceptions.custom_exceptions import AppException
 logger = logging.getLogger(__name__)
 
 
-async def http_exception_handler(request: Request, exc: Union[HTTPException, AppException, Exception]) -> JSONResponse:
+async def http_exception_handler(
+    request: Request, exc: Union[HTTPException, AppException, Exception]
+) -> JSONResponse:
     """
     Global exception handler for HTTP and application exceptions.
 
@@ -67,7 +69,9 @@ async def http_exception_handler(request: Request, exc: Union[HTTPException, App
     )
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """
     Handler for request validation errors.
 

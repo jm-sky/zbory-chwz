@@ -147,21 +147,30 @@ class TestDetectLocaleFromAcceptLanguage:
 
     def test_detect_locale_none_returns_default(self) -> None:
         """Test that None returns default locale."""
-        from app.core.email.i18n import DEFAULT_LOCALE, detect_locale_from_accept_language
+        from app.core.email.i18n import (
+            DEFAULT_LOCALE,
+            detect_locale_from_accept_language,
+        )
 
         result = detect_locale_from_accept_language(None)
         assert result == DEFAULT_LOCALE
 
     def test_detect_locale_empty_string_returns_default(self) -> None:
         """Test that empty string returns default locale."""
-        from app.core.email.i18n import DEFAULT_LOCALE, detect_locale_from_accept_language
+        from app.core.email.i18n import (
+            DEFAULT_LOCALE,
+            detect_locale_from_accept_language,
+        )
 
         result = detect_locale_from_accept_language("")
         assert result == DEFAULT_LOCALE
 
     def test_detect_locale_unsupported_returns_default(self) -> None:
         """Test that unsupported locale returns default."""
-        from app.core.email.i18n import DEFAULT_LOCALE, detect_locale_from_accept_language
+        from app.core.email.i18n import (
+            DEFAULT_LOCALE,
+            detect_locale_from_accept_language,
+        )
 
         result = detect_locale_from_accept_language("de-DE,de;q=0.9,fr;q=0.8")
         assert result == DEFAULT_LOCALE

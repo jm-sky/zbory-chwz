@@ -60,7 +60,9 @@ def client(test_app: FastAPI) -> TestClient:
 class TestConvertEmptyStringsToNoneMiddleware:
     """Tests for ConvertEmptyStringsToNoneMiddleware."""
 
-    def test_converts_empty_strings_to_none_in_simple_object(self, client: TestClient) -> None:
+    def test_converts_empty_strings_to_none_in_simple_object(
+        self, client: TestClient
+    ) -> None:
         """Test that empty strings are converted to None in simple objects."""
         data = {
             "name": "John",
@@ -94,7 +96,10 @@ class TestConvertEmptyStringsToNoneMiddleware:
         assert result["received"]["user"]["name"] == "John"
         assert result["received"]["user"]["email"] is None
         assert result["received"]["user"]["profile"]["bio"] is None
-        assert result["received"]["user"]["profile"]["avatar"] == "https://example.com/avatar.jpg"
+        assert (
+            result["received"]["user"]["profile"]["avatar"]
+            == "https://example.com/avatar.jpg"
+        )
 
     def test_converts_empty_strings_in_arrays(self, client: TestClient) -> None:
         """Test that empty strings are converted in arrays."""
@@ -182,7 +187,10 @@ class TestConvertEmptyStringsToNoneMiddleware:
             headers={"Content-Type": "application/json"},
         )
         # Should return error, but not crash
-        assert response.status_code in (status.HTTP_422_UNPROCESSABLE_ENTITY, status.HTTP_400_BAD_REQUEST)
+        assert response.status_code in (
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_400_BAD_REQUEST,
+        )
 
     def test_handles_empty_body(self, client: TestClient) -> None:
         """Test that empty body is handled correctly."""
@@ -200,7 +208,10 @@ class TestConvertEmptyStringsToNoneMiddleware:
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         # Should return error because endpoint expects JSON
-        assert response.status_code in (status.HTTP_422_UNPROCESSABLE_ENTITY, status.HTTP_400_BAD_REQUEST)
+        assert response.status_code in (
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_400_BAD_REQUEST,
+        )
 
     def test_complex_nested_structure(self, client: TestClient) -> None:
         """Test with complex nested structure."""
@@ -227,19 +238,32 @@ class TestConvertEmptyStringsToNoneMiddleware:
         assert result["received"]["container"]["items"][0]["notes"] is None
         assert result["received"]["container"]["items"][1]["name"] is None
         assert result["received"]["container"]["items"][1]["notes"] == "Some notes"
-        assert result["received"]["container"]["metadata"]["tags"] == ["tag1", None, "tag3"]
+        assert result["received"]["container"]["metadata"]["tags"] == [
+            "tag1",
+            None,
+            "tag3",
+        ]
         assert result["received"]["container"]["metadata"]["url"] is None
 
     def test_convert_empty_strings_to_none_function(self) -> None:
         """Test the _convert_empty_strings_to_none function directly."""
         # Test simple dict
-        assert _convert_empty_strings_to_none({"a": "", "b": "value"}) == {"a": None, "b": "value"}
+        assert _convert_empty_strings_to_none({"a": "", "b": "value"}) == {
+            "a": None,
+            "b": "value",
+        }
 
         # Test nested dict
-        assert _convert_empty_strings_to_none({"a": {"b": "", "c": "value"}}) == {"a": {"b": None, "c": "value"}}
+        assert _convert_empty_strings_to_none({"a": {"b": "", "c": "value"}}) == {
+            "a": {"b": None, "c": "value"}
+        }
 
         # Test list
-        assert _convert_empty_strings_to_none(["", "value", ""]) == [None, "value", None]
+        assert _convert_empty_strings_to_none(["", "value", ""]) == [
+            None,
+            "value",
+            None,
+        ]
 
         # Test nested list
         assert _convert_empty_strings_to_none([{"a": ""}, {"b": "value"}]) == [

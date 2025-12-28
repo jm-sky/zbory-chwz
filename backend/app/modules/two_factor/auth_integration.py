@@ -55,7 +55,9 @@ class AuthServiceWith2FA(AuthService):
             raise InvalidCredentialsError("Invalid email or password")
 
         # Verify password (hashedPassword is guaranteed non-empty for password auth)
-        if not user.hashedPassword or not verify_password(password, user.hashedPassword):
+        if not user.hashedPassword or not verify_password(
+            password, user.hashedPassword
+        ):
             raise InvalidCredentialsError("Invalid email or password")
 
         # Check if user is active
@@ -130,7 +132,9 @@ class AuthServiceWith2FA(AuthService):
 
 def get_auth_service_with_2fa(
     user_repository: Annotated[UserRepositoryInterface, Depends(get_user_repository)],
-    two_factor_repository: Annotated[TwoFactorRepositoryInterface, Depends(get_two_factor_repository)],
+    two_factor_repository: Annotated[
+        TwoFactorRepositoryInterface, Depends(get_two_factor_repository)
+    ],
 ) -> AuthServiceWith2FA:
     """
     FastAPI dependency for AuthServiceWith2FA.

@@ -67,7 +67,9 @@ async def upgrade() -> None:
             """
             )
         )
-        await conn.execute(text("CREATE INDEX idx_feature_limits_role ON feature_limits(role)"))
+        await conn.execute(
+            text("CREATE INDEX idx_feature_limits_role ON feature_limits(role)")
+        )
         print("✓ Created feature_limits table")
 
         # Insert default limits

@@ -23,8 +23,15 @@ class TenantRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list_for_user(self, user_id: str) -> list[tuple[TenantDB, TenantMembershipDB]]:
-        stmt = select(TenantDB, TenantMembershipDB).join(TenantMembershipDB, TenantMembershipDB.tenant_id == TenantDB.id).where(TenantMembershipDB.user_id == user_id).order_by(TenantDB.created_at)
+    async def list_for_user(
+        self, user_id: str
+    ) -> list[tuple[TenantDB, TenantMembershipDB]]:
+        stmt = (
+            select(TenantDB, TenantMembershipDB)
+            .join(TenantMembershipDB, TenantMembershipDB.tenant_id == TenantDB.id)
+            .where(TenantMembershipDB.user_id == user_id)
+            .order_by(TenantDB.created_at)
+        )
         result = await self.db.execute(stmt)
         rows = result.all()
         return [(row[0], row[1]) for row in rows]
@@ -34,7 +41,9 @@ class TenantRepository:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_tenant(self, *, name: str, description: str | None, owner_user_id: str) -> tuple[TenantDB, TenantMembershipDB]:
+    async def create_tenant(
+        self, *, name: str, description: str | None, owner_user_id: str
+    ) -> tuple[TenantDB, TenantMembershipDB]:
         tenant_id = generate_id()
         tenant = TenantDB(
             id=tenant_id,
@@ -54,7 +63,9 @@ class TenantRepository:
         await self.db.refresh(tenant)
         return tenant, membership
 
-    async def add_member(self, tenant_id: str, user_id: str, role: str = "member") -> TenantMembershipDB:
+    async def add_member(
+        self, tenant_id: str, user_id: str, role: str = "member"
+    ) -> TenantMembershipDB:
         stmt = select(TenantMembershipDB).where(
             TenantMembershipDB.tenant_id == tenant_id,
             TenantMembershipDB.user_id == user_id,

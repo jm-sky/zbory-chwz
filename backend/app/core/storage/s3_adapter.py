@@ -38,7 +38,9 @@ class S3StorageAdapter(StorageAdapter):
                 If not set, uses endpoint_url.
         """
         if not S3_AVAILABLE:
-            raise ImportError("aioboto3 is required for S3 storage. Install with: pip install aioboto3")
+            raise ImportError(
+                "aioboto3 is required for S3 storage. Install with: pip install aioboto3"
+            )
 
         self.bucket_name = bucket_name
         self.aws_access_key_id = aws_access_key_id

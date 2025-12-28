@@ -89,7 +89,9 @@ def _verify_passkey_registration_token(
 class WebAuthnService:
     """Service for WebAuthn/Passkey operations using composition pattern."""
 
-    def __init__(self, repository: TwoFactorRepositoryInterface, challenge_store: Any = None):
+    def __init__(
+        self, repository: TwoFactorRepositoryInterface, challenge_store: Any = None
+    ):
         """Initialize with repository dependency.
 
         Args:
@@ -118,7 +120,9 @@ class WebAuthnService:
             Dict with options, registrationToken, expiresAt
         """
         # Generate registration options and challenge
-        options_json, challenge = create_registration_options(user_id, user_email, user_name)
+        options_json, challenge = create_registration_options(
+            user_id, user_email, user_name
+        )
 
         # Create registration token
         registration_token = _create_passkey_registration_token(user_id, challenge)
@@ -184,7 +188,11 @@ class WebAuthnService:
             name = self._generate_passkey_name(user_agent)
 
         # Save transports as JSON
-        transports_json = json.dumps(verified_data.get("transports", [])) if verified_data.get("transports") else None
+        transports_json = (
+            json.dumps(verified_data.get("transports", []))
+            if verified_data.get("transports")
+            else None
+        )
 
         # Create passkey in database
         passkey_id = await self.repository.create_passkey(
@@ -262,7 +270,9 @@ class WebAuthnService:
             )
             logger.info(f"Challenge stored in Redis for user_id={user_id}")
         else:
-            logger.warning("Challenge store not available - challenge NOT stored server-side (INSECURE)")
+            logger.warning(
+                "Challenge store not available - challenge NOT stored server-side (INSECURE)"
+            )
 
         # Create authentication options
         # Get domain from frontend URL or default to localhost
@@ -308,13 +318,17 @@ class WebAuthnService:
         """
         # Retrieve challenge_data from Redis using challenge_token
         if self.challenge_store:
-            challenge_data_from_redis = await self.challenge_store.get_and_delete_challenge(challenge_token)
+            challenge_data_from_redis = (
+                await self.challenge_store.get_and_delete_challenge(challenge_token)
+            )
             if not challenge_data_from_redis:
                 raise ValueError("Challenge not found or expired")
             challenge_data = challenge_data_from_redis
             logger.info("Challenge retrieved and consumed from Redis")
         elif not challenge_data:
-            raise ValueError("Challenge data not found or expired - Redis not configured")
+            raise ValueError(
+                "Challenge data not found or expired - Redis not configured"
+            )
 
         # Verify challenge type
         if challenge_data.get("challenge_type") != "authentication":

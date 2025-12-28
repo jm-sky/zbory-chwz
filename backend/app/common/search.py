@@ -9,7 +9,9 @@ from sqlalchemy import Column, or_
 from sqlalchemy.sql import ColumnElement
 
 
-def build_search_filter(search_term: str | None, *columns: Column[Any], case_sensitive: bool = False) -> ColumnElement[bool] | None:
+def build_search_filter(
+    search_term: str | None, *columns: Column[Any], case_sensitive: bool = False
+) -> ColumnElement[bool] | None:
     """Build SQLAlchemy filter for searching across multiple columns.
 
     Args:
@@ -115,7 +117,9 @@ class SearchMixin:
         if not search_term or not self._search_columns:
             return query
 
-        search_filter = build_search_filter(search_term, *self._search_columns, case_sensitive=self._case_sensitive)
+        search_filter = build_search_filter(
+            search_term, *self._search_columns, case_sensitive=self._case_sensitive
+        )
 
         if search_filter is not None:
             return query.where(search_filter)
@@ -123,7 +127,9 @@ class SearchMixin:
         return query
 
 
-def highlight_search_term(text: str, search_term: str, case_sensitive: bool = False) -> str:
+def highlight_search_term(
+    text: str, search_term: str, case_sensitive: bool = False
+) -> str:
     """Highlight search term in text (useful for UI).
 
     This is a helper function for highlighting search results.

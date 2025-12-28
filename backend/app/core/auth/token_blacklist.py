@@ -49,7 +49,9 @@ class TokenBlacklistService:
         token_hash = self._get_token_hash(token)
         return f"{self.key_prefix}{token_hash}"
 
-    async def blacklist_token(self, token: str, expires_at: int, reason: str = "logout") -> None:
+    async def blacklist_token(
+        self, token: str, expires_at: int, reason: str = "logout"
+    ) -> None:
         """Add token to blacklist.
 
         Args:
@@ -88,7 +90,9 @@ class TokenBlacklistService:
         exists = await self.redis.exists(key)
         return bool(exists)
 
-    async def blacklist_all_user_tokens(self, user_id: str, reason: str = "account_deleted") -> int:
+    async def blacklist_all_user_tokens(
+        self, user_id: str, reason: str = "account_deleted"
+    ) -> int:
         """Blacklist all tokens for a user.
 
         Note:
@@ -105,7 +109,9 @@ class TokenBlacklistService:
         """
         # TODO: Implement user token tracking
         # For now, this is handled by individual token blacklisting
-        logger.warning(f"blacklist_all_user_tokens called for user_id={user_id}, but user token tracking not implemented")
+        logger.warning(
+            f"blacklist_all_user_tokens called for user_id={user_id}, but user token tracking not implemented"
+        )
         return 0
 
     async def get_blacklist_stats(self) -> dict:
@@ -120,7 +126,9 @@ class TokenBlacklistService:
 
         # Scan Redis keys (non-blocking)
         while True:
-            cursor, keys = await self.redis.scan(cursor=cursor, match=pattern, count=100)
+            cursor, keys = await self.redis.scan(
+                cursor=cursor, match=pattern, count=100
+            )
             count += len(keys)
 
             if cursor == 0:

@@ -8,7 +8,9 @@ from ..redis import get_redis
 from .token_blacklist import TokenBlacklistService
 
 
-async def get_token_blacklist_service(redis: Redis = Depends(get_redis)) -> TokenBlacklistService:
+async def get_token_blacklist_service(
+    redis: Redis = Depends(get_redis),
+) -> TokenBlacklistService:
     """FastAPI dependency for token blacklist service.
 
     Args:
@@ -17,4 +19,6 @@ async def get_token_blacklist_service(redis: Redis = Depends(get_redis)) -> Toke
     Returns:
         TokenBlacklistService instance
     """
-    return TokenBlacklistService(redis_client=redis, key_prefix=settings.redis.token_blacklist_prefix)
+    return TokenBlacklistService(
+        redis_client=redis, key_prefix=settings.redis.token_blacklist_prefix
+    )

@@ -42,7 +42,9 @@ async def count_all(session: AsyncSession, model: Type[T]) -> int:
     return result.scalar_one()
 
 
-async def exists_by_field(session: AsyncSession, model: Type[T], field_name: str, value: Any) -> bool:
+async def exists_by_field(
+    session: AsyncSession, model: Type[T], field_name: str, value: Any
+) -> bool:
     """Check if entity exists with given field value.
 
     Args:
@@ -58,7 +60,9 @@ async def exists_by_field(session: AsyncSession, model: Type[T], field_name: str
         exists = await exists_by_field(session, UserDB, "email", "test@example.com")
     """
     field = getattr(model, field_name)
-    result = await session.execute(select(func.count()).select_from(model).where(field == value))
+    result = await session.execute(
+        select(func.count()).select_from(model).where(field == value)
+    )
     count = result.scalar_one()
     return count > 0
 

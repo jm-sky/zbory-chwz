@@ -47,11 +47,18 @@ class ConvertEmptyStringsToNoneMiddleware:
 
     ALLOWED_METHODS = ("POST", "PUT", "PATCH")
 
-    def __init__(self, app: Callable[[dict[str, Any], Callable, Callable], Awaitable[None]]) -> None:
+    def __init__(
+        self, app: Callable[[dict[str, Any], Callable, Callable], Awaitable[None]]
+    ) -> None:
         """Initialize middleware with ASGI app."""
         self.app = app
 
-    async def __call__(self, scope: dict[str, Any], receive: Callable[[], Awaitable[dict[str, Any]]], send: Callable[[dict[str, Any]], Awaitable[None]]) -> None:
+    async def __call__(
+        self,
+        scope: dict[str, Any],
+        receive: Callable[[], Awaitable[dict[str, Any]]],
+        send: Callable[[dict[str, Any]], Awaitable[None]],
+    ) -> None:
         """
         Process ASGI request and convert empty strings to None.
 

@@ -18,7 +18,12 @@ logger = logging.getLogger(__name__)
 class WebAuthnChallengeStore:
     """Service for storing WebAuthn challenges in Redis."""
 
-    def __init__(self, redis_client: Redis, key_prefix: str = "webauthn:challenge:", default_ttl: int = 300):
+    def __init__(
+        self,
+        redis_client: Redis,
+        key_prefix: str = "webauthn:challenge:",
+        default_ttl: int = 300,
+    ):
         """Initialize challenge store.
 
         Args:
@@ -34,7 +39,14 @@ class WebAuthnChallengeStore:
         """Generate Redis key for challenge token."""
         return f"{self.key_prefix}{challenge_token}"
 
-    async def store_challenge(self, challenge_token: str, user_id: str, challenge: bytes, challenge_type: str = "registration", ttl: int | None = None) -> None:
+    async def store_challenge(
+        self,
+        challenge_token: str,
+        user_id: str,
+        challenge: bytes,
+        challenge_type: str = "registration",
+        ttl: int | None = None,
+    ) -> None:
         """Store WebAuthn challenge in Redis.
 
         Args:
@@ -59,7 +71,9 @@ class WebAuthnChallengeStore:
         }
 
         await self.redis.setex(key, ttl, json.dumps(data))
-        logger.info(f"Challenge stored: token={challenge_token[:8]}..., type={challenge_type}, ttl={ttl}s")
+        logger.info(
+            f"Challenge stored: token={challenge_token[:8]}..., type={challenge_type}, ttl={ttl}s"
+        )
 
     async def get_challenge(self, challenge_token: str) -> dict[str, Any] | None:
         """Get challenge data (without deleting).
@@ -80,7 +94,9 @@ class WebAuthnChallengeStore:
         result: dict[str, Any] = json.loads(data)
         return result
 
-    async def get_and_delete_challenge(self, challenge_token: str) -> dict[str, Any] | None:
+    async def get_and_delete_challenge(
+        self, challenge_token: str
+    ) -> dict[str, Any] | None:
         """Get challenge data and delete it (one-time use).
 
         Args:
@@ -133,7 +149,9 @@ class WebAuthnChallengeStore:
         count = 0
 
         while True:
-            cursor, keys = await self.redis.scan(cursor=cursor, match=pattern, count=100)
+            cursor, keys = await self.redis.scan(
+                cursor=cursor, match=pattern, count=100
+            )
             count += len(keys)
 
             if cursor == 0:

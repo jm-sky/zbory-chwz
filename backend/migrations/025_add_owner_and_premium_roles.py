@@ -79,7 +79,9 @@ async def main() -> None:
     """Run migration."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Add Owner and Premium roles migration")
+    parser = argparse.ArgumentParser(
+        description="Add Owner and Premium roles migration"
+    )
     parser.add_argument(
         "action",
         choices=["upgrade", "downgrade"],

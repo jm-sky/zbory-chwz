@@ -105,10 +105,15 @@ class AuditEmailAdapter(EmailAdapter):
                 extra_metadata=extra_metadata,
             )
 
-            logger.info(f"Created email audit log {audit_log.id} for {to} " f"(subject: {subject}, template: {template_name})")
+            logger.info(
+                f"Created email audit log {audit_log.id} for {to} "
+                f"(subject: {subject}, template: {template_name})"
+            )
 
         except Exception as e:
-            logger.error(f"Failed to create email audit log for {to}: {e}", exc_info=True)
+            logger.error(
+                f"Failed to create email audit log for {to}: {e}", exc_info=True
+            )
             # Continue with sending even if audit log fails
             # (don't let audit logging block email sending)
             audit_log = None
@@ -134,7 +139,10 @@ class AuditEmailAdapter(EmailAdapter):
                         error_message="Email adapter returned False (sending failed)",
                         error_code="SEND_FAILED",
                     )
-                    logger.warning(f"Email audit log {audit_log.id} marked as failed " f"(adapter returned False)")
+                    logger.warning(
+                        f"Email audit log {audit_log.id} marked as failed "
+                        f"(adapter returned False)"
+                    )
 
             return success
 
@@ -149,7 +157,10 @@ class AuditEmailAdapter(EmailAdapter):
                     error_message=error_message,
                     error_code=type(e).__name__,
                 )
-                logger.error(f"Email audit log {audit_log.id} marked as failed " f"with error: {error_message}")
+                logger.error(
+                    f"Email audit log {audit_log.id} marked as failed "
+                    f"with error: {error_message}"
+                )
 
             return False
 

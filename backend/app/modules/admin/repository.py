@@ -30,7 +30,9 @@ class AdminRepository:
         self.db = db
 
     # User operations
-    async def get_all_users(self, skip: int = 0, limit: int = 100) -> list[tuple[UserDB, UserDB | None]]:
+    async def get_all_users(
+        self, skip: int = 0, limit: int = 100
+    ) -> list[tuple[UserDB, UserDB | None]]:
         """Get all users with their auth data.
 
         Args:
@@ -40,12 +42,20 @@ class AdminRepository:
         Returns:
             List of tuples (UserDB, UserDB) - both refer to same user for consistency
         """
-        stmt = select(UserDB).where(UserDB.deleted_at.is_(None)).offset(skip).limit(limit).order_by(UserDB.created_at.desc())
+        stmt = (
+            select(UserDB)
+            .where(UserDB.deleted_at.is_(None))
+            .offset(skip)
+            .limit(limit)
+            .order_by(UserDB.created_at.desc())
+        )
         result = await self.db.execute(stmt)
         users = result.scalars().all()
 
         # Return tuple format for consistency with service expectations
-        users_with_auth: list[tuple[UserDB, UserDB | None]] = [(user, user) for user in users]
+        users_with_auth: list[tuple[UserDB, UserDB | None]] = [
+            (user, user) for user in users
+        ]
 
         return users_with_auth
 

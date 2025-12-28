@@ -21,7 +21,9 @@ async def _get_or_create_settings(
     db: AsyncSession,
     user_id: str,
 ) -> UserSettingsDB:
-    result = await db.execute(select(UserSettingsDB).where(UserSettingsDB.user_id == user_id))
+    result = await db.execute(
+        select(UserSettingsDB).where(UserSettingsDB.user_id == user_id)
+    )
     settings = result.scalars().first()
     if settings is None:
         settings = UserSettingsDB(user_id=user_id)
@@ -59,7 +61,14 @@ async def update_my_settings(
     db: AsyncSession = Depends(get_db),
 ) -> SettingsResponse:
     """Update preferences for the authenticated user."""
-    if payload.darkMode is None and payload.locale is None and payload.defaultContainersPublic is None and payload.profilePublic is None and payload.emailPublic is None and payload.imageProcessingMode is None:
+    if (
+        payload.darkMode is None
+        and payload.locale is None
+        and payload.defaultContainersPublic is None
+        and payload.profilePublic is None
+        and payload.emailPublic is None
+        and payload.imageProcessingMode is None
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one field must be provided.",

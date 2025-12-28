@@ -79,7 +79,10 @@ def init_sentry() -> None:
                     # Filter out OSError for truncated images
                     if exc_type_name == "OSError":
                         exc_value_str = str(value.get("value", "")).lower()
-                        if "truncated" in exc_value_str or "cannot identify" in exc_value_str:
+                        if (
+                            "truncated" in exc_value_str
+                            or "cannot identify" in exc_value_str
+                        ):
                             return None
 
             return event
@@ -103,7 +106,9 @@ def init_sentry() -> None:
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.warning("Sentry SDK not installed. Install with: pip install sentry-sdk[fastapi]")
+        logger.warning(
+            "Sentry SDK not installed. Install with: pip install sentry-sdk[fastapi]"
+        )
     except Exception as e:
         import logging
 
@@ -194,7 +199,9 @@ def register_exception_handlers(app: FastAPI) -> None:
     """
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
         """Handle validation errors."""
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -206,7 +213,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    async def general_exception_handler(
+        request: Request, exc: Exception
+    ) -> JSONResponse:
         """Handle unexpected errors."""
         import logging
 
@@ -223,10 +232,17 @@ def register_exception_handlers(app: FastAPI) -> None:
         from app.core.storage.exceptions import CorruptedImageError
 
         # These are expected business logic errors, not bugs
-        is_expected_auth_error = isinstance(exc, (ExpiredTokenError, InvalidTokenError, InvalidCredentialsError))
+        is_expected_auth_error = isinstance(
+            exc, (ExpiredTokenError, InvalidTokenError, InvalidCredentialsError)
+        )
 
         # Corrupted images are expected when users upload bad files
-        is_expected_image_error = isinstance(exc, CorruptedImageError) or (isinstance(exc, OSError) and ("truncated" in str(exc).lower() or "cannot identify" in str(exc).lower()))
+        is_expected_image_error = isinstance(exc, CorruptedImageError) or (
+            isinstance(exc, OSError)
+            and (
+                "truncated" in str(exc).lower() or "cannot identify" in str(exc).lower()
+            )
+        )
 
         if not is_expected_auth_error and not is_expected_image_error:
             logger.exception("Unhandled exception occurred")
@@ -239,7 +255,11 @@ def register_exception_handlers(app: FastAPI) -> None:
 
         # Sentry will automatically capture exceptions, but we can add context
         # Skip Sentry for expected errors (they're filtered in before_send, but avoid unnecessary processing)
-        if settings.sentry.enabled and not is_expected_auth_error and not is_expected_image_error:
+        if (
+            settings.sentry.enabled
+            and not is_expected_auth_error
+            and not is_expected_image_error
+        ):
             try:
                 import sentry_sdk
 

@@ -52,7 +52,9 @@ class LogService:
         """
         traceback_str = None
         if exception:
-            traceback_str = "".join(tb.format_exception(type(exception), exception, exception.__traceback__))
+            traceback_str = "".join(
+                tb.format_exception(type(exception), exception, exception.__traceback__)
+            )
 
         return await self.log_repository.create_log(
             level=LogLevel.ERROR,
@@ -129,7 +131,9 @@ class LogService:
             extra_data=extra_data,
         )
 
-    async def get_recent_errors(self, limit: int = 50, user_id: str | None = None) -> list[Log]:
+    async def get_recent_errors(
+        self, limit: int = 50, user_id: str | None = None
+    ) -> list[Log]:
         """Get recent error logs.
 
         Args:
@@ -139,7 +143,9 @@ class LogService:
         Returns:
             List of error log entries
         """
-        return await self.log_repository.get_error_logs(skip=0, limit=limit, user_id=user_id)
+        return await self.log_repository.get_error_logs(
+            skip=0, limit=limit, user_id=user_id
+        )
 
     async def get_logs_by_request(self, request_id: str) -> list[Log]:
         """Get all logs for a specific request.
@@ -150,7 +156,9 @@ class LogService:
         Returns:
             List of log entries for the request
         """
-        return await self.log_repository.get_logs(request_id=request_id, limit=1000)  # Reasonable limit for single request
+        return await self.log_repository.get_logs(
+            request_id=request_id, limit=1000
+        )  # Reasonable limit for single request
 
     async def cleanup_old_logs(self, days: int = 30) -> int:
         """Delete logs older than specified number of days.

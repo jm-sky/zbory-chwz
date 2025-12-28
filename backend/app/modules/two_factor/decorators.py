@@ -29,7 +29,11 @@ def extract_user_from_token(request: Request) -> str | None:
     """
     try:
         if hasattr(request, "_body") and request._body:
-            body = request._body.decode() if isinstance(request._body, bytes) else request._body
+            body = (
+                request._body.decode()
+                if isinstance(request._body, bytes)
+                else request._body
+            )
             data = json.loads(body)
             token = data.get("twoFactorToken") or data.get("setupToken")
             if token:
@@ -50,11 +54,15 @@ def extract_user_from_token(request: Request) -> str | None:
         logger.debug(f"Could not extract user from token: {type(e).__name__}")
     except Exception as e:
         # Unexpected errors
-        logger.warning(f"Unexpected error extracting user from token: {type(e).__name__}: {e}")
+        logger.warning(
+            f"Unexpected error extracting user from token: {type(e).__name__}: {e}"
+        )
     return None
 
 
-def require_2fa_rate_limit(max_attempts: int = 5, window_minutes: int = 15) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def require_2fa_rate_limit(
+    max_attempts: int = 5, window_minutes: int = 15
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Per-user 2FA verification rate limiting decorator.
 
@@ -108,7 +116,9 @@ def require_2fa_rate_limit(max_attempts: int = 5, window_minutes: int = 15) -> C
 
             # Clean old attempts outside window
             cutoff = now - timedelta(minutes=window_minutes)
-            _verification_attempts[user_id] = [t for t in _verification_attempts[user_id] if t > cutoff]
+            _verification_attempts[user_id] = [
+                t for t in _verification_attempts[user_id] if t > cutoff
+            ]
 
             # Execute function
             try:

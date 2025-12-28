@@ -20,7 +20,9 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def log_errors(message: str | None = None, reraise: bool = True, level: LogLevel = LogLevel.ERROR) -> Callable[[Callable[P, T]], Callable[P, T]]:
+def log_errors(
+    message: str | None = None, reraise: bool = True, level: LogLevel = LogLevel.ERROR
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """Decorator to automatically log exceptions to database.
 
     This decorator catches exceptions in the decorated function and logs them

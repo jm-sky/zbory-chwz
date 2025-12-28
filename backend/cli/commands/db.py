@@ -476,6 +476,7 @@ def seed_database(
     This command populates the database with predefined seed data.
     Currently supports:
     - catalogue: Catalogue items (global gear catalogue)
+    - congregations: Congregations/churches with addresses and service times
     """
 
     async def _seed() -> None:
@@ -485,9 +486,11 @@ def seed_database(
         async for db in get_db():
             if seeder == "catalogue":
                 await _seed_catalogue(db)
+            elif seeder == "congregations":
+                await _seed_congregations(db)
             else:
                 console.print(f"[red]Unknown seeder: {seeder}[/red]")
-                console.print("[yellow]Available seeders: catalogue[/yellow]")
+                console.print("[yellow]Available seeders: catalogue, congregations[/yellow]")
                 raise typer.Exit(1)
 
             break  # Exit after first db session
@@ -647,6 +650,118 @@ async def _seed_catalogue(db: "AsyncSession") -> None:
     console.print(f"[bold green]✓ Created {created_count}, updated {updated_count} catalogue items with {images_count} new images[/bold green]")
 
 
+async def _seed_congregations(db: "AsyncSession") -> None:
+    """Seed congregations with addresses, service times, and contact persons.
+
+    Note: Address, service times, and contact person data structures are prepared
+    but will be fully implemented when those modules are created.
+    """
+    from app.common.id_utils import generate_id
+    from app.modules.auth.db_models import UserDB
+    from app.modules.auth.repositories import UserRepository
+    from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
+    from app.seeders import CONGREGATIONS
+    from sqlalchemy import select
+
+    console.print("[bold cyan]Seeding congregations...[/bold cyan]")
+
+    user_repo = UserRepository(db)
+
+    created_count = 0
+    updated_count = 0
+
+    for cong_data in CONGREGATIONS:
+        name = cong_data["name"]
+        description = cong_data.get("description", "")
+        owner_email = cong_data["owner_email"]
+        owner_name = cong_data["owner_name"]
+        website = cong_data.get("website")
+
+        # Build description with website if provided
+        full_description = description
+        if website:
+            if full_description:
+                full_description += f" | Website: {website}"
+            else:
+                full_description = f"Website: {website}"
+
+        # Add note about future data
+        if full_description:
+            full_description += " | Note: Address, service times, and contact person data will be added when those modules are implemented"
+        else:
+            full_description = "Note: Address, service times, and contact person data will be added when those modules are implemented"
+
+        # Find or create owner user
+        owner = await user_repo.get_user_by_email(owner_email)
+        if owner is None:
+            console.print(f"[yellow]Creating user for owner: {owner_email}[/yellow]")
+            # Create user with a temporary password (should be changed)
+            # Note: This creates an unverified user - in production, use proper user creation flow
+            owner_id = generate_id()
+            owner = UserDB(
+                id=owner_id,
+                email=owner_email,
+                name=owner_name,
+                is_active=True,
+                is_email_verified=False,  # User should verify email
+            )
+            db.add(owner)
+            await db.commit()
+            await db.refresh(owner)
+            console.print(f"[green]  Created user: {owner_name} ({owner_email})[/green]")
+        else:
+            console.print(f"[cyan]  Using existing user: {owner_name} ({owner_email})[/cyan]")
+
+        # Check if tenant already exists by name
+        result = await db.execute(select(TenantDB).where(TenantDB.name == name))
+        existing_tenant = result.scalar_one_or_none()
+
+        if existing_tenant:
+            # Update existing tenant
+            existing_tenant.description = full_description
+            existing_tenant.owner_id = owner.id
+            updated_count += 1
+            console.print(f"[yellow]  Updated tenant: {name}[/yellow]")
+        else:
+            # Create new tenant
+            tenant_id = generate_id()
+            tenant = TenantDB(
+                id=tenant_id,
+                name=name,
+                description=full_description,
+                owner_id=owner.id,
+            )
+            db.add(tenant)
+
+            # Create owner membership
+            membership = TenantMembershipDB(
+                tenant_id=tenant_id,
+                user_id=owner.id,
+                role="owner",
+            )
+            db.add(membership)
+
+            created_count += 1
+            console.print(f"[green]  Created tenant: {name} (ID: {tenant_id})[/green]")
+
+            # Log address and service times data (for future implementation)
+            address_data = cong_data.get("address")
+            service_times = cong_data.get("service_times", [])
+            contact_person = cong_data.get("contact_person")
+
+            if address_data:
+                console.print(f"[cyan]    Address data (to be implemented): {address_data['street']}, {address_data['city']}[/cyan]")
+            if service_times:
+                times_str = ", ".join([f"{st['day']} {st['time']}" for st in service_times])
+                console.print(f"[cyan]    Service times (to be implemented): {times_str}[/cyan]")
+            if contact_person:
+                console.print(f"[cyan]    Contact person (to be implemented): {contact_person['name']} ({contact_person['title']})[/cyan]")
+
+    await db.commit()
+    console.print(f"[bold green]✓ Created {created_count}, updated {updated_count} congregations[/bold green]")
+    console.print("[yellow]Note: Address, service times, and contact person data structures are prepared but not yet stored in database[/yellow]")
+
+
 @db_app.command("seed-remove")
 def remove_seeder(
     seeder: str = typer.Argument(..., help="Seeder name to remove (e.g., 'catalogue')"),
@@ -656,6 +771,7 @@ def remove_seeder(
     This command removes seeded data from the database.
     Currently supports:
     - catalogue: Remove all catalogue items
+    - congregations: Remove seeded congregations (WARNING: Also removes associated users if created by seeder)
     """
 
     async def _remove() -> None:
@@ -665,9 +781,11 @@ def remove_seeder(
         async for db in get_db():
             if seeder == "catalogue":
                 await _remove_catalogue(db)
+            elif seeder == "congregations":
+                await _remove_congregations(db)
             else:
                 console.print(f"[red]Unknown seeder: {seeder}[/red]")
-                console.print("[yellow]Available seeders: catalogue[/yellow]")
+                console.print("[yellow]Available seeders: catalogue, congregations[/yellow]")
                 raise typer.Exit(1)
 
             break  # Exit after first db session
@@ -705,3 +823,40 @@ async def _remove_catalogue(db: "AsyncSession") -> None:
     await db.commit()
 
     console.print(f"[bold green]✓ Removed {items_count} catalogue items and {images_count} images[/bold green]")
+
+
+async def _remove_congregations(db: "AsyncSession") -> None:
+    """Remove seeded congregations and their memberships.
+
+    Note: This does NOT delete users that were created by the seeder.
+    Users must be deleted manually if desired.
+    """
+    from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
+    from app.seeders import CONGREGATIONS
+    from sqlalchemy import delete, select
+
+    # Get list of seeded congregation names
+    seeded_names = [cong["name"] for cong in CONGREGATIONS]
+
+    # Find tenants with matching names
+    result = await db.execute(select(TenantDB).where(TenantDB.name.in_(seeded_names)))
+    tenants = result.scalars().all()
+    tenant_ids = [tenant.id for tenant in tenants]
+
+    if not tenant_ids:
+        console.print("[yellow]No seeded congregations found[/yellow]")
+        return
+
+    # Count memberships
+    result = await db.execute(select(TenantMembershipDB).where(TenantMembershipDB.tenant_id.in_(tenant_ids)))
+    memberships_count = len(result.scalars().all())
+
+    console.print(f"[yellow]Deleting {len(tenant_ids)} congregations and {memberships_count} memberships...[/yellow]")
+
+    # Delete memberships first (CASCADE should handle this, but let's be explicit)
+    await db.execute(delete(TenantMembershipDB).where(TenantMembershipDB.tenant_id.in_(tenant_ids)))
+    await db.execute(delete(TenantDB).where(TenantDB.id.in_(tenant_ids)))
+    await db.commit()
+
+    console.print(f"[bold green]✓ Removed {len(tenant_ids)} congregations and {memberships_count} memberships[/bold green]")
+    console.print("[yellow]Note: Users created by the seeder were NOT deleted. Delete them manually if desired.[/yellow]")

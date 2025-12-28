@@ -30,7 +30,9 @@ class TwoFactorService:
     services while providing a unified API for 2FA operations.
     """
 
-    def __init__(self, repository: TwoFactorRepositoryInterface, challenge_store: Any = None):
+    def __init__(
+        self, repository: TwoFactorRepositoryInterface, challenge_store: Any = None
+    ):
         """Initialize with repository and create service dependencies.
 
         Args:
@@ -52,7 +54,9 @@ class TwoFactorService:
             User settings entity
         """
         db = self.repository.db
-        result = await db.execute(select(UserSettingsDB).where(UserSettingsDB.user_id == user_id))
+        result = await db.execute(
+            select(UserSettingsDB).where(UserSettingsDB.user_id == user_id)
+        )
         settings = result.scalars().first()
         if settings is None:
             settings = UserSettingsDB(user_id=user_id)
@@ -85,7 +89,9 @@ class TwoFactorService:
         user_repository: Any = None,
     ) -> dict[str, Any]:
         """Regenerate backup codes. Delegates to TotpService."""
-        return await self.totp.regenerate_backup_codes(user_id, password, totp_code, user_repository)
+        return await self.totp.regenerate_backup_codes(
+            user_id, password, totp_code, user_repository
+        )
 
     async def disable_totp(
         self,
@@ -97,7 +103,9 @@ class TwoFactorService:
         """Disable TOTP. Delegates to TotpService."""
         return await self.totp.disable(user_id, password, backup_code, user_repository)
 
-    async def verify_totp_login(self, two_factor_token: str, code: str) -> dict[str, Any]:
+    async def verify_totp_login(
+        self, two_factor_token: str, code: str
+    ) -> dict[str, Any]:
         """Verify TOTP code during login and return JWT tokens.
 
         This method combines TOTP verification with token generation.
@@ -142,7 +150,9 @@ class TwoFactorService:
         name: str | None = None,
     ) -> dict[str, Any]:
         """Initiate passkey registration. Delegates to WebAuthnService."""
-        return await self.webauthn.initiate_registration(user_id, user_email, user_name, name)
+        return await self.webauthn.initiate_registration(
+            user_id, user_email, user_name, name
+        )
 
     async def complete_passkey_registration(
         self,
@@ -153,7 +163,9 @@ class TwoFactorService:
         origin: str | None = None,
     ) -> dict[str, Any]:
         """Complete passkey registration. Delegates to WebAuthnService."""
-        return await self.webauthn.complete_registration(registration_token, credential_json, name, user_agent, origin)
+        return await self.webauthn.complete_registration(
+            registration_token, credential_json, name, user_agent, origin
+        )
 
     async def get_webauthn_status(self, user_id: str) -> dict[str, Any]:
         """Get WebAuthn status. Delegates to WebAuthnService."""
@@ -174,7 +186,9 @@ class TwoFactorService:
         challenge_data: dict | None = None,
     ) -> dict[str, Any]:
         """Complete passkey authentication. Delegates to WebAuthnService."""
-        return await self.webauthn.complete_authentication(challenge_token, credential_json, challenge_data)
+        return await self.webauthn.complete_authentication(
+            challenge_token, credential_json, challenge_data
+        )
 
     # ==================================================================
     # Combined 2FA Methods - use both services
@@ -191,7 +205,12 @@ class TwoFactorService:
         webauthn_status = await self.webauthn.get_status(user_id)
         has_passkeys = bool(webauthn_status.get("enabled", False))
 
-        logger.info(f"2FA check for user {user_id}: " f"TOTP enabled={has_totp}, " f"Passkeys enabled={has_passkeys}, " f"Has 2FA={has_totp or has_passkeys}")
+        logger.info(
+            f"2FA check for user {user_id}: "
+            f"TOTP enabled={has_totp}, "
+            f"Passkeys enabled={has_passkeys}, "
+            f"Has 2FA={has_totp or has_passkeys}"
+        )
 
         return has_totp or has_passkeys
 

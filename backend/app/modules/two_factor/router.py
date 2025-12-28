@@ -34,7 +34,9 @@ from .service import TwoFactorService
 router = APIRouter(prefix="/two-factor", tags=["Two-Factor Authentication"])
 
 
-async def get_service(repo: Any = Depends(get_two_factor_repository)) -> TwoFactorService:
+async def get_service(
+    repo: Any = Depends(get_two_factor_repository),
+) -> TwoFactorService:
     """Get TwoFactorService with Redis challenge store."""
     challenge_store = None
     try:
@@ -53,7 +55,9 @@ async def get_service(repo: Any = Depends(get_two_factor_repository)) -> TwoFact
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.warning(f"Failed to initialize challenge store: {e}. WebAuthn will work without server-side challenge storage (INSECURE)")
+        logger.warning(
+            f"Failed to initialize challenge store: {e}. WebAuthn will work without server-side challenge storage (INSECURE)"
+        )
 
     return TwoFactorService(repository=repo, challenge_store=challenge_store)
 
@@ -66,7 +70,9 @@ async def initiate_totp_setup(
     service: TwoFactorService = Depends(get_service),
 ) -> TotpInitiateResponse:
     _ = request  # required by slowapi rate limiting
-    data = await service.initiate_totp_setup(user_id=current_user.id, email=current_user.email)
+    data = await service.initiate_totp_setup(
+        user_id=current_user.id, email=current_user.email
+    )
     return TotpInitiateResponse(**data) if isinstance(data, dict) else data
 
 
@@ -80,7 +86,9 @@ async def verify_totp_setup(
 ) -> VerifyTotpSetupResponse:
     _ = request  # required by slowapi rate limiting
     try:
-        result = await service.verify_totp_setup(setup_token=body.setupToken, code=body.code)
+        result = await service.verify_totp_setup(
+            setup_token=body.setupToken, code=body.code
+        )
         return VerifyTotpSetupResponse(**result)
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
@@ -95,7 +103,11 @@ async def totp_status(
 ) -> TotpStatusResponse:
     _ = request  # required by slowapi rate limiting
     status_data = await service.get_totp_status(user_id=current_user.id)
-    return TotpStatusResponse(**status_data) if isinstance(status_data, dict) else status_data
+    return (
+        TotpStatusResponse(**status_data)
+        if isinstance(status_data, dict)
+        else status_data
+    )
 
 
 @router.post("/totp/regenerate-backup-codes", response_model=BackupCodesResponse)
@@ -179,7 +191,9 @@ async def verify_totp_login(
 
 
 # WebAuthn/Passkey endpoints
-@router.post("/webauthn/register/initiate", response_model=PasskeyRegistrationInitiateResponse)
+@router.post(
+    "/webauthn/register/initiate", response_model=PasskeyRegistrationInitiateResponse
+)
 @rate_limit("5/minute")
 async def initiate_passkey_registration(
     body: InitiatePasskeyRegistrationRequest,
@@ -195,7 +209,11 @@ async def initiate_passkey_registration(
         user_name=current_user.name,
         name=body.name,
     )
-    return PasskeyRegistrationInitiateResponse(**result) if isinstance(result, dict) else result
+    return (
+        PasskeyRegistrationInitiateResponse(**result)
+        if isinstance(result, dict)
+        else result
+    )
 
 
 @router.post("/webauthn/register/complete", response_model=PasskeyResponse)
@@ -273,7 +291,11 @@ async def webauthn_status(
     _ = request  # required by slowapi rate limiting
     """Get WebAuthn/Passkey status for the current user."""
     status_data = await service.get_webauthn_status(user_id=current_user.id)
-    return WebAuthnStatusResponse(**status_data) if isinstance(status_data, dict) else status_data
+    return (
+        WebAuthnStatusResponse(**status_data)
+        if isinstance(status_data, dict)
+        else status_data
+    )
 
 
 @router.get("/status", response_model=TwoFactorStatusResponse)
@@ -286,7 +308,11 @@ async def two_factor_status(
     _ = request  # required by slowapi rate limiting
     """Get combined 2FA status (TOTP + WebAuthn) for the current user."""
     status_data = await service.get_two_factor_status(user_id=current_user.id)
-    return TwoFactorStatusResponse(**status_data) if isinstance(status_data, dict) else status_data
+    return (
+        TwoFactorStatusResponse(**status_data)
+        if isinstance(status_data, dict)
+        else status_data
+    )
 
 
 # Additional WebAuthn endpoints
@@ -358,7 +384,9 @@ async def update_preferred_method(
     try:
         method = body.preferredMethod
         if method is not None:
-            await service.update_preferred_method(user_id=current_user.id, method=method)
+            await service.update_preferred_method(
+                user_id=current_user.id, method=method
+            )
             return {"message": f"Preferred 2FA method updated to {method}"}
         else:
             # Clear preference (set to None)

@@ -9,7 +9,9 @@ from app.core.redis import get_redis
 from .challenge_store import WebAuthnChallengeStore
 
 
-async def get_webauthn_challenge_store(redis: Redis = Depends(get_redis)) -> WebAuthnChallengeStore:
+async def get_webauthn_challenge_store(
+    redis: Redis = Depends(get_redis),
+) -> WebAuthnChallengeStore:
     """FastAPI dependency for WebAuthn challenge store.
 
     Args:

@@ -38,7 +38,9 @@ def _load_translations(locale: SupportedLocale) -> dict[str, Any]:
             _translations_cache[locale] = translations
             return translations
     except FileNotFoundError:
-        logger.warning(f"Translations file not found for locale {locale}, using default")
+        logger.warning(
+            f"Translations file not found for locale {locale}, using default"
+        )
         if locale != DEFAULT_LOCALE:
             return _load_translations(DEFAULT_LOCALE)
         return {}
@@ -125,7 +127,9 @@ async def get_user_locale(
         from sqlalchemy import select
         from app.modules.settings.db_models import UserSettingsDB
 
-        result = await db.execute(select(UserSettingsDB).where(UserSettingsDB.user_id == user_id))
+        result = await db.execute(
+            select(UserSettingsDB).where(UserSettingsDB.user_id == user_id)
+        )
         settings = result.scalars().first()
 
         if settings and settings.locale:

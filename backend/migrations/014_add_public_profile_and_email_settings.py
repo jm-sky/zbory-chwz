@@ -64,7 +64,9 @@ async def upgrade() -> None:
         settings_exist = await table_exists(conn, "user_settings")
         if settings_exist:
             # Add is_public_profile
-            is_public_profile_exists = await column_exists(conn, "user_settings", "is_public_profile")
+            is_public_profile_exists = await column_exists(
+                conn, "user_settings", "is_public_profile"
+            )
             if not is_public_profile_exists:
                 print("Adding is_public_profile column to user_settings...")
                 await conn.execute(
@@ -80,7 +82,9 @@ async def upgrade() -> None:
                 print("✓ is_public_profile column already exists in user_settings")
 
             # Add is_public_email
-            is_public_email_exists = await column_exists(conn, "user_settings", "is_public_email")
+            is_public_email_exists = await column_exists(
+                conn, "user_settings", "is_public_email"
+            )
             if not is_public_email_exists:
                 print("Adding is_public_email column to user_settings...")
                 await conn.execute(
@@ -109,7 +113,9 @@ async def downgrade() -> None:
         settings_exist = await table_exists(conn, "user_settings")
         if settings_exist:
             # Remove is_public_profile
-            is_public_profile_exists = await column_exists(conn, "user_settings", "is_public_profile")
+            is_public_profile_exists = await column_exists(
+                conn, "user_settings", "is_public_profile"
+            )
             if is_public_profile_exists:
                 await conn.execute(
                     text(
@@ -124,7 +130,9 @@ async def downgrade() -> None:
                 print("✓ is_public_profile column does not exist in user_settings")
 
             # Remove is_public_email
-            is_public_email_exists = await column_exists(conn, "user_settings", "is_public_email")
+            is_public_email_exists = await column_exists(
+                conn, "user_settings", "is_public_email"
+            )
             if is_public_email_exists:
                 await conn.execute(
                     text(
@@ -145,7 +153,9 @@ async def main() -> None:
     """Run migration."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Add public profile and email settings migration")
+    parser = argparse.ArgumentParser(
+        description="Add public profile and email settings migration"
+    )
     parser.add_argument(
         "action",
         choices=["upgrade", "downgrade"],

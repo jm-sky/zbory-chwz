@@ -40,7 +40,9 @@ def get_client_ip(request: Request) -> str:
 
 # Create limiter instance at module level
 class _NoOpLimiter:
-    def limit(self, *_: Any, **__: Any) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def limit(
+        self, *_: Any, **__: Any
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             return func
 
@@ -101,7 +103,9 @@ def rate_limit(limit_string: str) -> Callable[[Callable[..., Any]], Callable[...
 
 
 # Custom rate limit exceeded handler (optional, for custom responses)
-async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+async def custom_rate_limit_handler(
+    request: Request, exc: RateLimitExceeded
+) -> JSONResponse:
     """
     Custom handler for rate limit exceeded errors.
 

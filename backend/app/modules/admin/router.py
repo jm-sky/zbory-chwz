@@ -70,7 +70,9 @@ async def get_user_by_id(
     """Get user by ID (admin only)."""
     user = await service.get_user_by_id(user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
+        )
     return user
 
 
@@ -89,7 +91,9 @@ async def update_user(
     """Update user (admin or owner only)."""
     user = await service.update_user(user_id, user_data, current_user)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
+        )
     return user
 
 
@@ -107,4 +111,6 @@ async def delete_user(
     """Delete user (admin or owner only)."""
     success = await service.delete_user(user_id, current_user)
     if not success:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
+        )

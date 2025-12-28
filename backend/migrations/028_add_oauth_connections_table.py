@@ -112,7 +112,9 @@ async def downgrade() -> None:
 async def main() -> None:
     """Run migration based on command line argument."""
     if len(sys.argv) < 2:
-        print("Usage: python migrations/028_add_oauth_connections_table.py [upgrade|downgrade]")
+        print(
+            "Usage: python migrations/028_add_oauth_connections_table.py [upgrade|downgrade]"
+        )
         sys.exit(1)
 
     command = sys.argv[1].lower()
@@ -122,7 +124,9 @@ async def main() -> None:
         await downgrade()
     else:
         print(f"Unknown command: {command}")
-        print("Usage: python migrations/028_add_oauth_connections_table.py [upgrade|downgrade]")
+        print(
+            "Usage: python migrations/028_add_oauth_connections_table.py [upgrade|downgrade]"
+        )
         sys.exit(1)
 
 

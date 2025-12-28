@@ -83,7 +83,9 @@ async def main() -> None:
     """Run migration."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Add preferred 2FA method to user settings migration")
+    parser = argparse.ArgumentParser(
+        description="Add preferred 2FA method to user settings migration"
+    )
     parser.add_argument(
         "action",
         choices=["upgrade", "downgrade"],

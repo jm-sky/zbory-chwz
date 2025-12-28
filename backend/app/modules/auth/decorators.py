@@ -24,7 +24,9 @@ def require_auth(func: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @wraps(func)
-    async def wrapper(*args: Any, current_user: User = Depends(get_current_user), **kwargs: Any) -> Any:
+    async def wrapper(
+        *args: Any, current_user: User = Depends(get_current_user), **kwargs: Any
+    ) -> Any:
         return await func(*args, current_user=current_user, **kwargs)
 
     return wrapper
@@ -111,14 +113,18 @@ def recaptcha_protected(
             # Verify reCAPTCHA token (only if enabled and token is provided)
             from app.core.config import settings
 
-            logger.info(f"reCAPTCHA decorator: enabled={settings.recaptcha.enabled}, action={action}")
+            logger.info(
+                f"reCAPTCHA decorator: enabled={settings.recaptcha.enabled}, action={action}"
+            )
 
             if settings.recaptcha.enabled:
                 token = None
                 if request_data and hasattr(request_data, "recaptchaToken"):
                     token = request_data.recaptchaToken
 
-                logger.debug(f"reCAPTCHA decorator: request_data found={bool(request_data)}, token present={bool(token)}")
+                logger.debug(
+                    f"reCAPTCHA decorator: request_data found={bool(request_data)}, token present={bool(token)}"
+                )
 
                 # If reCAPTCHA is enabled, token is required
                 if not token:
@@ -133,13 +139,17 @@ def recaptcha_protected(
                     await verify_recaptcha(token, action=action)
                     logger.info(f"reCAPTCHA verification passed for action: {action}")
                 except RecaptchaError as e:
-                    logger.error(f"reCAPTCHA verification failed for action {action}: {str(e)}")
+                    logger.error(
+                        f"reCAPTCHA verification failed for action {action}: {str(e)}"
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"reCAPTCHA verification failed: {str(e)}",
                     )
             else:
-                logger.debug(f"reCAPTCHA disabled, skipping verification for action: {action}")
+                logger.debug(
+                    f"reCAPTCHA disabled, skipping verification for action: {action}"
+                )
 
             return await func(*args, **kwargs)
 

@@ -133,11 +133,15 @@ def create_password_reset_token(data: dict[str, str]) -> str:
 def create_email_verification_token(data: dict[str, str]) -> str:
     """Create a JWT token for email verification."""
     now = datetime.now(UTC)
-    expire = now + timedelta(hours=settings.security.email_verification_token_expires_hours)
+    expire = now + timedelta(
+        hours=settings.security.email_verification_token_expires_hours
+    )
     payload = {
         **data,
         "exp": int(expire.timestamp()),
         "type": "email_verification",
         "iat": int(now.timestamp()),
     }
-    return jwt.encode(payload, settings.security.secret_key, algorithm=settings.security.jwt_algorithm)
+    return jwt.encode(
+        payload, settings.security.secret_key, algorithm=settings.security.jwt_algorithm
+    )

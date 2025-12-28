@@ -19,12 +19,16 @@ from app.core.config import settings
 
 def _get_rp_id() -> str:
     """Get WebAuthn Relying Party ID from settings."""
-    return getattr(getattr(settings, "two_factor", object()), "webauthn_rp_id", "localhost")
+    return getattr(
+        getattr(settings, "two_factor", object()), "webauthn_rp_id", "localhost"
+    )
 
 
 def _get_rp_name() -> str:
     """Get WebAuthn Relying Party name from settings."""
-    return getattr(getattr(settings, "two_factor", object()), "webauthn_rp_name", "FastAPI App")
+    return getattr(
+        getattr(settings, "two_factor", object()), "webauthn_rp_name", "FastAPI App"
+    )
 
 
 def _get_timeout() -> int:
@@ -32,7 +36,9 @@ def _get_timeout() -> int:
     return getattr(getattr(settings, "two_factor", object()), "webauthn_timeout", 60000)
 
 
-def create_registration_options(user_id: str, user_email: str, user_name: str) -> tuple[str, str]:
+def create_registration_options(
+    user_id: str, user_email: str, user_name: str
+) -> tuple[str, str]:
     """
     Create WebAuthn registration options.
 

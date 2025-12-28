@@ -34,7 +34,9 @@ def get_log_service(
     summary="Create new log entry",
     description="Manually create a new log entry",
 )
-async def create_log(log_data: LogCreateRequest, service: Annotated[LogService, Depends(get_log_service)]) -> LogResponse:
+async def create_log(
+    log_data: LogCreateRequest, service: Annotated[LogService, Depends(get_log_service)]
+) -> LogResponse:
     """Create a new log entry."""
     log = await service.log_repository.create_log(
         level=log_data.level,
@@ -63,9 +65,15 @@ async def list_logs(
     user_id: str | None = Query(default=None, description="Filter by user ID"),
     request_id: str | None = Query(default=None, description="Filter by request ID"),
     module: str | None = Query(default=None, description="Filter by module name"),
-    start_date: datetime | None = Query(default=None, description="Filter logs after this date"),
-    end_date: datetime | None = Query(default=None, description="Filter logs before this date"),
-    search: str | None = Query(default=None, description="Search in message, module, and function"),
+    start_date: datetime | None = Query(
+        default=None, description="Filter logs after this date"
+    ),
+    end_date: datetime | None = Query(
+        default=None, description="Filter logs before this date"
+    ),
+    search: str | None = Query(
+        default=None, description="Search in message, module, and function"
+    ),
 ) -> LogListResponse:
     """Get list of logs with filters and search.
 
@@ -113,7 +121,9 @@ async def get_error_logs(
     user_id: str | None = Query(default=None, description="Filter by user ID"),
 ) -> LogListResponse:
     """Get error and critical logs."""
-    logs = await service.log_repository.get_error_logs(skip=skip, limit=limit, user_id=user_id)
+    logs = await service.log_repository.get_error_logs(
+        skip=skip, limit=limit, user_id=user_id
+    )
 
     # Count only error logs
     total = await service.log_repository.count_logs(level=LogLevel.ERROR)
@@ -134,7 +144,9 @@ async def get_error_logs(
     summary="Get logs by request ID",
     description="Get all logs associated with a specific request",
 )
-async def get_logs_by_request(request_id: str, service: Annotated[LogService, Depends(get_log_service)]) -> list[LogResponse]:
+async def get_logs_by_request(
+    request_id: str, service: Annotated[LogService, Depends(get_log_service)]
+) -> list[LogResponse]:
     """Get all logs for a specific request."""
     logs = await service.get_logs_by_request(request_id)
     return [LogResponse(**log.to_response()) for log in logs]
@@ -146,11 +158,15 @@ async def get_logs_by_request(request_id: str, service: Annotated[LogService, De
     summary="Get log by ID",
     description="Get a specific log entry by its ID",
 )
-async def get_log(log_id: str, repo: Annotated[LogRepository, Depends(get_log_repository)]) -> LogResponse:
+async def get_log(
+    log_id: str, repo: Annotated[LogRepository, Depends(get_log_repository)]
+) -> LogResponse:
     """Get log by ID."""
     log = await repo.get_log_by_id(log_id)
     if not log:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Log {log_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Log {log_id} not found"
+        )
     return LogResponse(**log.to_response())
 
 
@@ -162,8 +178,12 @@ async def get_log(log_id: str, repo: Annotated[LogRepository, Depends(get_log_re
 )
 async def cleanup_logs(
     service: Annotated[LogService, Depends(get_log_service)],
-    days: int = Query(default=30, ge=1, le=365, description="Delete logs older than N days"),
+    days: int = Query(
+        default=30, ge=1, le=365, description="Delete logs older than N days"
+    ),
 ) -> MessageResponse:
     """Delete old logs."""
     deleted_count = await service.cleanup_old_logs(days=days)
-    return MessageResponse(message=f"Successfully deleted {deleted_count} logs older than {days} days")
+    return MessageResponse(
+        message=f"Successfully deleted {deleted_count} logs older than {days} days"
+    )

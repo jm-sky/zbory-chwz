@@ -25,7 +25,9 @@ def file_adapter(temp_dir: Path) -> FileEmailAdapter:
 
 
 @pytest.mark.asyncio
-async def test_send_email_creates_files(file_adapter: FileEmailAdapter, temp_dir: Path) -> None:
+async def test_send_email_creates_files(
+    file_adapter: FileEmailAdapter, temp_dir: Path
+) -> None:
     """Test that send_email creates HTML and JSON metadata files."""
     result = await file_adapter.send_email(
         to="test@example.com",
@@ -64,7 +66,9 @@ async def test_send_email_creates_files(file_adapter: FileEmailAdapter, temp_dir
 
 
 @pytest.mark.asyncio
-async def test_send_email_without_text_body(file_adapter: FileEmailAdapter, temp_dir: Path) -> None:
+async def test_send_email_without_text_body(
+    file_adapter: FileEmailAdapter, temp_dir: Path
+) -> None:
     """Test send_email works without text_body."""
     result = await file_adapter.send_email(
         to="test@example.com",
@@ -84,7 +88,9 @@ async def test_send_email_without_text_body(file_adapter: FileEmailAdapter, temp
 
 
 @pytest.mark.asyncio
-async def test_send_email_without_from_email(file_adapter: FileEmailAdapter, temp_dir: Path) -> None:
+async def test_send_email_without_from_email(
+    file_adapter: FileEmailAdapter, temp_dir: Path
+) -> None:
     """Test send_email works without from_email."""
     result = await file_adapter.send_email(
         to="test@example.com",
@@ -104,7 +110,9 @@ async def test_send_email_without_from_email(file_adapter: FileEmailAdapter, tem
 
 
 @pytest.mark.asyncio
-async def test_send_email_creates_date_directories(file_adapter: FileEmailAdapter, temp_dir: Path) -> None:
+async def test_send_email_creates_date_directories(
+    file_adapter: FileEmailAdapter, temp_dir: Path
+) -> None:
     """Test that emails are organized by date."""
     await file_adapter.send_email(
         to="test1@example.com",
@@ -127,7 +135,9 @@ async def test_send_email_creates_date_directories(file_adapter: FileEmailAdapte
 
 
 @pytest.mark.asyncio
-async def test_send_email_sanitizes_email_in_filename(file_adapter: FileEmailAdapter, temp_dir: Path) -> None:
+async def test_send_email_sanitizes_email_in_filename(
+    file_adapter: FileEmailAdapter, temp_dir: Path
+) -> None:
     """Test that email addresses are sanitized in filenames."""
     await file_adapter.send_email(
         to="test.user@example.com",
@@ -147,10 +157,14 @@ async def test_send_email_sanitizes_email_in_filename(file_adapter: FileEmailAda
 
 
 @pytest.mark.asyncio
-async def test_send_email_handles_exception(file_adapter: FileEmailAdapter, temp_dir: Path, mocker: Any) -> None:
+async def test_send_email_handles_exception(
+    file_adapter: FileEmailAdapter, temp_dir: Path, mocker: Any
+) -> None:
     """Test that send_email handles exceptions gracefully."""
     # Mock Path.write_text to raise an exception
-    mocker.patch.object(Path, "write_text", side_effect=PermissionError("Permission denied"))
+    mocker.patch.object(
+        Path, "write_text", side_effect=PermissionError("Permission denied")
+    )
 
     result = await file_adapter.send_email(
         to="test@example.com",
