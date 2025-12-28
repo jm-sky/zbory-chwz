@@ -7,7 +7,6 @@
 
 // Import module messages
 import { adminEn, adminPl } from '@/modules/admin/i18n'
-import { aiEn, aiPl } from '@/modules/ai/i18n'
 import { authEn, authPl } from '@/modules/auth/i18n'
 import { settingsEn, settingsPl } from '@/modules/settings/i18n'
 import { userEn, userPl } from '@/modules/user/i18n'
@@ -24,7 +23,6 @@ import registryPl from '@/shared/i18n/locales/pl'
 const en = {
   ...registryEn,
   ...adminEn,
-  ...aiEn,
   ...authEn,
   ...settingsEn,
   ...userEn,
@@ -32,7 +30,6 @@ const en = {
 const pl = {
   ...registryPl,
   ...adminPl,
-  ...aiPl,
   ...authPl,
   ...settingsPl,
   ...userPl,

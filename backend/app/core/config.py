@@ -30,7 +30,7 @@ class AppSettings(BaseSettings):
 
     name: str = Field(default="backend", validation_alias="APP_NAME", description="Application name")
     display_name: str = Field(
-        default="Gear Stack",
+        default="Zbory CHWZ",
         validation_alias="APP_DISPLAY_NAME",
         description="Application display name for emails and UI",
     )
@@ -46,12 +46,6 @@ class AppSettings(BaseSettings):
         description="Environment (local, development, test, production)",
     )
 
-    item_promotion_threshold: int = Field(
-        default=10,
-        validation_alias="ITEM_PROMOTION_THRESHOLD",
-        description="Number of promotions required to add item to global catalogue",
-        gt=0,
-    )
 
     @field_validator("environment")
     @classmethod
@@ -600,34 +594,6 @@ class SentrySettings(BaseSettings):
         return v
 
 
-class AISettings(BaseSettings):
-    """AI configuration for OpenRouter integration."""
-
-    model_config = _base_config
-
-    enabled: bool = Field(default=True, validation_alias="AI_ENABLED", description="Enable AI features")
-    openrouter_api_key: str = Field(default="", validation_alias="OPENROUTER_API_KEY", description="OpenRouter API key")
-    openrouter_base_url: str = Field(
-        default="https://openrouter.ai/api/v1",
-        validation_alias="OPENROUTER_BASE_URL",
-        description="OpenRouter base URL",
-    )
-    token_encryption_key: str = Field(default="", validation_alias="AI_TOKEN_ENCRYPTION_KEY", description="Fernet encryption key for API tokens")
-    cache_enabled: bool = Field(default=True, validation_alias="AI_CACHE_ENABLED", description="Enable PostgreSQL caching")
-    cache_ttl_classify: int = Field(default=7, validation_alias="AI_CACHE_TTL_CLASSIFY", description="Cache TTL for classification (days)")
-    cache_ttl_embed: int = Field(default=30, validation_alias="AI_CACHE_TTL_EMBED", description="Cache TTL for embeddings (days)")
-
-    @field_validator("enabled", "cache_enabled", mode="before")
-    @classmethod
-    def parse_bool_field(cls, v: str | bool) -> bool:
-        """Parse boolean field from string or bool."""
-        if isinstance(v, bool):
-            return v
-        if isinstance(v, str):
-            return v.lower() in ("true", "1", "yes", "on")
-        return False
-
-
 class RedisSettings(BaseSettings):
     """Redis configuration for token blacklist and challenge storage."""
 
@@ -677,65 +643,6 @@ class WebAuthnSettings(BaseSettings):
     )
 
 
-class StripeSettings(BaseSettings):
-    """Stripe billing configuration."""
-
-    model_config = _base_config
-
-    enabled: bool = Field(
-        default=False,
-        validation_alias="STRIPE_ENABLED",
-        description="Enable Stripe billing integration",
-    )
-    secret_key: str = Field(
-        default="",
-        validation_alias="STRIPE_SECRET_KEY",
-        description="Stripe secret API key",
-    )
-    publishable_key: str = Field(
-        default="",
-        validation_alias="STRIPE_PUBLISHABLE_KEY",
-        description="Stripe publishable API key",
-    )
-    webhook_secret: str = Field(
-        default="",
-        validation_alias="STRIPE_WEBHOOK_SECRET",
-        description="Stripe webhook signing secret",
-    )
-
-    # Price IDs (configured in Stripe Dashboard)
-    pro_monthly_price_id: str = Field(
-        default="",
-        validation_alias="STRIPE_PRO_MONTHLY_PRICE_ID",
-        description="Stripe price ID for Pro monthly subscription",
-    )
-    pro_annual_price_id: str = Field(
-        default="",
-        validation_alias="STRIPE_PRO_ANNUAL_PRICE_ID",
-        description="Stripe price ID for Pro annual subscription",
-    )
-    pro_plus_monthly_price_id: str = Field(
-        default="",
-        validation_alias="STRIPE_PRO_PLUS_MONTHLY_PRICE_ID",
-        description="Stripe price ID for Pro Plus monthly subscription",
-    )
-    pro_plus_annual_price_id: str = Field(
-        default="",
-        validation_alias="STRIPE_PRO_PLUS_ANNUAL_PRICE_ID",
-        description="Stripe price ID for Pro Plus annual subscription",
-    )
-
-    @field_validator("enabled", mode="before")
-    @classmethod
-    def parse_enabled(cls, v: str | bool) -> bool:
-        """Parse enabled field from string or bool."""
-        if isinstance(v, bool):
-            return v
-        if isinstance(v, str):
-            return v.lower() in ("true", "1", "yes", "on")
-        return False
-
-
 class Settings(BaseSettings):
     """
     Main application settings composed of nested configuration classes.
@@ -758,10 +665,8 @@ class Settings(BaseSettings):
     email: EmailSettings = Field(default_factory=EmailSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
     sentry: SentrySettings = Field(default_factory=SentrySettings)
-    ai: AISettings = Field(default_factory=AISettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
     webauthn: WebAuthnSettings = Field(default_factory=WebAuthnSettings)
-    stripe: StripeSettings = Field(default_factory=StripeSettings)
 
     # Legacy compatibility - still accessible at root level
     frontend_url: str = Field(

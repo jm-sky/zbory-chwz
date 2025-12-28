@@ -10,20 +10,15 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.modules.auth.repositories import UserRepository as AuthUserRepository
 from app.modules.auth.repositories import get_user_repository as get_auth_user_repository
-from app.modules.gear.item_image_repository import ItemImageRepository
 from app.modules.settings.db_models import UserSettingsDB
 
 from .dependencies import AdminUser, CurrentUser
 from .exceptions import UserAlreadyExistsError
 from .repositories import UserRepository, get_user_repository
 from .schemas import (
-    AiFeatures,
     MessageResponse,
     PublicUserResponse,
-    StorageFeatures,
-    StorageUsageResponse,
     UserCreate,
-    UserFeatures,
     UserListResponse,
     UserProfileUpdate,
     UserResponse,
@@ -95,60 +90,9 @@ async def get_current_user_info(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ) -> UserResponse:
-    """Get current user information with features and limits."""
-    from app.modules.ai.repositories import SettingsRepository
-    from app.modules.feature_limits.repository import FeatureLimitRepository
-
+    """Get current user information."""
     # Get user response data
     user_data = current_user.to_response()
-
-    # Calculate features and limits
-    # Check if user has own AI token
-    ai_settings_repo = SettingsRepository(db)
-    ai_settings = await ai_settings_repo.get_by_user_id(current_user.id)
-    has_own_token = ai_settings and ai_settings.use_own_token and ai_settings.encrypted_api_token
-
-    # Determine user role for limit lookup
-    # CurrentUser from users module has role as string
-    role = current_user.role
-
-    # Get limits from database
-    feature_limit_repo = FeatureLimitRepository(db)
-    feature_limit = await feature_limit_repo.get_by_role(role)
-
-    # Calculate AI limit based on user role and token status
-    ai_enabled = True  # AI is enabled for all authenticated users
-    ai_limit: float | None = None
-
-    if has_own_token:
-        # User with own token: unlimited
-        ai_limit = None
-    elif feature_limit:
-        # Use limit from database
-        ai_limit = float(feature_limit.ai_limit) if feature_limit.ai_limit is not None else None
-    else:
-        # Fallback to defaults if limit not found in database
-        if role == "premium":
-            ai_limit = 5.0
-        else:
-            ai_limit = 0.0
-
-    # Calculate storage limit from database or fallback to config
-    if feature_limit:
-        storage_limit_bytes = feature_limit.storage_limit_bytes
-    elif role in ("admin", "owner"):
-        storage_limit_bytes = settings.storage.max_file_size_admin
-    else:
-        storage_limit_bytes = settings.storage.max_file_size
-
-    # Build features object
-    features = UserFeatures(
-        ai=AiFeatures(enabled=ai_enabled, limit=ai_limit),
-        storage=StorageFeatures(limit=storage_limit_bytes),
-    )
-
-    # Add features to response
-    user_data["features"] = features
 
     return UserResponse(**user_data)
 
@@ -313,48 +257,3 @@ async def hard_delete_user(
     return MessageResponse(message=f"User {user_id} permanently deleted")
 
 
-@router.get(
-    "/me/storage/usage",
-    response_model=StorageUsageResponse,
-    summary="Get storage usage",
-    description="Get current user's storage usage and limit",
-)
-async def get_storage_usage(
-    current_user: CurrentUser,
-    db: AsyncSession = Depends(get_db),
-) -> StorageUsageResponse:
-    """Get storage usage for current user.
-
-    Returns:
-        Storage usage information including used bytes, limit bytes, and usage percentage
-    """
-    from app.modules.feature_limits.repository import FeatureLimitRepository
-
-    image_repo = ItemImageRepository(db)
-    used_bytes = await image_repo.get_user_storage_usage(current_user.id)
-
-    # Determine user role for limit lookup
-    # CurrentUser from users module has role as string
-    role = current_user.role
-
-    # Get storage limit from database
-    feature_limit_repo = FeatureLimitRepository(db)
-    feature_limit = await feature_limit_repo.get_by_role(role)
-
-    if feature_limit:
-        limit_bytes = feature_limit.storage_limit_bytes
-    else:
-        # Fallback to config if limit not found in database
-        if role in ("admin", "owner"):
-            limit_bytes = settings.storage.max_file_size_admin
-        else:
-            limit_bytes = settings.storage.max_file_size
-
-    # Calculate usage percentage
-    used_percentage = (used_bytes / limit_bytes * 100) if limit_bytes > 0 else 0.0
-
-    return StorageUsageResponse(
-        usedBytes=used_bytes,
-        limitBytes=limit_bytes,
-        usedPercentage=min(used_percentage, 100.0),  # Cap at 100%
-    )

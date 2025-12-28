@@ -8,17 +8,3 @@ class UserStatsResponse(BaseModel):
 
     total: int
     newThisMonth: int
-
-
-class ContainerStatsResponse(BaseModel):
-    """Response schema for container statistics."""
-
-    total: int
-    newThisMonth: int
-
-
-class ItemStatsResponse(BaseModel):
-    """Response schema for item statistics."""
-
-    total: int
-    newThisMonth: int

@@ -12,11 +12,8 @@ import json
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-try:
-    from app.modules.billing.constants import WEBHOOK_PATHS
-except ImportError:
-    # Fallback if billing module is not available
-    WEBHOOK_PATHS = []
+# No webhook paths to exclude
+WEBHOOK_PATHS: list[str] = []
 
 
 def _convert_empty_strings_to_none(obj: Any) -> Any:
@@ -41,8 +38,7 @@ class ConvertEmptyStringsToNoneMiddleware:
     Recursively processes nested objects and arrays.
 
     **Exclusions:**
-    - Webhook endpoints (defined in `app.modules.billing.constants.WEBHOOK_PATHS`)
-      are excluded to preserve raw payload bytes for signature verification.
+    - Webhook endpoints can be excluded to preserve raw payload bytes for signature verification.
 
     Example:
         Input:  {"name": "John", "email": "", "age": 25}

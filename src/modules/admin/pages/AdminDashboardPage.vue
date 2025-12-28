@@ -26,12 +26,12 @@ if (!canAccessAdminPanel.value) {
           {{ t('admin.dashboard.title', 'Admin Dashboard') }}
         </h1>
         <p class="text-muted-foreground mt-2">
-          {{ t('admin.dashboard.subtitle', 'Manage users, containers, and items') }}
+          {{ t('admin.dashboard.subtitle', 'Manage users and system settings') }}
         </p>
       </div>
 
       <!-- Quick Links -->
-      <div class="grid gap-4 md:grid-cols-3">
+      <div class="grid gap-4 md:grid-cols-1">
         <Card class="p-6">
           <div class="flex flex-col gap-4 flex-1">
             <div class="flex-1">
@@ -45,43 +45,6 @@ if (!canAccessAdminPanel.value) {
             <RouterLink :to="AdminRoutePaths.users">
               <Button class="w-full">
                 {{ t('admin.dashboard.users.button', 'Manage Users') }}
-              </Button>
-            </RouterLink>
-          </div>
-        </Card>
-
-
-        <Card class="p-6">
-          <div class="flex flex-col gap-4 flex-1">
-            <div class="flex-1">
-              <h3 class="text-lg font-semibold">
-                {{ t('admin.dashboard.limits.title', 'Feature Limits') }}
-              </h3>
-              <p class="text-sm text-muted-foreground">
-                {{ t('admin.dashboard.limits.description', 'Configure AI and storage limits per role') }}
-              </p>
-            </div>
-            <RouterLink :to="AdminRoutePaths.limits">
-              <Button class="w-full">
-                {{ t('admin.dashboard.limits.button', 'Manage Limits') }}
-              </Button>
-            </RouterLink>
-          </div>
-        </Card>
-
-        <Card class="p-6">
-          <div class="flex flex-col gap-4 flex-1">
-            <div class="flex-1">
-              <h3 class="text-lg font-semibold">
-                {{ t('admin.dashboard.subscriptions.title', 'Subscriptions') }}
-              </h3>
-              <p class="text-sm text-muted-foreground">
-                {{ t('admin.dashboard.subscriptions.description', 'Manage user subscriptions and billing plans') }}
-              </p>
-            </div>
-            <RouterLink :to="AdminRoutePaths.subscriptions">
-              <Button class="w-full">
-                {{ t('admin.dashboard.subscriptions.button', 'Manage Subscriptions') }}
               </Button>
             </RouterLink>
           </div>
