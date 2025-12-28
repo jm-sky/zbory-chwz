@@ -450,8 +450,8 @@ if (import.meta.env.DEV) {
 VITE_GOOGLE_RECAPTCHA_SITE_KEY=
 
 // Or use reCAPTCHA test keys:
-// Site key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
-// Secret:   6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+// Site key: 6Lexxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// Secret:   6Leyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 ```
 
 ### Backend Tests
