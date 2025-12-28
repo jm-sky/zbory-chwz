@@ -23,10 +23,6 @@ const { version, buildDate } = useAppVersion()
           <HoverLinkExternal :href="config.contact.companyWebsite">
             {{ config.contact.companyName }}
           </HoverLinkExternal>
-          <span class="mx-1">|</span>
-          <HoverLinkExternal :href="config.contact.officialCompanyWebsite">
-            {{ config.contact.officialCompanyName }}
-          </HoverLinkExternal>
         </div>
         <div class="text-sm">
           <HoverLink :to="{ name: PublicRouteNames.landing }">
