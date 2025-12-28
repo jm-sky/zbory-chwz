@@ -10,6 +10,7 @@ import { z } from 'zod'
 import Button from '@/components/ui/button/Button.vue'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -584,9 +585,9 @@ onMounted(() => {
               >
                 <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <FormLabel>
+                    <Label>
                       {{ t('congregations.edit.serviceTime.day', 'Dzień') }}
-                    </FormLabel>
+                    </Label>
                     <Input
                       v-model="field.day"
                       :placeholder="t('congregations.edit.serviceTime.dayPlaceholder', 'np. Niedziela')"
@@ -594,9 +595,9 @@ onMounted(() => {
                   </div>
 
                   <div>
-                    <FormLabel>
+                    <Label>
                       {{ t('congregations.edit.serviceTime.time', 'Godzina') }}
-                    </FormLabel>
+                    </Label>
                     <Input
                       v-model="field.time"
                       type="time"
@@ -665,9 +666,9 @@ onMounted(() => {
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <FormLabel required>
+                    <Label required>
                       {{ t('congregations.edit.contactPerson.name', 'Imię i nazwisko') }}
-                    </FormLabel>
+                    </Label>
                     <Input
                       v-model="field.name"
                       :placeholder="t('congregations.edit.contactPerson.namePlaceholder', 'Wprowadź imię i nazwisko')"
@@ -675,9 +676,9 @@ onMounted(() => {
                   </div>
 
                   <div>
-                    <FormLabel>
+                    <Label>
                       {{ t('congregations.edit.contactPerson.title', 'Tytuł/Stanowisko') }}
-                    </FormLabel>
+                    </Label>
                     <Input
                       :placeholder="t('congregations.edit.contactPerson.titlePlaceholder', 'np. Pastor')"
                       :model-value="field.title ?? ''"
@@ -686,9 +687,9 @@ onMounted(() => {
                   </div>
 
                   <div>
-                    <FormLabel>
+                    <Label>
                       {{ t('congregations.edit.contactPerson.email', 'Email') }}
-                    </FormLabel>
+                    </Label>
                     <Input
                       type="email"
                       :placeholder="t('congregations.edit.contactPerson.emailPlaceholder', 'Your email address')"
@@ -698,9 +699,9 @@ onMounted(() => {
                   </div>
 
                   <div>
-                    <FormLabel>
+                    <Label>
                       {{ t('congregations.edit.contactPerson.phone', 'Telefon') }}
-                    </FormLabel>
+                    </Label>
                     <Input
                       type="tel"
                       :placeholder="t('congregations.edit.contactPerson.phonePlaceholder', '+48 123 456 789')"

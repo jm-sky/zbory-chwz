@@ -8,6 +8,7 @@
 // Import module messages
 import { adminEn, adminPl, adminRu } from '@/modules/admin/i18n'
 import { authEn, authPl, authRu } from '@/modules/auth/i18n'
+import { congregationsEn, congregationsPl } from '@/modules/congregations/i18n'
 import { settingsEn, settingsPl, settingsRu } from '@/modules/settings/i18n'
 import { userEn, userPl, userRu } from '@/modules/user/i18n'
 import { createI18nInstance } from '@/shared/i18n'
@@ -25,6 +26,7 @@ const en = {
   ...registryEn,
   ...adminEn,
   ...authEn,
+  ...congregationsEn,
   ...settingsEn,
   ...userEn,
 }
@@ -32,6 +34,7 @@ const pl = {
   ...registryPl,
   ...adminPl,
   ...authPl,
+  ...congregationsPl,
   ...settingsPl,
   ...userPl,
 }
