@@ -1,11 +1,40 @@
 <script setup lang="ts">
-import { Church, Clock, Mail, MapPin, Phone, User } from 'lucide-vue-next'
+import { useQueryClient } from '@tanstack/vue-query'
+import { Church, Clock, Edit, EyeOff, Mail, MapPin, MoreHorizontal, Phone, User } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
 import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import { useHandleError } from '@/shared/composables/useHandleError'
+import type { ICongregationDetailed } from '../types/congregation.types'
 import { useCongregations } from '../composables/useCongregations'
+import { CongregationRoutePaths } from '../routes'
+import { congregationApiService } from '../services/congregationApiService'
 
 const { t } = useI18n()
+const router = useRouter()
+const queryClient = useQueryClient()
+const authStore = useAuthStore()
+const { handleError } = useHandleError()
 const { data: congregations, isLoading, error } = useCongregations()
+
+// Check if user can edit/unpublish a congregation
+function canManageCongregation(congregation: ICongregationDetailed): boolean {
+  // Admin or owner can manage any congregation
+  if (authStore.user?.isAdmin || authStore.user?.isOwner) {
+    return true
+  }
+  // Tenant user (has role for this congregation)
+  return !!congregation.role
+}
 
 function formatAddress(congregation: NonNullable<typeof congregations.value>[0]): string {
   const parts: string[] = []
@@ -21,6 +50,26 @@ function formatAddress(congregation: NonNullable<typeof congregations.value>[0])
 function formatServiceTimes(serviceTimes?: Array<{ day: string; time: string }>): string {
   if (!serviceTimes || serviceTimes.length === 0) return ''
   return serviceTimes.map((st) => `${st.day} ${st.time}`).join(', ')
+}
+
+async function handleEdit(congregation: ICongregationDetailed) {
+  router.push(CongregationRoutePaths.editById(congregation.id))
+}
+
+async function handleUnpublish(congregation: ICongregationDetailed) {
+  if (!confirm(t('congregations.list.unpublishConfirm', 'Czy na pewno chcesz cofnąć publikację tego zboru?'))) {
+    return
+  }
+
+  try {
+    await congregationApiService.unpublishCongregation(congregation.id)
+    toast.success(t('congregations.list.unpublishSuccess', 'Zbór został cofnięty z publikacji'))
+    // Invalidate and refetch congregations
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+  } catch (error) {
+    console.error('Failed to unpublish congregation:', error)
+    handleError(error, { fallbackMessage: t('congregations.list.unpublishError', 'Nie udało się cofnąć publikacji zboru') })
+  }
 }
 </script>
 
@@ -91,6 +140,27 @@ function formatServiceTimes(serviceTimes?: Array<{ day: string; time: string }>)
               {{ congregation.description }}
             </p>
           </div>
+          <!-- Actions Dropdown -->
+          <DropdownMenu v-if="canManageCongregation(congregation)">
+            <DropdownMenuTrigger as-child>
+              <Button variant="ghost" size="icon" class="shrink-0">
+                <MoreHorizontal class="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem @click="handleEdit(congregation)">
+                <Edit class="size-4" />
+                <span>{{ t('common.edit', 'Edytuj') }}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                v-if="congregation.status === 'published' || congregation.status === 'published_unverified'"
+                @click="handleUnpublish(congregation)"
+              >
+                <EyeOff class="size-4" />
+                <span>{{ t('congregations.list.unpublish', 'Cofnij publikację') }}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <!-- Details Grid -->
