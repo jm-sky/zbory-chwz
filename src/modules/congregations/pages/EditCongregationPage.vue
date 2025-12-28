@@ -145,6 +145,10 @@ async function loadCongregation() {
     // Load full congregation data
     congregationFull.value = await congregationApiService.getCongregationFull(congregationId)
     
+    if (!congregationFull.value) {
+      throw new Error('Failed to load congregation data')
+    }
+    
     // Set address form
     if (congregationFull.value.address) {
       addressForm.setValues({
@@ -158,7 +162,7 @@ async function loadCongregation() {
     }
     
     // Set service times
-    const serviceTimesData = congregationFull.value.service_times.map(st => ({
+    const serviceTimesData = (congregationFull.value.service_times || []).map(st => ({
       day: st.day,
       time: st.time,
       order: st.order,
@@ -172,7 +176,7 @@ async function loadCongregation() {
     }))
     
     // Set contact persons
-    const contactPersonsData = congregationFull.value.contact_persons.map(cp => ({
+    const contactPersonsData = (congregationFull.value.contact_persons || []).map(cp => ({
       name: cp.name,
       title: cp.title ?? null,
       email: cp.email ?? null,
