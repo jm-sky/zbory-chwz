@@ -2,7 +2,8 @@
 # Place this file in /etc/caddy/Caddyfile or your Caddy configuration directory
 # Adjust domain names and paths according to your setup
 
-zbory.chwz.waw.pl, adresy.chwz.waw.pl {
+# Frontend domains (www and root)
+www.zbory.chwz.waw.pl, zbory.chwz.waw.pl {
   # Root directory where static files are served from
   root * /var/www/zbory-chwz
 
@@ -73,5 +74,16 @@ zbory.chwz.waw.pl, adresy.chwz.waw.pl {
 
   # Fallback to index.html for SPA routing
   try_files {path} /index.html
+}
+
+# API subdomain - direct proxy to backend
+api.zbory.chwz.waw.pl {
+  # Reverse proxy all requests to FastAPI backend
+  reverse_proxy localhost:8001 {
+    # Add headers for backend
+    header_up X-Real-IP {remote_host}
+    header_up X-Forwarded-For {remote_host}
+    header_up X-Forwarded-Proto {scheme}
+  }
 }
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Gear Stack Complete Deployment Script
+# Zbory CHWZ Complete Deployment Script
 # This script orchestrates the complete deployment by pulling latest changes,
 # building and deploying the frontend, and restarting/migrating the backend
 #
@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPTS_DIR="$PROJECT_DIR/scripts"
 
-echo -e "${GREEN}🚀 Starting complete Gear Stack deployment...${NC}"
+echo -e "${GREEN}🚀 Starting complete Zbory CHWZ deployment...${NC}"
 
 # Prompt for sudo password upfront
 echo -e "${YELLOW}🔐 Requesting sudo access...${NC}"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Frontend Build and Deploy Script
-# This script installs dependencies, builds the frontend, and deploys to /var/www/gear-stack
+# This script installs dependencies, builds the frontend, and deploys to /var/www/zbory-chwz
 #
 # Usage: scripts/frontend_build_deploy.sh
 
@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEPLOY_DIR="/var/www/gear-stack"
+DEPLOY_DIR="/var/www/zbory-chwz"
 
 echo -e "${GREEN}🔨 Starting frontend build and deploy...${NC}"
 
@@ -33,7 +33,7 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 pnpm build
 echo -e "${GREEN}✅ Frontend build completed${NC}"
 
-# Step 3: Deploy to /var/www/gear-stack
+# Step 3: Deploy to /var/www/zbory-chwz
 echo -e "${YELLOW}📋 Step 3: Deploying to ${DEPLOY_DIR}...${NC}"
 
 # Remove old files
