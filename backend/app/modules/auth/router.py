@@ -103,7 +103,17 @@ async def register(
     - ✅ Rate limiting: 5 requests/minute (enabled)
     - ⚪ reCAPTCHA: Disabled by default (enable via RECAPTCHA_ENABLED=true)
     - 💡 Recommendation: Add email verification in production
+    - ⚠️ Registration can be disabled via REGISTRATION_ENABLED=false
     """
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    if not settings.security.registration_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration is currently disabled. Please contact an administrator.",
+        )
+
     try:
         # Determine locale for email
         accept_language = request.headers.get("Accept-Language")

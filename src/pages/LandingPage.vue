@@ -1,34 +1,15 @@
 <script setup lang="ts">
-import { BackpackIcon } from 'lucide-vue-next'
-import { computed, onMounted } from 'vue'
+import { Church } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import LocalContainersStats from '@/components/layout/LocalContainersStats.vue'
-import TotalsStats from '@/components/layout/TotalsStats.vue'
 import WelcomeQuickActions from '@/components/layout/WelcomeQuickActions.vue'
 import LandingLayout from '@/layouts/LandingLayout.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
-import { hasLocalData } from '@/modules/gear/services/dataMigrationService'
-import { useGearStore } from '@/modules/gear/store/useGearStore'
 import { config } from '@/shared/config/config'
 
 const { t } = useI18n()
 const router = useRouter()
 const { isAuthenticated, user } = useAuth()
-const gearStore = useGearStore()
-
-// Check if user is not logged in but has containers in localStorage
-const hasLocalContainers = computed(() => {
-  if (isAuthenticated.value) return false
-  return hasLocalData()
-})
-
-// Load containers from localStorage if not authenticated
-onMounted(() => {
-  if (!isAuthenticated.value) {
-    gearStore.loadFromStorage()
-  }
-})
 
 // If backend is disabled, redirect to home (offline mode)
 if (!config.backend.enabled) {
@@ -38,11 +19,11 @@ if (!config.backend.enabled) {
 
 <template>
   <LandingLayout>
-    <div class="max-w-2xl w-full space-y-8 text-center">
+    <div class="w-full max-w-2xl space-y-8 text-center">
       <!-- Logo/Icon -->
       <div class="flex justify-center">
         <div class="rounded-full bg-primary/10 p-8">
-          <BackpackIcon class="size-20 text-primary" />
+          <Church class="size-20 text-primary" />
         </div>
       </div>
 
@@ -51,50 +32,39 @@ if (!config.backend.enabled) {
         <p v-if="isAuthenticated && user" class="text-2xl font-semibold text-muted-foreground">
           {{ t('landing.welcomeBack', { name: user.name }) }}
         </p>
-        <h1 class="text-5xl font-bold tracking-tight">
-          {{ t('landing.title', 'Gear Stack') }}
-        </h1>
-        <p class="text-xl text-muted-foreground max-w-lg mx-auto">
-          {{ t('landing.subtitle', 'Organize and manage your survival gear and bug-out bag equipment') }}
+        <h1 class="text-5xl font-bold tracking-tight">Zbory CHWZ</h1>
+        <p class="mx-auto max-w-lg text-xl text-muted-foreground">
+          Aplikacja do zarządzania i publicznej prezentacji zborów Chrześcijańskiej Wspólnoty
+          Wolnych Zielonoświątkowców
         </p>
       </div>
     </div>
 
     <!-- Features -->
-    <div class="max-w-2xl w-full space-y-8 text-center">
-      <div class="grid grid-cols-1 md:grid-cols-3 py-4 gap-6">
+    <div class="w-full max-w-2xl space-y-8 text-center">
+      <div class="grid grid-cols-1 gap-6 py-4 md:grid-cols-3">
         <div class="space-y-2">
-          <h3 class="font-semibold text-lg">
-            {{ t('landing.feature1.title', 'Organize') }}
-          </h3>
+          <h3 class="text-lg font-semibold">Zarządzanie</h3>
           <p class="text-sm text-muted-foreground">
-            {{ t('landing.feature1.description', 'Keep track of all your gear in organized containers') }}
+            Zarządzaj danymi swoich zborów w jednym miejscu
           </p>
         </div>
         <div class="space-y-2">
-          <h3 class="font-semibold text-lg">
-            {{ t('landing.feature2.title', 'Track') }}
-          </h3>
+          <h3 class="text-lg font-semibold">Publiczna prezentacja</h3>
           <p class="text-sm text-muted-foreground">
-            {{ t('landing.feature2.description', 'Monitor weight, readiness, and expiration dates') }}
+            Udostępniaj informacje o zborach publicznie
           </p>
         </div>
         <div class="space-y-2">
-          <h3 class="font-semibold text-lg">
-            {{ t('landing.feature3.title', 'Prepare') }}
-          </h3>
+          <h3 class="text-lg font-semibold">Multi-tenant</h3>
           <p class="text-sm text-muted-foreground">
-            {{ t('landing.feature3.description', 'Be ready for any situation with a well-prepared gear stack') }}
+            Różne role i uprawnienia dla użytkowników
           </p>
         </div>
       </div>
-
-      <WelcomeQuickActions class="max-w-md mx-auto" />
-      <LocalContainersStats v-if="hasLocalContainers" />
-
-      <!-- Stats Widgets (wider container) -->
-      <TotalsStats />
     </div>
+
+    <!-- Quick Actions -->
+    <WelcomeQuickActions />
   </LandingLayout>
 </template>
-

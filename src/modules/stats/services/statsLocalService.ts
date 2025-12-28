@@ -1,8 +1,7 @@
-import { useGearStore } from '@/modules/gear/store/useGearStore'
-
 /**
  * Stats Local Service
  * Calculates statistics from localStorage data
+ * NOTE: Gear-related functionality has been stubbed out
  */
 class StatsLocalService {
   /**
@@ -32,29 +31,20 @@ class StatsLocalService {
 
   /**
    * Get container statistics from localStorage
+   * STUB: Gear store removed - always returns 0
    */
   async getContainerStats(): Promise<{ total: number; newThisMonth: number }> {
-    const gearStore = useGearStore()
-    const containers = gearStore.getAllContainers
-
-    const total = containers.length
-    const newThisMonth = containers.filter(c => this.isThisMonth(c.createdAt)).length
-
-    return { total, newThisMonth }
+    console.warn('getContainerStats called but gear module is not available')
+    return { total: 0, newThisMonth: 0 }
   }
 
   /**
    * Get item statistics from localStorage
+   * STUB: Gear store removed - always returns 0
    */
   async getItemStats(): Promise<{ total: number; newThisMonth: number }> {
-    const gearStore = useGearStore()
-    const containers = gearStore.getAllContainers
-    const allItems = containers.flatMap(c => c.items)
-
-    const total = allItems.length
-    const newThisMonth = allItems.filter(item => this.isThisMonth(item.createdAt)).length
-
-    return { total, newThisMonth }
+    console.warn('getItemStats called but gear module is not available')
+    return { total: 0, newThisMonth: 0 }
   }
 
   /**

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CreditCard, LogIn, LogOut, SettingsIcon, ShieldIcon, UserIcon, UserPlusIcon } from 'lucide-vue-next'
+import { LogIn, LogOut, SettingsIcon, ShieldIcon, UserIcon, UserPlusIcon } from 'lucide-vue-next'
 import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils'
 import { AdminRoutePaths } from '@/modules/admin/routes'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRoutePaths } from '@/modules/auth/config/routes'
-import { BillingRoutePaths } from '@/modules/billing/routes'
 import { SettingsRoutePaths } from '@/modules/settings/routes'
 import { UserRoutePaths } from '@/modules/user/routes'
 import { generateGravatarUrl, GRAVATAR_BASE_URL } from '@/modules/user/utils/generateGravatarUrl'
@@ -63,11 +62,6 @@ const defaultCoreLinks = computed<Link[]>(() => [
     to: SettingsRoutePaths.settings,
     label: t('settings.page.title', 'Settings'),
     icon: SettingsIcon,
-  },
-  {
-    to: BillingRoutePaths.billing,
-    label: t('billing.title', 'Billing & Subscription'),
-    icon: CreditCard,
   },
   {
     to: AdminRoutePaths.dashboard,

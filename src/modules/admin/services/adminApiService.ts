@@ -7,7 +7,6 @@ import type {
   IAdminUpdateSubscriptionRequest,
   IAdminUser,
 } from '../types/admin.types'
-import type { IContentReport, IContentReportListResponse, IUpdateReportRequest, ReportStatus } from '@/modules/gear/types/reports.types'
 import type { TUUID } from '@/shared/types/base.type'
 
 /**
@@ -76,23 +75,23 @@ class AdminApiService {
     await apiClient.delete(`/admin/items/${id}`)
   }
 
-  // Content reports management
-  async getReports(params: {
-    status?: ReportStatus
-    containerId?: TUUID
-    limit?: number
-    offset?: number
-  }): Promise<IContentReportListResponse> {
-    const response = await apiClient.get<IContentReportListResponse>('/admin/reports', {
-      params,
-    })
-    return response.data
-  }
+  // Content reports management - REMOVED (gear module dependency)
+  // async getReports(params: {
+  //   status?: ReportStatus
+  //   containerId?: TUUID
+  //   limit?: number
+  //   offset?: number
+  // }): Promise<IContentReportListResponse> {
+  //   const response = await apiClient.get<IContentReportListResponse>('/admin/reports', {
+  //     params,
+  //   })
+  //   return response.data
+  // }
 
-  async updateReportStatus(reportId: TUUID, data: IUpdateReportRequest): Promise<IContentReport> {
-    const response = await apiClient.patch<IContentReport>(`/admin/reports/${reportId}`, data)
-    return response.data
-  }
+  // async updateReportStatus(reportId: TUUID, data: IUpdateReportRequest): Promise<IContentReport> {
+  //   const response = await apiClient.patch<IContentReport>(`/admin/reports/${reportId}`, data)
+  //   return response.data
+  // }
 
   // Subscriptions management
   async getSubscriptions(skip = 0, limit = 100): Promise<IAdminSubscription[]> {

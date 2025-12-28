@@ -9,7 +9,6 @@ import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
 import UserRoleBadge from '@/components/ui/UserRoleBadge.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
-import SubscriptionBadge from '@/modules/billing/components/SubscriptionBadge.vue'
 import { useSettings } from '@/modules/settings/composables/useSettings'
 import { getInitials } from '@/shared/utils/getInitials'
 import AuthenticationRequiredAlert from '../components/AuthenticationRequiredAlert.vue'
@@ -95,7 +94,6 @@ const initials = computed(() => {
                 :is-owner="profile.isOwner"
                 :is-premium="profile.isPremium"
               />
-              <SubscriptionBadge />
             </div>
             <div class="flex items-center mt-2 text-muted-foreground">
               <Mail class="size-4 mr-2 shrink-0" />

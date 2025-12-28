@@ -1,12 +1,34 @@
 /**
  * AI Context Composable
  * Handles context building for AI requests
+ * NOTE: Gear-related functionality has been stubbed out
  */
 
 import { computed, ref } from 'vue'
-import { useGearStore } from '@/modules/gear/store/useGearStore'
 import { useAiStore } from '../store/useAiStore'
-import type { IGearContainer, IGearItem } from '@/modules/gear/types/gear.types'
+
+// Stub types for gear-related data (removed gear module dependency)
+interface IGearContainer {
+  id: string
+  name: string
+  items: IGearItem[]
+}
+
+interface IGearItem {
+  id: string
+  name: string
+  notes?: string
+  category?: string
+  weight?: number
+  quantity?: number
+  price?: number
+  url?: string
+  brand?: string
+  color?: string
+  quality?: string
+  wearable?: boolean
+  consumable?: boolean
+}
 
 export interface IAiContext {
   container_ids?: string[]
@@ -15,7 +37,7 @@ export interface IAiContext {
 
 export function useAiContext() {
   const aiStore = useAiStore()
-  const gearStore = useGearStore()
+  // NOTE: gearStore removed - gear module dependency eliminated
 
   const selectedContainerIds = ref<string[]>([])
   const selectedFields = ref<string[]>(['name', 'category', 'weight'])
@@ -56,12 +78,15 @@ export function useAiContext() {
   }
 
   const getContainerData = (containerId: string): IGearContainer | undefined => {
-    return gearStore.getContainerById(containerId)
+    // STUB: Gear store removed - returns undefined
+    console.warn('getContainerData called but gear module is not available')
+    return undefined
   }
 
   const getItemsData = (containerId: string): IGearItem[] => {
-    const container = getContainerData(containerId)
-    return container?.items ?? []
+    // STUB: Gear store removed - returns empty array
+    console.warn('getItemsData called but gear module is not available')
+    return []
   }
 
   const buildContextData = (containerIds?: string[]): Record<string, unknown> => {

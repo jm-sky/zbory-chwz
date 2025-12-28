@@ -4,7 +4,9 @@ import { useI18n } from 'vue-i18n'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { config } from '@/shared/config/config'
-import type { TGearWeightUnit } from '@/modules/gear/types/gear.types'
+
+// Local type definition (removed gear module dependency)
+type TGearWeightUnit = 'g' | 'kg' | 'oz' | 'lb'
 
 interface Emits {
   (e: 'update:modelValue', value: number | undefined): void

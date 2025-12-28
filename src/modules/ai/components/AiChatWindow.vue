@@ -7,7 +7,6 @@ import { Loader2 } from 'lucide-vue-next'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { useAiActions } from '../composables/useAiActions'
 import { useAiChat } from '../composables/useAiChat'
 import { useAiContext } from '../composables/useAiContext'
 import { useAiHistory } from '../composables/useAiHistory'
@@ -29,8 +28,12 @@ const props = defineProps<{
 const aiStore = useAiStore()
 const { messages, isLoading, lastPrompt, lastStructuredOutput, sendMessage, hasMessages, restoreFromHistory } = useAiChat()
 const { buildContextData } = useAiContext()
-const { executeAction } = useAiActions()
 const { getHistoryItemById } = useAiHistory()
+
+// Action execution has been removed with gear module
+const executeAction = (..._args: unknown[]) => {
+  console.warn('AI actions are not available without gear module')
+}
 
 const userMessage = ref('')
 const showContextConfig = ref(false)

@@ -20,7 +20,6 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import AiHistoryDetailDialog from '@/modules/ai/components/AiHistoryDetailDialog.vue'
 import AiHistoryFilters from '@/modules/ai/components/AiHistoryFilters.vue'
 import AiHistoryList from '@/modules/ai/components/AiHistoryList.vue'
-import { useSearchPaginationUrl } from '@/modules/gear/composables/useSearchPaginationUrl'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { AiOperationType } from '../types/chat'
 import type { IAiHistoryItem } from '../types/history'
@@ -36,12 +35,36 @@ const { handleError } = useHandleError()
 const { history, historyTotal, isLoading, loadHistory, deleteHistoryItem, clearHistory } = useAiHistory()
 const { restoreFromHistory } = useAiChat()
 
-// Search and pagination from URL
-const { search, page, pageSize } = useSearchPaginationUrl({
-  defaultPageSize: 20,
-  searchParam: 'search',
-  pageParam: 'page',
-  pageSizeParam: 'pageSize',
+// Search and pagination from URL (simple local implementation)
+const search = computed({
+  get: () => (route.query.search as string) || '',
+  set: (value: string) => {
+    const query = { ...route.query }
+    if (value) {
+      query.search = value
+    } else {
+      delete query.search
+    }
+    router.replace({ query })
+  },
+})
+
+const page = computed({
+  get: () => Number(route.query.page) || 1,
+  set: (value: number) => {
+    const query = { ...route.query }
+    query.page = String(value)
+    router.replace({ query })
+  },
+})
+
+const pageSize = computed({
+  get: () => Number(route.query.pageSize) || 20,
+  set: (value: number) => {
+    const query = { ...route.query }
+    query.pageSize = String(value)
+    router.replace({ query })
+  },
 })
 
 const searchQueryRaw = ref(search.value)

@@ -1,163 +1,57 @@
 <script setup lang="ts">
-import { BackpackIcon, Globe, LogIn, Plus, UserPlus } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
+import { Church, LogIn, UserPlus } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import WelcomeQuickActions from '@/components/layout/WelcomeQuickActions.vue'
 import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRoutePaths } from '@/modules/auth/config/routes'
-import UpgradePromptBanner from '@/modules/billing/components/UpgradePromptBanner.vue'
-import DashboardContainerCard from '@/modules/gear/components/dashboard/DashboardContainerCard.vue'
-import GenerateExampleGearButton from '@/modules/gear/components/GenerateExampleGearButton.vue'
-import { useGear } from '@/modules/gear/composables/useGear'
-import { GearRoutePath } from '@/modules/gear/routes'
-import { gearContainerService } from '@/modules/gear/services/gearContainerService'
-import { READINESS_EXCELLENT_THRESHOLD } from '@/modules/gear/utils/constants'
-import { config } from '@/shared/config/config'
-import { apiClient } from '@/shared/services/apiClient'
-import type { IGearContainer } from '@/modules/gear/types/gear.types'
 
 const { t } = useI18n()
-const { containers } = useGear()
 const { isAuthenticated } = useAuth()
-
-const publicContainersCount = ref<number>(0)
-const isLoadingPublicContainers = ref(false)
-
-// Load containers from API on mount (when backend is enabled)
-onMounted(async () => {
-  if (config.backend.enabled) {
-    try {
-      await gearContainerService().getContainers()
-    } catch (error) {
-      console.error('Failed to load containers from API:', error)
-      // Fallback to localStorage is handled by store initialization
-    }
-  }
-
-  // Load public containers count
-  if (config.backend.enabled) {
-    try {
-      isLoadingPublicContainers.value = true
-      const response = await apiClient.get<IGearContainer[]>('/gear/public/containers')
-      publicContainersCount.value = response.data.length
-    } catch (error) {
-      console.error('Failed to load public containers count:', error)
-    } finally {
-      isLoadingPublicContainers.value = false
-    }
-  }
-})
-
-const readyContainersCount = computed(() => {
-  return containers.value.filter(c => {
-    const ownedItems = c.items.filter(i => i.status === 'owned').length
-    const totalItems = c.items.length
-    return ownedItems / totalItems * 100 >= READINESS_EXCELLENT_THRESHOLD
-  }).length
-})
 </script>
 
 <template>
   <AuthenticatedLayout>
-    <div class="space-y-8">
-      <!-- Upgrade Prompt Banner (only for authenticated FREE users) -->
-      <UpgradePromptBanner v-if="isAuthenticated && config.backend.enabled" />
+    <div class="container mx-auto p-6">
+      <h1 class="mb-6 text-3xl font-bold">{{ t('navigation.dashboard') }}</h1>
 
-      <!-- Header -->
-      <div class="text-center space-y-4">
-        <div class="flex justify-center">
-          <div class="rounded-full bg-primary/10 p-6">
-            <BackpackIcon class="size-16 text-primary" />
-          </div>
+      <!-- Welcome section for authenticated users -->
+      <div v-if="isAuthenticated" class="mb-8">
+        <div class="rounded-lg border bg-card p-6">
+          <h2 class="mb-4 text-xl font-semibold">{{ t('common.welcome') }}</h2>
+          <p class="text-muted-foreground">
+            Witaj w systemie zarządzania zborami CHWZ. W przyszłości tutaj zobaczysz statystyki i
+            szybki dostęp do swoich zborów.
+          </p>
         </div>
-        <h1 class="text-4xl font-bold">
-          {{ t('gear.page.title', 'Gear Stack') }}
-        </h1>
-        <p class="text-muted-foreground text-lg max-w-2xl mx-auto">
-          {{ t('gear.page.subtitle', 'Organize and manage your gear collections') }}
-        </p>
       </div>
 
-      <!-- Quick Stats -->
-      <div v-if="containers.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <DashboardContainerCard
-          :to="GearRoutePath.Containers"
-          :count="containers.length"
-          :label="t('gear.page.containers', 'Containers')"
-        />
-        <DashboardContainerCard
-          :to="GearRoutePath.AllItems"
-          :count="containers.reduce((sum, c) => sum + c.items.length, 0)"
-          :label="t('gear.page.items', 'Items')"
-        />
-        <DashboardContainerCard
-          :to="GearRoutePath.Containers"
-          :count="readyContainersCount"
-          :label="t('gear.page.readyContainers', 'Ready Containers')"
-        />
-        <DashboardContainerCard
-          v-if="config.backend.enabled"
-          :to="GearRoutePath.PublicContainers"
-          :count="isLoadingPublicContainers ? '...' : publicContainersCount"
-          :label="t('gear.publicContainers.navTitle', 'Public Browser')"
-          :icon="Globe"
-        />
-      </div>
-
-      <!-- Actions -->
-      <div class="flex flex-col items-center gap-4">
-        <div v-if="containers.length > 0" class="flex flex-col items-center gap-4 w-full max-w-md">
-          <ButtonLink size="lg" class="w-full" :to="GearRoutePath.Containers">
-            <BackpackIcon class="size-5" />
-            {{ t('gear.page.viewContainers', 'View Containers') }}
-          </ButtonLink>
-          <!-- Row 1: Create Container, Generate Sample Set -->
-          <div class="flex flex-col sm:flex-row gap-4 w-full">
-            <ButtonLink
-              size="lg"
-              variant="outline"
-              class="flex-1"
-              :to="GearRoutePath.ContainerNew"
-            >
-              <Plus class="size-5" />
-              {{ t('gear.container.create.title', 'Create Container') }}
-            </ButtonLink>
-            <GenerateExampleGearButton class="flex-1" />
+      <!-- Guest welcome section -->
+      <div v-else class="space-y-6">
+        <div class="rounded-lg border bg-card p-6">
+          <div class="mb-4 flex items-center gap-3">
+            <Church class="size-8 text-primary" />
+            <h2 class="text-2xl font-semibold">Zbory CHWZ</h2>
           </div>
-          <!-- Row 2: Login, Register (only if not authenticated) -->
-          <div v-if="!isAuthenticated && config.backend.enabled" class="flex flex-col sm:flex-row gap-4 w-full">
-            <ButtonLink
-              size="lg"
-              variant="outline"
-              class="flex-1"
-              :to="AuthRoutePaths.login"
-            >
-              <LogIn class="size-5" />
-              {{ t('auth.login', 'Log In') }}
-            </ButtonLink>
-            <ButtonLink
-              size="lg"
-              variant="outline"
-              class="flex-1"
-              :to="AuthRoutePaths.register"
-            >
-              <UserPlus class="size-5" />
-              {{ t('auth.register', 'Sign Up') }}
-            </ButtonLink>
-          </div>
-        </div>
-
-        <!-- Empty State -->
-        <div v-if="containers.length === 0" class="text-center py-12 max-w-md">
-          <p class="text-muted-foreground mb-6">
-            {{ t('gear.page.emptyDescription', 'Get started by creating your first gear container.') }}
+          <p class="mb-4 text-muted-foreground">
+            System zarządzania i publicznej prezentacji zborów Chrześcijańskiej Wspólnoty Wolnych
+            Zielonoświątkowców.
           </p>
 
-          <!-- Create, Generate Sample Set, Import from Markdown, Login, Register -->
-          <WelcomeQuickActions />
+          <div class="flex flex-wrap gap-4">
+            <ButtonLink :to="AuthRoutePaths.login">
+              <LogIn class="size-4" />
+              {{ t('auth.login') }}
+            </ButtonLink>
+            <ButtonLink :to="AuthRoutePaths.register" variant="outline">
+              <UserPlus class="size-4" />
+              {{ t('auth.register') }}
+            </ButtonLink>
+          </div>
         </div>
+
+        <WelcomeQuickActions />
       </div>
     </div>
   </AuthenticatedLayout>

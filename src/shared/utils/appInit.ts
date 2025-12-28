@@ -7,7 +7,6 @@
  * - Other initialization utilities
  */
 
-import { useGearStore } from '@/modules/gear/store/useGearStore'
 import type { I18n } from 'vue-i18n'
 
 /**
@@ -42,8 +41,7 @@ export function setHtmlLangAttribute(i18n: I18n): void {
  * without blocking the initial render
  */
 export async function initializeStores(): Promise<void> {
-  // Initialize gear store with async localStorage loading
-  const gearStore = useGearStore()
-  await gearStore.initialize()
+  // No stores to initialize yet
+  // Add store initialization here when needed
 }
 

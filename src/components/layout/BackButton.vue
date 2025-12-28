@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { ArrowLeft } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
-import { getActionIcon } from '@/modules/gear/utils/actionIcons'
 
 const { t } = useI18n()
-const BackIcon = getActionIcon('back')
 
 defineProps<{
   noLabel?: boolean
@@ -16,7 +15,7 @@ defineProps<{
     variant="ghost"
     size="sm"
   >
-    <BackIcon class="size-4" />
+    <ArrowLeft class="size-4" />
     {{ !noLabel ? t('common.back') : null }}
   </Button>
 </template>

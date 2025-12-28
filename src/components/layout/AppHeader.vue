@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BackpackIcon, CreditCard, GlobeIcon, PackageIcon, SettingsIcon, ShieldIcon, ShoppingCartIcon, UserIcon } from 'lucide-vue-next'
+import { SettingsIcon, ShieldIcon, UserIcon } from 'lucide-vue-next'
 import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -10,8 +10,6 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { AdminRoutePaths } from '@/modules/admin/routes'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRouteNames, AuthRoutePaths } from '@/modules/auth/config/routes'
-import { BillingRoutePaths } from '@/modules/billing/routes'
-import { GearRoutePath } from '@/modules/gear/routes'
 import { SettingsRoutePaths } from '@/modules/settings/routes'
 import { useUser } from '@/modules/user/composables/useUser'
 import { UserRoutePaths } from '@/modules/user/routes'
@@ -47,16 +45,6 @@ const coreLinks = computed<Link[]>(() => [
     icon: SettingsIcon,
   },
   {
-    to: GearRoutePath.Settings,
-    label: t('gear.settings.page.title', 'Gear settings'),
-    icon: BackpackIcon,
-  },
-  {
-    to: BillingRoutePaths.billing,
-    label: t('billing.title', 'Billing & Subscription'),
-    icon: CreditCard,
-  },
-  {
     to: AdminRoutePaths.dashboard,
     label: t('admin.dashboard.title', 'Admin Dashboard'),
     icon: ShieldIcon,
@@ -65,26 +53,7 @@ const coreLinks = computed<Link[]>(() => [
 ])
 
 const navLinks = computed<Link[]>(() => [
-  {
-    to: GearRoutePath.Containers,
-    label: t('gear.page.title', 'Gear'),
-    icon: BackpackIcon,
-  },
-  {
-    to: GearRoutePath.AllItems,
-    label: t('gear.allItems.navTitle', 'All Items'),
-    icon: PackageIcon,
-  },
-  {
-    to: GearRoutePath.ShoppingPlanning,
-    label: t('gear.shopping.navTitle', 'Shopping'),
-    icon: ShoppingCartIcon,
-  },
-  {
-    to: GearRoutePath.PublicContainers,
-    label: t('gear.publicContainers.navTitle', 'Public Browser'),
-    icon: GlobeIcon,
-  },
+  // Navigation links can be added here as needed
 ])
 
 const handleLogout = async () => {

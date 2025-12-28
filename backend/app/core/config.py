@@ -160,6 +160,11 @@ class SecuritySettings(BaseSettings):
 
     model_config = _base_config
 
+    registration_enabled: bool = Field(
+        default=True,
+        validation_alias="REGISTRATION_ENABLED",
+        description="Enable user registration (disable for invite-only mode)",
+    )
     secret_key: str = Field(
         default="change-me-in-production-min-32-chars!",
         validation_alias="SECRET_KEY",
