@@ -446,7 +446,7 @@ class StorageSettings(BaseSettings):
     base_url: str | None = Field(
         default=None,
         validation_alias="STORAGE_BASE_URL",
-        description="Base URL for serving uploaded files (e.g., https://api.gear-stack.com or http://localhost:8000). If not set, uses relative paths.",
+        description="Base URL for serving uploaded files (e.g., https://api.zbory.chwz.waw.pl or http://localhost:8001). If not set, uses relative paths.",
     )
 
     # S3 storage

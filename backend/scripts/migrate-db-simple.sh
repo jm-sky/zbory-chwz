@@ -15,10 +15,10 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # Configuration
-DB_CONTAINER="${DB_CONTAINER:-gear-stack-db}"
+DB_CONTAINER="${DB_CONTAINER:-zbory-chwz-db}"
 DB_NAME="${POSTGRES_DB:-backend}"
 DB_USER="${POSTGRES_USER:-backend}"
-DUMP_FILE="gear-stack-db-dump-$(date +%Y%m%d-%H%M%S).sql"
+DUMP_FILE="zbory-chwz-db-dump-$(date +%Y%m%d-%H%M%S).sql"
 
 # Check required variables
 if [ -z "$OLD_SERVER" ] || [ -z "$NEW_SERVER" ]; then

@@ -35,10 +35,10 @@ detect_compose_file() {
       # Fallback: assume docker-compose.yml for production container
       compose_file="docker-compose.yml"
     fi
-  # Check for development container (gear-stack-app)
-  elif docker ps --format '{{.Names}}' | grep -q "^gear-stack-app$"; then
+  # Check for development container (zbory-chwz-app)
+  elif docker ps --format '{{.Names}}' | grep -q "^zbory-chwz-app$"; then
     # Try to get compose file from container labels
-    local config_files=$(docker inspect gear-stack-app --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}' 2>/dev/null || echo "")
+    local config_files=$(docker inspect zbory-chwz-app --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}' 2>/dev/null || echo "")
     if [ -n "$config_files" ]; then
       # Extract filename from full path
       compose_file=$(basename "$config_files" | head -n1)
@@ -50,7 +50,7 @@ detect_compose_file() {
   
   # If still not found, try to find any app container and check its labels
   if [ -z "$compose_file" ]; then
-    local app_container=$(docker ps --format '{{.Names}}' | grep -E "(backend|gear-stack-app)" | head -n1)
+    local app_container=$(docker ps --format '{{.Names}}' | grep -E "(backend|zbory-chwz-app)" | head -n1)
     if [ -n "$app_container" ]; then
       local config_files=$(docker inspect "$app_container" --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}' 2>/dev/null || echo "")
       if [ -n "$config_files" ]; then
@@ -98,7 +98,7 @@ cd "$BACKEND_DIR"
 if [ "$COMPOSE_FILE" = "docker-compose.yml" ]; then
   CONTAINER_NAME="backend"
 elif [ "$COMPOSE_FILE" = "docker-compose.dev.yml" ]; then
-  CONTAINER_NAME="gear-stack-app"
+  CONTAINER_NAME="zbory-chwz-app"
 else
   # Try to get container name from compose file
   CONTAINER_NAME=$(docker compose -f "$COMPOSE_FILE" ps app --format json 2>/dev/null | grep -o '"Name":"[^"]*"' | head -n1 | cut -d'"' -f4 || echo "app")

@@ -3,9 +3,9 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gear-stack-backend"
-version = "2.13.0"
-description = "Gear Stack API Backend"
+name = "zbory-chwz-backend"
+version = "0.1.0"
+description = "Zbory CHWZ API Backend"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
