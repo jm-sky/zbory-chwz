@@ -748,14 +748,19 @@ async def _seed_congregations(db: "AsyncSession") -> None:
             address_data = cong_data.get("address")
             service_times = cong_data.get("service_times", [])
             contact_person = cong_data.get("contact_person")
+            status = cong_data.get("status", "draft")
 
             if address_data:
-                console.print(f"[cyan]    Address data (to be implemented): {address_data['street']}, {address_data['city']}[/cyan]")
+                street = address_data.get("street", "N/A")
+                city = address_data.get("city", "N/A")
+                console.print(f"[cyan]    Address data (to be implemented): {street}, {city}[/cyan]")
             if service_times:
                 times_str = ", ".join([f"{st['day']} {st['time']}" for st in service_times])
                 console.print(f"[cyan]    Service times (to be implemented): {times_str}[/cyan]")
             if contact_person:
                 console.print(f"[cyan]    Contact person (to be implemented): {contact_person['name']} ({contact_person['title']})[/cyan]")
+            if status:
+                console.print(f"[cyan]    Status (to be implemented): {status}[/cyan]")
 
     await db.commit()
     console.print(f"[bold green]✓ Created {created_count}, updated {updated_count} congregations[/bold green]")
