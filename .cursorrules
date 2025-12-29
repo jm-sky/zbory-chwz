@@ -8,6 +8,10 @@
 - Running Docker in such directories can cause conflicts with production services
 - If the current working directory starts with `_`, do not execute any `docker` or `docker-compose` commands
 
+**Docker Compose Project Naming:**
+- Use `COMPOSE_PROJECT_NAME=zbory-chwz` in `backend/.env`
+- Prevents conflicts with other projects (e.g., gear-stack) on the same VPS
+
 ## Project Architecture
 
 **Multi-tenant Architecture:**

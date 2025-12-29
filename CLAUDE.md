@@ -41,6 +41,12 @@ This project uses **pnpm** (version 10.18.3+). Always use `pnpm` instead of `npm
 - Running Docker in such directories can cause conflicts with production services
 - If the current working directory starts with `_`, do not execute any `docker` or `docker compose` commands
 
+**Docker Compose Project Naming:**
+- Each project uses `COMPOSE_PROJECT_NAME` in `.env` to ensure unique resource names
+- zbory-chwz: `COMPOSE_PROJECT_NAME=zbory-chwz`
+- gear-stack: `COMPOSE_PROJECT_NAME=gear-stack`
+- This prevents conflicts when running multiple projects on the same VPS
+
 ```bash
 docker compose -f backend/docker-compose.dev.yml up    # Start backend in development mode
 docker compose -f backend/docker-compose.dev.yml down  # Stop backend

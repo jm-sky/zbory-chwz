@@ -135,12 +135,14 @@ services:
 networks:
   zbory-chwz-network:
     name: zbory-chwz-network
-    external: true
 
 volumes:
   zbory_chwz_postgres_data:
-    driver: local
+    name: backend_zbory_chwz_postgres_data
+    external: true
   zbory_chwz_redis_data:
-    driver: local
+    name: backend_zbory_chwz_redis_data
+    external: true
   zbory_chwz_uploads:
-    driver: local
+    name: backend_zbory_chwz_uploads
+    external: true
