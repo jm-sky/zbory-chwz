@@ -105,7 +105,7 @@ const onSubmit = handleSubmit(async (values: RegisterCredentials) => {
       {{ t('auth.form.submit_register') }}
     </Button>
 
-    <template v-if="config.oauth.google.enabled">
+    <template v-if="config.oauth.google.enabled || config.oauth.facebook.enabled">
       <div class="relative my-6">
         <div class="absolute inset-0 flex items-center">
           <span class="w-full border-t" />
@@ -117,8 +117,8 @@ const onSubmit = handleSubmit(async (values: RegisterCredentials) => {
         </div>
       </div>
 
-      <OAuthGoogleButton />
-      <OAuthFacebookButton />
+      <OAuthGoogleButton v-if="config.oauth.google.enabled" />
+      <OAuthFacebookButton v-if="config.oauth.facebook.enabled" />
     </template>
   </form>
 </template>
