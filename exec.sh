@@ -20,95 +20,84 @@ NC='\033[0m' # No Color
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
 
-# Function to detect docker-compose file from running containers
-detect_compose_file() {
+# Function to detect compose working dir and file from running containers.
+# Output format: "<compose_dir>|<compose_file>"
+detect_compose_context() {
+  local container_name=""
+  local compose_dir=""
   local compose_file=""
-  
-  # Check for production container (backend)
-  if docker ps --format '{{.Names}}' | grep -q "^backend$"; then
-    # Try to get compose file from container labels
-    local config_files=$(docker inspect backend --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}' 2>/dev/null || echo "")
-    if [ -n "$config_files" ]; then
-      # Extract filename from full path
-      compose_file=$(basename "$config_files" | head -n1)
-    else
-      # Fallback: assume docker-compose.yml for production container
-      compose_file="docker-compose.yml"
+  local compose_path=""
+
+  if docker ps --format '{{.Names}}' | grep -q "^zbory-chwz-app$"; then
+    container_name="zbory-chwz-app"
+  elif docker ps --format '{{.Names}}' | grep -q "^backend$"; then
+    container_name="backend"
+  fi
+
+  # Detect from Docker Compose labels first (most reliable with multiple compose files).
+  if [ -n "$container_name" ]; then
+    compose_dir=$(docker inspect "$container_name" --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' 2>/dev/null || echo "")
+    compose_path=$(docker inspect "$container_name" --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}' 2>/dev/null || echo "")
+    compose_path="${compose_path%%,*}" # Use first file when there are multiple
+
+    if [ -n "$compose_path" ] && [ -f "$compose_path" ]; then
+      compose_file=$(basename "$compose_path")
+      compose_dir=$(dirname "$compose_path")
+      echo "${compose_dir}|${compose_file}"
+      return
     fi
-  # Check for development container (zbory-chwz-app)
-  elif docker ps --format '{{.Names}}' | grep -q "^zbory-chwz-app$"; then
-    # Try to get compose file from container labels
-    local config_files=$(docker inspect zbory-chwz-app --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}' 2>/dev/null || echo "")
-    if [ -n "$config_files" ]; then
-      # Extract filename from full path
-      compose_file=$(basename "$config_files" | head -n1)
-    else
-      # Fallback: assume docker-compose.dev.yml for development container
-      compose_file="docker-compose.dev.yml"
+
+    if [ -n "$compose_dir" ] && [ -n "$compose_path" ] && [ -f "${compose_dir}/${compose_path}" ]; then
+      compose_file=$(basename "$compose_path")
+      echo "${compose_dir}|${compose_file}"
+      return
     fi
   fi
-  
-  # If still not found, try to find any app container and check its labels
-  if [ -z "$compose_file" ]; then
-    local app_container=$(docker ps --format '{{.Names}}' | grep -E "(backend|zbory-chwz-app)" | head -n1)
-    if [ -n "$app_container" ]; then
-      local config_files=$(docker inspect "$app_container" --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}' 2>/dev/null || echo "")
-      if [ -n "$config_files" ]; then
-        compose_file=$(basename "$config_files" | head -n1)
-      fi
-    fi
+
+  # Fallback priority: new root compose files, then legacy backend compose files.
+  if [ -f "$PROJECT_DIR/docker-compose.dev.yml" ]; then
+    echo "${PROJECT_DIR}|docker-compose.dev.yml"
+  elif [ -f "$PROJECT_DIR/docker-compose.prod.yml" ]; then
+    echo "${PROJECT_DIR}|docker-compose.prod.yml"
+  elif [ -f "$BACKEND_DIR/docker-compose.dev.yml" ]; then
+    echo "${BACKEND_DIR}|docker-compose.dev.yml"
+  elif [ -f "$BACKEND_DIR/docker-compose.yml" ]; then
+    echo "${BACKEND_DIR}|docker-compose.yml"
+  else
+    echo "|"
   fi
-  
-  # Final fallback: check which files exist
-  if [ -z "$compose_file" ]; then
-    if [ -f "$BACKEND_DIR/docker-compose.yml" ]; then
-      compose_file="docker-compose.yml"
-    elif [ -f "$BACKEND_DIR/docker-compose.dev.yml" ]; then
-      compose_file="docker-compose.dev.yml"
-    fi
-  fi
-  
-  echo "$compose_file"
 }
 
 # Determine which docker-compose file to use
-COMPOSE_FILE=$(detect_compose_file)
+COMPOSE_CONTEXT=$(detect_compose_context)
+COMPOSE_DIR="${COMPOSE_CONTEXT%%|*}"
+COMPOSE_FILE="${COMPOSE_CONTEXT##*|}"
 
-if [ -z "$COMPOSE_FILE" ]; then
+if [ -z "$COMPOSE_FILE" ] || [ -z "$COMPOSE_DIR" ]; then
   echo -e "${RED}Error: Could not detect docker-compose file${NC}"
-  echo -e "${YELLOW}Make sure at least one container is running or docker-compose file exists in $BACKEND_DIR${NC}"
+  echo -e "${YELLOW}Make sure at least one container is running or a compose file exists in ${PROJECT_DIR} or ${BACKEND_DIR}${NC}"
   exit 1
 fi
 
-# Check if backend directory exists
-if [ ! -d "$BACKEND_DIR" ]; then
-  echo -e "${RED}Error: Backend directory not found: $BACKEND_DIR${NC}"
+# Check if compose directory exists
+if [ ! -d "$COMPOSE_DIR" ]; then
+  echo -e "${RED}Error: Compose directory not found: $COMPOSE_DIR${NC}"
   exit 1
 fi
 
 # Check if docker-compose file exists
-if [ ! -f "$BACKEND_DIR/$COMPOSE_FILE" ]; then
-  echo -e "${RED}Error: Docker Compose file not found: $BACKEND_DIR/$COMPOSE_FILE${NC}"
+if [ ! -f "$COMPOSE_DIR/$COMPOSE_FILE" ]; then
+  echo -e "${RED}Error: Docker Compose file not found: $COMPOSE_DIR/$COMPOSE_FILE${NC}"
   exit 1
 fi
 
-cd "$BACKEND_DIR"
-
-# Determine container name based on compose file
-if [ "$COMPOSE_FILE" = "docker-compose.yml" ]; then
-  CONTAINER_NAME="backend"
-elif [ "$COMPOSE_FILE" = "docker-compose.dev.yml" ]; then
-  CONTAINER_NAME="zbory-chwz-app"
-else
-  # Try to get container name from compose file
-  CONTAINER_NAME=$(docker compose -f "$COMPOSE_FILE" ps app --format json 2>/dev/null | grep -o '"Name":"[^"]*"' | head -n1 | cut -d'"' -f4 || echo "app")
-fi
+cd "$COMPOSE_DIR"
 
 # Check if container is running
-if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  echo -e "${YELLOW}Warning: Container '${CONTAINER_NAME}' is not running. Starting it...${NC}"
+if ! docker compose -f "$COMPOSE_FILE" ps --services --filter status=running | grep -q '^app$'; then
+  echo -e "${YELLOW}Warning: Service 'app' is not running. Starting it...${NC}"
   docker compose -f "$COMPOSE_FILE" up -d app
-  
+
   # Wait a bit for container to be ready
   echo -e "${YELLOW}Waiting for container to be ready...${NC}"
   sleep 3
@@ -124,4 +113,3 @@ fi
 # Execute command in container
 echo -e "${GREEN}Executing in container (${COMPOSE_FILE}):${NC} ${CMD_ARGS[*]}"
 docker compose -f "$COMPOSE_FILE" exec app "${CMD_ARGS[@]}"
-

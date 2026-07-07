@@ -37,7 +37,10 @@ class AuthServiceWith2FA(AuthService):
         user_repository: UserRepositoryInterface,
         two_factor_service: TwoFactorService,
     ):
-        super().__init__(user_repository)
+        super().__init__(
+            user_repository=user_repository,
+            two_factor_repository=two_factor_service.repository,
+        )
         self.two_factor_service = two_factor_service
 
     async def login_user(self, email: str, password: str) -> LoginResponse | TwoFactorRequiredResponse:  # type: ignore[override]

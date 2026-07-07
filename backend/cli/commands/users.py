@@ -4,6 +4,7 @@ This module provides Django-like commands for creating, listing, and managing us
 """
 
 import asyncio
+import sys
 from typing import Any
 
 import typer
@@ -84,6 +85,17 @@ async def _users_create_async(
 
     console = Console()
     console.print("\n[bold cyan]Create New User[/bold cyan]\n")
+
+    if not no_input and not sys.stdin.isatty():
+        console.print("[red]Interactive mode requires a TTY.[/red]")
+        console.print(
+            "Run with [cyan]-it[/cyan]: docker exec -it zbory-chwz-app python -m cli users create"
+        )
+        console.print(
+            "Or use [cyan]--no-input[/cyan] with all options: "
+            "--email ... --name ... --password ... --role admin"
+        )
+        raise typer.Exit(1)
 
     # Get user details interactively if not provided
     email_value = await _get_email(console, email, no_input)
@@ -332,10 +344,16 @@ def users_list(
     active_only: bool = typer.Option(False, "--active", help="Show only active users"),
     inactive_only: bool = typer.Option(False, "--inactive", help="Show only inactive users"),
     limit: int | None = typer.Option(None, "--limit", "-l", help="Maximum number of users to show"),
-    detailed: bool = typer.Option(
-        False,
-        "--detailed",
+    detailed: bool | None = typer.Option(
+        None,
+        "--detailed/--no-detailed",
         help="Show detailed information (email verified, 2FA status)",
+    ),
+    wide: bool | None = typer.Option(
+        None,
+        "--wide/--no-wide",
+        "-w",
+        help="Show full IDs and emails without truncation",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
@@ -354,9 +372,22 @@ def users_list(
         # Show detailed information
         python -m cli users list --detailed
 
+        # Show full IDs and emails
+        python -m cli users list --wide
+
         # Output as JSON
         python -m cli users list --json
     """
+    if not json_output:
+        if detailed is None:
+            detailed = typer.confirm(
+                "Show detailed info (email verified, 2FA)?", default=False
+            )
+        if wide is None:
+            wide = typer.confirm("Show full IDs and emails?", default=False)
+    else:
+        detailed = detailed or False
+        wide = wide or False
     asyncio.run(
         _users_list_async(
             admins_only,
@@ -365,6 +396,7 @@ def users_list(
             inactive_only,
             limit,
             detailed,
+            wide,
             json_output,
         )
     )
@@ -377,6 +409,7 @@ async def _users_list_async(
     inactive_only: bool,
     limit: int | None,
     detailed: bool,
+    wide: bool,
     json_output: bool,
 ) -> None:
     """Async implementation of user listing."""
@@ -442,7 +475,10 @@ async def _users_list_async(
         )
 
         table.add_column("ID", style="dim", no_wrap=True)
-        table.add_column("Email", style="cyan")
+        if wide:
+            table.add_column("Email", style="cyan", overflow="fold")
+        else:
+            table.add_column("Email", style="cyan", overflow="ellipsis", max_width=40)
         table.add_column("Name", style="white")
         table.add_column("Role", justify="center")
         table.add_column("Status", justify="center")
@@ -456,7 +492,7 @@ async def _users_list_async(
             created = user["createdAt"].strftime("%Y-%m-%d %H:%M")
 
             row = [
-                truncate_id(user["id"]),
+                str(user["id"]) if wide else truncate_id(user["id"]),
                 user["email"],
                 user["name"],
                 format_user_role(
@@ -561,8 +597,16 @@ async def _get_users_from_db(detailed: bool = False) -> list[dict[str, Any]]:
 def users_delete(
     identifier: str | None = typer.Argument(None, help="User email or ID to delete"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
+    hard: bool = typer.Option(
+        False,
+        "--hard",
+        help="Permanently remove user from database (default: soft delete)",
+    ),
 ) -> None:
     """Delete a user by email or ID with confirmation.
+
+    By default performs a soft delete (deactivates account, anonymizes email).
+    Use --hard to permanently remove the user from the database.
 
     Examples:
         # Interactive mode (will prompt for email/ID)
@@ -573,11 +617,14 @@ def users_delete(
 
         # Delete by ID without confirmation
         python -m cli users delete 01HQX... --yes
+
+        # Permanently remove user from database
+        python -m cli users delete user@example.com --hard --yes
     """
-    asyncio.run(_users_delete_async(identifier, yes))
+    asyncio.run(_users_delete_async(identifier, yes, hard))
 
 
-async def _users_delete_async(identifier: str | None, yes: bool) -> None:
+async def _users_delete_async(identifier: str | None, yes: bool, hard: bool) -> None:
     """Async implementation of user deletion."""
     from rich.console import Console
 
@@ -610,7 +657,16 @@ async def _users_delete_async(identifier: str | None, yes: bool) -> None:
 
         # Confirm deletion
         if not yes:
-            console.print("\n[bold red]Warning:[/bold red] This action cannot be undone!\n")
+            if hard:
+                console.print(
+                    "\n[bold red]Warning:[/bold red] Hard delete permanently removes the user "
+                    "from the database. This cannot be undone!\n"
+                )
+            else:
+                console.print(
+                    "\n[bold yellow]Note:[/bold yellow] Soft delete deactivates the account and "
+                    "anonymizes email (the email can be reused).\n"
+                )
 
             if not Confirm.ask("Are you sure you want to delete this user?", default=False):
                 console.print("[yellow]Cancelled[/yellow]")
@@ -618,9 +674,14 @@ async def _users_delete_async(identifier: str | None, yes: bool) -> None:
 
         # Delete user
         with console.status("[bold red]Deleting user...", spinner="dots"):
-            await _delete_user_from_db(user["id"])
+            await _delete_user_from_db(user["id"], hard=hard)
 
-        console.print("\n[bold green]✓[/bold green] User deleted successfully\n")
+        if hard:
+            console.print("\n[bold green]✓[/bold green] User permanently deleted\n")
+        else:
+            console.print(
+                "\n[bold green]✓[/bold green] User soft-deleted successfully\n"
+            )
 
     except Exception as e:
         console.print(f"\n[red]Error deleting user:[/red] {e}\n")
@@ -666,28 +727,22 @@ async def _find_user(identifier: str) -> dict[str, Any] | None:
     return None
 
 
-async def _delete_user_from_db(user_id: str) -> None:
+async def _delete_user_from_db(user_id: str, *, hard: bool = False) -> None:
     """Delete user from database.
 
     Args:
         user_id: User ID to delete
+        hard: If True, permanently remove user; otherwise soft-delete via repository
     """
     from app.core.database import get_db
-    from app.modules.auth.db_models import UserDB
-    from sqlalchemy import select
+    from app.modules.auth.repositories import UserRepository
 
     async for db in get_db():
-        # Find user
-        stmt = select(UserDB).where(UserDB.id == user_id)
-        result = await db.execute(stmt)
-        user_db = result.scalar_one_or_none()
-
-        if not user_db:
+        repo = UserRepository(db)
+        success = await repo.delete_user(user_id, soft_delete=not hard)
+        if not success:
             raise ValueError(f"User with id {user_id} not found")
-
-        # Delete user
-        await db.delete(user_db)
-        await db.commit()
+        break
 
 
 @users_app.command("toggle-admin")

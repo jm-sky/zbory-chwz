@@ -66,7 +66,10 @@ def get_auth_service(
 
         logger = logging.getLogger(__name__)
         logger.debug("Using regular AuthService (2FA not available)")
-        return AuthService(user_repository)
+        return AuthService(
+            user_repository=user_repository,
+            two_factor_repository=two_factor_repository,
+        )
 
 
 async def _verify_user_token(

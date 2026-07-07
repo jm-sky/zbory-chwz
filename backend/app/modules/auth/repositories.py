@@ -15,7 +15,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 from fastapi import Depends
-from sqlalchemy import select, func
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -330,6 +330,21 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
         if not user_db:
             return False
 
+        # Always remove OAuth connections tied to this user.
+        await self.db.execute(
+            delete(OAuthConnectionDB).where(OAuthConnectionDB.user_id == user_id)
+        )
+        # Best-effort cleanup for 2FA artifacts (module may be disabled in some deployments).
+        try:
+            from app.modules.two_factor.db_models import PasskeyDB, TotpConfigDB
+
+            await self.db.execute(
+                delete(TotpConfigDB).where(TotpConfigDB.user_id == user_id)
+            )
+            await self.db.execute(delete(PasskeyDB).where(PasskeyDB.user_id == user_id))
+        except ImportError:
+            pass
+
         if soft_delete:
             # Soft delete: mark as deleted and anonymize data
             user_db.deleted_at = datetime.now(UTC)
@@ -338,8 +353,15 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             user_db.email = f"deleted_{user_db.id}@deleted.local"
             user_db.name = "Deleted User"
             # Clear sensitive data
+            user_db.hashed_password = None  # type: ignore[assignment]
             user_db.reset_token = None
             user_db.reset_token_expiry = None
+            user_db.email_verification_token = None
+            user_db.email_verification_sent_at = None
+            user_db.email_verified_at = None
+            user_db.oauth_provider = None
+            user_db.oauth_provider_id = None
+            user_db.avatar_url = None
         else:
             # Hard delete: physically remove from database
             await self.db.delete(user_db)

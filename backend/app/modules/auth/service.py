@@ -3,6 +3,7 @@
 import logging
 import os
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING, cast
 
 from ...core.config import settings
 from ...core.email import get_email_service
@@ -23,6 +24,9 @@ from .models import User
 from .schemas import LoginResponse, UserResponse
 from .types.repository import UserRepositoryInterface
 
+if TYPE_CHECKING:
+    from app.modules.two_factor.types.repository import TwoFactorRepositoryInterface
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,8 +35,13 @@ class AuthService:
 
     user_repository: UserRepositoryInterface
 
-    def __init__(self, user_repository: UserRepositoryInterface):
+    def __init__(
+        self,
+        user_repository: UserRepositoryInterface,
+        two_factor_repository: object | None = None,
+    ):
         self.user_repository = user_repository
+        self.two_factor_repository = two_factor_repository
 
     async def register_user(
         self,
@@ -449,6 +458,18 @@ class AuthService:
         user_name = user.name
 
         # Delete user account
+        if self.two_factor_repository:
+            two_factor_repository = cast(
+                "TwoFactorRepositoryInterface", self.two_factor_repository
+            )
+            try:
+                await two_factor_repository.disable_totp(user_id)
+                await two_factor_repository.delete_all_passkeys(user_id)
+            except Exception:
+                logger.warning(
+                    "Failed to cleanup 2FA artifacts during account deletion",
+                    exc_info=True,
+                )
         success = await self.user_repository.delete_user(
             user_id, soft_delete=soft_delete
         )
@@ -469,8 +490,7 @@ class AuthService:
             # Log error but don't fail deletion if email fails
             logger.warning(f"Failed to send account deletion email: {e}")
 
-        # TODO: Invalidate all user sessions/tokens
-        # TODO: Delete related data (2FA, passkeys, etc.)
+        # TODO: Invalidate all user sessions/tokens (handled in router via blacklist)
 
         return True
 

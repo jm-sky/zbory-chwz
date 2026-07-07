@@ -19,7 +19,7 @@ export function useOAuth() {
       const response = await authService.getOAuthAuthUrl('google')
 
       // Store state for CSRF verification
-      localStorage.setItem('oauth_state', response.state)
+      sessionStorage.setItem('oauth_state', response.state)
 
       // Redirect to Google
       window.location.href = response.authUrl
@@ -43,7 +43,7 @@ export function useOAuth() {
       const response = await authService.getOAuthAuthUrl('facebook')
 
       // Store state for CSRF verification
-      localStorage.setItem('oauth_state', response.state)
+      sessionStorage.setItem('oauth_state', response.state)
 
       // Redirect to Facebook
       window.location.href = response.authUrl

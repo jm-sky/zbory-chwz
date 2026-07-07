@@ -179,6 +179,12 @@ class TwoFactorRepository(TwoFactorRepositoryInterface):
         await self.db.execute(stmt)
         await self.db.commit()
 
+    async def delete_all_passkeys(self, user_id: str) -> None:
+        """Delete all passkeys for a user."""
+        stmt = delete(PasskeyDB).where(PasskeyDB.user_id == user_id)
+        await self.db.execute(stmt)
+        await self.db.commit()
+
 
 def get_two_factor_repository(
     db: AsyncSession = Depends(get_db),

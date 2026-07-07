@@ -75,3 +75,7 @@ class TwoFactorRepositoryInterface(Protocol):
     async def delete_passkey(self, passkey_id: str) -> None:
         """Delete a passkey."""
         ...
+
+    async def delete_all_passkeys(self, user_id: str) -> None:
+        """Delete all passkeys for a user."""
+        ...

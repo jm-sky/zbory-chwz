@@ -55,7 +55,7 @@ onMounted(async () => {
     }
 
     // Verify state parameter for CSRF protection
-    const storedState = localStorage.getItem('oauth_state')
+    const storedState = sessionStorage.getItem('oauth_state')
     if (!storedState || storedState !== state) {
       error.value = t('auth.oauth.callback.invalid_state')
       setTimeout(() => {
@@ -65,7 +65,7 @@ onMounted(async () => {
     }
 
     // Clear stored state
-    localStorage.removeItem('oauth_state')
+    sessionStorage.removeItem('oauth_state')
 
     // Get reCAPTCHA token if enabled
     const recaptchaToken = await getToken('oauth_callback')
