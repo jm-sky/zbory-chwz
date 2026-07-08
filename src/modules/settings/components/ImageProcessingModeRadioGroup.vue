@@ -24,7 +24,7 @@ const canUseHighQuality = computed(() => canUsePremiumFeatures.value)
   <RadioGroup
     class="flex flex-col gap-4"
     :model-value="props.modelValue"
-    @update:model-value="value => emit('update:modelValue', value)"
+    @update:model-value="value => emit('update:modelValue', value as string)"
   >
     <div class="flex items-center gap-2" :class="{ 'opacity-50 cursor-not-allowed': !canUseHighQuality }">
       <RadioGroupItem id="high-quality" value="high_quality" :disabled="!canUseHighQuality" />
