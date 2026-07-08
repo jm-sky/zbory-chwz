@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { Input, PasswordInput } from '@/components/ui/input'
 import OAuthFacebookButton from '@/modules/auth/components/OAuthFacebookButton.vue'
 import OAuthGitHubButton from '@/modules/auth/components/OAuthGitHubButton.vue'
 import OAuthGoogleButton from '@/modules/auth/components/OAuthGoogleButton.vue'
@@ -102,7 +102,7 @@ const onSubmit = handleSubmit(async (values: LoginCredentials) => {
           {{ t('auth.password') }}
         </FormLabel>
         <FormControl>
-          <Input type="password" :placeholder="t('auth.form.password_placeholder')" v-bind="componentField" />
+          <PasswordInput :placeholder="t('auth.form.password_placeholder')" v-bind="componentField" />
         </FormControl>
         <FormMessage />
       </FormItem>
