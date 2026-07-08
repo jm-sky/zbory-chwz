@@ -31,7 +31,7 @@ from .schemas import (
 )
 from .service import TwoFactorService
 
-router = APIRouter(prefix="/two-factor", tags=["Two-Factor Authentication"])
+router = APIRouter(tags=["Two-Factor Authentication"])
 
 
 async def get_service(

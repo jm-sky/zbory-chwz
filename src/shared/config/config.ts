@@ -54,6 +54,10 @@ export const config = {
       clientId: import.meta.env.VITE_FACEBOOK_OAUTH_CLIENT_ID ?? '',
       enabled: !!import.meta.env.VITE_FACEBOOK_OAUTH_CLIENT_ID,
     },
+    github: {
+      clientId: import.meta.env.VITE_GITHUB_OAUTH_CLIENT_ID ?? '',
+      enabled: !!import.meta.env.VITE_GITHUB_OAUTH_CLIENT_ID,
+    },
   },
   features: {
     imageSearch: {

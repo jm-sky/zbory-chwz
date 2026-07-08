@@ -2,7 +2,6 @@
 import { CheckCircle2, Shield } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import PageCard from '@/components/layout/PageCard.vue'
 import { Button } from '@/components/ui/button'
 import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,111 +50,108 @@ const handleDisableTotpSuccess = async () => {
 
 <template>
   <AuthenticatedLayout>
-    <PageCard>
-      <div class="space-y-6">
-        <!-- Header -->
-        <div class="space-y-2">
-          <div class="flex items-center gap-2">
-            <Shield :size="24" />
-            <h1 class="text-3xl font-bold">
-              {{ t('auth.two_factor.title') }}
-            </h1>
-          </div>
-          <p class="text-muted-foreground">
-            {{ t('auth.two_factor.subtitle') }}
-          </p>
+    <div class="max-w-2xl mx-auto space-y-6">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2 flex-wrap">
+          <Shield class="size-6 sm:size-7 shrink-0" />
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
+            {{ t('auth.two_factor.title') }}
+          </h1>
         </div>
-
-        <div class="space-y-6 max-w-2xl mx-auto">
-          <!-- Tabs for TOTP and WebAuthn -->
-          <Tabs default-value="totp" class="w-full">
-            <TabsList class="grid w-full grid-cols-2">
-              <TabsTrigger value="totp">
-                {{ t('auth.two_factor.totp.title') }}
-              </TabsTrigger>
-              <TabsTrigger value="webauthn">
-                {{ t('auth.two_factor.webauthn.title') }}
-              </TabsTrigger>
-            </TabsList>
-
-            <!-- TOTP Tab -->
-            <TabsContent value="totp" class="space-y-4">
-              <!-- TOTP Status Card -->
-              <Card v-if="totpStatus?.enabled">
-                <CardHeader>
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <CheckCircle2 :size="20" class="text-success" />
-                      <CardTitle>{{ t('auth.two_factor.totp.enabled') }}</CardTitle>
-                    </div>
-                    <Button
-                      v-if="!isDisableTotpDialogOpen"
-                      variant="destructive"
-                      size="sm"
-                      @click="isDisableTotpDialogOpen = true"
-                    >
-                      {{ t('auth.two_factor.totp.disable') }}
-                    </Button>
-                    <Button
-                      v-else
-                      variant="outline"
-                      size="sm"
-                      @click="isDisableTotpDialogOpen = false"
-                    >
-                      {{ t('auth.two_factor.totp.cancel') }}
-                    </Button>
-                  </div>
-                  <CardDescription>{{ t('auth.two_factor.totp.enabled_description') }}</CardDescription>
-                  <DisableTotpDialog
-                    v-if="isDisableTotpDialogOpen"
-                    :service
-                    class="mt-3"
-                    @success="handleDisableTotpSuccess"
-                    @cancel="isDisableTotpDialogOpen = false"
-                  />
-                </CardHeader>
-              </Card>
-
-              <!-- TOTP Setup -->
-              <div v-if="!totpStatus?.enabled">
-                <TotpSetupForm v-if="showTotpSetup" :service @success="handleTotpSetupSuccess" />
-                <Card v-else>
-                  <CardHeader>
-                    <CardTitle>{{ t('auth.two_factor.totp.title') }}</CardTitle>
-                    <CardDescription>{{ t('auth.two_factor.totp.description') }}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button @click="showTotpSetup = true">
-                      {{ t('auth.two_factor.totp.setup') }}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <!-- WebAuthn Tab -->
-            <TabsContent value="webauthn" class="space-y-4">
-              <!-- Passkeys List -->
-              <PasskeyList :service />
-
-              <!-- Add Passkey -->
-              <div v-if="showPasskeyRegister">
-                <WebAuthnRegisterForm :service @success="handlePasskeyRegisterSuccess" />
-              </div>
-              <Button v-else class="w-full" @click="showPasskeyRegister = true">
-                {{ t('auth.two_factor.webauthn.add_passkey') }}
-              </Button>
-            </TabsContent>
-          </Tabs>
-
-          <!-- Back Button -->
-          <div class="flex justify-start">
-            <ButtonLink variant="outline" :to="SettingsRoutePaths.settings">
-              {{ t('common.back') }}
-            </ButtonLink>
-          </div>
-        </div>
+        <p class="text-sm text-muted-foreground">
+          {{ t('auth.two_factor.subtitle') }}
+        </p>
       </div>
-    </PageCard>
+
+      <Tabs default-value="totp" class="w-full">
+        <TabsList class="grid h-auto w-full grid-cols-2">
+          <TabsTrigger
+            value="totp"
+            class="whitespace-normal py-2 text-xs leading-tight sm:text-sm"
+          >
+            {{ t('auth.two_factor.totp.tab_label') }}
+          </TabsTrigger>
+          <TabsTrigger
+            value="webauthn"
+            class="whitespace-normal py-2 text-xs leading-tight sm:text-sm"
+          >
+            {{ t('auth.two_factor.webauthn.tab_label') }}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="totp" class="space-y-4">
+          <Card v-if="totpStatus?.enabled">
+            <CardHeader>
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex items-center gap-2">
+                  <CheckCircle2 class="size-5 shrink-0 text-success" />
+                  <CardTitle class="text-lg sm:text-xl">
+                    {{ t('auth.two_factor.totp.enabled') }}
+                  </CardTitle>
+                </div>
+                <Button
+                  v-if="!isDisableTotpDialogOpen"
+                  variant="destructive"
+                  size="sm"
+                  class="w-full sm:w-auto"
+                  @click="isDisableTotpDialogOpen = true"
+                >
+                  {{ t('auth.two_factor.totp.disable') }}
+                </Button>
+                <Button
+                  v-else
+                  variant="outline"
+                  size="sm"
+                  class="w-full sm:w-auto"
+                  @click="isDisableTotpDialogOpen = false"
+                >
+                  {{ t('auth.two_factor.totp.cancel') }}
+                </Button>
+              </div>
+              <CardDescription>{{ t('auth.two_factor.totp.enabled_description') }}</CardDescription>
+              <DisableTotpDialog
+                v-if="isDisableTotpDialogOpen"
+                :service
+                class="mt-3"
+                @success="handleDisableTotpSuccess"
+                @cancel="isDisableTotpDialogOpen = false"
+              />
+            </CardHeader>
+          </Card>
+
+          <div v-if="!totpStatus?.enabled">
+            <TotpSetupForm v-if="showTotpSetup" :service @success="handleTotpSetupSuccess" />
+            <Card v-else>
+              <CardHeader>
+                <CardTitle>{{ t('auth.two_factor.totp.title') }}</CardTitle>
+                <CardDescription>{{ t('auth.two_factor.totp.description') }}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button class="w-full sm:w-auto" @click="showTotpSetup = true">
+                  {{ t('auth.two_factor.totp.setup') }}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="webauthn" class="space-y-4">
+          <PasskeyList :service />
+
+          <div v-if="showPasskeyRegister">
+            <WebAuthnRegisterForm :service @success="handlePasskeyRegisterSuccess" />
+          </div>
+          <Button v-else class="w-full" @click="showPasskeyRegister = true">
+            {{ t('auth.two_factor.webauthn.add_passkey') }}
+          </Button>
+        </TabsContent>
+      </Tabs>
+
+      <div class="flex justify-start">
+        <ButtonLink variant="outline" class="w-full sm:w-auto" :to="SettingsRoutePaths.settings">
+          {{ t('common.back') }}
+        </ButtonLink>
+      </div>
+    </div>
   </AuthenticatedLayout>
 </template>

@@ -241,7 +241,7 @@ async def logout(
         The token is blacklisted until its natural expiration.
         Client should also delete refresh token.
     """
-    # Verify and extract payload to get expiration
+    # Verify and extract payload to get expiration and JTI
     payload = verify_token(token)
     expires_at = payload.get("exp")
 
@@ -251,12 +251,22 @@ async def logout(
             detail="Invalid token: missing expiration",
         )
 
-    # Blacklist the token
+    # Blacklist the token (hash-based, legacy path)
     await blacklist.blacklist_token(
         token=token,
         expires_at=expires_at,
         reason="logout",
     )
+
+    # Revoke session by JTI (removes from active sessions sorted set)
+    jti = payload.get("jti")
+    if jti:
+        await blacklist.revoke_session(
+            user_id=current_user.id,
+            jti=jti,
+            expires_at=expires_at,
+            reason="logout",
+        )
 
     return MessageResponse(message="Logged out successfully")
 

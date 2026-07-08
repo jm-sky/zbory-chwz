@@ -93,6 +93,7 @@ export const authRu = {
       },
       totp: {
         title: 'Приложение-аутентификатор (TOTP)',
+        tab_label: 'TOTP',
         description: 'Используйте приложение-аутентификатор, такое как Google Authenticator или Authy',
         setup: 'Настроить приложение-аутентификатор',
         cancel: 'Отмена',
@@ -126,6 +127,7 @@ export const authRu = {
       },
       webauthn: {
         title: 'Ключи доступа',
+        tab_label: 'Ключи доступа',
         description: 'Используйте биометрическую аутентификацию или ключи безопасности',
         register: 'Зарегистрировать ключ доступа',
         register_title: 'Добавить новый ключ доступа',
@@ -180,6 +182,7 @@ export const authRu = {
       button: {
         continue_with_google: 'Google',
         continue_with_facebook: 'Facebook',
+        continue_with_github: 'GitHub',
         redirecting: 'Перенаправление...',
       },
       or_continue_with: 'Или продолжить с',

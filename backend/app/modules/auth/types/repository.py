@@ -135,6 +135,18 @@ class UserRepositoryInterface(ABC):
         ...
 
     @abstractmethod
+    async def increment_token_version(self, user_id: str) -> int:
+        """Increment token_version to invalidate all existing tokens for a user.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            New token_version value, or 0 if user not found
+        """
+        ...
+
+    @abstractmethod
     async def store_email_verification_token(
         self, user_id: str, token: str, sent_at: datetime
     ) -> User | None:

@@ -16,6 +16,7 @@ export const AuthRoutePaths = {
   twoFactorVerify: import.meta.env.VITE_AUTH_TWO_FACTOR_VERIFY_PATH ?? `${AUTH_BASE_PATH}/2fa/verify`,
   verifyEmail: import.meta.env.VITE_AUTH_VERIFY_EMAIL_PATH ?? `${AUTH_BASE_PATH}/verify-email`,
   oauthCallback: import.meta.env.VITE_AUTH_OAUTH_CALLBACK_PATH ?? `${AUTH_BASE_PATH}/callback/:provider`,
+  githubLogin: import.meta.env.VITE_GITHUB_OAUTH_CALLBACK_PATH ?? `${AUTH_BASE_PATH}/github`,
   dashboard: import.meta.env.VITE_AUTH_DASHBOARD_PATH ?? '/dashboard',
 } as const
 
@@ -30,6 +31,7 @@ export const AuthRouteNames = {
   twoFactorVerify: 'TwoFactorVerify',
   verifyEmail: 'VerifyEmail',
   oauthCallback: 'OAuthCallback',
+  githubLogin: 'GitHubLogin',
   dashboard: 'Dashboard',
 } as const
 
@@ -89,5 +91,11 @@ export const authRoutes: RouteRecordRaw[] = [
     name: AuthRouteNames.oauthCallback,
     component: () => import('@/modules/auth/pages/OAuthCallbackPage.vue'),
     meta: { title: 'auth.pages.oauthCallback' },
+  },
+  {
+    path: AuthRoutePaths.githubLogin,
+    name: AuthRouteNames.githubLogin,
+    component: () => import('@/modules/auth/pages/OAuthCallbackPage.vue'),
+    meta: { title: 'auth.pages.oauthCallback', fixedOAuthProvider: 'github' },
   },
 ]

@@ -180,6 +180,16 @@ class SecuritySettings(BaseSettings):
         validation_alias="JWT_ALGORITHM",
         description="JWT signing algorithm",
     )
+    jwt_issuer: str = Field(
+        default="zbory-chwz",
+        validation_alias="JWT_ISSUER",
+        description="JWT 'iss' claim; verified on decode to bind tokens to this deployment",
+    )
+    jwt_audience: str = Field(
+        default="zbory-chwz",
+        validation_alias="JWT_AUDIENCE",
+        description="JWT 'aud' claim; verified on decode to bind tokens to this deployment",
+    )
     access_token_expires_minutes: int = Field(
         default=30,
         validation_alias="ACCESS_TOKEN_EXPIRES_MINUTES",
@@ -387,6 +397,23 @@ class OAuthSettings(BaseSettings):
         default="",
         validation_alias="FACEBOOK_OAUTH_REDIRECT_URI",
         description="Facebook OAuth redirect URI",
+    )
+
+    # GitHub OAuth (login callback: /auth/github)
+    github_client_id: str = Field(
+        default="",
+        validation_alias="GITHUB_OAUTH_CLIENT_ID",
+        description="GitHub OAuth client ID for login",
+    )
+    github_client_secret: str = Field(
+        default="",
+        validation_alias="GITHUB_OAUTH_CLIENT_SECRET",
+        description="GitHub OAuth client secret for login",
+    )
+    github_redirect_uri: str = Field(
+        default="",
+        validation_alias="GITHUB_OAUTH_REDIRECT_URI",
+        description="GitHub login callback URL (e.g. /auth/github)",
     )
 
 

@@ -12,7 +12,7 @@ For production use, replace UserStore with database operations using UserDB.
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -72,6 +72,7 @@ class UserDB(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )
+    token_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     # OAuth fields
     oauth_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
     oauth_provider_id: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -1,6 +1,7 @@
 """FastAPI dependencies for authentication."""
 
-from typing import Annotated, Any, Union
+import logging
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -20,6 +21,8 @@ from .exceptions import (
 from .models import User
 from .repositories import get_user_repository
 
+logger = logging.getLogger(__name__)
+
 # HTTP Bearer security scheme
 security = HTTPBearer()
 
@@ -34,40 +37,43 @@ try:
     from app.modules.two_factor.types.repository import TwoFactorRepositoryInterface
 
     HAS_2FA = True
-except (ImportError, Exception):
+except ImportError:
     # Fallback to regular auth service - 2FA not available
     pass
 
 
 def get_auth_service(
     user_repository: Annotated[UserRepositoryInterface, Depends(get_user_repository)],
+    blacklist_service: Annotated[
+        TokenBlacklistService, Depends(get_token_blacklist_service)
+    ],
     two_factor_repository: Any = (
         Depends(lambda: None) if not HAS_2FA else Depends(get_two_factor_repository)
     ),
-) -> Union[AuthService, Any]:
-    """Get auth service with 2FA support if available."""
+) -> AuthService:
+    """Get auth service with 2FA support if available.
+
+    Returns ``AuthServiceWith2FA`` (a subclass of ``AuthService``) when the 2FA
+    module is installed, otherwise a plain ``AuthService`` — both satisfy the
+    ``AuthService`` interface, so callers stay type-safe.
+    """
     if HAS_2FA:
         from app.modules.two_factor.auth_integration import get_auth_service_with_2fa
 
         service = get_auth_service_with_2fa(
             user_repository=user_repository,
             two_factor_repository=two_factor_repository,
+            blacklist_service=blacklist_service,
         )
-        # Debug logging
-        import logging
-
-        logger = logging.getLogger(__name__)
-        logger.info(
+        logger.debug(
             f"Created auth service: {type(service).__name__} (2FA enabled: True)"
         )
         return service
     else:
-        import logging
-
-        logger = logging.getLogger(__name__)
         logger.debug("Using regular AuthService (2FA not available)")
         return AuthService(
             user_repository=user_repository,
+            token_blacklist_service=blacklist_service,
             two_factor_repository=two_factor_repository,
         )
 
@@ -129,6 +135,24 @@ async def _verify_user_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        # Check token version (DB fallback — works even when Redis is down)
+        token_version = payload.get("tv", 0)
+        if token_version != user.tokenVersion:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Check JTI blacklist (Redis fast-path)
+        token_jti = payload.get("jti")
+        if token_jti and await blacklist_service.is_jti_blacklisted(token_jti):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         # Check if user is active
         if not user.isActive:
             raise InactiveUserError("User account is inactive")
@@ -162,9 +186,6 @@ async def _verify_user_token(
                 pass
             except Exception as e:
                 # If 2FA check fails, log but don't break the request
-                import logging
-
-                logger = logging.getLogger(__name__)
                 logger.warning(f"2FA verification check failed: {e}", exc_info=True)
                 # In production, you might want to be more strict here
 

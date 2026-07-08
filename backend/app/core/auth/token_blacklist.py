@@ -25,6 +25,8 @@ class TokenBlacklistService:
         """
         self.redis = redis_client
         self.key_prefix = key_prefix
+        self.jti_prefix = f"{key_prefix}jti:"
+        self.user_sessions_prefix = f"{key_prefix}user_sessions:"
 
     def _get_token_hash(self, token: str) -> str:
         """Generate SHA-256 hash of token for storage.
@@ -77,6 +79,44 @@ class TokenBlacklistService:
         await self.redis.setex(key, ttl, value)
         logger.info(f"Token blacklisted: reason={reason}, ttl={ttl}s")
 
+    def _get_jti_key(self, jti: str) -> str:
+        return f"{self.jti_prefix}{jti}"
+
+    def _get_user_sessions_key(self, user_id: str) -> str:
+        return f"{self.user_sessions_prefix}{user_id}"
+
+    async def track_user_session(self, user_id: str, jti: str, expires_at: int) -> None:
+        """Register a session JTI for a user until token expiration."""
+        now = int(datetime.now(UTC).timestamp())
+        ttl = expires_at - now
+        if ttl <= 0:
+            return
+        user_sessions_key = self._get_user_sessions_key(user_id)
+        await self.redis.zadd(user_sessions_key, {jti: expires_at})
+        await self.redis.expire(user_sessions_key, ttl)
+
+    async def is_jti_blacklisted(self, jti: str) -> bool:
+        """Check if JTI has been revoked."""
+        exists = await self.redis.exists(self._get_jti_key(jti))
+        return bool(exists)
+
+    async def blacklist_jti(
+        self, jti: str, expires_at: int, reason: str = "logout"
+    ) -> None:
+        """Blacklist JTI until its natural expiration."""
+        now = int(datetime.now(UTC).timestamp())
+        ttl = expires_at - now
+        if ttl <= 0:
+            return
+        await self.redis.setex(self._get_jti_key(jti), ttl, f"{reason}:{now}")
+
+    async def revoke_session(
+        self, user_id: str, jti: str, expires_at: int, reason: str = "logout"
+    ) -> None:
+        """Revoke a specific user session and remove it from active set."""
+        await self.blacklist_jti(jti=jti, expires_at=expires_at, reason=reason)
+        await self.redis.zrem(self._get_user_sessions_key(user_id), jti)
+
     async def is_blacklisted(self, token: str) -> bool:
         """Check if token is blacklisted.
 
@@ -107,12 +147,29 @@ class TokenBlacklistService:
         Returns:
             Number of tokens blacklisted
         """
-        # TODO: Implement user token tracking
-        # For now, this is handled by individual token blacklisting
-        logger.warning(
-            f"blacklist_all_user_tokens called for user_id={user_id}, but user token tracking not implemented"
+        sessions_key = self._get_user_sessions_key(user_id)
+        now = int(datetime.now(UTC).timestamp())
+        await self.redis.zremrangebyscore(sessions_key, "-inf", now)
+
+        sessions = await self.redis.zrangebyscore(
+            sessions_key,
+            min=now,
+            max="+inf",
+            withscores=True,
         )
-        return 0
+
+        count = 0
+        for jti_raw, exp_score in sessions:
+            jti = (
+                jti_raw.decode("utf-8") if isinstance(jti_raw, bytes) else str(jti_raw)
+            )
+            expires_at = int(exp_score)
+            await self.blacklist_jti(jti=jti, expires_at=expires_at, reason=reason)
+            count += 1
+
+        await self.redis.delete(sessions_key)
+        logger.info(f"Revoked {count} sessions for user_id={user_id}")
+        return count
 
     async def get_blacklist_stats(self) -> dict:
         """Get statistics about blacklisted tokens.

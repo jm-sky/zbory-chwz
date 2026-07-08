@@ -136,6 +136,7 @@ onMounted(() => {
       </CardHeader>
       <CardContent class="space-y-4">
         <TotpQrCode
+          embedded
           :qr-code="setupData.qrCode"
           :qr-code-uri="setupData.qrCodeUri"
           :secret="setupData.secret"
@@ -165,6 +166,7 @@ onMounted(() => {
                 <PinInput
                   v-model="pinValue"
                   type="number"
+                  class="w-full justify-center"
                   :disabled="isVerifying"
                   @update:model-value="handlePinInput"
                 >
@@ -173,6 +175,7 @@ onMounted(() => {
                       v-for="index in 6"
                       :key="index"
                       :index="index - 1"
+                      class="size-8 sm:size-9"
                     />
                   </PinInputGroup>
                 </PinInput>
@@ -207,7 +210,7 @@ onMounted(() => {
           <p class="text-sm font-medium">
             {{ t('auth.two_factor.totp.backup_codes') }}
           </p>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <code v-for="(code, i) in setupData.backupCodes" :key="i" class="text-sm bg-background p-2 rounded text-center">
               {{ code }}
             </code>

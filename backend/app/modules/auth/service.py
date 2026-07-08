@@ -4,7 +4,9 @@ import logging
 import os
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, cast
+from uuid import uuid4
 
+from ...core.auth.token_blacklist import TokenBlacklistService
 from ...core.config import settings
 from ...core.email import get_email_service
 from ...core.email.i18n import SupportedLocale, get_translations
@@ -38,9 +40,11 @@ class AuthService:
     def __init__(
         self,
         user_repository: UserRepositoryInterface,
+        token_blacklist_service: TokenBlacklistService | None = None,
         two_factor_repository: object | None = None,
     ):
         self.user_repository = user_repository
+        self.token_blacklist_service = token_blacklist_service
         self.two_factor_repository = two_factor_repository
 
     async def register_user(
@@ -122,25 +126,50 @@ class AuthService:
         if not user.isActive:
             raise InvalidCredentialsError("User account is inactive")
 
-        # Generate tokens
+        return await self._issue_login_tokens(user)
+
+    async def _issue_login_tokens(
+        self,
+        user: User,
+        tfa_verified: bool = False,
+        tfa_method: str | None = None,
+    ) -> LoginResponse:
+        """Generate JWT tokens for a user and track the session in Redis."""
+        session_jti = str(uuid4())
+        token_version = user.tokenVersion
+
         access_token = create_access_token(
             data={
                 "sub": user.id,
                 "email": user.email,
-                "tfaVerified": False,
-                "tfaMethod": None,
+                "tfaVerified": tfa_verified,
+                "tfaMethod": tfa_method,
                 "emailVerified": user.isEmailVerified,
+                "jti": session_jti,
+                "tv": token_version,
             }
         )
         refresh_token = create_refresh_token(
             data={
                 "sub": user.id,
                 "email": user.email,
-                "tfaVerified": False,
-                "tfaMethod": None,
+                "tfaVerified": tfa_verified,
+                "tfaMethod": tfa_method,
                 "emailVerified": user.isEmailVerified,
+                "jti": session_jti,
+                "tv": token_version,
             }
         )
+
+        if self.token_blacklist_service:
+            try:
+                refresh_payload = verify_token(refresh_token)
+                refresh_exp = refresh_payload.get("exp", 0)
+                await self.token_blacklist_service.track_user_session(
+                    user_id=user.id, jti=session_jti, expires_at=refresh_exp
+                )
+            except Exception as e:
+                logger.warning(f"Failed to track user session in Redis: {e}")
 
         return LoginResponse(
             user=UserResponse(**user.to_response()),
@@ -292,11 +321,26 @@ class AuthService:
         Raises:
             InvalidTokenError: If token is invalid
         """
+        user_id = None
+        try:
+            payload = verify_token(token)
+            user_id = payload.get("sub")
+        except Exception:
+            pass
+
         success = await self.user_repository.reset_password_with_token(
             token, new_password
         )
         if not success:
             raise InvalidTokenError("Invalid or expired reset token")
+
+        if user_id:
+            await self.user_repository.increment_token_version(user_id)
+            if self.token_blacklist_service:
+                await self.token_blacklist_service.blacklist_all_user_tokens(
+                    user_id, reason="password_reset"
+                )
+
         return True
 
     async def resend_email_verification(
@@ -409,6 +453,12 @@ class AuthService:
             # Log error but don't fail password change if email fails
             logger.warning(f"Failed to send password changed email: {e}")
 
+        await self.user_repository.increment_token_version(user_id)
+        if self.token_blacklist_service:
+            await self.token_blacklist_service.blacklist_all_user_tokens(
+                user_id, reason="password_changed"
+            )
+
         return True
 
     async def delete_account(
@@ -490,7 +540,10 @@ class AuthService:
             # Log error but don't fail deletion if email fails
             logger.warning(f"Failed to send account deletion email: {e}")
 
-        # TODO: Invalidate all user sessions/tokens (handled in router via blacklist)
+        if self.token_blacklist_service:
+            await self.token_blacklist_service.blacklist_all_user_tokens(
+                user_id, reason="account_deleted"
+            )
 
         return True
 

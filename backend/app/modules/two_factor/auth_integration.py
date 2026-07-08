@@ -11,9 +11,10 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.modules.auth.auth_utils import create_access_token, create_refresh_token
+from app.core.auth.dependencies import get_token_blacklist_service
+from app.core.auth.token_blacklist import TokenBlacklistService
 from app.modules.auth.service import AuthService
-from app.modules.auth.schemas import LoginResponse, UserResponse
+from app.modules.auth.schemas import LoginResponse
 from app.modules.auth.repositories import get_user_repository
 from app.modules.auth.types.repository import UserRepositoryInterface
 from app.core.config import settings
@@ -36,9 +37,11 @@ class AuthServiceWith2FA(AuthService):
         self,
         user_repository: UserRepositoryInterface,
         two_factor_service: TwoFactorService,
+        token_blacklist_service: TokenBlacklistService | None = None,
     ):
         super().__init__(
             user_repository=user_repository,
+            token_blacklist_service=token_blacklist_service,
             two_factor_repository=two_factor_service.repository,
         )
         self.two_factor_service = two_factor_service
@@ -105,38 +108,17 @@ class AuthServiceWith2FA(AuthService):
                 expiresAt=expires_at,
             )
 
-        # No 2FA - generate tokens as normal
-        access_token = create_access_token(
-            data={
-                "sub": user.id,
-                "email": user.email,
-                "tfaVerified": False,
-                "tfaMethod": None,
-            }
-        )
-        refresh_token = create_refresh_token(
-            data={
-                "sub": user.id,
-                "email": user.email,
-                "tfaVerified": False,
-                "tfaMethod": None,
-            }
-        )
-
-        return LoginResponse(
-            user=UserResponse(**user.to_response()),
-            accessToken=access_token,
-            refreshToken=refresh_token,
-            tokenType="bearer",
-            expiresIn=settings.security.access_token_expires_minutes * 60,
-            requiresEmailVerification=not user.isEmailVerified,
-        )
+        # No 2FA - generate tokens via parent helper (handles JTI tracking)
+        return await self._issue_login_tokens(user)
 
 
 def get_auth_service_with_2fa(
     user_repository: Annotated[UserRepositoryInterface, Depends(get_user_repository)],
     two_factor_repository: Annotated[
         TwoFactorRepositoryInterface, Depends(get_two_factor_repository)
+    ],
+    blacklist_service: Annotated[
+        TokenBlacklistService, Depends(get_token_blacklist_service)
     ],
 ) -> AuthServiceWith2FA:
     """
@@ -162,4 +144,5 @@ def get_auth_service_with_2fa(
     return AuthServiceWith2FA(
         user_repository=user_repository,
         two_factor_service=two_factor_service,
+        token_blacklist_service=blacklist_service,
     )

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import OAuthFacebookButton from '@/modules/auth/components/OAuthFacebookButton.vue'
+import OAuthGitHubButton from '@/modules/auth/components/OAuthGitHubButton.vue'
 import OAuthGoogleButton from '@/modules/auth/components/OAuthGoogleButton.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRouteNames } from '@/modules/auth/config/routes'
@@ -105,7 +106,7 @@ const onSubmit = handleSubmit(async (values: RegisterCredentials) => {
       {{ t('auth.form.submit_register') }}
     </Button>
 
-    <template v-if="config.oauth.google.enabled || config.oauth.facebook.enabled">
+    <template v-if="config.oauth.google.enabled || config.oauth.facebook.enabled || config.oauth.github.enabled">
       <div class="relative my-6">
         <div class="absolute inset-0 flex items-center">
           <span class="w-full border-t" />
@@ -119,6 +120,7 @@ const onSubmit = handleSubmit(async (values: RegisterCredentials) => {
 
       <OAuthGoogleButton v-if="config.oauth.google.enabled" />
       <OAuthFacebookButton v-if="config.oauth.facebook.enabled" />
+      <OAuthGitHubButton v-if="config.oauth.github.enabled" />
     </template>
   </form>
 </template>

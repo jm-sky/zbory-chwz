@@ -79,6 +79,7 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             oauthProvider=user_db.oauth_provider,
             oauthProviderId=user_db.oauth_provider_id,
             avatarUrl=user_db.avatar_url,
+            tokenVersion=user_db.token_version,
         )
 
     async def create_user(
@@ -349,6 +350,7 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             # Soft delete: mark as deleted and anonymize data
             user_db.deleted_at = datetime.now(UTC)
             user_db.is_active = False
+            user_db.token_version += 1
             # Anonymize email and name for GDPR compliance
             user_db.email = f"deleted_{user_db.id}@deleted.local"
             user_db.name = "Deleted User"
@@ -368,6 +370,17 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
 
         await self.db.commit()
         return True
+
+    async def increment_token_version(self, user_id: str) -> int:
+        """Increment token_version to invalidate all existing tokens for a user."""
+        stmt = select(UserDB).where(UserDB.id == user_id)
+        result = await self.db.execute(stmt)
+        user_db = result.scalar_one_or_none()
+        if not user_db:
+            return 0
+        user_db.token_version = (user_db.token_version or 0) + 1
+        await self.db.commit()
+        return user_db.token_version
 
     async def create_oauth_user(
         self,
