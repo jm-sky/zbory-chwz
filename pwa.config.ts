@@ -15,9 +15,9 @@ export const pwaPlugin = VitePWA({
     'icons/icon-512x512.png',
   ],
   manifest: {
-    name: 'Gear Stack',
-    short_name: 'Gear Stack',
-    description: 'Gear Stack for managing survival gear and bug-out bag equipment.',
+    name: 'Zbory CHWZ',
+    short_name: 'Zbory CHWZ',
+    description: 'Aplikacja do zarządzania i publicznej prezentacji zborów CHWZ.',
     theme_color: '#18181b',
     background_color: '#ffffff',
     display: 'standalone',
