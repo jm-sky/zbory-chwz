@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 
 from app.modules.auth.dependencies import CurrentUser
+from app.modules.churches.repositories import ChurchRepository, get_church_repository
 from app.modules.congregations.repositories import (
     CongregationRepository,
     get_congregation_repository,
@@ -94,6 +95,7 @@ async def list_congregations_detailed(
     congregation_repo: Annotated[
         CongregationRepository, Depends(get_congregation_repository)
     ],
+    church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
 ) -> PublicCongregationListResponse:
     """Public endpoint to list published congregations with detailed info (address, service times, contact).
 
@@ -119,11 +121,27 @@ async def list_congregations_detailed(
                 for st in service_times_db[:3]  # Limit to first 3
             ]
 
-            # Get first contact person
-            contact_persons_db = (
-                await congregation_repo.get_contact_persons_by_tenant_id(tenant.id)
-            )
-            contact_person = contact_persons_db[0] if contact_persons_db else None
+            # Get first public service assignment on church card
+            assignments = await church_repo.list_public_card_assignments(tenant.id)
+            contact_assignment = assignments[0] if assignments else None
+            contact_person = None
+            if contact_assignment and contact_assignment.person:
+                person = contact_assignment.person
+                name = " ".join(
+                    p for p in (person.first_name, person.last_name) if p
+                ).strip()
+                service_type = contact_assignment.service_type
+                title = (
+                    service_type.name
+                    if service_type
+                    else contact_assignment.custom_service_name
+                )
+                contact_person = {
+                    "name": name or None,
+                    "title": title,
+                    "phone": person.phone if contact_assignment.phone_public else None,
+                    "email": person.email if contact_assignment.email_public else None,
+                }
 
             congregations.append(
                 PublicCongregationResponse(
@@ -136,10 +154,10 @@ async def list_congregations_detailed(
                     street=address.street if address else None,
                     postal_code=address.postal_code if address else None,
                     service_times=service_times,
-                    contact_name=contact_person.name if contact_person else None,
-                    contact_title=contact_person.title if contact_person else None,
-                    contact_phone=contact_person.phone if contact_person else None,
-                    contact_email=contact_person.email if contact_person else None,
+                    contact_name=contact_person["name"] if contact_person else None,
+                    contact_title=contact_person["title"] if contact_person else None,
+                    contact_phone=contact_person["phone"] if contact_person else None,
+                    contact_email=contact_person["email"] if contact_person else None,
                 )
             )
 

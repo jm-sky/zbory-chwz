@@ -27,6 +27,7 @@ const { handleError } = useHandleError()
 const assignments = ref<IServiceAssignment[]>([])
 const serviceTypes = ref<IServiceType[]>([])
 const loading = ref(true)
+const savingVisibilityId = ref<string | null>(null)
 
 const useCustomService = ref(false)
 const createAccount = ref(false)
@@ -38,6 +39,9 @@ const form = ref({
   serviceTypeId: '',
   customServiceName: '',
   description: '',
+  showOnCard: true,
+  phonePublic: true,
+  emailPublic: false,
 })
 
 const pastorSlugs = new Set(['mlodszy_pastor', 'pastor', 'senior_pastor'])
@@ -49,6 +53,8 @@ const selectedType = computed(() =>
 const isPastorType = computed(() =>
   selectedType.value ? pastorSlugs.has(selectedType.value.slug) : false,
 )
+
+const serviceTypesEmpty = computed(() => !loading.value && serviceTypes.value.length === 0)
 
 function personLabel(assignment: IServiceAssignment): string {
   const p = assignment.person
@@ -87,6 +93,9 @@ function resetForm() {
     serviceTypeId: '',
     customServiceName: '',
     description: '',
+    showOnCard: true,
+    phonePublic: true,
+    emailPublic: false,
   }
   useCustomService.value = false
   createAccount.value = false
@@ -103,6 +112,9 @@ async function addPerson() {
       serviceTypeId: useCustomService.value ? undefined : form.value.serviceTypeId || undefined,
       customServiceName: useCustomService.value ? form.value.customServiceName || undefined : undefined,
       createAccount: createAccount.value || isPastorType.value,
+      showOnCard: form.value.showOnCard,
+      phonePublic: form.value.phonePublic,
+      emailPublic: form.value.emailPublic,
     }
     const created = await churchApiService.createServiceAssignment(churchId, payload)
     assignments.value.push(created)
@@ -123,6 +135,27 @@ async function removeAssignment(assignmentId: string) {
   }
 }
 
+async function updateVisibility(
+  assignment: IServiceAssignment,
+  field: 'showOnCard' | 'phonePublic' | 'emailPublic',
+  value: boolean,
+) {
+  savingVisibilityId.value = assignment.id
+  try {
+    const updated = await churchApiService.updateServiceAssignment(churchId, assignment.id, {
+      [field]: value,
+    })
+    const index = assignments.value.findIndex(a => a.id === assignment.id)
+    if (index >= 0) {
+      assignments.value[index] = updated
+    }
+  } catch (error) {
+    handleError(error)
+  } finally {
+    savingVisibilityId.value = null
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -136,20 +169,60 @@ onMounted(load)
       {{ t('common.loading', 'Ładowanie...') }}
     </div>
 
-    <ul v-else class="space-y-2">
+    <p
+      v-else-if="serviceTypesEmpty"
+      class="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100"
+    >
+      {{ t('congregations.people.noServiceTypes', 'Brak typów służb w bazie. Uruchom: python -m cli db churches-backfill') }}
+    </p>
+
+    <ul v-if="!loading" class="space-y-2">
       <li
         v-for="item in assignments"
         :key="item.id"
         class="flex items-start justify-between gap-2 rounded-md border px-3 py-2"
       >
-        <div>
-          <p class="font-medium">
-            {{ personLabel(item) }}
-          </p>
-          <p class="text-sm text-muted-foreground">
-            {{ serviceLabel(item) }}
-            <span v-if="item.description"> · {{ item.description }}</span>
-          </p>
+        <div class="min-w-0 flex-1 space-y-2">
+          <div>
+            <p class="font-medium">
+              {{ personLabel(item) }}
+            </p>
+            <p class="text-sm text-muted-foreground">
+              {{ serviceLabel(item) }}
+              <span v-if="item.description"> · {{ item.description }}</span>
+            </p>
+            <p v-if="item.person?.phone || item.person?.email" class="text-sm text-muted-foreground">
+              <span v-if="item.person?.phone">{{ item.person.phone }}</span>
+              <span v-if="item.person?.phone && item.person?.email"> · </span>
+              <span v-if="item.person?.email">{{ item.person.email }}</span>
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+            <label class="flex items-center gap-2">
+              <Checkbox
+                :model-value="item.showOnCard"
+                :disabled="savingVisibilityId === item.id"
+                @update:model-value="updateVisibility(item, 'showOnCard', $event === true)"
+              />
+              <span>{{ t('congregations.people.showOnCard', 'Widoczne na karcie zboru') }}</span>
+            </label>
+            <label v-if="item.person?.phone" class="flex items-center gap-2">
+              <Checkbox
+                :model-value="item.phonePublic"
+                :disabled="savingVisibilityId === item.id"
+                @update:model-value="updateVisibility(item, 'phonePublic', $event === true)"
+              />
+              <span>{{ t('congregations.people.phonePublic', 'Telefon widoczny publicznie') }}</span>
+            </label>
+            <label v-if="item.person?.email" class="flex items-center gap-2">
+              <Checkbox
+                :model-value="item.emailPublic"
+                :disabled="savingVisibilityId === item.id"
+                @update:model-value="updateVisibility(item, 'emailPublic', $event === true)"
+              />
+              <span>{{ t('congregations.people.emailPublic', 'E-mail widoczny publicznie') }}</span>
+            </label>
+          </div>
         </div>
         <Button
           type="button"
@@ -199,7 +272,7 @@ onMounted(load)
         <SelectTrigger>
           <SelectValue :placeholder="t('congregations.people.servicePlaceholder', 'Wybierz służbę')" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent class="z-[100]">
           <SelectItem
             v-for="st in serviceTypes"
             :key="st.id"
@@ -214,6 +287,24 @@ onMounted(load)
     <div class="space-y-1">
       <Label>{{ t('congregations.people.description', 'Opis') }}</Label>
       <Textarea v-model="form.description" rows="2" />
+    </div>
+
+    <div class="space-y-2 rounded-md border p-3">
+      <p class="text-sm font-medium">
+        {{ t('congregations.people.visibilityTitle', 'Widoczność na karcie zboru') }}
+      </p>
+      <label class="flex items-center gap-2 text-sm">
+        <Checkbox v-model="form.showOnCard" />
+        <span>{{ t('congregations.people.showOnCard', 'Widoczne na karcie zboru') }}</span>
+      </label>
+      <label class="flex items-center gap-2 text-sm">
+        <Checkbox v-model="form.phonePublic" />
+        <span>{{ t('congregations.people.phonePublic', 'Telefon widoczny publicznie') }}</span>
+      </label>
+      <label class="flex items-center gap-2 text-sm">
+        <Checkbox v-model="form.emailPublic" />
+        <span>{{ t('congregations.people.emailPublic', 'E-mail widoczny publicznie') }}</span>
+      </label>
     </div>
 
     <div class="flex items-center gap-2">

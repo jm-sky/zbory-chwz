@@ -69,7 +69,6 @@ const form = useForm({
 
 // Use refs for dynamic arrays since they're not part of the main form
 const serviceTimeFields = ref<Array<{ key: string; day: string; time: string; order: number }>>([])
-const contactPersonFields = ref<Array<{ key: string; name: string; title: string | null; email: string | null; phone: string | null; order: number }>>([])
 
 function pushServiceTime(value: { day: string; time: string; order: number }) {
   serviceTimeFields.value.push({ ...value, key: `st-${Date.now()}-${Math.random()}` })
@@ -77,14 +76,6 @@ function pushServiceTime(value: { day: string; time: string; order: number }) {
 
 function removeServiceTime(index: number) {
   serviceTimeFields.value.splice(index, 1)
-}
-
-function pushContactPerson(value: { name: string; title: string | null; email: string | null; phone: string | null; order: number }) {
-  contactPersonFields.value.push({ ...value, key: `cp-${Date.now()}-${Math.random()}` })
-}
-
-function removeContactPerson(index: number) {
-  contactPersonFields.value.splice(index, 1)
 }
 
 // Load congregation data
@@ -123,19 +114,6 @@ async function loadCongregation() {
     serviceTimeFields.value = serviceTimesData.map((st, idx) => ({
       ...st,
       key: `st-${idx}-${st.day}-${st.time}`,
-    }))
-
-    // Set contact persons
-    const contactPersonsData = (congregationFull.value.contact_persons || []).map(cp => ({
-      name: cp.name,
-      title: cp.title ?? null,
-      email: cp.email ?? null,
-      phone: cp.phone ?? null,
-      order: cp.order,
-    }))
-    contactPersonFields.value = contactPersonsData.map((cp, idx) => ({
-      ...cp,
-      key: `cp-${idx}-${cp.name}`,
     }))
   } catch (error) {
     console.error('Failed to load congregation:', error)
@@ -217,49 +195,12 @@ async function saveServiceTimes() {
   }
 }
 
-async function saveContactPersons() {
-  try {
-    // Get current contact persons
-    const currentContactPersons = congregationFull.value?.contact_persons || []
-
-    // For simplicity, delete all and recreate
-    for (const cp of currentContactPersons) {
-      await congregationApiService.deleteContactPerson(congregationId, cp.id)
-    }
-
-    // Create new contact persons from refs
-    for (const cp of contactPersonFields.value) {
-      await congregationApiService.createContactPerson(congregationId, {
-        name: cp.name,
-        title: cp.title,
-        email: cp.email || null,
-        phone: cp.phone,
-        order: cp.order,
-      })
-    }
-
-    toast.success(t('congregations.edit.contactPersons.saveSuccess', 'Osoby kontaktowe zostały zapisane'))
-    await loadCongregation()
-  } catch (error) {
-    console.error('Failed to save contact persons:', error)
-    handleError(error, { fallbackMessage: t('congregations.edit.contactPersons.saveError', 'Nie udało się zapisać osób kontaktowych') })
-  }
-}
-
 function addServiceTime() {
   pushServiceTime({ day: '', time: '', order: serviceTimeFields.value.length })
 }
 
 function removeServiceTimeAt(index: number) {
   removeServiceTime(index)
-}
-
-function addContactPerson() {
-  pushContactPerson({ name: '', title: null, email: null, phone: null, order: contactPersonFields.value.length })
-}
-
-function removeContactPersonAt(index: number) {
-  removeContactPerson(index)
 }
 
 onMounted(() => {
@@ -556,102 +497,6 @@ onMounted(() => {
                 >
                   <Trash2 class="size-4" />
                 </Button>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex justify-end">
-            <Button type="submit">
-              {{ t('common.save', 'Zapisz') }}
-            </Button>
-          </div>
-        </form>
-
-        <!-- Contact Persons Section -->
-        <form class="bg-card border rounded-lg p-6 space-y-6" @submit.prevent="saveContactPersons()">
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold">
-                {{ t('congregations.edit.contactPersons.title', 'Osoby kontaktowe') }}
-              </h2>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                @click="addContactPerson"
-              >
-                <Plus class="size-4" />
-                {{ t('common.add', 'Dodaj') }}
-              </Button>
-            </div>
-
-            <div v-if="contactPersonFields.length === 0" class="text-sm text-muted-foreground py-4">
-              {{ t('congregations.edit.contactPersons.empty', 'Brak osób kontaktowych. Kliknij "Dodaj" aby dodać nową.') }}
-            </div>
-
-            <div v-else class="space-y-4">
-              <div
-                v-for="(field, index) in contactPersonFields"
-                :key="field.key"
-                class="p-4 border rounded-lg space-y-4"
-              >
-                <div class="flex justify-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    @click="removeContactPersonAt(index)"
-                  >
-                    <Trash2 class="size-4" />
-                  </Button>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label required>
-                      {{ t('congregations.edit.contactPerson.name', 'Imię i nazwisko') }}
-                    </Label>
-                    <Input
-                      v-model="field.name"
-                      :placeholder="t('congregations.edit.contactPerson.namePlaceholder', 'Wprowadź imię i nazwisko')"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>
-                      {{ t('congregations.edit.contactPerson.title', 'Tytuł/Stanowisko') }}
-                    </Label>
-                    <Input
-                      :placeholder="t('congregations.edit.contactPerson.titlePlaceholder', 'np. Pastor')"
-                      :model-value="field.title ?? ''"
-                      @update:model-value="field.title = (typeof $event === 'string' ? $event : null) || null"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>
-                      {{ t('congregations.edit.contactPerson.email', 'Email') }}
-                    </Label>
-                    <Input
-                      type="email"
-                      :placeholder="t('congregations.edit.contactPerson.emailPlaceholder', 'Your email address')"
-                      :model-value="field.email ?? ''"
-                      @update:model-value="field.email = (typeof $event === 'string' ? $event : null) || null"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>
-                      {{ t('congregations.edit.contactPerson.phone', 'Telefon') }}
-                    </Label>
-                    <Input
-                      type="tel"
-                      :placeholder="t('congregations.edit.contactPerson.phonePlaceholder', '+48 123 456 789')"
-                      :model-value="field.phone ?? ''"
-                      @update:model-value="field.phone = (typeof $event === 'string' ? $event : null) || null"
-                    />
-                  </div>
-                </div>
               </div>
             </div>
           </div>

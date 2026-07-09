@@ -10,7 +10,9 @@ from app.modules.churches.db_models import (
     ChurchSlugAliasDB,
     CityAliasDB,
     CommunityDB,
+    PersonDB,
     RegionDB,
+    ServiceAssignmentDB,
     ServiceTypeDB,
 )
 from app.modules.churches.seed_data import (
@@ -20,6 +22,7 @@ from app.modules.churches.seed_data import (
     CITY_REGION_MAP,
     REGIONS_SEED,
     SERVICE_TYPES_SEED,
+    TITLE_TO_SERVICE_SLUG,
 )
 from app.modules.churches.slug_utils import church_slug, city_slug, country_slug
 from app.modules.congregations.db_models import (
@@ -44,11 +47,12 @@ async def backfill_churches(repo: ChurchRepository) -> dict[str, int]:
         "churches": 0,
         "slug_aliases": 0,
         "congregation_links": 0,
+        "contact_person_migrations": 0,
     }
 
     community = await _get_or_create_community(db, stats)
     regions_by_slug = await _ensure_regions(db, community.id, stats)
-    await _ensure_service_types(db, stats)
+    service_types_by_slug = await _ensure_service_types(db, stats)
     await _ensure_city_aliases(db, stats)
     org_tenant = await _get_or_create_org_tenant(db, stats)
 
@@ -80,24 +84,19 @@ async def backfill_churches(repo: ChurchRepository) -> dict[str, int]:
         )
         address = address_result.scalar_one_or_none()
         if address:
-            c_slug = country_slug(address.country)
-            ci_slug = city_slug(address.city)
-            s_slug = church_slug(tenant.name)
-            alias = ChurchSlugAliasDB(
-                id=generate_id(),
+            await _ensure_church_slug_alias(
+                db,
                 church_id=church.id,
-                alias_type="canonical",
-                country_slug=c_slug,
-                city_slug=ci_slug,
-                slug=s_slug,
-                is_canonical=True,
+                country=address.country,
+                city=address.city,
+                name=tenant.name,
+                stats=stats,
             )
-            db.add(alias)
-            stats["slug_aliases"] += 1
 
         await _link_congregation_rows(db, tenant.id, stats)
         stats["churches"] += 1
 
+    await _migrate_contact_persons(db, service_types_by_slug, stats)
     await db.commit()
     return stats
 
@@ -147,26 +146,77 @@ async def _ensure_regions(
     return regions_by_slug
 
 
-async def _ensure_service_types(db, stats: dict[str, int]) -> None:
+async def _ensure_service_types(db, stats: dict[str, int]) -> dict[str, ServiceTypeDB]:
+    by_slug: dict[str, ServiceTypeDB] = {}
     for slug, name, scope, role, senior, order in SERVICE_TYPES_SEED:
         result = await db.execute(
             select(ServiceTypeDB).where(ServiceTypeDB.slug == slug)
         )
-        if result.scalar_one_or_none():
+        existing = result.scalar_one_or_none()
+        if existing:
+            by_slug[slug] = existing
             continue
-        db.add(
-            ServiceTypeDB(
-                id=generate_id(),
-                slug=slug,
-                name=name,
-                scope_type=scope,
-                suggested_role=role,
-                is_senior_tier=senior,
-                sort_order=order,
-                is_system=True,
-            )
+        service_type = ServiceTypeDB(
+            id=generate_id(),
+            slug=slug,
+            name=name,
+            scope_type=scope,
+            suggested_role=role,
+            is_senior_tier=senior,
+            sort_order=order,
+            is_system=True,
         )
+        db.add(service_type)
+        by_slug[slug] = service_type
         stats["service_types"] += 1
+    await db.flush()
+    return by_slug
+
+
+async def _ensure_church_slug_alias(
+    db,
+    *,
+    church_id: str,
+    country: str,
+    city: str,
+    name: str,
+    stats: dict[str, int],
+) -> None:
+    c_slug = country_slug(country)
+    ci_slug = city_slug(city)
+    s_slug = church_slug(name)
+
+    existing_path = await db.execute(
+        select(ChurchSlugAliasDB).where(
+            ChurchSlugAliasDB.country_slug == c_slug,
+            ChurchSlugAliasDB.city_slug == ci_slug,
+            ChurchSlugAliasDB.slug == s_slug,
+        )
+    )
+    if existing_path.scalar_one_or_none():
+        return
+
+    existing_canonical = await db.execute(
+        select(ChurchSlugAliasDB).where(
+            ChurchSlugAliasDB.church_id == church_id,
+            ChurchSlugAliasDB.is_canonical.is_(True),
+        )
+    )
+    if existing_canonical.scalar_one_or_none():
+        return
+
+    db.add(
+        ChurchSlugAliasDB(
+            id=generate_id(),
+            church_id=church_id,
+            alias_type="canonical",
+            country_slug=c_slug,
+            city_slug=ci_slug,
+            slug=s_slug,
+            is_canonical=True,
+        )
+    )
+    stats["slug_aliases"] += 1
     await db.flush()
 
 
@@ -242,6 +292,77 @@ async def _resolve_region_for_tenant(
         return None
     region = regions_by_slug.get(region_slug)
     return region.id if region else None
+
+
+def _split_person_name(full_name: str) -> tuple[str | None, str | None]:
+    parts = full_name.strip().split(None, 1)
+    if not parts:
+        return None, None
+    if len(parts) == 1:
+        return parts[0], None
+    return parts[0], parts[1]
+
+
+def _resolve_service_type_for_title(
+    title: str | None, service_types_by_slug: dict[str, ServiceTypeDB]
+) -> tuple[str | None, str | None]:
+    if not title:
+        return None, None
+    normalized = title.strip().lower()
+    slug = TITLE_TO_SERVICE_SLUG.get(normalized)
+    if slug and slug in service_types_by_slug:
+        return service_types_by_slug[slug].id, None
+    return None, title.strip()
+
+
+async def _migrate_contact_persons(
+    db, service_types_by_slug: dict[str, ServiceTypeDB], stats: dict[str, int]
+) -> None:
+    result = await db.execute(select(CongregationContactPersonDB))
+    contact_persons = list(result.scalars().all())
+
+    for cp in contact_persons:
+        already = await db.execute(
+            select(ServiceAssignmentDB).where(
+                ServiceAssignmentDB.source_contact_person_id == cp.id
+            )
+        )
+        if already.scalar_one_or_none():
+            continue
+
+        church_id = cp.church_id or cp.tenant_id
+        first_name, last_name = _split_person_name(cp.name)
+        service_type_id, custom_name = _resolve_service_type_for_title(
+            cp.title, service_types_by_slug
+        )
+
+        person = PersonDB(
+            id=generate_id(),
+            first_name=first_name,
+            last_name=last_name,
+            email=cp.email,
+            phone=cp.phone,
+        )
+        db.add(person)
+        await db.flush()
+
+        assignment = ServiceAssignmentDB(
+            id=generate_id(),
+            person_id=person.id,
+            service_type_id=service_type_id,
+            custom_service_name=custom_name,
+            description=None,
+            scope_type="church",
+            scope_id=church_id,
+            show_on_card=True,
+            phone_public=bool(cp.phone),
+            email_public=bool(cp.email),
+            source_contact_person_id=cp.id,
+        )
+        db.add(assignment)
+        stats["contact_person_migrations"] += 1
+
+    await db.flush()
 
 
 async def _link_congregation_rows(db, church_id: str, stats: dict[str, int]) -> None:

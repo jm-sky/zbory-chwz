@@ -14,14 +14,15 @@ Current public list (`GET /congregations/detailed`) filters by `address.status i
 ## Scope
 
 - [ ] PostgreSQL enum or check constraint: `hidden | public | authenticated | pastors`
-- [ ] Add `visibility` to `churches`, `congregation_contact_persons`, `congregation_service_times`
+- [ ] Add `visibility` to `churches`, `service_assignments` (show on card), `persons` or assignment (phone/email), `congregation_service_times`
+- [ ] Deprecate `congregation_contact_persons` — see [#012](./2026-07-09--012--unify-services-remove-contact-persons.md)
 - [ ] Migration script — map existing states:
 
   | Source | Target |
   |--------|--------|
   | `address.status` = `draft` / `need_verification` | church `visibility` = `hidden` |
   | `address.status` = `published` / `published_unverified` | church `visibility` = `public` |
-  | contact persons (no flag today) | default `authenticated` |
+  | service assignments (ex contact persons) | default `public` on card; phone/email per [#012](./2026-07-09--012--unify-services-remove-contact-persons.md) |
   | service times | default `public` |
 
 - [ ] Keep `address.status` for workflow (verification queue) — **do not** remove

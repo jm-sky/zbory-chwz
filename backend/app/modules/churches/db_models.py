@@ -131,6 +131,12 @@ class ServiceAssignmentDB(Base):
     probation_ends_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    show_on_card: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    phone_public: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    email_public: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    source_contact_person_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )

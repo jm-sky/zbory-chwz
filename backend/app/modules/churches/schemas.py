@@ -83,6 +83,9 @@ class ServiceAssignmentCreateRequest(BaseModel):
     description: str | None = None
     createAccount: bool = False
     suggestedRole: str | None = None
+    showOnCard: bool = True
+    phonePublic: bool = True
+    emailPublic: bool = False
 
 
 class ServiceAssignmentUpdateRequest(BaseModel):
@@ -93,6 +96,9 @@ class ServiceAssignmentUpdateRequest(BaseModel):
     lastName: str | None = None
     email: str | None = None
     phone: str | None = None
+    showOnCard: bool | None = None
+    phonePublic: bool | None = None
+    emailPublic: bool | None = None
 
 
 class ServiceAssignmentResponse(BaseModel):
@@ -105,6 +111,9 @@ class ServiceAssignmentResponse(BaseModel):
     description: str | None = None
     scopeType: str = Field(validation_alias="scope_type")
     scopeId: str = Field(validation_alias="scope_id")
+    showOnCard: bool = Field(validation_alias="show_on_card")
+    phonePublic: bool = Field(validation_alias="phone_public")
+    emailPublic: bool = Field(validation_alias="email_public")
     createdAt: datetime = Field(validation_alias="created_at")
     person: PersonResponse | None = None
     serviceType: ServiceTypeResponse | None = None

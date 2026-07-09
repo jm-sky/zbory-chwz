@@ -37,7 +37,7 @@ async def _verify_church_access(
     memberships = await tenant_repo.list_for_user(current_user.id)
     if any(m.tenant_id == church_id for _, m in memberships):
         return
-    if current_user.isAdmin:
+    if current_user.isAdmin or current_user.isOwner:
         return
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
@@ -240,6 +240,9 @@ def _assignment_response(assignment) -> ServiceAssignmentResponse:
         description=assignment.description,
         scopeType=assignment.scope_type,
         scopeId=assignment.scope_id,
+        showOnCard=assignment.show_on_card,
+        phonePublic=assignment.phone_public,
+        emailPublic=assignment.email_public,
         createdAt=assignment.created_at,
         person=_person_response(assignment.person) if assignment.person else None,
         serviceType=(

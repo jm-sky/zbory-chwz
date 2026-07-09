@@ -34,6 +34,9 @@ export interface IServiceAssignment {
   description: string | null
   scopeType: string
   scopeId: string
+  showOnCard: boolean
+  phonePublic: boolean
+  emailPublic: boolean
   createdAt: string
   person: IPerson | null
   serviceType: IServiceType | null
@@ -55,4 +58,20 @@ export interface IServiceAssignmentCreateRequest {
   customServiceName?: string
   description?: string
   createAccount?: boolean
+  showOnCard?: boolean
+  phonePublic?: boolean
+  emailPublic?: boolean
+}
+
+export interface IServiceAssignmentUpdateRequest {
+  serviceTypeId?: string
+  customServiceName?: string
+  description?: string
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  showOnCard?: boolean
+  phonePublic?: boolean
+  emailPublic?: boolean
 }

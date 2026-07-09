@@ -245,6 +245,9 @@ class ChurchRepository:
             description=payload.description,
             scope_type=scope_type,
             scope_id=scope_id,
+            show_on_card=payload.showOnCard,
+            phone_public=payload.phonePublic,
+            email_public=payload.emailPublic,
         )
         self.db.add(assignment)
         await self.db.commit()
@@ -277,6 +280,12 @@ class ChurchRepository:
             assignment.custom_service_name = payload.customServiceName
         if payload.description is not None:
             assignment.description = payload.description
+        if payload.showOnCard is not None:
+            assignment.show_on_card = payload.showOnCard
+        if payload.phonePublic is not None:
+            assignment.phone_public = payload.phonePublic
+        if payload.emailPublic is not None:
+            assignment.email_public = payload.emailPublic
 
         person = assignment.person
         if person:
@@ -317,6 +326,24 @@ class ChurchRepository:
         if not church:
             raise HTTPException(status_code=404, detail="Church not found")
         return church
+
+    async def list_public_card_assignments(
+        self, church_id: str
+    ) -> list[ServiceAssignmentDB]:
+        result = await self.db.execute(
+            select(ServiceAssignmentDB)
+            .where(
+                ServiceAssignmentDB.scope_type == "church",
+                ServiceAssignmentDB.scope_id == church_id,
+                ServiceAssignmentDB.show_on_card.is_(True),
+            )
+            .options(
+                selectinload(ServiceAssignmentDB.person),
+                selectinload(ServiceAssignmentDB.service_type),
+            )
+            .order_by(ServiceAssignmentDB.created_at)
+        )
+        return list(result.scalars().all())
 
 
 def get_church_repository(db: AsyncSession = Depends(get_db)) -> ChurchRepository:

@@ -14,7 +14,7 @@
 - [ ] `church_id` on congregation sub-tables
 - [ ] `GET /persons/search?q=` — wybór istniejącej osoby
 - [ ] **Frontend:** placówki + Ludzie/Służby (formularz wg spec)
-- [ ] Backfill: tenants → churches; contact_persons → persons + assignments
+- [x] Backfill: tenants → churches; contact_persons → persons + assignments
 
 ## Acceptance criteria
 

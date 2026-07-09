@@ -5,6 +5,7 @@ import type {
   IPerson,
   IServiceAssignment,
   IServiceAssignmentCreateRequest,
+  IServiceAssignmentUpdateRequest,
   IServiceType,
 } from '../types/church.types'
 
@@ -49,6 +50,18 @@ class ChurchApiService {
   ): Promise<IServiceAssignment> {
     const { data } = await apiClient.post<IServiceAssignment>(
       `/churches/${churchId}/service-assignments`,
+      payload,
+    )
+    return data
+  }
+
+  async updateServiceAssignment(
+    churchId: string,
+    assignmentId: string,
+    payload: IServiceAssignmentUpdateRequest,
+  ): Promise<IServiceAssignment> {
+    const { data } = await apiClient.patch<IServiceAssignment>(
+      `/churches/${churchId}/service-assignments/${assignmentId}`,
       payload,
     )
     return data

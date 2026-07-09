@@ -14,6 +14,10 @@ Osoba (person) ──► Przypisanie (service_assignment) ──► Służba + o
                               └──► (opcjonalnie) Konto + wybrane uprawnienia ACL
 ```
 
+## Decyzja: bez osobnego modelu „osoba kontaktowa” (2026-07-09)
+
+Nie utrzymujemy `congregation_contact_persons` obok służb. **Jeden model:** `person` + `service_assignment`. Widoczność na karcie zboru i osobno dla telefonu/e-mailu — patrz [church-assignment-visibility.md](./2026-07-09--church-assignment-visibility.md) i issue [#012](../issues/2026-07-09--012--unify-services-remove-contact-persons.md).
+
 ## Encja: Osoba (`persons`)
 
 Jedna osoba w systemie może mieć wiele przypisań (różne zboru, różne służby). Tożsamość globalna — nie duplikować przy kolejnym zborze.
@@ -146,14 +150,28 @@ Sekcja **Ludzie / Służby** na stronie edycji zboru:
 
 - `congregation_contact_persons` → `persons` + `service_assignments` (best-effort map `title` → `service_type`)
 
+## Widoczność na karcie zboru
+
+| Kontrola | Opis |
+|----------|------|
+| Wpis na karcie | Czy osoba + służba widoczna publicznie |
+| Telefon | Osobny przełącznik widoczności |
+| E-mail | Osobny przełącznik widoczności |
+
+Szczegóły: [church-assignment-visibility.md](./2026-07-09--church-assignment-visibility.md)
+
 ## Poza MVP
 
 - `finances.manage` i inne granularne permissiony poza podstawowym zestawem
 - Okres próbny na przypisaniu
 - Pełna historia `ended_at` w UI
+- Grupy ludzi — [people-groups.md](./2026-07-09--people-groups.md) ([#014](../issues/2026-07-09--014--people-groups.md))
+- Listy mailingowe — [mailing-lists.md](./2026-07-09--mailing-lists.md) ([#015](../issues/2026-07-09--015--mailing-lists.md))
 
 ## Related issues
 
 - [#006](../issues/2026-07-09--006--org-hierarchy-data-model.md) — tabele
 - [#007](../issues/2026-07-09--007--acl-roles-permissions.md) — ACL
 - [#010](../issues/2026-07-09--010--church-governance-actions.md) — UI + invite
+- [#012](../issues/2026-07-09--012--unify-services-remove-contact-persons.md) — ujednolicenie + widoczność
+- [#013](../issues/2026-07-09--013--service-type-select-not-visible.md) — bug selecta służb

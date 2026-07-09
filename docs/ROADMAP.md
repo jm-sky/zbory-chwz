@@ -16,25 +16,53 @@ Główny indeks roadmap projektu Zbory CHWZ.
 
 ## 📝 Nowe funkcjonalności
 
-### Kontakt osoby - flaga publiczna
+### Ludzie i służby — jeden model, widoczność na karcie zboru
+
+🚧 **Status:** W trakcie (MVP zaimplementowany)
+
+**Opis:**
+Bez osobnego modelu „osoba kontaktowa”. Wystarczy **służba** (`service_assignment` + `person`). Każda osoba w służbie ma przełącznik widoczności na publicznej karcie zboru; **telefon** i **e-mail** mają osobne przełączniki widoczności.
+
+**Zrealizowane (2026-07-09):**
+- Migracja `057` + pola `show_on_card`, `phone_public`, `email_public`
+- UI: jedna sekcja „Ludzie i służby” z przełącznikami widoczności
+- Backfill: `contact_persons` → `service_assignments` (idempotentny)
+- Publiczna lista zborów korzysta z przypisań służby
+
+**Pozostało:**
+- Deprecate API `contact_persons` (endpointy legacy nadal istnieją)
+- Pełna warstwa widoczności enum (#008) zamiast boolean MVP
+
+**Szczegóły:**
+- Issue: [#012](issues/2026-07-09--012--unify-services-remove-contact-persons.md)
+- Plan: [church-assignment-visibility.md](plans/2026-07-09--church-assignment-visibility.md)
+- Bug selecta służb: [#013](issues/2026-07-09--013--service-type-select-not-visible.md) ✅
+
+---
+
+### Grupy ludzi
 
 🔄 **Status:** Planowane
 
 **Opis:**
-Dodanie flagi `public` dla osób kontaktowych w zborach. Osoby kontaktowe domyślnie są publiczne i widoczne dla wszystkich użytkowników (również niezalogowanych). Odznaczenie flagi `public` powoduje ukrycie osoby i widoczność tylko dla zalogowanych użytkowników.
+Definiowanie grup organizacyjnych poza zborami, np. Prezydium Rady Naczelnej, Grupa Ewangelizacji, Służba Więzienna.
 
-**Przykład użycia:**
-- Pastor może być oznaczony jako publiczny (widoczny dla wszystkich)
-- Diakon może być oznaczony jako niepubliczny (widoczny tylko dla zalogowanych)
+**Szczegóły:**
+- Issue: [#014](issues/2026-07-09--014--people-groups.md)
+- Plan: [people-groups.md](plans/2026-07-09--people-groups.md)
 
-**Wymagania:**
-- Backend: Dodanie pola `is_public` (domyślnie `true`) do tabeli `contact_persons`
-- Frontend: Dodanie checkboxa w formularzu edycji osoby kontaktowej
-- Filtrowanie: W publicznym widoku zboru pokazywać tylko osoby z `is_public = true`
-- Widok dla zalogowanych: Pokazywać wszystkie osoby (publiczne i niepubliczne)
+---
 
-**Szczegóły implementacji:**
-- Zobacz: `docs/plans/2026-07-09--church-platform-implementation.md` (Phase 3 — visibility layer, issue #008)
+### Listy mailingowe
+
+🔄 **Status:** Planowane (późniejsza faza)
+
+**Opis:**
+Listy mailingowe oparte o grupy ludzi i adresy `persons` — komunikacja wewnętrzna CHWZ.
+
+**Szczegóły:**
+- Issue: [#015](issues/2026-07-09--015--mailing-lists.md)
+- Plan: [mailing-lists.md](plans/2026-07-09--mailing-lists.md)
 
 ---
 
