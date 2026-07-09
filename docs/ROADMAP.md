@@ -34,8 +34,26 @@ Dodanie flagi `public` dla osób kontaktowych w zborach. Osoby kontaktowe domyś
 - Widok dla zalogowanych: Pokazywać wszystkie osoby (publiczne i niepubliczne)
 
 **Szczegóły implementacji:**
-- Zobacz: `docs/features/FEATURE-XXX-contact-persons-public-flag.md` (do utworzenia)
+- Zobacz: `docs/plans/2026-07-09--church-platform-implementation.md` (Phase 3 — visibility layer, issue #008)
 
 ---
 
-**Ostatnia aktualizacja:** 2025-01-XX
+### Platforma zborów — hierarchia, ACL, publiczne URL
+
+🔄 **Status:** Planowane
+
+**Opis:**
+Pełna platforma zarządzania zborami CHWZ: hierarchia organizacyjna (wspólnota → rejon → zbór → placówka), rozdzielone role i uprawnienia (ACL), warstwa widoczności oraz publiczne adresy `/kraj/miasto/slug-zboru`.
+
+**Źródła koncepcyjne:**
+- `docs/plans/2026-07-09--church-platform.md`
+- `docs/plans/2026-07-09--organization-and-acl.md`
+
+**Plan implementacji:**
+- `docs/plans/2026-07-09--church-platform-implementation.md`
+
+**Issues:** #006–#010 w `docs/issues/`
+
+---
+
+**Ostatnia aktualizacja:** 2026-07-09
