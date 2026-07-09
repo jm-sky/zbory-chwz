@@ -5,6 +5,7 @@ import logging
 from sqlalchemy import select, update
 
 from app.common.id_utils import generate_id
+from app.modules.churches.acl_seed import ensure_acl_roles
 from app.modules.churches.db_models import (
     ChurchDB,
     ChurchSlugAliasDB,
@@ -53,6 +54,7 @@ async def backfill_churches(repo: ChurchRepository) -> dict[str, int]:
     community = await _get_or_create_community(db, stats)
     regions_by_slug = await _ensure_regions(db, community.id, stats)
     service_types_by_slug = await _ensure_service_types(db, stats)
+    await ensure_acl_roles(db)
     await _ensure_city_aliases(db, stats)
     org_tenant = await _get_or_create_org_tenant(db, stats)
 
@@ -354,9 +356,9 @@ async def _migrate_contact_persons(
             description=None,
             scope_type="church",
             scope_id=church_id,
-            show_on_card=True,
-            phone_public=bool(cp.phone),
-            email_public=bool(cp.email),
+            card_visibility="public",
+            phone_visibility="public" if cp.phone else "hidden",
+            email_visibility="public" if cp.email else "hidden",
             source_contact_person_id=cp.id,
         )
         db.add(assignment)

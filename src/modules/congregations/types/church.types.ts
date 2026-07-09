@@ -1,3 +1,5 @@
+import type { ChurchAclRole, VisibilityLevel } from './visibility.types'
+
 export interface IServiceType {
   id: string
   slug: string
@@ -34,9 +36,9 @@ export interface IServiceAssignment {
   description: string | null
   scopeType: string
   scopeId: string
-  showOnCard: boolean
-  phonePublic: boolean
-  emailPublic: boolean
+  cardVisibility: string
+  phoneVisibility: string
+  emailVisibility: string
   createdAt: string
   person: IPerson | null
   serviceType: IServiceType | null
@@ -58,10 +60,10 @@ export interface IServiceAssignmentCreateRequest {
   customServiceName?: string
   description?: string
   createAccount?: boolean
-  suggestedRole?: string
-  showOnCard?: boolean
-  phonePublic?: boolean
-  emailPublic?: boolean
+  suggestedRole?: ChurchAclRole
+  cardVisibility?: VisibilityLevel
+  phoneVisibility?: VisibilityLevel
+  emailVisibility?: VisibilityLevel
 }
 
 export interface IServiceAssignmentUpdateRequest {
@@ -72,7 +74,7 @@ export interface IServiceAssignmentUpdateRequest {
   lastName?: string
   email?: string
   phone?: string
-  showOnCard?: boolean
-  phonePublic?: boolean
-  emailPublic?: boolean
+  cardVisibility?: VisibilityLevel
+  phoneVisibility?: VisibilityLevel
+  emailVisibility?: VisibilityLevel
 }

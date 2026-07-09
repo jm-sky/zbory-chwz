@@ -137,11 +137,16 @@ async def list_congregations_detailed(
                     if service_type
                     else contact_assignment.custom_service_name
                 )
+                contact_fields = church_repo.filter_assignment_contact(
+                    contact_assignment,
+                    is_authenticated=False,
+                    has_pastoral_access=False,
+                )
                 contact_person = {
                     "name": name or None,
                     "title": title,
-                    "phone": person.phone if contact_assignment.phone_public else None,
-                    "email": person.email if contact_assignment.email_public else None,
+                    "phone": contact_fields["phone"],
+                    "email": contact_fields["email"],
                 }
 
             congregations.append(

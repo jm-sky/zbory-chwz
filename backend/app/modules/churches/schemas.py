@@ -1,8 +1,12 @@
 """Pydantic schemas for churches module."""
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+VisibilityLevel = Literal["hidden", "public", "authenticated", "pastors"]
+ChurchAclRole = Literal["bishop", "regional_bishop", "pastor", "diacon"]
 
 
 class RegionResponse(BaseModel):
@@ -82,10 +86,10 @@ class ServiceAssignmentCreateRequest(BaseModel):
     customServiceName: str | None = None
     description: str | None = None
     createAccount: bool = False
-    suggestedRole: str | None = None
-    showOnCard: bool = True
-    phonePublic: bool = True
-    emailPublic: bool = False
+    suggestedRole: ChurchAclRole | None = None
+    cardVisibility: VisibilityLevel = "public"
+    phoneVisibility: VisibilityLevel = "public"
+    emailVisibility: VisibilityLevel = "authenticated"
 
 
 class ServiceAssignmentUpdateRequest(BaseModel):
@@ -96,9 +100,9 @@ class ServiceAssignmentUpdateRequest(BaseModel):
     lastName: str | None = None
     email: str | None = None
     phone: str | None = None
-    showOnCard: bool | None = None
-    phonePublic: bool | None = None
-    emailPublic: bool | None = None
+    cardVisibility: VisibilityLevel | None = None
+    phoneVisibility: VisibilityLevel | None = None
+    emailVisibility: VisibilityLevel | None = None
 
 
 class ServiceAssignmentResponse(BaseModel):
@@ -111,12 +115,14 @@ class ServiceAssignmentResponse(BaseModel):
     description: str | None = None
     scopeType: str = Field(validation_alias="scope_type")
     scopeId: str = Field(validation_alias="scope_id")
-    showOnCard: bool = Field(validation_alias="show_on_card")
-    phonePublic: bool = Field(validation_alias="phone_public")
-    emailPublic: bool = Field(validation_alias="email_public")
+    cardVisibility: str = Field(validation_alias="card_visibility")
+    phoneVisibility: str = Field(validation_alias="phone_visibility")
+    emailVisibility: str = Field(validation_alias="email_visibility")
     createdAt: datetime = Field(validation_alias="created_at")
     person: PersonResponse | None = None
-    serviceType: ServiceTypeResponse | None = None
+    serviceType: ServiceTypeResponse | None = Field(
+        default=None, validation_alias="service_type"
+    )
 
 
 class PersonSearchResponse(BaseModel):

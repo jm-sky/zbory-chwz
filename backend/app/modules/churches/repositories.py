@@ -5,7 +5,7 @@ import secrets
 from datetime import UTC, datetime
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,6 +13,8 @@ from app.common.id_utils import generate_id
 from app.core.database import get_db
 from app.modules.auth.auth_utils import get_password_hash
 from app.modules.auth.db_models import UserDB
+from app.modules.churches.acl_models import UserRoleAssignmentDB
+from app.modules.churches.acl_seed import PASTORAL_ROLE_NAMES, ensure_acl_roles, resolve_acl_scope
 from app.modules.churches.db_models import (
     BranchDB,
     ChurchDB,
@@ -32,6 +34,7 @@ from app.modules.churches.schemas import (
 )
 from app.modules.churches.seed_data import PASTOR_SERVICE_SLUGS
 from app.modules.churches.slug_utils import church_slug, city_slug, country_slug
+from app.modules.churches.visibility import VisibilityService
 from app.modules.congregations.db_models import (
     CongregationAddressDB,
     CongregationContactPersonDB,
@@ -173,12 +176,13 @@ class ChurchRepository:
         await self.db.flush()
         return person
 
-    async def _maybe_create_user(
+    async def _maybe_create_user_and_acl(
         self,
+        assignment_id: str,
         person: PersonDB,
         payload: ServiceAssignmentCreateRequest,
         service_type: ServiceTypeDB | None,
-        church_id: str,
+        church: ChurchDB,
     ) -> None:
         if person.user_id:
             return
@@ -216,17 +220,53 @@ class ChurchRepository:
             await self.db.flush()
 
         person.user_id = user_db.id
-        await self._ensure_tenant_membership(
-            church_id,
-            user_db.id,
-            payload.suggestedRole
-            or (service_type.suggested_role if service_type else None)
-            or "member",
-        )
+        await self._ensure_tenant_membership(church.tenant_id, user_db.id)
 
-    async def _ensure_tenant_membership(
-        self, tenant_id: str, user_id: str, role: str
-    ) -> None:
+        role_name = payload.suggestedRole or (
+            service_type.suggested_role if service_type else None
+        )
+        if not role_name or role_name not in PASTORAL_ROLE_NAMES:
+            return
+
+        roles_by_name = await ensure_acl_roles(self.db)
+        role = roles_by_name.get(role_name)
+        if not role:
+            return
+
+        scope = resolve_acl_scope(
+            role_name,
+            church_id=church.id,
+            community_id=church.community_id,
+            region_id=church.region_id,
+        )
+        if not scope:
+            return
+
+        scope_type, scope_id = scope
+        existing_assignment = await self.db.execute(
+            select(UserRoleAssignmentDB).where(
+                UserRoleAssignmentDB.user_id == user_db.id,
+                UserRoleAssignmentDB.role_id == role.id,
+                UserRoleAssignmentDB.scope_type == scope_type,
+                UserRoleAssignmentDB.scope_id == scope_id,
+            )
+        )
+        if existing_assignment.scalar_one_or_none():
+            return
+
+        self.db.add(
+            UserRoleAssignmentDB(
+                id=generate_id(),
+                user_id=user_db.id,
+                role_id=role.id,
+                scope_type=scope_type,
+                scope_id=scope_id,
+                source_assignment_id=assignment_id,
+            )
+        )
+        await self.db.flush()
+
+    async def _ensure_tenant_membership(self, tenant_id: str, user_id: str) -> None:
         result = await self.db.execute(
             select(TenantMembershipDB).where(
                 TenantMembershipDB.tenant_id == tenant_id,
@@ -240,7 +280,7 @@ class ChurchRepository:
             TenantMembershipDB(
                 tenant_id=tenant_id,
                 user_id=user_id,
-                role=role,
+                role="member",
             )
         )
         await self.db.flush()
@@ -263,8 +303,9 @@ class ChurchRepository:
             if not service_type:
                 raise HTTPException(status_code=404, detail="Service type not found")
 
+        church = await self.ensure_church_access(scope_id)
+
         person = await self._resolve_person(payload)
-        await self._maybe_create_user(person, payload, service_type, scope_id)
 
         assignment = ServiceAssignmentDB(
             id=generate_id(),
@@ -274,11 +315,16 @@ class ChurchRepository:
             description=payload.description,
             scope_type=scope_type,
             scope_id=scope_id,
-            show_on_card=payload.showOnCard,
-            phone_public=payload.phonePublic,
-            email_public=payload.emailPublic,
+            card_visibility=payload.cardVisibility,
+            phone_visibility=payload.phoneVisibility,
+            email_visibility=payload.emailVisibility,
         )
         self.db.add(assignment)
+        await self.db.flush()
+
+        await self._maybe_create_user_and_acl(
+            assignment.id, person, payload, service_type, church
+        )
         await self.db.commit()
         await self.db.refresh(assignment)
         loaded = await self.db.execute(
@@ -309,12 +355,12 @@ class ChurchRepository:
             assignment.custom_service_name = payload.customServiceName
         if payload.description is not None:
             assignment.description = payload.description
-        if payload.showOnCard is not None:
-            assignment.show_on_card = payload.showOnCard
-        if payload.phonePublic is not None:
-            assignment.phone_public = payload.phonePublic
-        if payload.emailPublic is not None:
-            assignment.email_public = payload.emailPublic
+        if payload.cardVisibility is not None:
+            assignment.card_visibility = payload.cardVisibility
+        if payload.phoneVisibility is not None:
+            assignment.phone_visibility = payload.phoneVisibility
+        if payload.emailVisibility is not None:
+            assignment.email_visibility = payload.emailVisibility
 
         person = assignment.person
         if person:
@@ -346,6 +392,11 @@ class ChurchRepository:
         assignment = result.scalar_one_or_none()
         if not assignment:
             return False
+        await self.db.execute(
+            delete(UserRoleAssignmentDB).where(
+                UserRoleAssignmentDB.source_assignment_id == assignment_id
+            )
+        )
         await self.db.delete(assignment)
         await self.db.commit()
         return True
@@ -364,7 +415,7 @@ class ChurchRepository:
             .where(
                 ServiceAssignmentDB.scope_type == "church",
                 ServiceAssignmentDB.scope_id == church_id,
-                ServiceAssignmentDB.show_on_card.is_(True),
+                ServiceAssignmentDB.card_visibility == "public",
             )
             .options(
                 selectinload(ServiceAssignmentDB.person),
@@ -373,6 +424,32 @@ class ChurchRepository:
             .order_by(ServiceAssignmentDB.created_at)
         )
         return list(result.scalars().all())
+
+    def filter_assignment_contact(
+        self,
+        assignment: ServiceAssignmentDB,
+        *,
+        is_authenticated: bool,
+        has_pastoral_access: bool,
+    ) -> dict[str, str | None]:
+        person = assignment.person
+        if not person:
+            return {"phone": None, "email": None}
+
+        return {
+            "phone": VisibilityService.filter_contact_field(
+                person.phone,
+                assignment.phone_visibility,
+                is_authenticated=is_authenticated,
+                has_pastoral_access=has_pastoral_access,
+            ),
+            "email": VisibilityService.filter_contact_field(
+                person.email,
+                assignment.email_visibility,
+                is_authenticated=is_authenticated,
+                has_pastoral_access=has_pastoral_access,
+            ),
+        }
 
 
 def get_church_repository(db: AsyncSession = Depends(get_db)) -> ChurchRepository:

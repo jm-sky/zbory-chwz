@@ -197,41 +197,8 @@ async def delete_branch(
     await repo.delete_branch(branch_id)
 
 
-def _person_response(person) -> PersonResponse:
-    return PersonResponse(
-        id=person.id,
-        firstName=person.first_name,
-        lastName=person.last_name,
-        email=person.email,
-        phone=person.phone,
-        userId=person.user_id,
-    )
-
-
-def _service_type_response(service_type) -> ServiceTypeResponse:
-    return ServiceTypeResponse.model_validate(service_type)
-
-
 def _assignment_response(assignment) -> ServiceAssignmentResponse:
-    return ServiceAssignmentResponse(
-        id=assignment.id,
-        personId=assignment.person_id,
-        serviceTypeId=assignment.service_type_id,
-        customServiceName=assignment.custom_service_name,
-        description=assignment.description,
-        scopeType=assignment.scope_type,
-        scopeId=assignment.scope_id,
-        showOnCard=assignment.show_on_card,
-        phonePublic=assignment.phone_public,
-        emailPublic=assignment.email_public,
-        createdAt=assignment.created_at,
-        person=_person_response(assignment.person) if assignment.person else None,
-        serviceType=(
-            _service_type_response(assignment.service_type)
-            if assignment.service_type
-            else None
-        ),
-    )
+    return ServiceAssignmentResponse.model_validate(assignment)
 
 
 @router.get(
