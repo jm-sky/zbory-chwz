@@ -27,12 +27,12 @@ const { t } = useI18n()
           </h2>
           <div class="space-y-2 text-muted-foreground">
             <p>
-              {{ t('privacy.dataCollection.description', 'Aplikacja Gear Stack zbiera następujące dane:') }}
+              {{ t('privacy.dataCollection.description', 'Aplikacja Zbory CHWZ zbiera następujące dane:') }}
             </p>
             <ul class="list-disc list-inside space-y-1">
               <li>{{ t('privacy.dataCollection.items.account', 'Dane konta: email, imię i nazwisko (wymagane do utworzenia konta)') }}</li>
-              <li>{{ t('privacy.dataCollection.items.gear', 'Dane dotyczące sprzętu: kontenery, przedmioty, wagi, statusy (przechowywane w bazie danych)') }}</li>
-              <li>{{ t('privacy.dataCollection.items.settings', 'Ustawienia aplikacji: preferencje językowe, jednostki wagowe, inne ustawienia') }}</li>
+              <li>{{ t('privacy.dataCollection.items.congregations', 'Dane dotyczące zborów: nazwy, adresy, godziny nabożeństw, osoby kontaktowe (przechowywane w bazie danych)') }}</li>
+              <li>{{ t('privacy.dataCollection.items.settings', 'Ustawienia aplikacji: preferencje językowe, motyw, inne ustawienia') }}</li>
               <li>{{ t('privacy.dataCollection.items.usage', 'Dane użytkowania: logi dostępu, akcje podejmowane w aplikacji (w celu zapewnienia bezpieczeństwa i poprawy usługi)') }}</li>
             </ul>
           </div>

@@ -23,7 +23,7 @@ const { t } = useI18n()
             {{ t('terms.acceptance.title', 'Akceptacja warunków') }}
           </h2>
           <p class="text-muted-foreground">
-            {{ t('terms.acceptance.description', 'Korzystając z aplikacji Gear Stack, akceptujesz niniejsze warunki korzystania. Jeśli nie zgadzasz się z którymkolwiek z poniższych warunków, nie powinieneś korzystać z serwisu.') }}
+            {{ t('terms.acceptance.description', 'Korzystając z aplikacji Zbory CHWZ, akceptujesz niniejsze warunki korzystania. Jeśli nie zgadzasz się z którymkolwiek z poniższych warunków, nie powinieneś korzystać z serwisu.') }}
           </p>
         </section>
 

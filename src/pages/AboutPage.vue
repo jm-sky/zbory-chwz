@@ -11,59 +11,46 @@ const { t } = useI18n()
 const copied = ref(false)
 
 const aiContextMarkdown = computed(() => {
-  return `# Gear Stack - AI Context
+  return `# Zbory CHWZ - AI Context
 
 ## Overview
-Gear Stack is a full-stack web application for managing survival gear, bug-out bags, and outdoor equipment. It's designed for outdoor enthusiasts, preppers, and survival gear collectors.
+Zbory CHWZ is a full-stack web application for managing and publicly presenting congregation data for the Christian Community of Free Pentecostals (CHWZ). It is designed for congregation administrators, church leadership, and the public seeking congregation information.
 
 ## Key Capabilities
 - **Multi-User Platform** - Secure user accounts with authentication and authorization
-- **Hybrid Architecture** - Works offline with localStorage, syncs with cloud when online
-- **Advanced Organization** - Hierarchical container system with nested items and weight tracking
-- **Rich Metadata** - Track weight, expiration dates, priorities, brands, and custom categories
-- **Data Portability** - Import/export functionality with AI-ready markdown format
+- **Hybrid Architecture** - Local browser settings, congregation data synced in the cloud
+- **Congregation Management** - Profiles, addresses, service times, and contact persons
+- **Publication Workflow** - Draft, published, and verification statuses
+- **AI Context** - Markdown description for AI assistants
 
 ## Core Features
 
-### Container System
-- Multiple container types (Bug-out bags, EDC kits, get-home bags, medical kits, camping gear, custom)
-- Hierarchical organization - containers can contain other containers (nested packs, pouches in bags)
-- Visual distinction - assign colors to containers (10+ colors)
-- Container metadata - type, description, base weight, color coding
-- Cycle detection - prevents circular references
+### Congregation Profiles
+- Manage congregation name, description, and publication status
+- Status indicators for draft, published, and unverified congregations
+- Governance workflow for publishing and verifying congregation data
 
-### Item Management
-- Rich item data: name, quantity, weight (g, kg, oz, lb), category, priority, status (owned/missing/to buy), brand, notes, expiration date
-- Smart categorization - automatic category recognition (water, fire, food, shelter, first aid, tools, navigation, communication, clothing, hygiene, light, other)
-- Status tracking - owned, missing, or to buy
-- Priority levels - low, medium, high, critical
-- Expiration tracking for consumables
+### Addresses & Service Times
+- Address data: street, city, postal code, province, country
+- Service times — day and time of worship services
+- Contact persons — name, role, email, phone for congregation leaders
+- Multiple service times and contact persons per congregation
 
-### Analytics & Insights
-- Weight calculations - total pack weight with recursive calculation for nested containers
-- Category-based weight distribution
-- Base weight vs. consumables tracking
-- Readiness indicators - kit completeness percentage
-- Donut charts - visual breakdown by category
-- Item statistics by status, category, or priority
+### Public Views
+- Public congregation directory with basic information
+- Congregation detail pages with address, service times, and contacts
+- Admin dashboard for managing users and congregations
 
 ### Search & Filtering
-- Smart search - find items by name, brand, or notes across all containers
-- Multi-criteria filtering - by category, status, priority, or container
-- Sorting options - by name, weight, expiration date, or priority
-- Highlight expired items - visual warnings
-
-### Import/Export
-- JSON export/import - full data backup and restore
-- AI-ready markdown export - structured format with metadata, nested container support, calculated weights
-- CSV export - for spreadsheet applications
-- Cross-device transfer
+- Search congregations by name, city, or address
+- Filter by publication status and location
+- Sort by name or city
 
 ## Business Features
 
 ### User Management & Security
 - Email/password authentication with secure password hashing
-- OAuth social login (Google, GitHub planned)
+- OAuth social login (Google, Facebook, GitHub)
 - Email verification
 - Two-factor authentication (2FA) - TOTP and WebAuthn (passkeys)
 - Password management - reset and change
@@ -74,11 +61,11 @@ Gear Stack is a full-stack web application for managing survival gear, bug-out b
 ### User Profile
 - Profile management - name, email, preferences
 - Avatar support from OAuth providers
-- Preferred settings - weight units, language, theme
+- Preferred settings - language, theme
 - Security settings - manage 2FA methods
 
 ### Multi-Language Support
-- English and Polish fully supported
+- English, Polish, and Russian fully supported
 - Automatic locale detection
 - Manual language switching
 - All UI text, validation messages, and emails localized
@@ -104,12 +91,11 @@ Gear Stack is a full-stack web application for managing survival gear, bug-out b
 - SQLAlchemy ORM with async support
 - JWT authentication with refresh tokens
 - Rate limiting and reCAPTCHA protection
-- Modular architecture (auth, two-factor, email)
+- Modular architecture (auth, congregations, admin, two-factor, email)
 
 ## Architecture
-- **Hybrid Persistence**: Client-side localStorage for offline-first, server-side PostgreSQL for multi-device sync
-- **Automatic Synchronization** - Changes sync to cloud when online
-- **Conflict Resolution** - Smart merging of offline changes
+- **Server-Side Data**: Congregation data stored in PostgreSQL via API
+- **Client-Side Settings**: User preferences persisted in localStorage
 - **Module-Based Frontend** - Each feature is self-contained in modules
 - **Backend Modules** - FastAPI modular pattern with routers, services, repositories`
 })
@@ -134,10 +120,10 @@ const handleCopy = async () => {
     <div class="space-y-8">
       <div class="space-y-2">
         <h1 class="text-3xl font-bold tracking-tight">
-          {{ t('about.title', 'About Gear Stack') }}
+          {{ t('about.title', 'About Zbory CHWZ') }}
         </h1>
         <p class="text-muted-foreground">
-          {{ t('about.subtitle', 'A comprehensive web application for managing survival gear, bug-out bags, and outdoor equipment') }}
+          {{ t('about.subtitle', 'Application for managing and publicly presenting congregations of the Christian Community of Free Pentecostals') }}
         </p>
       </div>
 
@@ -174,7 +160,7 @@ const handleCopy = async () => {
           {{ t('about.overview.title', 'Overview') }}
         </h2>
         <p class="text-muted-foreground">
-          {{ t('about.overview.description', 'Gear Stack is a full-stack application designed for outdoor enthusiasts, preppers, and survival gear collectors. It combines an intuitive front-end interface with a robust backend to provide secure multi-user gear management with cloud synchronization across devices.') }}
+          {{ t('about.overview.description', 'Zbory CHWZ is a full-stack application for managing and publicly presenting CHWZ congregation data. It combines an intuitive interface with a robust backend to provide secure multi-user data management with cloud synchronization across devices.') }}
         </p>
       </section>
 
@@ -186,9 +172,9 @@ const handleCopy = async () => {
         <ul class="list-disc list-inside space-y-2 text-muted-foreground">
           <li>{{ t('about.capabilities.multiUser', 'Multi-User Platform - Secure user accounts with authentication and authorization') }}</li>
           <li>{{ t('about.capabilities.hybrid', 'Hybrid Architecture - Works offline with localStorage, syncs with cloud when online') }}</li>
-          <li>{{ t('about.capabilities.organization', 'Advanced Organization - Hierarchical container system with nested items and weight tracking') }}</li>
-          <li>{{ t('about.capabilities.metadata', 'Rich Metadata - Track weight, expiration dates, priorities, brands, and custom categories') }}</li>
-          <li>{{ t('about.capabilities.portability', 'Data Portability - Import/export functionality with AI-ready markdown format') }}</li>
+          <li>{{ t('about.capabilities.organization', 'Congregation Management — profiles, addresses, service times, and contact persons') }}</li>
+          <li>{{ t('about.capabilities.metadata', 'Publication Status — draft, published, needs verification') }}</li>
+          <li>{{ t('about.capabilities.portability', 'AI Context — application description in Markdown format for AI assistants') }}</li>
         </ul>
       </section>
 
@@ -200,39 +186,39 @@ const handleCopy = async () => {
         <div class="space-y-6">
           <div id="container-system" class="space-y-2 scroll-mt-18">
             <h3 class="text-xl font-semibold">
-              {{ t('about.coreFeatures.containers.title', 'Container System') }}
+              {{ t('about.coreFeatures.containers.title', 'Congregation Profiles') }}
             </h3>
             <ul class="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-              <li>{{ t('about.coreFeatures.containers.multiple', 'Multiple container types (Bug-out bags, EDC kits, get-home bags, medical kits, camping gear, and custom types)') }}</li>
-              <li>{{ t('about.coreFeatures.containers.hierarchical', 'Hierarchical organization - containers can contain other containers (nested packs, pouches in bags)') }}</li>
-              <li>{{ t('about.coreFeatures.containers.colors', 'Visual distinction - assign colors to containers for quick identification (10+ colors)') }}</li>
-              <li>{{ t('about.coreFeatures.containers.metadata', 'Container metadata - type, description, base weight, color coding') }}</li>
-              <li>{{ t('about.coreFeatures.containers.cycle', 'Cycle detection - prevents circular references in nested containers') }}</li>
+              <li>{{ t('about.coreFeatures.containers.multiple', 'Manage congregation name, description, and publication status (draft, published, unverified)') }}</li>
+              <li>{{ t('about.coreFeatures.containers.hierarchical', 'Organizational hierarchy — branches and regions (planned)') }}</li>
+              <li>{{ t('about.coreFeatures.containers.colors', 'Status indicators — quick identification of publication and verification state') }}</li>
+              <li>{{ t('about.coreFeatures.containers.metadata', 'Congregation metadata — description, status, visibility settings') }}</li>
+              <li>{{ t('about.coreFeatures.containers.cycle', 'Publishing and verification workflow for congregation data') }}</li>
             </ul>
           </div>
 
           <div id="item-management" class="space-y-2 scroll-mt-18">
             <h3 class="text-xl font-semibold">
-              {{ t('about.coreFeatures.items.title', 'Item Management') }}
+              {{ t('about.coreFeatures.items.title', 'Addresses & Service Times') }}
             </h3>
             <ul class="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-              <li>{{ t('about.coreFeatures.items.rich', 'Rich item data: name, quantity, weight (with unit selection: g, kg, oz, lb), category, priority, status (owned/missing/to buy), brand, notes, expiration date') }}</li>
-              <li>{{ t('about.coreFeatures.items.categorization', 'Smart categorization - automatic category recognition based on item name (water, fire, food, shelter, first aid, tools, navigation, communication, clothing, hygiene, light, other)') }}</li>
-              <li>{{ t('about.coreFeatures.items.status', 'Status tracking - mark items as owned, missing, or to buy') }}</li>
-              <li>{{ t('about.coreFeatures.items.priority', 'Priority levels - low, medium, high, critical') }}</li>
-              <li>{{ t('about.coreFeatures.items.expiration', 'Expiration tracking - monitor consumables and replace before they expire') }}</li>
+              <li>{{ t('about.coreFeatures.items.rich', 'Address data: street, city, postal code, province, country, publication status') }}</li>
+              <li>{{ t('about.coreFeatures.items.categorization', 'Service times — day and time of worship services') }}</li>
+              <li>{{ t('about.coreFeatures.items.status', 'Contact persons — name, role, email, and phone for congregation leaders') }}</li>
+              <li>{{ t('about.coreFeatures.items.priority', 'Multiple service times and contact persons per congregation') }}</li>
+              <li>{{ t('about.coreFeatures.items.expiration', 'Data validation and required fields for published profiles') }}</li>
             </ul>
           </div>
 
           <div id="analytics-insights" class="space-y-2 scroll-mt-18">
             <h3 class="text-xl font-semibold">
-              {{ t('about.coreFeatures.analytics.title', 'Analytics & Insights') }}
+              {{ t('about.coreFeatures.analytics.title', 'Public Views') }}
             </h3>
             <ul class="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-              <li>{{ t('about.coreFeatures.analytics.weight', 'Weight calculations - total pack weight with recursive calculation for nested containers, category-based weight distribution, base weight vs. consumables tracking') }}</li>
-              <li>{{ t('about.coreFeatures.analytics.readiness', 'Readiness indicators - kit completeness percentage based on owned vs. missing items') }}</li>
-              <li>{{ t('about.coreFeatures.analytics.charts', 'Donut charts - visual breakdown of weight or quantity by category') }}</li>
-              <li>{{ t('about.coreFeatures.analytics.statistics', 'Item statistics - count items by status, category, or priority') }}</li>
+              <li>{{ t('about.coreFeatures.analytics.weight', 'Congregation list — public directory with basic information') }}</li>
+              <li>{{ t('about.coreFeatures.analytics.readiness', 'Congregation details — address, service times, and contact info') }}</li>
+              <li>{{ t('about.coreFeatures.analytics.charts', 'Admin dashboard — manage users and congregations') }}</li>
+              <li>{{ t('about.coreFeatures.analytics.statistics', 'Statistics — number of users and published congregations') }}</li>
             </ul>
           </div>
 
@@ -241,22 +227,22 @@ const handleCopy = async () => {
               {{ t('about.coreFeatures.search.title', 'Search & Filtering') }}
             </h3>
             <ul class="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-              <li>{{ t('about.coreFeatures.search.smart', 'Smart search - find items by name, brand, or notes across all containers') }}</li>
-              <li>{{ t('about.coreFeatures.search.filtering', 'Multi-criteria filtering - filter by category, status, priority, or container') }}</li>
-              <li>{{ t('about.coreFeatures.search.sorting', 'Sorting options - sort by name, weight, expiration date, or priority') }}</li>
-              <li>{{ t('about.coreFeatures.search.expired', 'Highlight expired items - visual warnings for expired or soon-to-expire items') }}</li>
+              <li>{{ t('about.coreFeatures.search.smart', 'Search congregations by name, city, or address') }}</li>
+              <li>{{ t('about.coreFeatures.search.filtering', 'Filter by publication status and location') }}</li>
+              <li>{{ t('about.coreFeatures.search.sorting', 'Sort by name or city') }}</li>
+              <li>{{ t('about.coreFeatures.search.expired', 'Highlight congregations requiring verification') }}</li>
             </ul>
           </div>
 
           <div id="import-export" class="space-y-2 scroll-mt-18">
             <h3 class="text-xl font-semibold">
-              {{ t('about.coreFeatures.importExport.title', 'Import/Export') }}
+              {{ t('about.coreFeatures.importExport.title', 'Administration') }}
             </h3>
             <ul class="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-              <li>{{ t('about.coreFeatures.importExport.json', 'JSON export/import - full data backup and restore') }}</li>
-              <li>{{ t('about.coreFeatures.importExport.markdown', 'AI-ready markdown export - export containers to markdown format for AI processing with structured format, nested container support, and calculated weights') }}</li>
-              <li>{{ t('about.coreFeatures.importExport.csv', 'CSV export - export data in CSV format for spreadsheet applications') }}</li>
-              <li>{{ t('about.coreFeatures.importExport.crossDevice', 'Cross-device transfer - export from one device, import on another') }}</li>
+              <li>{{ t('about.coreFeatures.importExport.json', 'User management — roles, email verification, 2FA') }}</li>
+              <li>{{ t('about.coreFeatures.importExport.markdown', 'Congregation management — edit, publish, and unpublish') }}</li>
+              <li>{{ t('about.coreFeatures.importExport.csv', 'Admin panel — overview of all congregations and users') }}</li>
+              <li>{{ t('about.coreFeatures.importExport.crossDevice', 'Multi-device access — cloud data synchronization') }}</li>
             </ul>
           </div>
         </div>
@@ -291,7 +277,7 @@ const handleCopy = async () => {
             <ul class="list-disc list-inside space-y-1 text-muted-foreground ml-4">
               <li>{{ t('about.businessFeatures.profile.management', 'Profile management - update name, email, and preferences') }}</li>
               <li>{{ t('about.businessFeatures.profile.avatar', 'Avatar support - OAuth providers automatically provide profile pictures') }}</li>
-              <li>{{ t('about.businessFeatures.profile.settings', 'Preferred settings - weight units, language, theme preferences') }}</li>
+              <li>{{ t('about.businessFeatures.profile.settings', 'Preferred settings — language, theme preferences') }}</li>
               <li>{{ t('about.businessFeatures.profile.security', 'Security settings - manage 2FA methods, view security status') }}</li>
             </ul>
           </div>
@@ -301,7 +287,7 @@ const handleCopy = async () => {
               {{ t('about.businessFeatures.i18n.title', 'Multi-Language Support') }}
             </h3>
             <ul class="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-              <li>{{ t('about.businessFeatures.i18n.languages', 'English and Polish fully supported') }}</li>
+              <li>{{ t('about.businessFeatures.i18n.languages', 'English, Polish, and Russian fully supported') }}</li>
               <li>{{ t('about.businessFeatures.i18n.detection', 'Automatic locale detection from browser') }}</li>
               <li>{{ t('about.businessFeatures.i18n.switching', 'Manual language switching in settings') }}</li>
               <li>{{ t('about.businessFeatures.i18n.localized', 'All UI text, validation messages, and emails localized') }}</li>
@@ -363,7 +349,7 @@ const handleCopy = async () => {
           {{ t('aiContext.title', 'AI Context') }}
         </h2>
         <p class="text-muted-foreground">
-          {{ t('aiContext.subtitle', 'Short description of Gear Stack in Markdown format for AI assistants like ChatGPT') }}
+          {{ t('aiContext.subtitle', 'Short description of Zbory CHWZ in Markdown format for AI assistants like ChatGPT') }}
         </p>
 
         <Card>
@@ -374,7 +360,7 @@ const handleCopy = async () => {
                   {{ t('aiContext.card.title', 'Copy Context to Clipboard') }}
                 </CardTitle>
                 <CardDescription>
-                  {{ t('aiContext.card.description', 'Click the button below to copy the context description. You can then paste it into ChatGPT or other AI assistants to provide context about Gear Stack.') }}
+                  {{ t('aiContext.card.description', 'Click the button below to copy the context description. You can then paste it into ChatGPT or other AI assistants to provide context about Zbory CHWZ.') }}
                 </CardDescription>
               </div>
               <Button @click="handleCopy">
