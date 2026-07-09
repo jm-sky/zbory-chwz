@@ -9,6 +9,8 @@ export const congregationsPl = {
       unpublishError: 'Nie udało się cofnąć publikacji zboru',
       error: 'Nie udało się załadować listy zborów',
       empty: 'Brak zborów do wyświetlenia',
+      searchPlaceholder: 'Szukaj zborów...',
+      noResults: 'Brak wyników dla podanej frazy',
     },
     status: {
       unverified: 'Niezweryfikowany',

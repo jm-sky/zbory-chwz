@@ -9,6 +9,8 @@ export const congregationsEn = {
       unpublishError: 'Failed to unpublish congregation',
       error: 'Failed to load congregations list',
       empty: 'No congregations to display',
+      searchPlaceholder: 'Search congregations...',
+      noResults: 'No results for your search',
     },
     status: {
       unverified: 'Unverified',

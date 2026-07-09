@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { Church, Clock, Edit, EyeOff, Mail, MapPin, MoreHorizontal, Phone, User } from 'lucide-vue-next'
+import { Church, Clock, Edit, EyeOff, Mail, MapPin, MoreHorizontal, Phone, Search, User } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import SearchInput from '@/components/ui/input/SearchInput.vue'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +27,30 @@ const queryClient = useQueryClient()
 const authStore = useAuthStore()
 const { handleError } = useHandleError()
 const { data: congregations, isLoading, error } = useCongregations()
+
+const searchQuery = ref<string>('')
+
+const filteredCongregations = computed<ICongregationDetailed[]>(() => {
+  const items = congregations.value ?? []
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return items
+
+  return items.filter((congregation) => {
+    const haystack = [
+      congregation.name,
+      congregation.description,
+      congregation.city,
+      congregation.street,
+      congregation.postal_code,
+      congregation.contact_name,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    return haystack.includes(query)
+  })
+})
 
 // Check if user can edit/unpublish a congregation
 function canManageCongregation(congregation: ICongregationDetailed): boolean {
@@ -75,6 +101,15 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
 
 <template>
   <div class="space-y-4">
+    <!-- Search -->
+    <SearchInput
+      v-if="!isLoading && !error && congregations && congregations.length > 0"
+      id="congregations-search"
+      v-model="searchQuery"
+      name="congregations-search"
+      :placeholder="t('congregations.list.searchPlaceholder', 'Szukaj zborów...')"
+    />
+
     <!-- Loading State -->
     <div v-if="isLoading" class="space-y-3">
       <div
@@ -95,10 +130,16 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
       <p>{{ t('congregations.list.empty', 'Brak zborów do wyświetlenia') }}</p>
     </div>
 
+    <!-- No Search Results -->
+    <div v-else-if="filteredCongregations.length === 0" class="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+      <Search class="mx-auto mb-2 size-8 opacity-50" />
+      <p>{{ t('congregations.list.noResults', 'Brak wyników dla podanej frazy') }}</p>
+    </div>
+
     <!-- Congregations List -->
     <div v-else class="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
       <div
-        v-for="congregation in congregations"
+        v-for="congregation in filteredCongregations"
         :key="congregation.id"
         :class="[
           'group rounded-lg border p-6 transition-all hover:shadow-md',
