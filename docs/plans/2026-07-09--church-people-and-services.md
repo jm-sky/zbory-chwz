@@ -74,6 +74,14 @@ service_assignments
 - started_at, ended_at, created_at
 ```
 
+Lista **elastyczna** — admin może dodać nowe typy służb (poza `is_system`).
+
+**Typy bez domyślnej roli ACL:**
+
+| slug | Uwagi |
+|------|--------|
+| `lider_mlodziezowy` | Tylko funkcja na profilu zboru; brak podpowiedzi roli; konto opcjonalne bez ACL, chyba że ręcznie wybrane uprawnienia |
+
 ## Konto użytkownika i uprawnienia
 
 Checkbox: **☐ Utwórz konto użytkownika**

@@ -17,6 +17,9 @@ class CongregationAddressDB(Base):
     tenant_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
+    church_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("churches.id", ondelete="CASCADE"), nullable=True
+    )
     street: Mapped[str | None] = mapped_column(String(255), nullable=True)
     city: Mapped[str] = mapped_column(String(255), nullable=False)
     postal_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
@@ -43,6 +46,9 @@ class CongregationServiceTimeDB(Base):
     tenant_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
+    church_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("churches.id", ondelete="CASCADE"), nullable=True
+    )
     day: Mapped[str] = mapped_column(
         String(50), nullable=False
     )  # e.g., "niedziela", "środa"
@@ -63,6 +69,9 @@ class CongregationContactPersonDB(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    church_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("churches.id", ondelete="CASCADE"), nullable=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     title: Mapped[str | None] = mapped_column(

@@ -712,3 +712,22 @@ async def _remove_congregations(db: "AsyncSession") -> None:
 
     console.print(f"[bold green]✓ Removed {len(tenant_ids)} congregations and {memberships_count} memberships[/bold green]")
     console.print("[yellow]Note: Users created by the seeder were NOT deleted. Delete them manually if desired.[/yellow]")
+
+
+@db_app.command("churches-backfill")
+def churches_backfill() -> None:
+    """Backfill church hierarchy from existing tenants (idempotent)."""
+
+    async def _run() -> None:
+        from app.core.database import AsyncSessionLocal
+        from app.modules.churches.backfill import backfill_churches
+        from app.modules.churches.repositories import ChurchRepository
+
+        async with AsyncSessionLocal() as db:
+            repo = ChurchRepository(db)
+            stats = await backfill_churches(repo)
+            console.print("[bold green]Church backfill complete[/bold green]")
+            for key, value in stats.items():
+                console.print(f"  {key}: {value}")
+
+    asyncio.run(_run())

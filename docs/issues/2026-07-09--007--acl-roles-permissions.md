@@ -27,6 +27,7 @@ ACL must reflect **explicitly chosen** permissions when creating account — not
 
 - Independent permission pick at account creation
 - Pastor ACL before `is_active`
+- **`lider_mlodziezowy`:** `suggested_role_id = NULL` — brak domyślnej roli; tylko służba organizacyjna
 
 ## Open questions
 

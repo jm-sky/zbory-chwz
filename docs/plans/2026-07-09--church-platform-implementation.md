@@ -120,6 +120,11 @@ Szczegóły UX i reguł konta: **[church-people-and-services.md](./2026-07-09--c
 
 **Wstępna lista `service_types` (seed):** biskup naczelny, biskup senior, biskup regionu, biskup, pastor, młodszy pastor, senior pastor, diakon, senior diakon, lider młodzieżowy + opcja **„Inna”** w UI (`custom_service_name`).
 
+| slug | `suggested_role_id` |
+|------|---------------------|
+| `lider_mlodziezowy` | **brak** (`NULL`) — tylko służba organizacyjna; ACL wyłącznie jeśli ręcznie wybrane przy „Utwórz konto” |
+| pozostałe seed | podpowiedź roli wg mapowania (Bishop, Pastor, Diacon, …) |
+
 **Senior:** osobny typ służby (`senior_pastor`, …); wielu w zborze dozwolonych.
 
 **Osoba ≠ user:** ta sama `person` w wielu zborach; konto opcjonalne; uprawnienia **niezależne** od służby (podpowiedź z `suggested_role_id`).
@@ -604,3 +609,4 @@ Phase 1 (model) ──┬──► Phase 2 (ACL) ──► Phase 5 (governance U
 | 2026-07-09 | church_pastors table (multi + senior); slug aliases; city change + 301; inactive user invite; branch UI Phase 1 |
 | 2026-07-09 | Służby (`service_types` + `service_assignments`); ACL sync; senior = typ służby; pastor ACL przed aktywacją |
 | 2026-07-09 | `persons` entity; służba ≠ uprawnienia; „Inna”; wybór istniejącej osoby — [church-people-and-services.md](./2026-07-09--church-people-and-services.md) |
+| 2026-07-09 | `lider_mlodziezowy`: brak domyślnej roli ACL (`suggested_role_id` NULL) |

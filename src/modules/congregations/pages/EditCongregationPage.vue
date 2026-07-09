@@ -22,6 +22,8 @@ import { Textarea } from '@/components/ui/textarea'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { ICongregationFull } from '../types/congregation.types'
+import ChurchBranchesSection from '../components/ChurchBranchesSection.vue'
+import ChurchPeopleSection from '../components/ChurchPeopleSection.vue'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
 
@@ -660,6 +662,11 @@ onMounted(() => {
             </Button>
           </div>
         </form>
+
+        <div class="mt-8 space-y-6">
+          <ChurchBranchesSection :church-id="congregationId" />
+          <ChurchPeopleSection :church-id="congregationId" />
+        </div>
       </div>
     </div>
   </AuthenticatedLayout>
