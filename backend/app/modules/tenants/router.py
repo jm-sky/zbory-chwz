@@ -36,6 +36,7 @@ async def list_tenants(
             id=tenant.id,
             name=tenant.name,
             description=tenant.description,
+            status=tenant.status,
             role=membership.role,
             createdAt=tenant.created_at,
         )

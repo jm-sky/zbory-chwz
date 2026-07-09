@@ -49,18 +49,7 @@ async def list_service_types(
 ) -> list[ServiceTypeResponse]:
     _ = current_user
     types = await repo.list_service_types()
-    return [
-        ServiceTypeResponse(
-            id=t.id,
-            slug=t.slug,
-            name=t.name,
-            scopeType=t.scope_type,
-            suggestedRole=t.suggested_role,
-            isSeniorTier=t.is_senior_tier,
-            sortOrder=t.sort_order,
-        )
-        for t in types
-    ]
+    return [ServiceTypeResponse.model_validate(t) for t in types]
 
 
 @router.get("/regions", response_model=list[RegionResponse])
@@ -220,15 +209,7 @@ def _person_response(person) -> PersonResponse:
 
 
 def _service_type_response(service_type) -> ServiceTypeResponse:
-    return ServiceTypeResponse(
-        id=service_type.id,
-        slug=service_type.slug,
-        name=service_type.name,
-        scopeType=service_type.scope_type,
-        suggestedRole=service_type.suggested_role,
-        isSeniorTier=service_type.is_senior_tier,
-        sortOrder=service_type.sort_order,
-    )
+    return ServiceTypeResponse.model_validate(service_type)
 
 
 def _assignment_response(assignment) -> ServiceAssignmentResponse:

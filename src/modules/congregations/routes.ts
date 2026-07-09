@@ -13,6 +13,12 @@ export const CongregationRouteNames = {
 
 export const congregationRoutes: RouteRecordRaw[] = [
   {
+    path: CongregationRoutePaths.list,
+    name: CongregationRouteNames.list,
+    component: () => import('@/pages/LandingPage.vue'),
+    meta: { title: 'congregations.list.title' },
+  },
+  {
     path: CongregationRoutePaths.edit,
     name: CongregationRouteNames.edit,
     component: () => import('@/modules/congregations/pages/EditCongregationPage.vue'),

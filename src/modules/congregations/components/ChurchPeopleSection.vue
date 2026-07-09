@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { Plus, Trash2 } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
+import { Globe, Lock, Plus, Trash2 } from 'lucide-vue-next'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -31,6 +37,7 @@ const savingVisibilityId = ref<string | null>(null)
 
 const useCustomService = ref(false)
 const createAccount = ref(false)
+const accountRole = ref('member')
 const form = ref({
   firstName: '',
   lastName: '',
@@ -54,6 +61,18 @@ const isPastorType = computed(() =>
   selectedType.value ? pastorSlugs.has(selectedType.value.slug) : false,
 )
 
+const showAccountRoleSelect = computed(() => createAccount.value || isPastorType.value)
+
+const roleOptions = computed(() => {
+  const roles = new Set(['member', 'owner'])
+  for (const serviceType of serviceTypes.value) {
+    if (serviceType.suggestedRole) {
+      roles.add(serviceType.suggestedRole)
+    }
+  }
+  return Array.from(roles)
+})
+
 const serviceTypesEmpty = computed(() => !loading.value && serviceTypes.value.length === 0)
 
 function personLabel(assignment: IServiceAssignment): string {
@@ -66,6 +85,16 @@ function personLabel(assignment: IServiceAssignment): string {
 function serviceLabel(assignment: IServiceAssignment): string {
   if (assignment.serviceType) return assignment.serviceType.name
   return assignment.customServiceName || '—'
+}
+
+function roleLabel(role: string): string {
+  return t(`congregations.people.roles.${role}`, role)
+}
+
+function visibilityTooltip(isPublic: boolean): string {
+  return isPublic
+    ? t('congregations.people.visibilityPublic', 'Widoczny publicznie')
+    : t('congregations.people.visibilityPrivate', 'Ukryty')
 }
 
 async function load() {
@@ -99,6 +128,7 @@ function resetForm() {
   }
   useCustomService.value = false
   createAccount.value = false
+  accountRole.value = 'member'
 }
 
 async function addPerson() {
@@ -112,6 +142,7 @@ async function addPerson() {
       serviceTypeId: useCustomService.value ? undefined : form.value.serviceTypeId || undefined,
       customServiceName: useCustomService.value ? form.value.customServiceName || undefined : undefined,
       createAccount: createAccount.value || isPastorType.value,
+      suggestedRole: showAccountRoleSelect.value ? accountRole.value : undefined,
       showOnCard: form.value.showOnCard,
       phonePublic: form.value.phonePublic,
       emailPublic: form.value.emailPublic,
@@ -156,6 +187,16 @@ async function updateVisibility(
   }
 }
 
+watch(selectedType, (serviceType) => {
+  if (!serviceType) return
+  if (pastorSlugs.has(serviceType.slug)) {
+    createAccount.value = true
+  }
+  if (serviceType.suggestedRole) {
+    accountRole.value = serviceType.suggestedRole
+  }
+})
+
 onMounted(load)
 </script>
 
@@ -191,38 +232,83 @@ onMounted(load)
               {{ serviceLabel(item) }}
               <span v-if="item.description"> · {{ item.description }}</span>
             </p>
-            <p v-if="item.person?.phone || item.person?.email" class="text-sm text-muted-foreground">
-              <span v-if="item.person?.phone">{{ item.person.phone }}</span>
-              <span v-if="item.person?.phone && item.person?.email"> · </span>
-              <span v-if="item.person?.email">{{ item.person.email }}</span>
-            </p>
           </div>
-          <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-            <label class="flex items-center gap-2">
-              <Checkbox
-                :model-value="item.showOnCard"
-                :disabled="savingVisibilityId === item.id"
-                @update:model-value="updateVisibility(item, 'showOnCard', $event === true)"
-              />
-              <span>{{ t('congregations.people.showOnCard', 'Widoczne na karcie zboru') }}</span>
-            </label>
-            <label v-if="item.person?.phone" class="flex items-center gap-2">
-              <Checkbox
-                :model-value="item.phonePublic"
-                :disabled="savingVisibilityId === item.id"
-                @update:model-value="updateVisibility(item, 'phonePublic', $event === true)"
-              />
-              <span>{{ t('congregations.people.phonePublic', 'Telefon widoczny publicznie') }}</span>
-            </label>
-            <label v-if="item.person?.email" class="flex items-center gap-2">
-              <Checkbox
-                :model-value="item.emailPublic"
-                :disabled="savingVisibilityId === item.id"
-                @update:model-value="updateVisibility(item, 'emailPublic', $event === true)"
-              />
-              <span>{{ t('congregations.people.emailPublic', 'E-mail widoczny publicznie') }}</span>
-            </label>
+          <div class="space-y-2">
+            <div
+              v-if="item.person?.phone"
+              class="flex max-w-sm items-center"
+            >
+              <span class="flex-1 rounded-l-md border border-r-0 bg-muted/40 px-3 py-2 text-sm">
+                {{ item.person.phone }}
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="rounded-l-none border-l-0 px-2.5"
+                    :disabled="savingVisibilityId === item.id"
+                    v-tooltip="visibilityTooltip(item.phonePublic)"
+                  >
+                    <Globe v-if="item.phonePublic" class="size-4" />
+                    <Lock v-else class="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem @click="updateVisibility(item, 'phonePublic', true)">
+                    <Globe class="size-4" />
+                    {{ t('congregations.people.visibilityPublic', 'Widoczny publicznie') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="updateVisibility(item, 'phonePublic', false)">
+                    <Lock class="size-4" />
+                    {{ t('congregations.people.visibilityPrivate', 'Ukryty') }}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <div
+              v-if="item.person?.email"
+              class="flex max-w-sm items-center"
+            >
+              <span class="flex-1 truncate rounded-l-md border border-r-0 bg-muted/40 px-3 py-2 text-sm">
+                {{ item.person.email }}
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="rounded-l-none border-l-0 px-2.5"
+                    :disabled="savingVisibilityId === item.id"
+                    v-tooltip="visibilityTooltip(item.emailPublic)"
+                  >
+                    <Globe v-if="item.emailPublic" class="size-4" />
+                    <Lock v-else class="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem @click="updateVisibility(item, 'emailPublic', true)">
+                    <Globe class="size-4" />
+                    {{ t('congregations.people.visibilityPublic', 'Widoczny publicznie') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="updateVisibility(item, 'emailPublic', false)">
+                    <Lock class="size-4" />
+                    {{ t('congregations.people.visibilityPrivate', 'Ukryty') }}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
+          <label class="flex items-center gap-2 text-sm">
+            <Checkbox
+              :model-value="item.showOnCard"
+              :disabled="savingVisibilityId === item.id"
+              @update:model-value="updateVisibility(item, 'showOnCard', $event === true)"
+            />
+            <span>{{ t('congregations.people.showOnCard', 'Widoczne na karcie zboru') }}</span>
+          </label>
         </div>
         <Button
           type="button"
@@ -249,11 +335,68 @@ onMounted(load)
       </div>
       <div class="space-y-1">
         <Label>{{ t('congregations.people.email', 'E-mail') }}</Label>
-        <Input v-model="form.email" type="email" />
+        <div class="flex">
+          <Input
+            v-model="form.email"
+            type="email"
+            class="rounded-r-none focus-visible:z-10"
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button
+                type="button"
+                variant="outline"
+                class="rounded-l-none border-l-0 shrink-0 px-2.5"
+                v-tooltip="visibilityTooltip(form.emailPublic)"
+              >
+                <Globe v-if="form.emailPublic" class="size-4" />
+                <Lock v-else class="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem @click="form.emailPublic = true">
+                <Globe class="size-4" />
+                {{ t('congregations.people.visibilityPublic', 'Widoczny publicznie') }}
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="form.emailPublic = false">
+                <Lock class="size-4" />
+                {{ t('congregations.people.visibilityPrivate', 'Ukryty') }}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div class="space-y-1">
         <Label>{{ t('congregations.people.phone', 'Telefon') }}</Label>
-        <Input v-model="form.phone" />
+        <div class="flex">
+          <Input
+            v-model="form.phone"
+            class="rounded-r-none focus-visible:z-10"
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button
+                type="button"
+                variant="outline"
+                class="rounded-l-none border-l-0 shrink-0 px-2.5"
+                v-tooltip="visibilityTooltip(form.phonePublic)"
+              >
+                <Globe v-if="form.phonePublic" class="size-4" />
+                <Lock v-else class="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem @click="form.phonePublic = true">
+                <Globe class="size-4" />
+                {{ t('congregations.people.visibilityPublic', 'Widoczny publicznie') }}
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="form.phonePublic = false">
+                <Lock class="size-4" />
+                {{ t('congregations.people.visibilityPrivate', 'Ukryty') }}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
 
@@ -289,23 +432,10 @@ onMounted(load)
       <Textarea v-model="form.description" rows="2" />
     </div>
 
-    <div class="space-y-2 rounded-md border p-3">
-      <p class="text-sm font-medium">
-        {{ t('congregations.people.visibilityTitle', 'Widoczność na karcie zboru') }}
-      </p>
-      <label class="flex items-center gap-2 text-sm">
-        <Checkbox v-model="form.showOnCard" />
-        <span>{{ t('congregations.people.showOnCard', 'Widoczne na karcie zboru') }}</span>
-      </label>
-      <label class="flex items-center gap-2 text-sm">
-        <Checkbox v-model="form.phonePublic" />
-        <span>{{ t('congregations.people.phonePublic', 'Telefon widoczny publicznie') }}</span>
-      </label>
-      <label class="flex items-center gap-2 text-sm">
-        <Checkbox v-model="form.emailPublic" />
-        <span>{{ t('congregations.people.emailPublic', 'E-mail widoczny publicznie') }}</span>
-      </label>
-    </div>
+    <label class="flex items-center gap-2 text-sm">
+      <Checkbox v-model="form.showOnCard" />
+      <span>{{ t('congregations.people.showOnCard', 'Widoczne na karcie zboru') }}</span>
+    </label>
 
     <div class="flex items-center gap-2">
       <Checkbox v-model="createAccount" />
@@ -315,6 +445,24 @@ onMounted(load)
           ({{ t('congregations.people.pastorInactive', 'pastor: konto nieaktywne') }})
         </span>
       </Label>
+    </div>
+
+    <div v-if="showAccountRoleSelect" class="space-y-1">
+      <Label>{{ t('congregations.people.accountRole', 'Uprawnienia') }}</Label>
+      <Select v-model="accountRole">
+        <SelectTrigger>
+          <SelectValue :placeholder="t('congregations.people.accountRolePlaceholder', 'Wybierz uprawnienia')" />
+        </SelectTrigger>
+        <SelectContent class="z-[100]">
+          <SelectItem
+            v-for="role in roleOptions"
+            :key="role"
+            :value="role"
+          >
+            {{ roleLabel(role) }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <Button type="button" @click="addPerson">

@@ -37,7 +37,7 @@ from app.modules.congregations.db_models import (
     CongregationContactPersonDB,
     CongregationServiceTimeDB,
 )
-from app.modules.tenants.db_models import TenantDB
+from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +178,7 @@ class ChurchRepository:
         person: PersonDB,
         payload: ServiceAssignmentCreateRequest,
         service_type: ServiceTypeDB | None,
+        church_id: str,
     ) -> None:
         if person.user_id:
             return
@@ -215,6 +216,34 @@ class ChurchRepository:
             await self.db.flush()
 
         person.user_id = user_db.id
+        await self._ensure_tenant_membership(
+            church_id,
+            user_db.id,
+            payload.suggestedRole
+            or (service_type.suggested_role if service_type else None)
+            or "member",
+        )
+
+    async def _ensure_tenant_membership(
+        self, tenant_id: str, user_id: str, role: str
+    ) -> None:
+        result = await self.db.execute(
+            select(TenantMembershipDB).where(
+                TenantMembershipDB.tenant_id == tenant_id,
+                TenantMembershipDB.user_id == user_id,
+            )
+        )
+        if result.scalar_one_or_none():
+            return
+
+        self.db.add(
+            TenantMembershipDB(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                role=role,
+            )
+        )
+        await self.db.flush()
 
     async def create_service_assignment(
         self,
@@ -235,7 +264,7 @@ class ChurchRepository:
                 raise HTTPException(status_code=404, detail="Service type not found")
 
         person = await self._resolve_person(payload)
-        await self._maybe_create_user(person, payload, service_type)
+        await self._maybe_create_user(person, payload, service_type, scope_id)
 
         assignment = ServiceAssignmentDB(
             id=generate_id(),

@@ -58,6 +58,7 @@ export interface IServiceAssignmentCreateRequest {
   customServiceName?: string
   description?: string
   createAccount?: boolean
+  suggestedRole?: string
   showOnCard?: boolean
   phonePublic?: boolean
   emailPublic?: boolean

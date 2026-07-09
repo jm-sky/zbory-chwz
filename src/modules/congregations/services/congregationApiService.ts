@@ -37,6 +37,7 @@ interface TenantResponse {
   id: string
   name: string
   description?: string
+  status?: string
   role: string
   createdAt: string
 }
@@ -130,14 +131,12 @@ class CongregationApiService {
       const response = await apiClient.get<TenantListResponse>('/tenants')
       const tenant = response.data.tenants.find(t => t.id === id)
       if (tenant) {
-        // /tenants endpoint doesn't return status, so we need to get it from admin endpoint
-        // But for now, default to draft if not found
         return {
           id: tenant.id,
           name: tenant.name,
           description: tenant.description,
           role: tenant.role || undefined,
-          status: 'draft' as CongregationStatus,
+          status: (tenant.status || 'draft') as CongregationStatus,
           createdAt: tenant.createdAt,
         }
       }
