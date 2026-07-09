@@ -1,49 +1,28 @@
-# Dokumentacja Gear Stack
+# Dokumentacja Zbory CHWZ
 
-Ten katalog zawiera dokumentację projektu Gear Stack.
+Ten katalog zawiera dokumentację projektu Zbory CHWZ.
 
-## 📋 Główne dokumenty
+## Główne dokumenty
 
-- **[ROADMAP.md](./ROADMAP.md)** - 📍 **Punkt wejścia** - przegląd struktury roadmap
-- **[ROADMAP_OFFLINE.md](./ROADMAP_OFFLINE.md)** - Funkcjonalności offline (localStorage) - 688 linii, ~50+ funkcji
-- **[ROADMAP_ONLINE.md](./ROADMAP_ONLINE.md)** - Funkcjonalności online (backend/DB/auth) - 342 linie, ~30+ funkcji
-- **[features/](./features/)** - Szczegółowe plany implementacji funkcji
+- **[ROADMAP.md](./ROADMAP.md)** — punkt wejścia — przegląd roadmap i statusów funkcji
 
-## 📁 Struktura katalogów
+## Workflow (issues, plans, reviews, deployment)
 
-### `features/`
-Szczegółowe plany implementacji poszczególnych funkcji z roadmap.
+| Katalog | Przeznaczenie |
+|---------|---------------|
+| [issues/](./issues/README.md) | Błędy, usprawnienia, backporty ze wspólnego core |
+| [plans/](./plans/README.md) | Plany implementacji funkcji i większych zmian |
+| [reviews/](./reviews/README.md) | Analizy, przeglądy (UX, performance, security, jakość kodu) |
+| [deployment/](./deployment/README.md) | Runbooki deploymentu, Caddy, hardening Docker/DB |
 
-### `examples/`
-Przykładowe pliki i szablony.
+Statusy: `todo` · `planned` · `in progress` · `done` · `verification needed`
 
-### `plans/`
-Plany i dokumenty dotyczące przyszłych funkcjonalności:
-- `AI_PLAN.md` - Plan integracji AI
-- `API_INTEGRATION_PLAN.md` - Plan integracji API
-- `BACKEND_INTEGRATION.md` - Plan integracji z backendem
-- `implementation-suggestions.md` - Sugestie implementacji
+## Konwencja nazewnictwa
 
-### `analysis/`
-Analizy i porównania:
-- `SERVICES_ANALYSIS.md` - Analiza serwisów
-- `UX_REVIEW.md` - Przegląd UX/RWD
-- `features-comparison-and-plans.md` - Porównanie z LighterPack
-- `BACKEND_FRONTEND_COMPARISON.md` - Porównanie backend vs frontend
+Pliki w podkatalogach: `YYYY-MM-DD--slug.md` (issues dodatkowo: `YYYY-MM-DD--NNN--slug.md`).
 
-### `archive/`
-Przestarzałe dokumenty przeniesione do archiwum:
-- `IMPLEMENTATION_COMPLETE.md` - Stary raport implementacji (2025-01-21)
-- `IMPLEMENTATION_STATUS.md` - Stary status implementacji (2025-01-21)
-- `IMPLEMENTATION_PLAN.md` - Stary plan implementacji
-- `ITEM_DETAIL_PAGE_IMPLEMENTATION.md` - Dokumentacja implementacji ItemDetailPage (2025-01-25)
-
-## 🔧 Dokumenty operacyjne
-
-- `deployment-setup.md` - Konfiguracja deploymentu
-- `ssh-troubleshooting.md` - Rozwiązywanie problemów z SSH
+Każdy katalog ma `README.md` z indeksem.
 
 ---
 
-**Ostatnia aktualizacja:** 2025-01-21
-
+**Ostatnia aktualizacja:** 2026-07-09

@@ -104,7 +104,7 @@ Legenda:
 
 #### Średni priorytet
 1. **Wizualizacja podziału wag (worn vs base vs consumable)** — (front-end, wykres breakdown)
-   - **Feature:** [FEATURE-027](./features/FEATURE-027-weight-breakdown-visualization.md)
+   - **Feature:** FEATURE-027 (plan do utworzenia w `docs/plans/`)
    - Wykres kołowy pokazujący podział wag na base/worn/consumable
    - Obliczanie wag per kategoria z obsługą zagnieżdżonych kontenerów
    - Inspiracja: LighterPack pokazuje podział wag
@@ -189,12 +189,12 @@ Legenda:
 2. **Szybka edycja inline** - LighterPack pozwala edytować wszystko bezpośrednio w tabeli
    - **U nas:** Mamy w pełni zaimplementowane ✅
    - **Status:** ✅ Completed - inline editing dla: nazwa, ilość, waga, priorytet, status, cena, kategoria, notatki
-   - **Feature:** [FEATURE-007](./features/FEATURE-007-inline-editing.md)
+   - **Feature:** FEATURE-007 (plan do utworzenia w `docs/plans/`)
 
 3. **Wizualizacja podziału wag (worn vs base vs consumable)** - LighterPack pokazuje podział wag
    - **U nas:** Mamy typy worn/consumable ✅, brak wizualizacji breakdown
    - **Status:** 🔄 Planned - wizualizacja podziału wag w przygotowaniu
-   - **Feature:** [FEATURE-027](./features/FEATURE-027-weight-breakdown-visualization.md)
+   - **Feature:** FEATURE-027 (plan do utworzenia w `docs/plans/`)
 
 ### Funkcje, które mamy lepsze niż LighterPack:
 

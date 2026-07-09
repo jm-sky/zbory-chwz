@@ -630,7 +630,7 @@ app.add_middleware(
 **Complexity:** Low
 **Location:** docs/deployment/
 
-**Create:** `docs/deployment/BACKUP_RECOVERY.md`
+**Create:** `docs/deployment/YYYY-MM-DD--backup-recovery.md`
 
 **Content:**
 
@@ -699,9 +699,9 @@ docker-compose up -d
 
 **Impact:** Medium (reduces exposure window)
 **Complexity:** Low
-**Location:** docs/security/
+**Location:** docs/plans/
 
-**Create:** `docs/security/SECRETS_ROTATION.md`
+**Create:** `docs/plans/YYYY-MM-DD--secrets-rotation.md`
 
 **Rotation Schedule:**
 
@@ -801,7 +801,7 @@ docker-compose restart app
 
 3. **Fail2ban for Intrusion Detection**
    ```bash
-   # Already documented in SECURITY_FIX.md
+   # Already documented in 2025-12-18--security-fix-docker.md
    sudo apt install fail2ban -y
 
    # Monitor FastAPI access logs

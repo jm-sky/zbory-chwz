@@ -30,7 +30,7 @@
 - **docs/ROADMAP.md**: główny indeks roadmap – zawsze sprawdź go najpierw, żeby znaleźć właściwy plik/sekcję.
 - **docs/ROADMAP_OFFLINE.md**: funkcje działające wyłącznie na localStorage (offline-first). Używaj przy pracach nad funkcjami bez backendu/DB/auth.
 - **docs/ROADMAP_ONLINE.md**: funkcje wymagające backendu/DB/autoryzacji. Używaj przy pracach nad funkcjami serwerowymi lub multi-user.
-- **Zasada:** przy nowych funkcjach / zmianach zachowania najpierw znajdź odpowiednią sekcję w roadmap, respektuj status (✅/🚧/🔄) i linki do szczegółowych planów w `docs/features/` lub `docs/plans/`.
+- **Zasada:** przy nowych funkcjach / zmianach zachowania najpierw znajdź odpowiednią sekcję w roadmap, respektuj status (✅/🚧/🔄) i linki do szczegółowych planów w `docs/plans/` lub analiz w `docs/reviews/`.
 
 ## Question vs. Action Protocol
 

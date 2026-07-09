@@ -12,37 +12,23 @@ Systematyczna analiza projektu Gear Stack pod kątem:
 ## Struktura dokumentacji
 
 ```
-docs/analysis/refactor/
-├── 00-MASTER-PLAN.md              # Master plan - strategia analizy
-├── TEMPLATE.md                    # Szablon dla każdej iteracji
-├── README.md                      # Ten plik
+docs/reviews/refactor/
+├── 2025-12-05--master-plan.md              # Master plan - strategia analizy
+├── 2025-12-05--template.md                 # Szablon dla każdej iteracji
+├── README.md                               # Ten plik
 │
 ├── BACKEND (Phase A - 5 iteracji)
-│   ├── B1-backend-infrastructure.md      # Backend: Common, exceptions
-│   ├── B2a-backend-security-modules.md   # Backend: Auth, Users, Admin, Two-Factor
-│   ├── B2b-backend-ai-module.md          # Backend: AI integration (30 files)
-│   ├── B2c-backend-business-modules.md   # Backend: Gear, Stats, Settings, etc.
-│   └── B3-backend-api-layer.md           # Backend: API, routers, middleware
+│   ├── 2025-12-08--b1-backend-infrastructure.md
+│   ├── 2025-12-08--b2a-backend-security-modules.md
+│   ├── B2b-backend-ai-module.md          # (do utworzenia)
+│   ├── 2025-12-09--b2c-backend-business-modules.md
+│   └── 2025-12-09--b3-backend-api-layer.md
 │
 ├── FRONTEND (Phase B - 12 iteracji)
-│   ├── F1-frontend-infrastructure.md # Frontend: Shared utils, types, composables
-│   ├── F2-module-gear-logic.md       # Frontend: Gear module - logic layer
-│   ├── F3-module-gear-ui.md          # Frontend: Gear module - UI components
-│   ├── F4-module-ai.md               # Frontend: AI module
-│   ├── F5-module-auth.md             # Frontend: Auth module
-│   ├── F6-module-admin.md            # Frontend: Admin module
-│   ├── F7-modules-user-settings-stats.md # Frontend: User, Settings, Stats
-│   ├── F8-shared-components.md       # Frontend: Shared UI components
-│   ├── F9-router-navigation.md       # Frontend: Router & navigation
-│   ├── F10-i18n.md                   # Frontend: Internationalization
-│   ├── F11-integration-config.md     # Frontend: Root config & integration
-│   └── F12-cross-cutting.md          # Frontend: Cross-cutting concerns
+│   ├── 2025-12-09--f1-frontend-infrastructure.md
+│   └── F2–F12 (do utworzenia)
 │
-├── INTEGRATION (Phase C - 1 iteracja)
-│   └── I1-backend-frontend-integration.md # Backend ↔ Frontend analysis
-│
-├── REFACTOR-SUMMARY.md            # Zbiorczy raport (wszystkie warstwy)
-└── REFACTOR-ACTION-PLAN.md        # Action plan z priorytetami (końcowy deliverable)
+└── Plan poprawek krytycznych → docs/plans/2025-12-08--b2a-critical-fixes.md
 ```
 
 **Total:** 18 detailed reports + 2 summary documents = **20 dokumentów**
@@ -95,8 +81,8 @@ docs/analysis/refactor/
 ### Dla przeprowadzającego analizę
 
 1. **Przed rozpoczęciem iteracji:**
-   - Przeczytaj `00-MASTER-PLAN.md` aby zrozumieć strategię
-   - Skopiuj `TEMPLATE.md` jako `XX-nazwa-iteracji.md` (np. `B1-backend-infrastructure.md`)
+   - Przeczytaj `2025-12-05--master-plan.md` aby zrozumieć strategię
+   - Skopiuj `2025-12-05--template.md` jako `YYYY-MM-DD--slug.md` (np. `2025-12-08--b1-backend-infrastructure.md`)
    - Wypełnij sekcję Overview
 
 2. **Podczas analizy:**
@@ -225,12 +211,12 @@ Jeśli masz pytania lub sugestie dotyczące procesu analizy:
 
 ```bash
 # 1. Przeczytaj master plan
-cat docs/analysis/refactor/00-MASTER-PLAN.md
+cat docs/reviews/refactor/2025-12-05--master-plan.md
 
 # 2. Rozpocznij Phase A, Iteration B1
 # Powiedz Claude: "start B1" lub "start iteration B1"
 # Claude przeczyta kod z backend/app/common/ i backend/app/exceptions/
-# i utworzy raport B1-backend-infrastructure.md
+# i utworzy raport 2025-12-08--b1-backend-infrastructure.md
 ```
 
 ### Phase Progression

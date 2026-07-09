@@ -230,8 +230,8 @@ export const gearService = new GearService()
 
 ## 📚 Zasoby
 
-- [API_INTEGRATION_PLAN.md](./API_INTEGRATION_PLAN.md) - Plan integracji API
-- [BACKEND_INTEGRATION.md](./BACKEND_INTEGRATION.md) - Podstawowa infrastruktura
+- [2025-01-27--api-integration.md](../plans/2025-01-27--api-integration.md) - Plan integracji API
+- [2025-01-27--backend-integration.md](../plans/2025-01-27--backend-integration.md) - Podstawowa infrastruktura
 
 ---
 

@@ -327,7 +327,7 @@ python migrations/047_add_billing_tables.py upgrade
 ## 🆘 Need Help?
 
 **Full deployment guide:**
-- See: `docs/deployment/phase-6-production-deployment-guide.md`
+- See: `docs/deployment/2025-12-23--phase-6-production-guide.md`
 
 **Testing guides:**
 - Cancellation: `docs/testing/billing-cancellation-test-guide.md`

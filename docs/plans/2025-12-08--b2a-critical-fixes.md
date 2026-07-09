@@ -16,7 +16,7 @@ This document outlines the implementation plan for fixing **3 CRITICAL security 
 2. ✅ WebAuthn Challenge Storage Not Production-Safe → **COMPLETED**
 3. ✅ WebAuthn Verification Incomplete → **COMPLETED**
 
-**Source Analysis:** `docs/analysis/refactor/B2a-backend-security-modules.md`
+**Source Analysis:** `docs/reviews/refactor/2025-12-08--b2a-backend-security-modules.md`
 
 ## Implementation Summary
 

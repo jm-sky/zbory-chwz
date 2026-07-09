@@ -229,7 +229,7 @@ Gdy użytkownik przełączy się z trybu offline na online, można zaimplementow
 
 Po ukończeniu podstawowej integracji (auth, feature flag), następnym krokiem jest integracja endpointów API:
 
-- **[API_INTEGRATION_PLAN.md](./API_INTEGRATION_PLAN.md)** - Szczegółowy plan integracji endpointów Gear i Settings API z frontendem
+- **[2025-01-27--api-integration.md](./2025-01-27--api-integration.md)** - Szczegółowy plan integracji endpointów Gear i Settings API z frontendem
 - **[ROADMAP_ONLINE.md](./ROADMAP_ONLINE.md)** - Roadmap funkcjonalności wymagających backendu (synchronizacja, udostępnianie, katalog, itp.)
 
 ## 📚 Zasoby

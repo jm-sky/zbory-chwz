@@ -43,7 +43,7 @@
 
 ## 2. 🔴 CRITICAL SECURITY FINDINGS
 
-**UPDATE (2025-12-08):** All 3 critical security issues have been **RESOLVED**. See [B2a-CRITICAL-FIXES-PLAN.md](./B2a-CRITICAL-FIXES-PLAN.md) for implementation details.
+**UPDATE (2025-12-08):** All 3 critical security issues have been **RESOLVED**. See [2025-12-08--b2a-critical-fixes.md](../../plans/2025-12-08--b2a-critical-fixes.md) for implementation details.
 
 ### ✅ CRITICAL #1: Token Invalidation Not Implemented → **FIXED**
 

@@ -2,10 +2,10 @@
 
 ## 📋 Przegląd
 
-Dokument opisuje szczegółowy plan integracji istniejących endpointów API backendu z frontendem. Ten dokument uzupełnia [BACKEND_INTEGRATION.md](./BACKEND_INTEGRATION.md), który skupia się na podstawowej infrastrukturze (auth, feature flag).
+Dokument opisuje szczegółowy plan integracji istniejących endpointów API backendu z frontendem. Ten dokument uzupełnia [2025-01-27--backend-integration.md](./2025-01-27--backend-integration.md), który skupia się na podstawowej infrastrukturze (auth, feature flag).
 
 **Status**: 🔄 W przygotowaniu  
-**Zależności**: Wymaga ukończenia podstawowej integracji z [BACKEND_INTEGRATION.md](./BACKEND_INTEGRATION.md)
+**Zależności**: Wymaga ukończenia podstawowej integracji z [2025-01-27--backend-integration.md](./2025-01-27--backend-integration.md)
 
 ---
 
@@ -289,7 +289,7 @@ async loadContainers(): Promise<void> {
 
 ## 📚 Zasoby
 
-- [BACKEND_INTEGRATION.md](./BACKEND_INTEGRATION.md) - Podstawowa infrastruktura
+- [2025-01-27--backend-integration.md](./2025-01-27--backend-integration.md) - Podstawowa infrastruktura
 - [ROADMAP_ONLINE.md](./ROADMAP_ONLINE.md) - Funkcjonalności wymagające backendu
 - Backend API docs: `backend/README.md`
 - Frontend services: `src/modules/gear/services/`
@@ -299,7 +299,7 @@ async loadContainers(): Promise<void> {
 ## ✅ Checklist
 
 ### Przed rozpoczęciem
-- [ ] BACKEND_INTEGRATION.md - Faza 1-6 ukończona (auth działa)
+- [ ] 2025-01-27--backend-integration.md - Faza 1-6 ukończona (auth działa)
 - [ ] Backend uruchomiony i dostępny
 - [ ] Feature flag działa poprawnie
 - [ ] Wszystkie typy zsynchronizowane

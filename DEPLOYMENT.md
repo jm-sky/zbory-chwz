@@ -239,7 +239,7 @@ sudo systemctl reload caddy
 
 ### Configure Cache Headers for Static Assets
 
-To improve Lighthouse performance scores, configure cache headers in your Caddyfile. See `docs/Caddyfile.example` for a complete example.
+To improve Lighthouse performance scores, configure cache headers in your Caddyfile. See `docs/deployment/Caddyfile.example` for a complete example.
 
 Key points:
 - **Hashed assets** (`/assets/*.js`, `/assets/*.css`): Cache for 1 year (`max-age=31536000, immutable`)
