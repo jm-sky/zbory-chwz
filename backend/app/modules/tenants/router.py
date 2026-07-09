@@ -12,6 +12,7 @@ from app.modules.congregations.repositories import (
 )
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 from app.modules.tenants.schemas import (
+    PublicCardContact,
     PublicCongregationListResponse,
     PublicCongregationResponse,
     TenantCreateRequest,
@@ -122,32 +123,18 @@ async def list_congregations_detailed(
                 for st in service_times_db[:3]  # Limit to first 3
             ]
 
-            # Get first public service assignment on church card
             assignments = await church_repo.list_public_card_assignments(tenant.id)
-            contact_assignment = assignments[0] if assignments else None
-            contact_person = None
-            if contact_assignment and contact_assignment.person:
-                person = contact_assignment.person
-                name = " ".join(
-                    p for p in (person.first_name, person.last_name) if p
-                ).strip()
-                service_type = contact_assignment.service_type
-                title = (
-                    service_type.name
-                    if service_type
-                    else contact_assignment.custom_service_name
+            card_contacts = [
+                PublicCardContact(
+                    **church_repo.to_public_card_contact(
+                        assignment,
+                        is_authenticated=False,
+                        has_pastoral_access=False,
+                    )
                 )
-                contact_fields = church_repo.filter_assignment_contact(
-                    contact_assignment,
-                    is_authenticated=False,
-                    has_pastoral_access=False,
-                )
-                contact_person = {
-                    "name": name or None,
-                    "title": title,
-                    "phone": contact_fields["phone"],
-                    "email": contact_fields["email"],
-                }
+                for assignment in assignments
+            ]
+            primary_contact = card_contacts[0] if card_contacts else None
 
             congregations.append(
                 PublicCongregationResponse(
@@ -160,10 +147,11 @@ async def list_congregations_detailed(
                     street=address.street if address else None,
                     postal_code=address.postal_code if address else None,
                     service_times=service_times,
-                    contact_name=contact_person["name"] if contact_person else None,
-                    contact_title=contact_person["title"] if contact_person else None,
-                    contact_phone=contact_person["phone"] if contact_person else None,
-                    contact_email=contact_person["email"] if contact_person else None,
+                    card_contacts=card_contacts,
+                    contact_name=primary_contact.name if primary_contact else None,
+                    contact_title=primary_contact.title if primary_contact else None,
+                    contact_phone=primary_contact.phone if primary_contact else None,
+                    contact_email=primary_contact.email if primary_contact else None,
                 )
             )
 

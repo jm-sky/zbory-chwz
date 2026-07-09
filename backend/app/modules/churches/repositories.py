@@ -5,7 +5,7 @@ import secrets
 from datetime import UTC, datetime
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -412,6 +412,7 @@ class ChurchRepository:
     ) -> list[ServiceAssignmentDB]:
         result = await self.db.execute(
             select(ServiceAssignmentDB)
+            .outerjoin(ServiceAssignmentDB.service_type)
             .where(
                 ServiceAssignmentDB.scope_type == "church",
                 ServiceAssignmentDB.scope_id == church_id,
@@ -421,9 +422,44 @@ class ChurchRepository:
                 selectinload(ServiceAssignmentDB.person),
                 selectinload(ServiceAssignmentDB.service_type),
             )
-            .order_by(ServiceAssignmentDB.created_at)
+            .order_by(
+                func.coalesce(ServiceTypeDB.sort_order, 9999),
+                ServiceAssignmentDB.created_at,
+            )
         )
         return list(result.scalars().all())
+
+    def to_public_card_contact(
+        self,
+        assignment: ServiceAssignmentDB,
+        *,
+        is_authenticated: bool,
+        has_pastoral_access: bool,
+    ) -> dict[str, str | None]:
+        person = assignment.person
+        if not person:
+            return {"name": None, "title": None, "phone": None, "email": None}
+
+        name = " ".join(
+            part for part in (person.first_name, person.last_name) if part
+        ).strip()
+        service_type = assignment.service_type
+        title = (
+            service_type.name
+            if service_type
+            else assignment.custom_service_name
+        )
+        contact_fields = self.filter_assignment_contact(
+            assignment,
+            is_authenticated=is_authenticated,
+            has_pastoral_access=has_pastoral_access,
+        )
+        return {
+            "name": name or None,
+            "title": title,
+            "phone": contact_fields["phone"],
+            "email": contact_fields["email"],
+        }
 
     def filter_assignment_contact(
         self,

@@ -30,6 +30,15 @@ class TenantListResponse(BaseModel):
     tenants: list[TenantResponse]
 
 
+class PublicCardContact(BaseModel):
+    """Public contact shown on a congregation card."""
+
+    name: str | None = None
+    title: str | None = None
+    phone: str | None = None
+    email: str | None = None
+
+
 class PublicCongregationResponse(BaseModel):
     """Public congregation data with basic address, service times, and contact info."""
 
@@ -44,7 +53,9 @@ class PublicCongregationResponse(BaseModel):
     postal_code: str | None = None
     # Service times (first few)
     service_times: list[dict[str, str]] = []  # [{"day": "niedziela", "time": "11:00"}]
-    # Contact person (first one)
+    # Contacts from public service assignments
+    card_contacts: list[PublicCardContact] = []
+    # Legacy single contact (first card_contacts entry)
     contact_name: str | None = None
     contact_title: str | None = None
     contact_phone: str | None = None

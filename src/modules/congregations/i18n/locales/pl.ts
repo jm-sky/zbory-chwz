@@ -102,7 +102,8 @@ export const congregationsPl = {
       pastorInactive: 'pastor: konto nieaktywne',
       add: 'Dodaj osobę',
       visibilityTitle: 'Widoczność na karcie zboru',
-      showOnCard: 'Widoczność na karcie zboru',
+      showOnCard: 'Pokaz na wizytówce',
+      showOnCardHint: 'Zaznaczone osoby są widoczne na publicznej karcie zboru',
       visibilityPublic: 'Widoczny publicznie',
       visibilityPrivate: 'Ukryty',
       visibility: {

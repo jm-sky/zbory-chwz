@@ -20,11 +20,20 @@ export interface ICongregationDetailed extends ICongregation {
   postal_code?: string | null
   // Service times
   service_times?: Array<{ day: string; time: string }>
-  // Contact person
+  // Contacts from public service assignments
+  card_contacts?: ICardContact[]
+  // Legacy single contact (first card_contacts entry)
   contact_name?: string | null
   contact_title?: string | null
   contact_phone?: string | null
   contact_email?: string | null
+}
+
+export interface ICardContact {
+  name?: string | null
+  title?: string | null
+  phone?: string | null
+  email?: string | null
 }
 
 export interface ICongregationListResponse {

@@ -97,6 +97,26 @@ const roleOptions = computed((): Array<'none' | ChurchAclRole> => {
 
 const serviceTypesEmpty = computed(() => !loading.value && serviceTypes.value.length === 0)
 
+const showOnCardAdd = computed<boolean>({
+  get: () => form.value.cardVisibility === 'public',
+  set: (checked: boolean) => {
+    form.value.cardVisibility = checked ? 'public' : 'hidden'
+  },
+})
+
+function isShownOnCard(assignment: IServiceAssignment): boolean {
+  return assignment.cardVisibility === 'public'
+}
+
+async function toggleShowOnCard(assignment: IServiceAssignment, checked: boolean | 'indeterminate') {
+  if (checked === 'indeterminate') return
+  await updateAssignmentVisibility(
+    assignment,
+    'cardVisibility',
+    checked ? 'public' : 'hidden',
+  )
+}
+
 function personLabel(assignment: IServiceAssignment): string {
   const p = assignment.person
   if (!p) return '—'
@@ -270,6 +290,9 @@ onMounted(load)
     <h3 class="text-lg font-semibold">
       {{ t('congregations.people.title', 'Ludzie i służby') }}
     </h3>
+    <p class="text-sm text-muted-foreground">
+      {{ t('congregations.people.showOnCardHint', 'Zaznaczone osoby są widoczne na publicznej karcie zboru') }}
+    </p>
 
     <div v-if="loading" class="text-sm text-muted-foreground">
       {{ t('common.loading', 'Ładowanie...') }}
@@ -325,12 +348,16 @@ onMounted(load)
               />
             </div>
           </div>
-          <VisibilityLevelSelect
-            :model-value="item.cardVisibility as VisibilityLevel"
-            :label="t('congregations.people.showOnCard', 'Widoczność na karcie zboru')"
-            :disabled="savingId === item.id"
-            @update:model-value="updateAssignmentVisibility(item, 'cardVisibility', $event)"
-          />
+          <div class="flex items-center gap-2">
+            <Checkbox
+              :model-value="isShownOnCard(item)"
+              :disabled="savingId === item.id"
+              @update:model-value="toggleShowOnCard(item, $event)"
+            />
+            <Label class="text-sm">
+              {{ t('congregations.people.showOnCard', 'Pokaz na wizytówce') }}
+            </Label>
+          </div>
         </div>
         <div class="flex shrink-0 gap-1">
           <Button
@@ -414,10 +441,12 @@ onMounted(load)
       <Textarea v-model="form.description" rows="2" />
     </div>
 
-    <VisibilityLevelSelect
-      v-model="form.cardVisibility"
-      :label="t('congregations.people.showOnCard', 'Widoczność na karcie zboru')"
-    />
+    <div class="flex items-center gap-2">
+      <Checkbox v-model="showOnCardAdd" />
+      <Label>
+        {{ t('congregations.people.showOnCard', 'Pokaz na wizytówce') }}
+      </Label>
+    </div>
 
     <div class="flex items-center gap-2">
       <Checkbox v-model="createAccount" />
@@ -520,7 +549,7 @@ onMounted(load)
 
         <VisibilityLevelSelect
           v-model="editForm.cardVisibility"
-          :label="t('congregations.people.showOnCard', 'Widoczność na karcie zboru')"
+          :label="t('congregations.people.visibilityTitle', 'Widoczność na karcie zboru')"
         />
 
         <DialogFooter>

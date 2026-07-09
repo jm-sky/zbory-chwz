@@ -102,7 +102,8 @@ export const congregationsEn = {
       pastorInactive: 'pastor: inactive account',
       add: 'Add person',
       visibilityTitle: 'Visibility on church card',
-      showOnCard: 'Visibility on church card',
+      showOnCard: 'Show on church card',
+      showOnCardHint: 'Checked people are visible on the public congregation card',
       visibilityPublic: 'Visible publicly',
       visibilityPrivate: 'Hidden',
       visibility: {

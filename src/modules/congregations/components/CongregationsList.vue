@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useHandleError } from '@/shared/composables/useHandleError'
-import type { ICongregationDetailed } from '../types/congregation.types'
+import type { ICongregationDetailed, ICardContact } from '../types/congregation.types'
 import { useCongregations } from '../composables/useCongregations'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
@@ -36,6 +36,9 @@ const filteredCongregations = computed<ICongregationDetailed[]>(() => {
   if (!query) return items
 
   return items.filter((congregation) => {
+    const cardContactsText = getCardContacts(congregation)
+      .map(formatCardContactSearchText)
+      .join(' ')
     const haystack = [
       congregation.name,
       congregation.description,
@@ -43,6 +46,7 @@ const filteredCongregations = computed<ICongregationDetailed[]>(() => {
       congregation.street,
       congregation.postal_code,
       congregation.contact_name,
+      cardContactsText,
     ]
       .filter(Boolean)
       .join(' ')
@@ -51,6 +55,27 @@ const filteredCongregations = computed<ICongregationDetailed[]>(() => {
     return haystack.includes(query)
   })
 })
+
+function getCardContacts(congregation: ICongregationDetailed): ICardContact[] {
+  if (congregation.card_contacts?.length) {
+    return congregation.card_contacts.filter(contact => contact.name)
+  }
+  if (congregation.contact_name) {
+    return [{
+      name: congregation.contact_name,
+      title: congregation.contact_title,
+      phone: congregation.contact_phone,
+      email: congregation.contact_email,
+    }]
+  }
+  return []
+}
+
+function formatCardContactSearchText(contact: ICardContact): string {
+  return [contact.name, contact.title, contact.phone, contact.email]
+    .filter(Boolean)
+    .join(' ')
+}
 
 // Check if user can edit/unpublish a congregation
 function canManageCongregation(congregation: ICongregationDetailed): boolean {
@@ -218,35 +243,42 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
             <span class="text-muted-foreground">{{ formatServiceTimes(congregation.service_times) }}</span>
           </div>
 
-          <!-- Contact Person -->
-          <div v-if="congregation.contact_name" class="flex items-start gap-2 text-sm">
-            <User class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            <div class="flex-1 min-w-0">
-              <span class="font-medium text-foreground">{{ congregation.contact_name }}</span>
-              <span v-if="congregation.contact_title" class="text-muted-foreground">
-                {{ ` - ${congregation.contact_title}` }}
-              </span>
+          <!-- Card contacts -->
+          <div
+            v-for="(contact, contactIndex) in getCardContacts(congregation)"
+            :key="`${congregation.id}-contact-${contactIndex}`"
+            class="space-y-1.5"
+          >
+            <div class="flex items-start gap-2 text-sm">
+              <User class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div class="min-w-0 flex-1">
+                <span class="font-medium text-foreground">{{ contact.name }}</span>
+                <span v-if="contact.title" class="text-muted-foreground">
+                  {{ ` - ${contact.title}` }}
+                </span>
+              </div>
             </div>
-          </div>
-
-          <!-- Contact Info -->
-          <div v-if="congregation.contact_phone || congregation.contact_email" class="ml-6 space-y-1.5 text-sm">
-            <a
-              v-if="congregation.contact_phone"
-              :href="`tel:${congregation.contact_phone}`"
-              class="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            <div
+              v-if="contact.phone || contact.email"
+              class="ml-6 space-y-1.5 text-sm"
             >
-              <Phone class="size-3.5" />
-              <span>{{ congregation.contact_phone }}</span>
-            </a>
-            <a
-              v-if="congregation.contact_email"
-              :href="`mailto:${congregation.contact_email}`"
-              class="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Mail class="size-3.5" />
-              <span class="break-all">{{ congregation.contact_email }}</span>
-            </a>
+              <a
+                v-if="contact.phone"
+                :href="`tel:${contact.phone}`"
+                class="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Phone class="size-3.5" />
+                <span>{{ contact.phone }}</span>
+              </a>
+              <a
+                v-if="contact.email"
+                :href="`mailto:${contact.email}`"
+                class="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Mail class="size-3.5" />
+                <span class="break-all">{{ contact.email }}</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
