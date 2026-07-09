@@ -3,31 +3,32 @@
 **Status:** `planned`  
 **Created:** 2026-07-09  
 **Plan:** [2026-07-09--church-platform-implementation.md](../plans/2026-07-09--church-platform-implementation.md) (Phase 2)  
+**Spec:** [2026-07-09--church-people-and-services.md](../plans/2026-07-09--church-people-and-services.md)  
 **Depends on:** [#006](./2026-07-09--006--org-hierarchy-data-model.md)
 
 ## Problem
 
-Access is controlled by a single `tenant_memberships.role` string. Real church organization needs separated roles (Pastor, Bishop, …) and granular permissions with per-user exceptions.
+ACL must reflect **explicitly chosen** permissions when creating account — not auto-derived from służba.
 
 ## Scope
 
-- [ ] Tables: `roles`, `role_permissions`, `user_role_assignments`, `user_permissions`
-- [ ] `PermissionService` with resolution order: role defaults → user exceptions (deny wins) → admin override
-- [ ] Scope inheritance: branch → church → region → community
-- [ ] FastAPI dependency `RequirePermission(permission, scope)`
-- [ ] Seed MVP roles: Admin, Bishop, Regional Bishop, Pastor, Diacon, Branch responsible
-- [ ] Seed MVP permissions (see implementation plan table)
-- [ ] Replace tenant membership checks on congregation write endpoints
-- [ ] Unit tests for resolution edge cases
+- [ ] ACL tables + `source_assignment_id`
+- [ ] `ServiceAssignmentService`: save assignment; if account checked, apply **UI-selected** roles/permissions
+- [ ] `suggested_role_id` on `service_types` — prefill only
+- [ ] Pastor: inactive account default; ACL from user selection applies before activation
+- [ ] Delete assignment → remove ACL rows with matching `source_assignment_id` only
+- [ ] `services.manage`, governance endpoints, tests
 
-## Acceptance criteria
+## Key rule
 
-- Pastor can edit own church, not a sibling church in same city
-- Bishop can edit all churches in community
-- `deny` user exception blocks a role-granted permission
-- Global admin bypasses scope checks
+> Służba ≠ uprawnienia. Przykład: Diakon + opis Skarbnik + konto + wybrane permissiony (np. finanse w przyszłości).
 
-## Open questions (review before coding)
+## Decisions (2026-07-09)
 
-- Exact permission list for Diacon role
-- Whether Regional Bishop is a separate role or scoped Bishop assignment
+- Independent permission pick at account creation
+- Pastor ACL before `is_active`
+
+## Open questions
+
+- MVP permission picker: roles only, or roles + individual permissions?
+- `finances.manage` — Phase 2 or later?

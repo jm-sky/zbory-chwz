@@ -20,5 +20,6 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 008 | [2026-07-09--008--visibility-layer.md](2026-07-09--008--visibility-layer.md) | Warstwa widoczności (public/authenticated/pastors) | `planned` |
 | 009 | [2026-07-09--009--public-hierarchical-urls.md](2026-07-09--009--public-hierarchical-urls.md) | Publiczne URL `/kraj/miasto/slug` | `planned` |
 | 010 | [2026-07-09--010--church-governance-actions.md](2026-07-09--010--church-governance-actions.md) | Governance — tworzenie zboru, przenoszenie, pastor | `planned` |
+| 011 | [2026-07-09--011--postgres-full-text-search.md](2026-07-09--011--postgres-full-text-search.md) | Full-text search zborów (PostgreSQL tsvector) | `planned` |
 
 When adding a new issue: pick next `NNN`, create `YYYY-MM-DD--NNN--slug.md`, add a row here.

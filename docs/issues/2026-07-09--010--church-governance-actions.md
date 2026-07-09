@@ -1,34 +1,39 @@
-# Church governance — create, move, assign pastor
+# Church governance — people, services, invite
 
 **Status:** `planned`  
 **Created:** 2026-07-09  
 **Plan:** [2026-07-09--church-platform-implementation.md](../plans/2026-07-09--church-platform-implementation.md) (Phase 5)  
-**Depends on:** [#007](./2026-07-09--007--acl-roles-permissions.md)
-
-## Problem
-
-Product rules for who may create churches, move them between regions, and assign pastors are undefined in code. These are high-impact actions that need explicit permission gates and UI.
+**Spec:** [2026-07-09--church-people-and-services.md](../plans/2026-07-09--church-people-and-services.md)  
+**Depends on:** [#006](./2026-07-09--006--org-hierarchy-data-model.md), [#007](./2026-07-09--007--acl-roles-permissions.md)
 
 ## Scope
 
-- [ ] Document and implement permission rules (after design review):
-  - create church
-  - move church between regions
-  - change pastor assignment
-  - create/manage branches without pastor
-- [ ] API endpoints with `RequirePermission` guards
-- [ ] Admin/bishop UI for governance actions
-- [ ] Validation: cannot move church to region outside its community
-- [ ] Optional: audit log entries for governance changes
+- [ ] People form: imię, nazwisko, email, telefon (optional) + search existing person
+- [ ] Służba select + „Inna” + opis
+- [ ] Checkbox „Utwórz konto” + permission picker (suggested from service, editable)
+- [ ] Pastor: checkbox pre-checked, inactive account, invite action
+- [ ] Create church, move region
+- [ ] Remove assignment (cascade ACL via `source_assignment_id`)
+
+## UI wireframe (logical)
+
+```
+[+ Dodaj osobę]  [🔍 Wybierz istniejącą]
+
+Imię [    ]  Nazwisko [    ]  Email [    ]  Tel [    ]
+Służba [ Diakon ▼ ]  lub Inna: [____________]
+Opis   [ Skarbnik / odpowiedzialny za finanse... ]
+
+☐ Utwórz konto użytkownika
+   Uprawnienia: [podpowiedź: Diacon] [edytuj...]
+```
 
 ## Acceptance criteria
 
-- Unauthorized user gets 403 on governance endpoints
-- Bishop can create church in any region of their community
-- Pastor cannot move church to another region
-- Branch can exist with `pastor_user_id = null` and separate branch responsible assignment
+- Diakon ze służbą ale bez konta — widoczny na profilu, brak logowania
+- Diakon + konto + custom permissions ≠ domyślne Diacon
+- Ta sama osoba dodana do drugiego zboru bez duplikacji `persons`
 
-## Open questions (review before coding)
+## Open questions
 
-- Can Regional Bishop create churches only in their region?
-- Who approves new communities (always platform admin)?
+- Invite flow endpoint

@@ -7,26 +7,47 @@
 
 ## Problem
 
-Congregations are addressed by opaque UUID (`/congregations/:id/edit`). Public discovery needs human-readable, stable URLs like `/polska/warszawa/przyce`.
+Congregations use opaque UUIDs. Public discovery needs human-readable URLs with **multiple aliases** per church and **city shortcuts**.
 
 ## Scope
 
-- [ ] Slug service: generate from church name, unique per city, stable across address changes
-- [ ] Country/city slugs from primary address (normalized)
-- [ ] `GET /public/churches/resolve?path=...` — 0/1/N resolution
-- [ ] `GET /public/churches?country=&city=` — list/filter
-- [ ] Frontend routes: `/:country/:city/:churchSlug`, list pages, city alias `/:city`
-- [ ] Resolution UX: 1 match → church page, N matches → picker, 0 → 404/suggestions
-- [ ] Canonical link tags on public church page
+- [ ] Resolve against `church_slug_aliases` + `city_aliases`
+- [ ] Alias types: canonical, street, custom_name, short_name, legacy
+- [ ] **City alias routes** `/:cityAlias` — **required MVP** (reserved path list)
+- [ ] **City change:** update canonical alias; add `legacy` alias; **301** to new URL (e.g. Żory → Rybnik)
+- [ ] `GET /public/churches/resolve?path=...`
+- [ ] `GET /public/churches?country=&city=&q=`
+- [ ] Frontend: `/:country/:city/:slug`, list pages, `/:cityAlias`
+- [ ] Canonical `<link rel="canonical">` always points to `is_canonical` alias
 - [ ] Keep `/congregations/:id/edit` for authenticated editing
+
+## Resolution order
+
+1. One segment → `city_aliases` → church list or picker
+2. Two segments → country + city list
+3. Three segments → `church_slug_aliases` match
+4. `legacy` type → 301 to canonical URL
 
 ## Acceptance criteria
 
-- `/polska/warszawa/przyce` renders public church profile
-- `/warszawa` shows picker when multiple Warsaw churches exist
-- Changing street address does not change church URL slug
-- Unpublished/hidden churches are not reachable via public URLs
+- `/polska/warszawa/przyce` and street/custom aliases resolve to same church
+- `/warszawa` works (city alias)
+- After city change: old `polska/zory/...` returns 301 to `polska/rybnik/...`
+- Hidden churches → 404 on public resolve
+- `/admin` not captured by city alias
+
+## Decisions (2026-07-09)
+
+- Multiple aliases per church (street, nazwa własna, skrót)
+- `city_slug` may change when address city changes
+- City shortcuts required on MVP
+
+## Open questions
+
+- 301 vs 302 for legacy aliases? (recommend **301** permanent)
+- Short-name alias at root `/:short` if globally unique? (defer — city-scoped first)
 
 ## Notes
 
-- Coordinate with [church-addresses plan](../plans/2025-01-27--church-addresses.md) for primary address + geo fields
+- FTS (#011) should index alias slugs and church names
+- Primary address from `congregation_addresses` drives canonical city_slug on create/update
