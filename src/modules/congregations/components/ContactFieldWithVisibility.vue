@@ -44,16 +44,15 @@ function visibilityLabel(level: VisibilityLevel): string {
       :disabled="disabled"
     >
       <SelectTrigger
-        class="w-auto shrink-0 gap-1 rounded-l-none border-l-0 px-2"
+        class="size-9 shrink-0 justify-center gap-0 rounded-l-none border-l-0 px-0 [&>span[aria-hidden=true]]:hidden"
         :aria-label="visibilityLabel(visibility)"
       >
-        <SelectValue>
-          <template #default="{ modelValue: selectedLevel }">
-            <component
-              :is="getVisibilityIcon((selectedLevel ?? visibility) as VisibilityLevel)"
-              class="size-4 shrink-0"
-            />
-          </template>
+        <component
+          :is="getVisibilityIcon(visibility)"
+          class="size-4 shrink-0 pointer-events-none"
+        />
+        <SelectValue class="sr-only">
+          {{ visibilityLabel(visibility) }}
         </SelectValue>
       </SelectTrigger>
       <SelectContent class="z-[100]">
@@ -61,6 +60,7 @@ function visibilityLabel(level: VisibilityLevel): string {
           v-for="level in VISIBILITY_LEVELS"
           :key="level"
           :value="level"
+          :text-value="visibilityLabel(level)"
         >
           <span class="flex items-center gap-2">
             <component
