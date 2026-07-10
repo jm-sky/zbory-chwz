@@ -1,6 +1,7 @@
 """Pydantic schemas for tenant endpoints."""
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -48,10 +49,17 @@ class PublicCongregationResponse(BaseModel):
     description: str | None = None
     status: str | None = None
     createdAt: datetime
+    # "church" for a congregation, "branch" for a placówka belonging to one
+    type: Literal["church", "branch"] = "church"
+    # Set on branches: the id and name of the congregation they belong to
+    parent_id: str | None = None
+    parent_name: str | None = None
     # Address info
     city: str | None = None
     street: str | None = None
     postal_code: str | None = None
+    province: str | None = None
+    country: str | None = None
     # Service times (first few)
     service_times: list[dict[str, str]] = []  # [{"day": "niedziela", "time": "11:00"}]
     # Contacts from public service assignments

@@ -4,6 +4,9 @@
 
 export type CongregationStatus = 'draft' | 'published' | 'published_unverified' | 'need_verification'
 
+/** A congregation, or a placówka (branch) belonging to one. */
+export type CongregationType = 'church' | 'branch'
+
 export interface ICongregation {
   id: string
   name: string
@@ -14,10 +17,16 @@ export interface ICongregation {
 }
 
 export interface ICongregationDetailed extends ICongregation {
+  type?: CongregationType
+  parent_id?: string | null
+  parent_name?: string | null
   // Address info
   city?: string | null
   street?: string | null
   postal_code?: string | null
+  province?: string | null
+  /** ISO 3166-1 alpha-2 country code, e.g. 'PL' */
+  country?: string | null
   // Service times
   service_times?: Array<{ day: string; time: string }>
   // Contacts from public service assignments

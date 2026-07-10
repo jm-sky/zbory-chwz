@@ -502,6 +502,7 @@ async def _seed_congregations(db: "AsyncSession") -> None:
     from app.common.id_utils import generate_id
     from app.modules.auth.db_models import UserDB
     from app.modules.auth.repositories import UserRepository
+    from app.modules.congregations.geo import DEFAULT_COUNTRY
     from app.modules.congregations.repositories import CongregationRepository
     from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
     from app.seeders import CONGREGATIONS
@@ -599,19 +600,21 @@ async def _seed_congregations(db: "AsyncSession") -> None:
         # Create or update address, service times, and contact person (for both new and existing tenants)
         # Create/update address
         if address_data:
-            # City is required, use "Unknown" if not provided
             city = address_data.get("city")
             if not city:
-                # Try to extract city from name if available
-                city = "Unknown"
-            
+                # Seeding a placeholder city silently poisons the city and province
+                # filters; fix the seeder entry instead.
+                raise ValueError(
+                    f"Congregation {name!r} has no city in the seeder data"
+                )
+
             address = await congregation_repo.create_or_update_address(
                 tenant_id=tenant_id,
                 street=address_data.get("street"),
                 city=city,
                 postal_code=address_data.get("postal_code"),
                 province=address_data.get("province"),
-                country=address_data.get("country", "Poland"),
+                country=address_data.get("country", DEFAULT_COUNTRY),
                 status=status,
             )
             console.print(f"[cyan]    Created/updated address: {address.city}[/cyan]")

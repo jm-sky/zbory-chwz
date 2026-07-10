@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.congregations.db_models import CongregationContactPersonDB
+from app.modules.congregations.geo import is_valid_province
 from app.modules.congregations.repositories import (
     CongregationRepository,
     get_congregation_repository,
@@ -132,6 +133,13 @@ async def update_address(
         address.country = payload.country
     if payload.status is not None:
         address.status = payload.status
+
+    # A partial patch can change either side of the pair, so validate the merge.
+    if not is_valid_province(address.country, address.province):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{address.province!r} is not a province of {address.country}",
+        )
 
     address.updated_at = datetime.now(UTC)
 

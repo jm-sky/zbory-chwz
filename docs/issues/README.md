@@ -27,5 +27,6 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 015 | [2026-07-09--015--mailing-lists.md](2026-07-09--015--mailing-lists.md) | Listy mailingowe (późniejsza faza) | `planned` |
 | 016 | [2026-07-10--016--congregation-write-endpoint-for-non-admins.md](2026-07-10--016--congregation-write-endpoint-for-non-admins.md) | Pastor nie zapisze podstawowych danych zboru (endpoint admin-only) | `todo` |
 | 017 | [2026-07-10--017--authorization-hardening-followups.md](2026-07-10--017--authorization-hardening-followups.md) | Hardening autoryzacji — `persons/search`, `POST /tenants`, `pastors` visibility | `todo` |
+| 018 | [2026-07-10--018--congregation-address-data-quality.md](2026-07-10--018--congregation-address-data-quality.md) | Adresy — Świebodzin/Rzuchowa i Dankowice do weryfikacji | `todo` |
 
 When adding a new issue: pick next `NNN`, create `YYYY-MM-DD--NNN--slug.md`, add a row here.

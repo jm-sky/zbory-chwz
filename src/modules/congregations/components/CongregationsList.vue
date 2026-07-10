@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
 import { Church, Clock, Edit, EyeOff, Mail, MapPin, MoreHorizontal, Phone, Search, User } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -13,13 +12,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import SearchInput from '@/components/ui/input/SearchInput.vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useHandleError } from '@/shared/composables/useHandleError'
-import type { ICardContact, ICongregationDetailed } from '../types/congregation.types'
+import type { ICongregationDetailed } from '../types/congregation.types'
+import { useCongregationFilters } from '../composables/useCongregationFilters'
 import { useCongregations } from '../composables/useCongregations'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
+import { contactsOf } from '../utils/exportCongregations'
+import CongregationExportMenu from './CongregationExportMenu.vue'
+import CongregationFilters from './CongregationFilters.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -28,57 +30,25 @@ const authStore = useAuthStore()
 const { handleError } = useHandleError()
 const { data: congregations, isLoading, error } = useCongregations()
 
-const searchQuery = ref<string>('')
-
-const filteredCongregations = computed<ICongregationDetailed[]>(() => {
-  const items = congregations.value ?? []
-  const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return items
-
-  return items.filter((congregation) => {
-    const cardContactsText = getCardContacts(congregation)
-      .map(formatCardContactSearchText)
-      .join(' ')
-    const haystack = [
-      congregation.name,
-      congregation.description,
-      congregation.city,
-      congregation.street,
-      congregation.postal_code,
-      congregation.contact_name,
-      cardContactsText,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-
-    return haystack.includes(query)
-  })
-})
-
-function getCardContacts(congregation: ICongregationDetailed): ICardContact[] {
-  if (congregation.card_contacts?.length) {
-    return congregation.card_contacts.filter(contact => contact.name)
-  }
-  if (congregation.contact_name) {
-    return [{
-      name: congregation.contact_name,
-      title: congregation.contact_title,
-      phone: congregation.contact_phone,
-      email: congregation.contact_email,
-    }]
-  }
-  return []
-}
-
-function formatCardContactSearchText(contact: ICardContact): string {
-  return [contact.name, contact.title, contact.phone, contact.email]
-    .filter(Boolean)
-    .join(' ')
-}
+const {
+  search,
+  country,
+  province,
+  hideBranches,
+  availableCountries,
+  availableProvinces,
+  hasBranches,
+  isFiltered,
+  filtered: filteredCongregations,
+  reset,
+} = useCongregationFilters(congregations)
 
 // Check if user can edit/unpublish a congregation
 function canManageCongregation(congregation: ICongregationDetailed): boolean {
+  // Branches are edited from their parent congregation, not from this list
+  if (congregation.type === 'branch') {
+    return false
+  }
   // Admin or owner can manage any congregation
   if (authStore.user?.isAdmin || authStore.user?.isOwner) {
     return true
@@ -87,7 +57,7 @@ function canManageCongregation(congregation: ICongregationDetailed): boolean {
   return !!congregation.role
 }
 
-function formatAddress(congregation: NonNullable<typeof congregations.value>[0]): string {
+function formatAddress(congregation: ICongregationDetailed): string {
   const parts: string[] = []
   if (congregation.street) parts.push(congregation.street)
   if (congregation.postal_code && congregation.city) {
@@ -126,14 +96,25 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
 
 <template>
   <div class="space-y-4">
-    <!-- Search -->
-    <SearchInput
-      v-if="!isLoading && !error && congregations && congregations.length > 0"
-      id="congregations-search"
-      v-model="searchQuery"
-      name="congregations-search"
-      :placeholder="t('congregations.list.searchPlaceholder', 'Szukaj zborów...')"
-    />
+    <!-- Filters + export -->
+    <template v-if="!isLoading && !error && congregations && congregations.length > 0">
+      <div class="flex justify-end">
+        <CongregationExportMenu :congregations="filteredCongregations" />
+      </div>
+
+      <CongregationFilters
+        v-model:search="search"
+        v-model:country="country"
+        v-model:province="province"
+        v-model:hide-branches="hideBranches"
+        :available-countries="availableCountries"
+        :available-provinces="availableProvinces"
+        :has-branches="hasBranches"
+        :is-filtered="isFiltered"
+        :result-count="filteredCongregations.length"
+        @reset="reset"
+      />
+    </template>
 
     <!-- Loading State -->
     <div v-if="isLoading" class="space-y-3">
@@ -188,6 +169,9 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
               >
                 {{ congregation.name }}
               </h3>
+              <Badge v-if="congregation.type === 'branch'" variant="secondary">
+                {{ t('congregations.list.branch') }}
+              </Badge>
               <Badge
                 v-if="congregation.status === 'published_unverified'"
                 variant="outline"
@@ -196,6 +180,12 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
                 {{ t('congregations.status.unverified', 'Draft') }}
               </Badge>
             </div>
+            <p
+              v-if="congregation.type === 'branch' && congregation.parent_name"
+              class="mt-1 text-sm text-muted-foreground"
+            >
+              {{ t('congregations.list.branchOf', { name: congregation.parent_name }) }}
+            </p>
             <p
               v-if="congregation.description"
               :class="[
@@ -245,7 +235,7 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
 
           <!-- Card contacts -->
           <div
-            v-for="(contact, contactIndex) in getCardContacts(congregation)"
+            v-for="(contact, contactIndex) in contactsOf(congregation)"
             :key="`${congregation.id}-contact-${contactIndex}`"
             class="space-y-1.5"
           >

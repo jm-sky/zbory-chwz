@@ -2,6 +2,8 @@
 
 import logging
 import secrets
+from collections import defaultdict
+from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from fastapi import Depends, HTTPException, status
@@ -488,6 +490,53 @@ class ChurchRepository:
             )
         )
         return list(result.scalars().all())
+
+    async def list_public_card_assignments_for_churches(
+        self, church_ids: Sequence[str]
+    ) -> dict[str, list[ServiceAssignmentDB]]:
+        """Public card assignments for many churches at once, keyed by church id."""
+        if not church_ids:
+            return {}
+        result = await self.db.execute(
+            select(ServiceAssignmentDB)
+            .outerjoin(ServiceAssignmentDB.service_type)
+            .where(
+                ServiceAssignmentDB.scope_type == "church",
+                ServiceAssignmentDB.scope_id.in_(church_ids),
+                ServiceAssignmentDB.card_visibility == "public",
+            )
+            .options(
+                selectinload(ServiceAssignmentDB.person),
+                selectinload(ServiceAssignmentDB.service_type),
+            )
+            .order_by(
+                func.coalesce(ServiceTypeDB.sort_order, 9999),
+                ServiceAssignmentDB.created_at,
+            )
+        )
+        grouped: dict[str, list[ServiceAssignmentDB]] = defaultdict(list)
+        for assignment in result.scalars():
+            grouped[assignment.scope_id].append(assignment)
+        return grouped
+
+    async def list_public_branches_for_churches(
+        self, church_ids: Sequence[str]
+    ) -> dict[str, list[BranchDB]]:
+        """Publicly visible branches for many churches at once, keyed by church id."""
+        if not church_ids:
+            return {}
+        result = await self.db.execute(
+            select(BranchDB)
+            .where(
+                BranchDB.church_id.in_(church_ids),
+                BranchDB.visibility == "public",
+            )
+            .order_by(BranchDB.name)
+        )
+        grouped: dict[str, list[BranchDB]] = defaultdict(list)
+        for branch in result.scalars():
+            grouped[branch.church_id].append(branch)
+        return grouped
 
     def to_public_card_contact(
         self,

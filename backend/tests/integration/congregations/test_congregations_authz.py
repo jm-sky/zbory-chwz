@@ -101,7 +101,7 @@ async def _seed(session: AsyncSession) -> dict[str, str]:
                 id=generate_id(),
                 tenant_id=church_id,
                 city=name,
-                country="Poland",
+                country="PL",
                 status="published",
                 created_at=now,
                 updated_at=now,
@@ -188,9 +188,11 @@ async def test_outsider_cannot_overwrite_congregation_address(ctx) -> None:
     client, _, login, _ = ctx
     login(_api_user(OUTSIDER_ID))
 
+    # A valid payload, so the request is rejected by the access check rather
+    # than by body validation.
     response = await client.post(
         f"/api/congregations/{CHURCH_A}/address",
-        json={"city": "Hacked", "country": "Poland"},
+        json={"city": "Hacked", "country": "PL"},
     )
 
     assert response.status_code == 403

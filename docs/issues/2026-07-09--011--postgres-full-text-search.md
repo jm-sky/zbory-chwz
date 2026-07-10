@@ -57,3 +57,8 @@ Publiczna lista (`GET /congregations`) i przyszłe `GET /public/churches?q=` pot
 
 - Obecny kod: `backend/app/common/search.py` (ILIKE) — nie usuwać; FTS to osobna ścieżka dla churches
 - Coordinate with ROADMAP public homepage search when defined
+- **2026-07-10:** publiczna lista zborów filtruje się w przeglądarce
+  (`src/modules/congregations/utils/search.ts` — normalizacja diakrytyków + AND po
+  słowach). Przy ~30 zborach to wystarcza i nie blokuje tego issue. FTS staje się
+  potrzebne, gdy `GET /congregations/detailed` przestanie zwracać całą listę naraz
+  (paginacja) albo gdy dojdzie wyszukiwanie po treściach poza kartą zboru.

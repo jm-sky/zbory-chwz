@@ -15,8 +15,8 @@ CONGREGATIONS = [
             "street": "ul. Przyce 21",
             "city": "Warszawa",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "mazowieckie",
+            "country": "PL",
         },
         "service_times": [
             {"day": "niedziela", "time": "11:00"},
@@ -24,10 +24,7 @@ CONGREGATIONS = [
             {"day": "piątek", "time": "19:00"},
         ],
         "website": "chwz.waw.pl",
-        "contact_person": {
-            "name": "Jan Madeyski",
-            "title": "Diakon",
-        },
+        "contact_person": {"name": "Jan Madeyski", "title": "Diakon"},
         "status": "published",
     },
     {
@@ -40,12 +37,10 @@ CONGREGATIONS = [
             "street": "ul. Tunelowa 6",
             "city": "Barlinek",
             "postal_code": "74-320",
-            "province": None,
-            "country": "Poland",
+            "province": "zachodniopomorskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Arkadiusz Wawrzyniak",
@@ -65,12 +60,10 @@ CONGREGATIONS = [
             "street": "ul. Garbarska 15",
             "city": "Brzeg",
             "postal_code": "49-306",
-            "province": None,
-            "country": "Poland",
+            "province": "opolskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Jacek Kosztowniak",
@@ -88,14 +81,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Okrzei 20",
-            "city": None,
+            "city": "Bystrzyca Kłodzka",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "dolnoslaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "niedziela", "time": "11:00"},
-        ],
+        "service_times": [{"day": "niedziela", "time": "11:00"}],
         "website": None,
         "contact_person": {
             "name": "Andrzej Walawski",
@@ -112,14 +103,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Podlesie 1",
-            "city": None,
+            "city": "Dankowice",
             "postal_code": None,
             "province": None,
-            "country": "Poland",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Jarosław Wilczek",
@@ -137,14 +126,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Synów Pułku 55",
-            "city": None,
+            "city": "Gdańsk",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "pomorskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "19:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "19:00"}],
         "website": None,
         "contact_person": {
             "name": "Arkadiusz Borejszo",
@@ -162,14 +149,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Staromiejska 4b",
-            "city": None,
+            "city": "Gliwice",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "slaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "środa", "time": "18:00"},
-        ],
+        "service_times": [{"day": "środa", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Wiesław Świderski",
@@ -187,14 +172,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Partyzantów 18A",
-            "city": None,
+            "city": "Gołdap",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "warminsko-mazurskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Jacek Romanowski",
@@ -212,14 +195,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Białostocka 44",
-            "city": None,
+            "city": "Grabówka",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "podlaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Siergiej Zazulka",
@@ -237,14 +218,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": None,
-            "city": None,
+            "city": "Kędzierzyn-Koźle",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "opolskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "czwartek", "time": "16:30"},
-        ],
+        "service_times": [{"day": "czwartek", "time": "16:30"}],
         "website": None,
         "contact_person": {
             "name": "Grzegorz Ostrowski",
@@ -263,12 +242,10 @@ CONGREGATIONS = [
             "street": "ul. Zjazdowa 9",
             "city": "Kętrzyn",
             "postal_code": "11-400",
-            "province": None,
-            "country": "Poland",
+            "province": "warminsko-mazurskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "środa", "time": "18:00"},
-        ],
+        "service_times": [{"day": "środa", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Mirosław Kruba",
@@ -286,14 +263,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Rodzinna 73-75",
-            "city": None,
+            "city": "Kłodzko",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "dolnoslaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "czwartek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Krzysztof Kwiecień",
@@ -313,12 +288,10 @@ CONGREGATIONS = [
             "street": "ul. Żeglarska 54",
             "city": "Kostrzyn",
             "postal_code": "66-470",
-            "province": None,
-            "country": "Poland",
+            "province": "lubuskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Marek Kalata",
@@ -338,12 +311,10 @@ CONGREGATIONS = [
             "street": "ul. Sudecka 3",
             "city": "Legnica",
             "postal_code": "59-220",
-            "province": None,
-            "country": "Poland",
+            "province": "dolnoslaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "czwartek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Roman Jawdyk",
@@ -361,14 +332,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Edwarda Raczyńskiego 8",
-            "city": None,
+            "city": "Leszno",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "wielkopolskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "środa", "time": "19:00"},
-        ],
+        "service_times": [{"day": "środa", "time": "19:00"}],
         "website": None,
         "contact_person": {
             "name": "Henryk Mróz",
@@ -386,14 +355,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Budowniczych LGOM 10",
-            "city": None,
+            "city": "Lubin",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "dolnoslaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "18:30"},
-        ],
+        "service_times": [{"day": "piątek", "time": "18:30"}],
         "website": None,
         "contact_person": {
             "name": "Remigiusz Mamrosz",
@@ -412,12 +379,10 @@ CONGREGATIONS = [
             "street": "ul. Budowlanych 2",
             "city": "Lubsko",
             "postal_code": "66-300",
-            "province": None,
-            "country": "Poland",
+            "province": "lubuskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Mariusz Sawron",
@@ -437,12 +402,10 @@ CONGREGATIONS = [
             "street": "ul. Rogozińskiego 23",
             "city": "Łódź",
             "postal_code": "90-001",
-            "province": None,
-            "country": "Poland",
+            "province": "lodzkie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "środa", "time": "18:00"},
-        ],
+        "service_times": [{"day": "środa", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Leszek Bijak",
@@ -460,14 +423,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": None,
-            "city": None,
+            "city": "Marktredwitz",
             "postal_code": None,
             "province": None,
-            "country": "Poland",
+            "country": "DE",
         },
-        "service_times": [
-            {"day": "piątek", "time": "19:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "19:00"}],
         "website": None,
         "contact_person": {
             "name": "Wiesław Chmielewski",
@@ -486,12 +447,10 @@ CONGREGATIONS = [
             "street": None,
             "city": "Olsztyn",
             "postal_code": "10-516",
-            "province": None,
-            "country": "Poland",
+            "province": "warminsko-mazurskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "sobota", "time": "18:00"},
-        ],
+        "service_times": [{"day": "sobota", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Jacek Frąckowiak",
@@ -511,17 +470,12 @@ CONGREGATIONS = [
             "street": "ul. Akacjowa 7",
             "city": "Przemków",
             "postal_code": "59-170",
-            "province": None,
-            "country": "Poland",
+            "province": "dolnoslaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "czwartek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
-            "name": "Stefan Andrasz",
-            "title": "Pastor",
-        },
+        "contact_person": {"name": "Stefan Andrasz", "title": "Pastor"},
         "status": "published_unverified",
     },
     {
@@ -534,12 +488,10 @@ CONGREGATIONS = [
             "street": "ul. Chorzowska 8",
             "city": "Ruda Śląska",
             "postal_code": "41-709",
-            "province": None,
-            "country": "Poland",
+            "province": "slaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "czwartek", "time": "17:30"},
-        ],
+        "service_times": [{"day": "czwartek", "time": "17:30"}],
         "website": None,
         "contact_person": {
             "name": "Daniel Wawrzyczek",
@@ -560,11 +512,9 @@ CONGREGATIONS = [
             "city": "Rzuchowa",
             "postal_code": "33-114",
             "province": None,
-            "country": "Poland",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "sobota", "time": "18:00"},
-        ],
+        "service_times": [{"day": "sobota", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Łukasz Tyc",
@@ -582,14 +532,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Piłsudskiego 122",
-            "city": None,
+            "city": "Trzebinia",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "malopolskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "czwartek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Andrzej Nazimek",
@@ -609,12 +557,10 @@ CONGREGATIONS = [
             "street": "ul. Przyce 21",
             "city": "Warszawa",
             "postal_code": "01-252",
-            "province": None,
-            "country": "Poland",
+            "province": "mazowieckie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "piątek", "time": "19:00"},
-        ],
+        "service_times": [{"day": "piątek", "time": "19:00"}],
         "website": None,
         "contact_person": {
             "name": "Tomasz Smykowski",
@@ -631,14 +577,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Niedźwiedzia 17",
-            "city": None,
+            "city": "Wrocław",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "dolnoslaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "czwartek", "time": "19:00"},
-        ],
+        "service_times": [{"day": "czwartek", "time": "19:00"}],
         "website": None,
         "contact_person": {
             "name": "Tomasz Pękala",
@@ -658,17 +602,12 @@ CONGREGATIONS = [
             "street": None,
             "city": "Wysowa",
             "postal_code": "38-316",
-            "province": None,
-            "country": "Poland",
+            "province": "malopolskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "środa", "time": "16:30"},
-        ],
+        "service_times": [{"day": "środa", "time": "16:30"}],
         "website": None,
-        "contact_person": {
-            "name": "Józef Poręba",
-            "title": "Pastor",
-        },
+        "contact_person": {"name": "Józef Poręba", "title": "Pastor"},
         "status": "published_unverified",
     },
     {
@@ -679,14 +618,12 @@ CONGREGATIONS = [
         "owner_role": "pastor",
         "address": {
             "street": "ul. Sienkiewicza 30",
-            "city": None,
+            "city": "Zabrze",
             "postal_code": None,
-            "province": None,
-            "country": "Poland",
+            "province": "slaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "czwartek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Andrzej Poręba",
@@ -706,12 +643,10 @@ CONGREGATIONS = [
             "street": "ul. Osińska 30b",
             "city": "Żory",
             "postal_code": "44-240",
-            "province": None,
-            "country": "Poland",
+            "province": "slaskie",
+            "country": "PL",
         },
-        "service_times": [
-            {"day": "czwartek", "time": "18:00"},
-        ],
+        "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
         "contact_person": {
             "name": "Ryszard Arlt",

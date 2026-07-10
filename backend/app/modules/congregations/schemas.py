@@ -2,7 +2,13 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from app.modules.congregations.geo import (
+    COUNTRY_CODE_PATTERN,
+    DEFAULT_COUNTRY,
+    is_valid_province,
+)
 
 
 class AddressResponse(BaseModel):
@@ -23,8 +29,14 @@ class AddressCreateRequest(BaseModel):
     city: str = Field(min_length=1, max_length=255)
     postal_code: str | None = Field(default=None, max_length=20)
     province: str | None = Field(default=None, max_length=100)
-    country: str = Field(default="Poland", max_length=100)
+    country: str = Field(default=DEFAULT_COUNTRY, pattern=COUNTRY_CODE_PATTERN)
     status: str = Field(default="draft", max_length=32)
+
+    @model_validator(mode="after")
+    def check_province_belongs_to_country(self) -> "AddressCreateRequest":
+        if not is_valid_province(self.country, self.province):
+            raise ValueError(f"{self.province!r} is not a province of {self.country}")
+        return self
 
 
 class AddressUpdateRequest(BaseModel):
@@ -32,7 +44,7 @@ class AddressUpdateRequest(BaseModel):
     city: str | None = Field(default=None, min_length=1, max_length=255)
     postal_code: str | None = Field(default=None, max_length=20)
     province: str | None = Field(default=None, max_length=100)
-    country: str | None = Field(default=None, max_length=100)
+    country: str | None = Field(default=None, pattern=COUNTRY_CODE_PATTERN)
     status: str | None = Field(default=None, max_length=32)
 
 

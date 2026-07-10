@@ -6,6 +6,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Time
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+from app.modules.congregations.geo import DEFAULT_COUNTRY
 
 
 class CongregationAddressDB(Base):
@@ -24,7 +25,10 @@ class CongregationAddressDB(Base):
     city: Mapped[str] = mapped_column(String(255), nullable=False)
     postal_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
     province: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    country: Mapped[str] = mapped_column(String(100), default="Poland", nullable=False)
+    # ISO 3166-1 alpha-2; see app/modules/congregations/geo.py
+    country: Mapped[str] = mapped_column(
+        String(2), default=DEFAULT_COUNTRY, nullable=False
+    )
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False

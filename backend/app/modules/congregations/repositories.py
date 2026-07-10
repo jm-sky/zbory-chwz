@@ -1,6 +1,8 @@
 """Repository for congregation operations (addresses, service times, contact persons)."""
 
 import logging
+from collections import defaultdict
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import List
 
@@ -15,6 +17,7 @@ from app.modules.congregations.db_models import (
     CongregationContactPersonDB,
     CongregationServiceTimeDB,
 )
+from app.modules.congregations.geo import DEFAULT_COUNTRY
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +47,7 @@ class CongregationRepository:
         city: str,
         postal_code: str | None = None,
         province: str | None = None,
-        country: str = "Poland",
+        country: str = DEFAULT_COUNTRY,
         status: str = "draft",
     ) -> CongregationAddressDB:
         """Create or update address for a tenant."""
@@ -75,6 +78,35 @@ class CongregationRepository:
         await self.db.commit()
         await self.db.refresh(address)
         return address
+
+    async def get_addresses_by_status(
+        self, statuses: Sequence[str]
+    ) -> dict[str, CongregationAddressDB]:
+        """Get addresses with any of the given statuses, keyed by tenant id."""
+        stmt = select(CongregationAddressDB).where(
+            CongregationAddressDB.status.in_(statuses)
+        )
+        result = await self.db.execute(stmt)
+        return {address.tenant_id: address for address in result.scalars()}
+
+    async def get_service_times_for_tenants(
+        self, tenant_ids: Sequence[str]
+    ) -> dict[str, list[CongregationServiceTimeDB]]:
+        """Get service times for many tenants at once, keyed by tenant id."""
+        if not tenant_ids:
+            return {}
+        stmt = (
+            select(CongregationServiceTimeDB)
+            .where(CongregationServiceTimeDB.tenant_id.in_(tenant_ids))
+            .order_by(
+                CongregationServiceTimeDB.order, CongregationServiceTimeDB.created_at
+            )
+        )
+        result = await self.db.execute(stmt)
+        grouped: dict[str, list[CongregationServiceTimeDB]] = defaultdict(list)
+        for service_time in result.scalars():
+            grouped[service_time.tenant_id].append(service_time)
+        return grouped
 
     async def delete_address(self, tenant_id: str) -> None:
         """Delete address for a tenant."""

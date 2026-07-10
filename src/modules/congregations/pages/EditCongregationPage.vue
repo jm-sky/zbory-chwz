@@ -2,7 +2,7 @@
 import { toTypedSchema } from '@vee-validate/zod'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-vue-next'
 import { useForm } from 'vee-validate'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -26,10 +26,16 @@ import ChurchBranchesSection from '../components/ChurchBranchesSection.vue'
 import ChurchPeopleSection from '../components/ChurchPeopleSection.vue'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
+import {
+  countryOptions,
+  DEFAULT_COUNTRY_CODE,
+  provinceLabel,
+  provincesForCountry,
+} from '../utils/geo'
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
+const { locale, t } = useI18n()
 const { handleError } = useHandleError()
 
 const congregationId = route.params.id as string
@@ -47,7 +53,7 @@ const formSchema = z.object({
   city: z.string().min(1, t('congregations.edit.address.cityRequired', 'Miasto jest wymagane')),
   postal_code: z.string().nullable().optional(),
   province: z.string().nullable().optional(),
-  country: z.string().default('Poland'),
+  country: z.string().default(DEFAULT_COUNTRY_CODE),
   address_status: z.enum(['draft', 'published', 'published_unverified']).optional(),
 })
 
@@ -62,9 +68,26 @@ const form = useForm({
     city: '',
     postal_code: null,
     province: null,
-    country: 'Poland',
+    country: DEFAULT_COUNTRY_CODE,
     address_status: 'draft' as const,
   },
+})
+
+const countries = computed<Array<{ code: string; label: string }>>(() =>
+  countryOptions(locale.value),
+)
+
+// Only Poland has a defined voivodeship list; elsewhere the field stays empty.
+const provinces = computed<readonly string[]>(() =>
+  provincesForCountry(form.values.country ?? DEFAULT_COUNTRY_CODE),
+)
+
+// The backend rejects a province that does not belong to the selected country.
+watch(provinces, (available) => {
+  const current = form.values.province
+  if (current && !available.includes(current)) {
+    form.setFieldValue('province', null)
+  }
 })
 
 // Use refs for dynamic arrays since they're not part of the main form
@@ -101,7 +124,7 @@ async function loadCongregation() {
       city: congregationFull.value.address?.city ?? '',
       postal_code: congregationFull.value.address?.postal_code ?? null,
       province: congregationFull.value.address?.province ?? null,
-      country: congregationFull.value.address?.country ?? 'Poland',
+      country: congregationFull.value.address?.country ?? DEFAULT_COUNTRY_CODE,
       address_status: (congregationFull.value.address?.status as 'draft' | 'published' | 'published_unverified') ?? 'draft',
     })
 
@@ -372,33 +395,54 @@ onMounted(() => {
               </FormField>
             </div>
 
-            <FormField v-slot="{ componentField }" name="province">
-              <FormItem>
-                <FormLabel>
-                  {{ t('congregations.edit.address.province', 'Województwo') }}
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    :placeholder="t('congregations.edit.address.provincePlaceholder', 'Wprowadź województwo')"
-                    v-bind="componentField"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-
             <FormField v-slot="{ componentField }" name="country">
               <FormItem>
                 <FormLabel>
                   {{ t('congregations.edit.address.country', 'Kraj') }}
                 </FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    v-bind="componentField"
-                  />
-                </FormControl>
+                <Select v-bind="componentField">
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="option in countries"
+                      :key="option.code"
+                      :value="option.code"
+                    >
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            </FormField>
+
+            <FormField v-slot="{ componentField }" name="province">
+              <FormItem>
+                <FormLabel>
+                  {{ t('congregations.edit.address.province', 'Województwo') }}
+                </FormLabel>
+                <Select v-bind="componentField" :disabled="provinces.length === 0">
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue
+                        :placeholder="t('congregations.edit.address.provincePlaceholder', 'Wybierz województwo')"
+                      />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="option in provinces"
+                      :key="option"
+                      :value="option"
+                    >
+                      {{ provinceLabel(option) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             </FormField>
