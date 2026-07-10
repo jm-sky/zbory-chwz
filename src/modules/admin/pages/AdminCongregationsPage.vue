@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQueryClient } from '@tanstack/vue-query'
 import { Church, EyeOff, Globe, MoreHorizontal, Plus, RotateCcw, Trash2, Users } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -42,6 +43,7 @@ import type { ColumnDef } from '@tanstack/vue-table'
 
 const { t } = useI18n()
 const { handleError } = useHandleError()
+const queryClient = useQueryClient()
 const tenants = ref<IAdminTenant[]>([])
 const loading = ref(false)
 const showDeleted = ref<boolean>(false)
@@ -100,6 +102,7 @@ async function createTenant() {
     toast.success(t('admin.congregations.createSuccess', 'Congregation created successfully'))
     createDialogOpen.value = false
     resetForm()
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadTenants()
   } catch (error) {
     console.error('Failed to create tenant:', error)
@@ -151,6 +154,7 @@ async function updateTenant() {
     editDialogOpen.value = false
     selectedTenant.value = null
     resetForm()
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadTenants()
   } catch (error) {
     console.error('Failed to update tenant:', error)
@@ -165,6 +169,7 @@ async function publishTenant(tenant: IAdminTenant) {
       status: 'published',
     })
     toast.success(t('admin.congregations.publishSuccess', 'Congregation published successfully'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadTenants()
   } catch (error) {
     console.error('Failed to publish tenant:', error)
@@ -179,6 +184,7 @@ async function unpublishTenant(tenant: IAdminTenant) {
       status: 'draft',
     })
     toast.success(t('admin.congregations.unpublishSuccess', 'Congregation unpublished successfully'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadTenants()
   } catch (error) {
     console.error('Failed to unpublish tenant:', error)
@@ -195,6 +201,7 @@ async function deleteTenant(tenantId: string) {
   try {
     await adminApiService.deleteTenant(tenantId)
     toast.success(t('admin.congregations.deleteSuccess', 'Congregation deleted successfully'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadTenants()
   } catch (error) {
     console.error('Failed to delete tenant:', error)
@@ -206,6 +213,7 @@ async function restoreTenant(tenantId: string) {
   try {
     await adminApiService.restoreTenant(tenantId)
     toast.success(t('admin.congregations.restoreSuccess', 'Congregation restored'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadTenants()
   } catch (error) {
     console.error('Failed to restore tenant:', error)

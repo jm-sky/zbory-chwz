@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQueryClient } from '@tanstack/vue-query'
 import { toTypedSchema } from '@vee-validate/zod'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-vue-next'
 import { useForm } from 'vee-validate'
@@ -37,6 +38,7 @@ const route = useRoute()
 const router = useRouter()
 const { locale, t } = useI18n()
 const { handleError } = useHandleError()
+const queryClient = useQueryClient()
 
 const congregationId = route.params.id as string
 const loading = ref(true)
@@ -156,6 +158,7 @@ const saveBasicInfo = form.handleSubmit(async (values) => {
       status: values.status,
     })
     toast.success(t('congregations.edit.basicInfo.saveSuccess', 'Podstawowe informacje zostały zapisane'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
     console.error('Failed to save basic info:', error)
     handleError(error, { setErrors: form.setErrors, fallbackMessage: t('congregations.edit.basicInfo.saveError', 'Nie udało się zapisać podstawowych informacji') })
@@ -184,6 +187,7 @@ const saveAddress = form.handleSubmit(async (values) => {
       })
     }
     toast.success(t('congregations.edit.address.saveSuccess', 'Adres został zapisany'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadCongregation()
   } catch (error) {
     console.error('Failed to save address:', error)
@@ -211,6 +215,7 @@ async function saveServiceTimes() {
     }
 
     toast.success(t('congregations.edit.serviceTimes.saveSuccess', 'Godziny nabożeństw zostały zapisane'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadCongregation()
   } catch (error) {
     console.error('Failed to save service times:', error)

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQueryClient } from '@tanstack/vue-query'
 import { Plus, Trash2 } from 'lucide-vue-next'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -14,6 +15,7 @@ const { churchId } = defineProps<{ churchId: string }>()
 
 const { t } = useI18n()
 const { handleError } = useHandleError()
+const queryClient = useQueryClient()
 
 const branches = ref<IBranch[]>([])
 const loading = ref(true)
@@ -37,6 +39,7 @@ async function addBranch() {
     branches.value.push(branch)
     newName.value = ''
     toast.success(t('congregations.branches.added', 'Placówka dodana'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
     handleError(error)
   }
@@ -48,6 +51,7 @@ async function removeBranch(branchId: string) {
     await churchApiService.deleteBranch(churchId, branchId)
     branches.value = branches.value.filter(b => b.id !== branchId)
     toast.success(t('congregations.branches.removed', 'Placówka usunięta'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
     handleError(error)
   }

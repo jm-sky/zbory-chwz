@@ -1,17 +1,30 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { Church, Clock, Edit, EyeOff, Mail, MapPin, MoreHorizontal, Phone, Search, User } from 'lucide-vue-next'
+import { Church, Clock, Edit, EyeOff, Mail, MapPin, MoreHorizontal, Phone, Plus, Search, Trash2, User } from 'lucide-vue-next'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { ICongregationDetailed } from '../types/congregation.types'
@@ -29,6 +42,18 @@ const queryClient = useQueryClient()
 const authStore = useAuthStore()
 const { handleError } = useHandleError()
 const { data: congregations, isLoading, error } = useCongregations()
+
+// Only global admins/owners can create or hard-manage congregations;
+// tenant-scoped "role" only allows editing/unpublishing their own congregation.
+const canCreateOrDelete = () => !!(authStore.user?.isAdmin || authStore.user?.isOwner)
+
+const createDialogOpen = ref(false)
+const creating = ref(false)
+const createForm = ref({ name: '', description: '' })
+
+function resetCreateForm() {
+  createForm.value = { name: '', description: '' }
+}
 
 const {
   search,
@@ -92,16 +117,109 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
     handleError(error, { fallbackMessage: t('congregations.list.unpublishError', 'Nie udało się cofnąć publikacji zboru') })
   }
 }
+
+async function handleCreate() {
+  if (!createForm.value.name.trim()) {
+    toast.error(t('congregations.list.nameRequired', 'Nazwa jest wymagana'))
+    return
+  }
+
+  creating.value = true
+  try {
+    const created = await congregationApiService.createCongregation({
+      name: createForm.value.name.trim(),
+      description: createForm.value.description.trim() || undefined,
+    })
+    toast.success(t('congregations.list.createSuccess', 'Zbór został utworzony'))
+    createDialogOpen.value = false
+    resetCreateForm()
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    // A congregation only appears on this public list once it has a published
+    // address — send the admin straight to the edit page to fill it in.
+    router.push(CongregationRoutePaths.editById(created.id))
+  } catch (error) {
+    console.error('Failed to create congregation:', error)
+    handleError(error, { fallbackMessage: t('congregations.list.createError', 'Nie udało się utworzyć zboru') })
+  } finally {
+    creating.value = false
+  }
+}
+
+async function handleDelete(congregation: ICongregationDetailed) {
+  if (!confirm(t('congregations.list.deleteConfirm', 'Czy na pewno chcesz usunąć ten zbór?'))) {
+    return
+  }
+
+  try {
+    await congregationApiService.deleteCongregation(congregation.id)
+    toast.success(t('congregations.list.deleteSuccess', 'Zbór został usunięty'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+  } catch (error) {
+    console.error('Failed to delete congregation:', error)
+    handleError(error, { fallbackMessage: t('congregations.list.deleteError', 'Nie udało się usunąć zboru') })
+  }
+}
 </script>
 
 <template>
   <div class="space-y-4">
-    <!-- Filters + export -->
-    <template v-if="!isLoading && !error && congregations && congregations.length > 0">
-      <div class="flex justify-end">
-        <CongregationExportMenu :congregations="filteredCongregations" />
-      </div>
+    <!-- Create + export -->
+    <div v-if="canCreateOrDelete() || (!isLoading && !error && congregations && congregations.length > 0)" class="flex justify-end gap-2">
+      <Button v-if="canCreateOrDelete()" size="sm" @click="createDialogOpen = true">
+        <Plus class="size-4" />
+        {{ t('congregations.list.create', 'Dodaj zbór') }}
+      </Button>
+      <CongregationExportMenu
+        v-if="!isLoading && !error && congregations && congregations.length > 0"
+        :congregations="filteredCongregations"
+      />
+    </div>
 
+    <Dialog v-model:open="createDialogOpen">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {{ t('congregations.list.createTitle', 'Dodaj nowy zbór') }}
+          </DialogTitle>
+          <DialogDescription>
+            {{ t('congregations.list.createDescription', 'Utwórz nowy zbór. Pełne dane (adres, godziny nabożeństw) uzupełnisz po utworzeniu.') }}
+          </DialogDescription>
+        </DialogHeader>
+        <div class="space-y-4 py-4">
+          <div class="space-y-2">
+            <Label for="create-congregation-name">
+              {{ t('congregations.edit.basicInfo.name', 'Nazwa') }} *
+            </Label>
+            <Input
+              id="create-congregation-name"
+              v-model="createForm.name"
+              :placeholder="t('congregations.edit.basicInfo.namePlaceholder', 'Wprowadź nazwę zboru')"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="create-congregation-description">
+              {{ t('congregations.edit.basicInfo.description', 'Opis') }}
+            </Label>
+            <Textarea
+              id="create-congregation-description"
+              v-model="createForm.description"
+              :placeholder="t('congregations.edit.basicInfo.descriptionPlaceholder', 'Wprowadź opis zboru (opcjonalnie)')"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="createDialogOpen = false">
+            {{ t('common.cancel', 'Anuluj') }}
+          </Button>
+          <Button :disabled="creating" @click="handleCreate">
+            {{ t('common.create', 'Utwórz') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Filters -->
+    <template v-if="!isLoading && !error && congregations && congregations.length > 0">
       <CongregationFilters
         v-model:search="search"
         v-model:country="country"
@@ -215,6 +333,16 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
                 <EyeOff class="size-4" />
                 <span>{{ t('congregations.list.unpublish', 'Cofnij publikację') }}</span>
               </DropdownMenuItem>
+              <template v-if="canCreateOrDelete()">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  class="text-destructive focus:text-destructive"
+                  @click="handleDelete(congregation)"
+                >
+                  <Trash2 class="size-4" />
+                  <span>{{ t('common.delete', 'Usuń') }}</span>
+                </DropdownMenuItem>
+              </template>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Braces, Download, FileText } from 'lucide-vue-next'
+import { Braces, FileText, MoreHorizontal } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import {
@@ -26,12 +26,13 @@ function handleExport(format: ExportFormat): void {
   <DropdownMenu>
     <DropdownMenuTrigger as-child>
       <Button
+        v-tooltip="t('congregations.export.button')"
         variant="outline"
-        size="sm"
+        size="icon"
         :disabled="congregations.length === 0"
+        :aria-label="t('congregations.export.button')"
       >
-        <Download class="size-4" />
-        {{ t('congregations.export.button') }}
+        <MoreHorizontal class="size-4" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">

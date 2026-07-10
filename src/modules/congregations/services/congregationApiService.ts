@@ -30,6 +30,12 @@ export interface IUpdateCongregationRequest {
   status?: string
 }
 
+export interface ICreateCongregationRequest {
+  name: string
+  description?: string
+  status?: string
+}
+
 /**
  * Backend API response type
  */
@@ -105,6 +111,29 @@ class CongregationApiService {
    */
   async updateCongregation(id: string, data: IUpdateCongregationRequest): Promise<void> {
     await apiClient.patch(`/admin/tenants/${id}`, data)
+  }
+
+  /**
+   * Create a new congregation (admin/owner only)
+   */
+  async createCongregation(data: ICreateCongregationRequest): Promise<ICongregation> {
+    const response = await apiClient.post<TenantResponse>('/admin/tenants', data)
+    const tenant = response.data
+    return {
+      id: tenant.id,
+      name: tenant.name,
+      description: tenant.description,
+      role: tenant.role || undefined,
+      status: (tenant.status || 'draft') as CongregationStatus,
+      createdAt: tenant.createdAt,
+    }
+  }
+
+  /**
+   * Soft delete a congregation (admin/owner only); it can be restored later
+   */
+  async deleteCongregation(id: string): Promise<void> {
+    await apiClient.delete(`/admin/tenants/${id}`)
   }
 
   /**
