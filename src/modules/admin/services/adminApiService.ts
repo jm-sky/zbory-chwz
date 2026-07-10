@@ -42,8 +42,10 @@ class AdminApiService {
   }
 
   // Tenants/Congregations management
-  async getTenants(): Promise<IAdminTenant[]> {
-    const response = await apiClient.get<{ tenants: IAdminTenant[] }>('/admin/tenants')
+  async getTenants(includeDeleted = false): Promise<IAdminTenant[]> {
+    const response = await apiClient.get<{ tenants: IAdminTenant[] }>('/admin/tenants', {
+      params: { include_deleted: includeDeleted },
+    })
     return response.data.tenants
   }
 
@@ -57,8 +59,14 @@ class AdminApiService {
     return response.data
   }
 
+  /** Soft delete — the congregation keeps its data and can be restored. */
   async deleteTenant(id: string): Promise<void> {
     await apiClient.delete(`/admin/tenants/${id}`)
+  }
+
+  async restoreTenant(id: string): Promise<IAdminTenant> {
+    const response = await apiClient.post<IAdminTenant>(`/admin/tenants/${id}/restore`)
+    return response.data
   }
 
   // Tenant Memberships management

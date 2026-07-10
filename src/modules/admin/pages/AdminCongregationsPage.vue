@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Church, EyeOff, Globe, MoreHorizontal, Plus, Trash2, Users } from 'lucide-vue-next'
+import { Church, EyeOff, Globe, MoreHorizontal, Plus, RotateCcw, Trash2, Users } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -44,6 +44,7 @@ const { t } = useI18n()
 const { handleError } = useHandleError()
 const tenants = ref<IAdminTenant[]>([])
 const loading = ref(false)
+const showDeleted = ref<boolean>(false)
 const createDialogOpen = ref(false)
 const editDialogOpen = ref(false)
 const membershipsDialogOpen = ref(false)
@@ -74,7 +75,7 @@ const membershipFormData = ref({
 async function loadTenants() {
   loading.value = true
   try {
-    tenants.value = await adminApiService.getTenants()
+    tenants.value = await adminApiService.getTenants(showDeleted.value)
   } catch (error) {
     console.error('Failed to load tenants:', error)
     handleError(error, { fallbackMessage: t('admin.congregations.loadError', 'Failed to load congregations') })
@@ -185,9 +186,9 @@ async function unpublishTenant(tenant: IAdminTenant) {
   }
 }
 
-// Delete tenant
+// Soft delete tenant — data is kept and the congregation can be restored
 async function deleteTenant(tenantId: string) {
-  if (!confirm(t('admin.congregations.deleteConfirm', 'Are you sure you want to delete this congregation?'))) {
+  if (!confirm(t('admin.congregations.deleteConfirm'))) {
     return
   }
 
@@ -199,6 +200,22 @@ async function deleteTenant(tenantId: string) {
     console.error('Failed to delete tenant:', error)
     handleError(error, { fallbackMessage: t('admin.congregations.deleteError', 'Failed to delete congregation') })
   }
+}
+
+async function restoreTenant(tenantId: string) {
+  try {
+    await adminApiService.restoreTenant(tenantId)
+    toast.success(t('admin.congregations.restoreSuccess', 'Congregation restored'))
+    await loadTenants()
+  } catch (error) {
+    console.error('Failed to restore tenant:', error)
+    handleError(error, { fallbackMessage: t('admin.congregations.restoreError', 'Failed to restore congregation') })
+  }
+}
+
+async function toggleShowDeleted() {
+  showDeleted.value = !showDeleted.value
+  await loadTenants()
 }
 
 // Open edit dialog
@@ -408,6 +425,12 @@ onMounted(() => {
         :label="t('admin.congregations.title', 'Congregations Management')"
         :description="t('admin.congregations.subtitle', 'Manage congregations (tenants) and their members')"
       >
+        <Button variant="outline" @click="toggleShowDeleted">
+          <RotateCcw class="size-4" />
+          {{ showDeleted
+            ? t('admin.congregations.hideDeleted', 'Hide deleted')
+            : t('admin.congregations.showDeleted', 'Show deleted') }}
+        </Button>
         <Dialog v-model:open="createDialogOpen">
           <DialogTrigger as-child>
             <Button>
@@ -737,7 +760,12 @@ onMounted(() => {
             <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Church class="size-4 text-primary" />
             </div>
-            <span class="font-medium">{{ row.original.name }}</span>
+            <span :class="['font-medium', row.original.deletedAt && 'text-muted-foreground line-through']">
+              {{ row.original.name }}
+            </span>
+            <Badge v-if="row.original.deletedAt" variant="outline" class="text-muted-foreground">
+              {{ t('admin.congregations.deleted', 'Deleted') }}
+            </Badge>
           </div>
         </template>
 
@@ -773,36 +801,45 @@ onMounted(() => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem @click="openEditDialog(row.original)">
-                {{ t('common.edit', 'Edit') }}
-              </DropdownMenuItem>
-              <DropdownMenuItem @click="openMembershipsDialog(row.original)">
-                <Users class="size-4" />
-                <span>{{ t('admin.congregations.manageMembers', 'Manage Members') }}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem
-                v-if="row.original.status !== 'published' && row.original.status !== 'published_unverified'"
-                @click="publishTenant(row.original)"
+                v-if="row.original.deletedAt"
+                @click="restoreTenant(row.original.id)"
               >
-                <Globe class="size-4" />
-                <span>{{ t('admin.congregations.publish', 'Publish') }}</span>
+                <RotateCcw class="size-4" />
+                <span>{{ t('admin.congregations.restore', 'Restore') }}</span>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                v-if="row.original.status === 'published' || row.original.status === 'published_unverified'"
-                @click="unpublishTenant(row.original)"
-              >
-                <EyeOff class="size-4" />
-                <span>{{ t('admin.congregations.unpublish', 'Unpublish') }}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                class="text-destructive focus:text-destructive"
-                @click="deleteTenant(row.original.id)"
-              >
-                <Trash2 class="size-4" />
-                <span>{{ t('common.delete', 'Delete') }}</span>
-              </DropdownMenuItem>
+              <template v-else>
+                <DropdownMenuItem @click="openEditDialog(row.original)">
+                  {{ t('common.edit', 'Edit') }}
+                </DropdownMenuItem>
+                <DropdownMenuItem @click="openMembershipsDialog(row.original)">
+                  <Users class="size-4" />
+                  <span>{{ t('admin.congregations.manageMembers', 'Manage Members') }}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  v-if="row.original.status !== 'published' && row.original.status !== 'published_unverified'"
+                  @click="publishTenant(row.original)"
+                >
+                  <Globe class="size-4" />
+                  <span>{{ t('admin.congregations.publish', 'Publish') }}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  v-if="row.original.status === 'published' || row.original.status === 'published_unverified'"
+                  @click="unpublishTenant(row.original)"
+                >
+                  <EyeOff class="size-4" />
+                  <span>{{ t('admin.congregations.unpublish', 'Unpublish') }}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  class="text-destructive focus:text-destructive"
+                  @click="deleteTenant(row.original.id)"
+                >
+                  <Trash2 class="size-4" />
+                  <span>{{ t('common.delete', 'Delete') }}</span>
+                </DropdownMenuItem>
+              </template>
             </DropdownMenuContent>
           </DropdownMenu>
         </template>

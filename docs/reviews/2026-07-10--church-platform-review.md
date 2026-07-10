@@ -220,6 +220,49 @@ Delete-all-then-recreate, N+M requestów, bez transakcji. Błąd sieci po pętli
 
 ---
 
+### BUG-8 · Wysokie · Usunięcie zboru w panelu admina zwracało 500
+
+`admin/router.py` robił `await repo.db.delete(tenant)`. `tenant_memberships.tenant_id` ma FK z `ON DELETE NO ACTION`, a każdy zbór ma co najmniej wpis właściciela — hard delete kończył się `ForeignKeyViolationError`. Gdyby FK nie zablokowało, `churches`, `congregation_addresses`, `congregation_service_times` i `congregation_contact_persons` mają `ON DELETE CASCADE` — zbór zniknąłby razem z całą historią.
+
+Sprawdzone na produkcyjnych danych (34 zbory, 34 membershipy):
+
+```
+DELETE FAILED: IntegrityError
+ForeignKeyViolationError: update or delete on table "tenants" violates
+foreign key constraint "tenant_memberships_tenant_id_fkey"
+```
+
+*Naprawione:* migracja `060` dodaje `tenants.deleted_at`; DELETE ustawia znacznik i `status='draft'`, dane zostają. Nowy `POST /admin/tenants/{id}/restore` i `GET /admin/tenants?include_deleted=true` dopełniają cykl. Wszystkie odczyty (`list_all`, `list_published`, `list_for_user`, `get_tenant`) pomijają usunięte, więc zbór znika też z listy publicznej i z `verify_tenant_access`.
+
+---
+
+### BUG-9 · Wysokie · Nowy zbór nie miał wiersza `churches`
+
+`POST /admin/tenants` tworzył wyłącznie `tenants` + membership. `backfill.py` zakłada wiersze `churches` dla zborów sprzed hierarchii, ale nic nie robiło tego dla zborów tworzonych w runtime. Skutek: po dodaniu zboru w panelu jego strona edycji rozsypywała się — `GET /churches/{id}/branches` i `.../service-assignments` zwracały 404 „Church not found".
+
+*Naprawione:* `churches/provisioning.py` → `provision_church_for_tenant()` (idempotentne, reużywa `tenant.id` jako `churches.id`, `region_id` zostaje NULL do przypisania przez biskupa). Wołane z `create_tenant_admin`.
+
+---
+
+### BUG-10 · Wysokie · Cztery schematy odpowiedzi rzucały `ValidationError` (500)
+
+`BranchResponse`, `ChurchResponse`, `RegionResponse` i `PersonResponse` deklarują `Field(validation_alias="church_id")` itd., ale **nie** mają `populate_by_name=True`. Router konstruował je po nazwach pól:
+
+```python
+return BranchResponse(id=branch.id, churchId=branch.church_id, ...)
+# pydantic_core.ValidationError: 2 validation errors for BranchResponse
+#   church_id: Field required
+#   created_at: Field required
+```
+
+Czyli **500** na: `POST/PATCH /churches/{id}/branches`, `GET /churches/{id}`, `GET /churches/regions`, `GET /churches/persons/search`, oraz `GET /churches/{id}/branches` gdy jakakolwiek placówka istnieje. Nie wyszło wcześniej, bo w bazie nie ma jeszcze żadnej placówki, a lista pusta nie konstruuje modelu.
+
+Znalezione przez faktyczne wywołanie endpointów, nie przez czytanie kodu — typy przechodzą, testów nie było.
+
+*Naprawione:* wszystkie sześć miejsc używa `model_validate(obj)`, zgodnie z `ServiceAssignmentResponse` i `ServiceTypeResponse`. Przy okazji realizuje Q-2.
+
+---
+
 ### BUG-7 · Niskie · `ensure_acl_roles()` nie uzupełnia permissionów istniejących ról
 
 `acl_seed.py:56` — `if not role:` tworzy rolę **wraz z** permissionami. Jeśli rola już istnieje, `ROLE_SEED` jest ignorowany. Dopisanie nowego permissiona do `ROLE_SEED` nie zadziała na środowisku, gdzie role już powstały. Migracja 059 seeduje tabele, więc w praktyce ta ścieżka jest martwa — ale to pułapka na przyszłość.
@@ -264,6 +307,9 @@ Delete-all-then-recreate, N+M requestów, bez transakcji. Błąd sieci po pętli
 
 | ID | Zmiana |
 |----|--------|
+| BUG-8 | Soft delete zboru (migracja `060`) + restore + `include_deleted` — hard delete zwracał 500 |
+| BUG-9 | `provision_church_for_tenant()` przy tworzeniu zboru |
+| BUG-10 | `model_validate` zamiast konstrukcji po nazwach pól — 6 endpointów zwracało 500 |
 | SEC-1 | `_verify_tenant_access()` na wszystkich 11 endpointach `/congregations/*` |
 | SEC-2 | `bishop` / `regional_bishop` nadaje wyłącznie admin/owner |
 | SEC-3 | `_verify_church_access` → 403 zamiast fail-open |

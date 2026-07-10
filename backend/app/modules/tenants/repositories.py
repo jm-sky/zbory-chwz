@@ -29,15 +29,20 @@ class TenantRepository:
         stmt = (
             select(TenantDB, TenantMembershipDB)
             .join(TenantMembershipDB, TenantMembershipDB.tenant_id == TenantDB.id)
-            .where(TenantMembershipDB.user_id == user_id)
+            .where(
+                TenantMembershipDB.user_id == user_id,
+                TenantDB.deleted_at.is_(None),
+            )
             .order_by(TenantDB.created_at)
         )
         result = await self.db.execute(stmt)
         rows = result.all()
         return [(row[0], row[1]) for row in rows]
 
-    async def list_all(self) -> list[TenantDB]:
+    async def list_all(self, *, include_deleted: bool = False) -> list[TenantDB]:
         stmt = select(TenantDB).order_by(TenantDB.created_at)
+        if not include_deleted:
+            stmt = stmt.where(TenantDB.deleted_at.is_(None))
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -49,7 +54,10 @@ class TenantRepository:
         """
         stmt = (
             select(TenantDB)
-            .where(TenantDB.status == "published")
+            .where(
+                TenantDB.status == "published",
+                TenantDB.deleted_at.is_(None),
+            )
             .order_by(TenantDB.created_at)
         )
         result = await self.db.execute(stmt)
@@ -106,9 +114,32 @@ class TenantRepository:
         await self.db.refresh(membership)
         return membership
 
-    async def get_tenant(self, tenant_id: str) -> TenantDB | None:
-        result = await self.db.execute(select(TenantDB).where(TenantDB.id == tenant_id))
+    async def get_tenant(
+        self, tenant_id: str, *, include_deleted: bool = False
+    ) -> TenantDB | None:
+        stmt = select(TenantDB).where(TenantDB.id == tenant_id)
+        if not include_deleted:
+            stmt = stmt.where(TenantDB.deleted_at.is_(None))
+        result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def soft_delete_tenant(self, tenant: TenantDB) -> TenantDB:
+        """Retire a congregation without erasing it.
+
+        A hard delete violates the tenant_memberships FK and cascades churches,
+        addresses and service times away.
+        """
+        tenant.deleted_at = datetime.now(UTC)
+        tenant.status = "draft"
+        await self.db.commit()
+        await self.db.refresh(tenant)
+        return tenant
+
+    async def restore_tenant(self, tenant: TenantDB) -> TenantDB:
+        tenant.deleted_at = None
+        await self.db.commit()
+        await self.db.refresh(tenant)
+        return tenant
 
 
 def get_tenant_repository(db: AsyncSession = Depends(get_db)) -> TenantRepository:

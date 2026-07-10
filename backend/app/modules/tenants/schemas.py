@@ -24,6 +24,7 @@ class TenantResponse(BaseModel):
     status: str | None = None
     role: str
     createdAt: datetime
+    deletedAt: datetime | None = None
 
 
 class TenantListResponse(BaseModel):

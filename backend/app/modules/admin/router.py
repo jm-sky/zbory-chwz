@@ -15,6 +15,7 @@ from app.modules.auth.repositories import (
     get_user_repository as get_auth_user_repository,
 )
 from app.modules.auth.dependencies import AdminOrOwnerUser, AdminUser
+from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.users.repositories import UserRepository, get_user_repository
 from app.modules.users.schemas import UserUpdate
 
@@ -140,9 +141,12 @@ from app.modules.users.repositories import UserRepository
 async def get_all_tenants(
     _: AdminOrOwnerUser,
     repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    include_deleted: bool = Query(
+        default=False, description="Include soft-deleted congregations"
+    ),
 ) -> TenantListResponse:
     """Get all tenants (admin only)."""
-    tenants = await repo.list_all()
+    tenants = await repo.list_all(include_deleted=include_deleted)
     return TenantListResponse(
         tenants=[
             TenantResponse(
@@ -152,6 +156,7 @@ async def get_all_tenants(
                 status=tenant.status,
                 role="",  # Admin view doesn't include role
                 createdAt=tenant.created_at,
+                deletedAt=tenant.deleted_at,
             )
             for tenant in tenants
         ]
@@ -177,6 +182,10 @@ async def create_tenant_admin(
         owner_user_id=current_user.id,
         status=payload.status or "draft",
     )
+    # Without a churches row the edit page's branches and people sections 404.
+    await provision_church_for_tenant(repo.db, tenant)
+    await repo.db.commit()
+
     return TenantResponse(
         id=tenant.id,
         name=tenant.name,
@@ -232,14 +241,18 @@ async def update_tenant_admin(
     "/tenants/{tenant_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete tenant (admin only)",
-    description="Delete a tenant (congregation)",
+    description="Soft delete a tenant (congregation); it can be restored",
 )
 async def delete_tenant_admin(
     tenant_id: str,
     _: AdminOrOwnerUser,
     repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> None:
-    """Delete tenant (admin only)."""
+    """Soft delete tenant (admin only).
+
+    Memberships, churches, addresses and people are kept so the congregation
+    can be restored.
+    """
     tenant = await repo.get_tenant(tenant_id)
     if not tenant:
         raise HTTPException(
@@ -247,8 +260,39 @@ async def delete_tenant_admin(
             detail=f"Tenant {tenant_id} not found",
         )
 
-    await repo.db.delete(tenant)
-    await repo.db.commit()
+    await repo.soft_delete_tenant(tenant)
+
+
+@router.post(
+    "/tenants/{tenant_id}/restore",
+    response_model=TenantResponse,
+    summary="Restore tenant (admin only)",
+    description="Restore a soft-deleted tenant (congregation)",
+)
+async def restore_tenant_admin(
+    tenant_id: str,
+    _: AdminOrOwnerUser,
+    repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+) -> TenantResponse:
+    """Restore a soft-deleted tenant (admin only)."""
+    tenant = await repo.get_tenant(tenant_id, include_deleted=True)
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tenant {tenant_id} not found",
+        )
+
+    await repo.restore_tenant(tenant)
+
+    return TenantResponse(
+        id=tenant.id,
+        name=tenant.name,
+        description=tenant.description,
+        status=tenant.status,
+        role="",
+        createdAt=tenant.created_at,
+        deletedAt=tenant.deleted_at,
+    )
 
 
 # Tenant Memberships endpoints

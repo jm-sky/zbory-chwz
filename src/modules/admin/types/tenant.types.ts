@@ -8,6 +8,8 @@ export interface IAdminTenant {
   description?: string
   status?: string
   createdAt: string
+  /** Set when the congregation is soft-deleted; it can be restored. */
+  deletedAt?: string | null
 }
 
 export interface IAdminTenantMembership {

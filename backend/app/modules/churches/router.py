@@ -60,15 +60,7 @@ async def list_regions(
 ) -> list[RegionResponse]:
     _ = current_user
     regions = await repo.list_regions()
-    return [
-        RegionResponse(
-            id=r.id,
-            communityId=r.community_id,
-            name=r.name,
-            slug=r.slug,
-        )
-        for r in regions
-    ]
+    return [RegionResponse.model_validate(r) for r in regions]
 
 
 @router.get("/persons/search", response_model=PersonSearchResponse)
@@ -80,17 +72,7 @@ async def search_persons(
     _ = current_user
     persons = await repo.search_persons(q)
     return PersonSearchResponse(
-        persons=[
-            PersonResponse(
-                id=p.id,
-                firstName=p.first_name,
-                lastName=p.last_name,
-                email=p.email,
-                phone=p.phone,
-                userId=p.user_id,
-            )
-            for p in persons
-        ]
+        persons=[PersonResponse.model_validate(p) for p in persons]
     )
 
 
@@ -103,15 +85,7 @@ async def get_church(
 ) -> ChurchResponse:
     await _verify_church_access(church_id, current_user, repo, tenant_repo)
     church = await repo.ensure_church_access(church_id)
-    return ChurchResponse(
-        id=church.id,
-        communityId=church.community_id,
-        regionId=church.region_id,
-        tenantId=church.tenant_id,
-        name=church.name,
-        visibility=church.visibility,
-        createdAt=church.created_at,
-    )
+    return ChurchResponse.model_validate(church)
 
 
 @router.get("/{church_id}/branches", response_model=list[BranchResponse])
@@ -123,17 +97,7 @@ async def list_branches(
 ) -> list[BranchResponse]:
     await _verify_church_access(church_id, current_user, repo, tenant_repo)
     branches = await repo.list_branches(church_id)
-    return [
-        BranchResponse(
-            id=b.id,
-            churchId=b.church_id,
-            name=b.name,
-            slug=b.slug,
-            visibility=b.visibility,
-            createdAt=b.created_at,
-        )
-        for b in branches
-    ]
+    return [BranchResponse.model_validate(b) for b in branches]
 
 
 @router.post(
@@ -150,14 +114,7 @@ async def create_branch(
 ) -> BranchResponse:
     await _verify_church_access(church_id, current_user, repo, tenant_repo)
     branch = await repo.create_branch(church_id, payload)
-    return BranchResponse(
-        id=branch.id,
-        churchId=branch.church_id,
-        name=branch.name,
-        slug=branch.slug,
-        visibility=branch.visibility,
-        createdAt=branch.created_at,
-    )
+    return BranchResponse.model_validate(branch)
 
 
 @router.patch("/{church_id}/branches/{branch_id}", response_model=BranchResponse)
@@ -173,14 +130,7 @@ async def update_branch(
     branch = await repo.update_branch(church_id, branch_id, payload)
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
-    return BranchResponse(
-        id=branch.id,
-        churchId=branch.church_id,
-        name=branch.name,
-        slug=branch.slug,
-        visibility=branch.visibility,
-        createdAt=branch.created_at,
-    )
+    return BranchResponse.model_validate(branch)
 
 
 @router.delete(
