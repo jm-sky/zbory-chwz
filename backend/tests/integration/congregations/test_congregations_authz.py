@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 os.environ.setdefault("ENVIRONMENT", "test")
@@ -60,6 +61,7 @@ async def _seed(session: AsyncSession) -> dict[str, str]:
     now = datetime.now(UTC)
     community_id = generate_id()
     service_type_id = generate_id()
+    pastor_service_type_id = generate_id()
 
     session.add_all(
         [
@@ -72,6 +74,13 @@ async def _seed(session: AsyncSession) -> dict[str, str]:
                 name="Diakon",
                 scope_type="church",
                 sort_order=10,
+            ),
+            ServiceTypeDB(
+                id=pastor_service_type_id,
+                slug="pastor",
+                name="Pastor",
+                scope_type="church",
+                sort_order=5,
             ),
         ]
     )
@@ -136,6 +145,7 @@ async def _seed(session: AsyncSession) -> dict[str, str]:
         "assignment_b": assignment_b.id,
         "person_b": person_b.id,
         "service_type": service_type_id,
+        "pastor_service_type": pastor_service_type_id,
     }
 
 
@@ -290,3 +300,47 @@ async def test_admin_may_grant_bishop_role(ctx) -> None:
     )
 
     assert response.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_pastor_without_create_account_does_not_require_email(ctx) -> None:
+    client, ids, login, session_factory = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.post(
+        f"/api/churches/{CHURCH_A}/service-assignments",
+        json={
+            "firstName": "Jan",
+            "lastName": "Kowalski",
+            "serviceTypeId": ids["pastor_service_type"],
+            "createAccount": False,
+        },
+    )
+
+    assert response.status_code == 201
+    async with session_factory() as session:
+        person = await session.scalar(
+            select(PersonDB).where(PersonDB.first_name == "Jan")
+        )
+        assert person is not None
+        assert person.email is None
+        assert person.user_id is None
+
+
+@pytest.mark.asyncio
+async def test_pastor_with_create_account_still_requires_email(ctx) -> None:
+    client, ids, login, _ = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.post(
+        f"/api/churches/{CHURCH_A}/service-assignments",
+        json={
+            "firstName": "Piotr",
+            "lastName": "Nowak",
+            "serviceTypeId": ids["pastor_service_type"],
+            "createAccount": True,
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Email required to create user account"

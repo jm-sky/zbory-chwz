@@ -85,7 +85,7 @@ const isPastorType = computed(() =>
   selectedType.value ? pastorSlugs.has(selectedType.value.slug) : false,
 )
 
-const showAccountRoleSelect = computed(() => createAccount.value || isPastorType.value)
+const showAccountRoleSelect = computed(() => createAccount.value)
 
 const canGrantElevatedRoles = computed<boolean>(
   () => !!(authStore.user?.isAdmin || authStore.user?.isOwner),
@@ -181,7 +181,7 @@ async function addPerson() {
       description: form.value.description || undefined,
       serviceTypeId: useCustomService.value ? undefined : form.value.serviceTypeId || undefined,
       customServiceName: useCustomService.value ? form.value.customServiceName || undefined : undefined,
-      createAccount: createAccount.value || isPastorType.value,
+      createAccount: createAccount.value,
       suggestedRole: showAccountRoleSelect.value && accountRole.value !== 'none'
         ? accountRole.value
         : undefined,
@@ -456,7 +456,7 @@ onMounted(load)
       <Checkbox v-model="createAccount" />
       <Label>
         {{ t('congregations.people.createAccount', 'Utwórz konto użytkownika') }}
-        <span v-if="isPastorType" class="text-muted-foreground">
+        <span v-if="isPastorType && createAccount" class="text-muted-foreground">
           ({{ t('congregations.people.pastorInactive', 'pastor: konto nieaktywne') }})
         </span>
       </Label>

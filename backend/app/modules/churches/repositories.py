@@ -206,8 +206,7 @@ class ChurchRepository:
             return
 
         is_pastor = service_type and service_type.slug in PASTOR_SERVICE_SLUGS
-        should_create = payload.createAccount or is_pastor
-        if not should_create:
+        if not payload.createAccount:
             return
 
         if not person.email:
