@@ -60,23 +60,29 @@ function toggleAdvancedFilters(): void {
 
 <template>
   <div class="space-y-3 rounded-lg border bg-card p-4">
-    <SearchInput
-      id="congregations-search"
-      v-model="search"
-      name="congregations-search"
-      :placeholder="t('congregations.filters.searchPlaceholder')"
-    />
+    <div class="flex items-center gap-2">
+      <SearchInput
+        id="congregations-search"
+        v-model="search"
+        name="congregations-search"
+        :placeholder="t('congregations.filters.searchPlaceholder')"
+      />
 
-    <Button
-      variant="ghost"
-      size="sm"
-      class="h-8 px-2 text-muted-foreground"
-      @click="toggleAdvancedFilters"
-    >
-      <ChevronUp v-if="showAdvancedFilters" class="size-4" />
-      <ChevronDown v-else class="size-4" />
-      {{ showAdvancedFilters ? t('congregations.filters.less') : t('congregations.filters.more') }}
-    </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-8 shrink-0 px-2 text-muted-foreground"
+        :aria-label="showAdvancedFilters ? t('congregations.filters.less') : t('congregations.filters.more')"
+        :aria-expanded="showAdvancedFilters"
+        @click="toggleAdvancedFilters"
+      >
+        <ChevronUp v-if="showAdvancedFilters" class="size-4" />
+        <ChevronDown v-else class="size-4" />
+        <span class="hidden sm:inline">
+          {{ showAdvancedFilters ? t('congregations.filters.less') : t('congregations.filters.more') }}
+        </span>
+      </Button>
+    </div>
 
     <div v-show="showAdvancedFilters" class="grid gap-3 sm:grid-cols-2">
       <div class="space-y-1.5">

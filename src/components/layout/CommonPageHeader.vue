@@ -32,11 +32,10 @@ const emit = defineEmits<{
       </slot>
     </div>
 
-    <!-- Center section: title + actions -->
-    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-      <!-- Left: icon, title, description -->
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-3">
+    <!-- Center section: title row + description -->
+    <div>
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
           <slot name="before-icon" />
           <component
             :is="icon"
@@ -47,18 +46,21 @@ const emit = defineEmits<{
             {{ label }}
           </h1>
         </div>
-        <p v-if="description || $slots.description" class="text-muted-foreground mt-2">
-          <slot name="description">
-            {{ description }}
-          </slot>
-        </p>
+
+        <div
+          v-if="$slots.actions || $slots.dropdown"
+          class="flex shrink-0 flex-wrap items-center justify-end gap-2"
+        >
+          <slot name="actions" />
+          <slot name="dropdown" />
+        </div>
       </div>
 
-      <!-- Right: actions, dropdown -->
-      <div v-if="$slots.actions || $slots.dropdown" class="flex items-center gap-2 flex-wrap">
-        <slot name="actions" />
-        <slot name="dropdown" />
-      </div>
+      <p v-if="description || $slots.description" class="mt-2 text-muted-foreground">
+        <slot name="description">
+          {{ description }}
+        </slot>
+      </p>
     </div>
   </div>
 </template>
