@@ -19,6 +19,7 @@ Analizy, przeglądy i audyty — jedna sesja AI na plik, gdzie to ma sens.
 | [2025-12-02--performance-testing.md](2025-12-02--performance-testing.md) | Instrukcja testów wydajności | `done` |
 | [2025-12-02--lighthouse-critical-path.md](2025-12-02--lighthouse-critical-path.md) | Lighthouse critical path | `done` |
 | [2026-07-09--query-params-analysis.md](2026-07-09--query-params-analysis.md) | Analiza `returnTo` / `from` | `done` |
+| [2026-07-10--church-platform-review.md](2026-07-10--church-platform-review.md) | Platforma zborów: plan, security, jakość, UX | `done` |
 
 ## Program refaktoru
 
