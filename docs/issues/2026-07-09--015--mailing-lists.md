@@ -9,12 +9,16 @@
 
 Potrzebujemy w przyszłości **list mailingowych** do komunikacji wewnętrznej CHWZ (newslettery, ogłoszenia dla grup, zaproszenia). Na razie tylko planowanie — bez implementacji w MVP platformy zborów.
 
+## Ustalenia (2026-07-10)
+
+Wysyłka **nie wymaga** osobnej zgody marketingowej ani `email_visibility` — każdy `persons.email` w bazie jest potencjalnym adresatem. Świadomie zaakceptowane ryzyko RODO; wymaga jawnej polityki prywatności i mechanizmu opt-out (patrz plan, sekcja Ryzyka).
+
 ## Zakres docelowy (high level)
 
 - [ ] Listy statyczne i dynamiczne (oparte o grupy ludzi #014)
-- [ ] Źródła adresów: `persons.email` z poszanowaniem widoczności i zgód
+- [ ] Źródła adresów: `persons.email` (bez dodatkowej bramki zgody/widoczności)
 - [ ] Integracja z dostawcą e-mail (SMTP / SendGrid / …) — TBD
-- [ ] Opt-out / zgoda RODO
+- [ ] Opt-out (rejestr wypisań)
 - [ ] Podgląd odbiorców przed wysyłką
 
 ## Poza zakresem (teraz)

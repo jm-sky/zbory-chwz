@@ -47,5 +47,6 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 035 | [2026-07-09--035--visibility-enum-acl-tables.md](2026-07-09--035--visibility-enum-acl-tables.md) | Widoczność enum + tabele ACL (migracje 058–059) | `done` |
 | 036 | [2026-07-09--036--card-visibility-rendering.md](2026-07-09--036--card-visibility-rendering.md) | Karta zboru — renderowanie widoczności kontaktu | `done` |
 | 037 | [2026-07-08--037--backport-jwt-2fa-shared-core.md](2026-07-08--037--backport-jwt-2fa-shared-core.md) | Backport JWT hardening i 2FA (shared core) | `done` |
+| 038 | [2026-07-10--038--google-contacts-sync.md](2026-07-10--038--google-contacts-sync.md) | Synchronizacja z Google Contacts (import zborów/osób, export kontaktów) | `planned` |
 
 When adding a new issue: pick next `NNN`, create `YYYY-MM-DD--NNN--slug.md`, add a row here.

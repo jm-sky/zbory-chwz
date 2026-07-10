@@ -17,11 +17,17 @@ Grupy służą do organizacji pracy, komunikacji wewnętrznej i (w przyszłości
 
 ## Scope (faza 1 — planowanie)
 
-- [ ] Model: `people_groups`, `people_group_memberships` (FK → `persons`)
+- [ ] Model: `people_groups` (z polami `visibility`, `steward_user_id`), `people_group_memberships` (FK → `persons`)
 - [ ] Zakres grupy: `community` | `region` | `global`
 - [ ] CRUD grup + członkostwo (dodaj/usuń osobę)
 - [ ] UI: lista grup, edycja członków, opis grupy
-- [ ] Uprawnienia: kto może zarządzać grupami (np. Rada Naczelna, admin)
+- [ ] Uprawnienia: owner/admin tworzy grupy i wyznacza opiekuna (`steward_user_id`); opiekun zarządza członkami swojej grupy
+
+## Ustalenia (2026-07-10)
+
+- **Widoczność:** konfigurowalna per grupa (`visibility`: public / authenticated / private), nie sztywno publiczna ani sztywno tylko-dla-zalogowanych.
+- **ACL:** członkostwo w grupie jest czysto informacyjne — **nie** nadaje żadnych uprawnień w systemie.
+- **Zarządzanie:** owner/admin + opcjonalny opiekun grupy (`steward_user_id`) zarządzający wyłącznie swoją grupą.
 
 ## Poza zakresem fazy 1
 

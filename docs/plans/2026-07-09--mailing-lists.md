@@ -9,12 +9,16 @@
 
 Komunikacja e-mailowa wewnątrz organizacji CHWZ: ogłoszenia, newslettery, wiadomości do grup (Prezydium, Grupa Ewangelizacji, …). **Nie w scope MVP** platformy zborów — dokumentacja na później.
 
+## Ustalenia (2026-07-10)
+
+**Decyzja:** wysyłka **nie wymaga** osobnej zgody marketingowej (`marketing_consent`) ani wymogu `email_visibility` — każdy adres `persons.email` obecny w bazie może zostać użyty do listy mailingowej. Świadomie zaakceptowane ryzyko RODO (patrz sekcja Ryzyka) — wymaga polityki prywatności informującej użytkowników, że adres e-mail może być użyty do komunikacji wewnętrznej CHWZ.
+
 ## Założenia
 
-1. **Źródło adresów:** `persons.email` tylko gdy użytkownik wyraził zgodę / adres jest widoczny dla odbiorców wewnętrznych
+1. **Źródło adresów:** `persons.email` — bez dodatkowej bramki zgody/widoczności (patrz Ustalenia wyżej)
 2. **Segmentacja:** listy statyczne + listy oparte o `people_groups`
 3. **Dostawca:** SMTP aplikacji lub zewnętrzny (SendGrid, Brevo, …) — decyzja przy implementacji
-4. **RODO:** rejestr zgód, opt-out, podgląd przed wysyłką
+4. **Opt-out:** rejestr wypisań, podgląd odbiorców przed wysyłką
 
 ## Model danych (szkic)
 
@@ -56,9 +60,9 @@ flowchart LR
 
 ## Ryzyka
 
-- Wysyłka bez zgody — wymaga jawnej polityki i audytu
+- **Wysyłka bez jawnej zgody odbiorcy** — decyzja (2026-07-10) świadomie akceptuje to ryzyko; wymaga jawnej polityki prywatności i mechanizmu opt-out oraz audytu wysyłek (kto, kiedy, do ilu osób)
 - Duplikaty adresów przy łączeniu grup — deduplikacja po `email`
-- Ukryte e-maile na karcie zboru ≠ brak zgody na mailing wewnętrzny — osobne pole `marketing_consent`?
+- Widoczność e-maila na karcie zboru (`email_visibility`) jest niezależna od użycia w mailingu wewnętrznym — adres może być ukryty publicznie, a mimo to trafić na listę mailingową
 
 ## Powiązane
 

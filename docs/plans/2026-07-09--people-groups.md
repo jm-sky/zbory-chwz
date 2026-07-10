@@ -13,6 +13,12 @@ Definiowanie **grup ludzi** w strukturze CHWZ, niezależnych od przypisań słu�
 - Grupa Ewangelizacji
 - Służba Więzienna
 
+## Ustalenia (2026-07-10)
+
+1. **Widoczność:** konfigurowalna **per grupa** — pole `visibility` (public / authenticated / private), analogicznie do `card_visibility` w `service_assignments`. Twórca grupy decyduje przy tworzeniu, domyślnie `authenticated`.
+2. **ACL:** członkostwo w grupie jest **czysto informacyjne** — nie nadaje żadnych uprawnień w systemie. Uprawnienia nadal wynikają wyłącznie z ról w tenants/service_assignments.
+3. **Zarządzanie:** grupy tworzy owner/admin platformy. Owner/admin może wyznaczyć **opiekuna grupy** (`steward_user_id`), który samodzielnie zarządza członkami tej jednej grupy bez potrzeby angażowania admina za każdym razem.
+
 ## Model danych (szkic)
 
 ```
@@ -23,6 +29,8 @@ people_groups
 - description (nullable)
 - scope_type              -- community | region | global
 - scope_id (nullable)     -- FK gdy scope != global
+- visibility              -- public | authenticated | private (domyślnie authenticated)
+- steward_user_id (nullable) -- FK users, opiekun grupy z prawem zarządzania członkami
 - created_at, updated_at
 
 people_group_memberships
@@ -38,13 +46,14 @@ people_group_memberships
 - `persons` — ta sama globalna tożsamość co w `service_assignments`
 - Grupa ≠ służba w zborze; osoba może być w obu
 
-## Uprawnienia (szkic)
+## Uprawnienia
 
 | Akcja | Kto |
 |-------|-----|
-| Tworzenie grup community-wide | Owner, admin, uprawnienie `groups.manage` (TBD) |
-| Edycja członków grupy regionalnej | Biskup regionu + admin |
-| Podgląd listy członków | Zależnie od `visibility` grupy |
+| Tworzenie grup (dowolny scope) | Owner, admin platformy |
+| Wyznaczenie opiekuna grupy | Owner, admin — przy tworzeniu lub edycji grupy |
+| Edycja członków grupy | Owner, admin, oraz `steward_user_id` wyznaczony dla tej grupy |
+| Podgląd listy członków | Zależnie od pola `visibility` grupy (public / authenticated / private) |
 
 ## UI (faza 1)
 
@@ -65,8 +74,3 @@ people_group_memberships
 
 - `persons` musi istnieć ([#006](../issues/2026-07-09--006--org-hierarchy-data-model.md))
 - Spójność z widocznością kontaktów ([#012](../issues/2026-07-09--012--unify-services-remove-contact-persons.md))
-
-## Open questions
-
-- Czy grupy są widoczne publicznie, czy tylko dla zalogowanych?
-- Czy członkostwo w grupie implikuje jakieś uprawnienia ACL?
