@@ -29,6 +29,7 @@ import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { ICongregationDetailed } from '../types/congregation.types'
 import { useCongregationFilters } from '../composables/useCongregationFilters'
+import { useCongregationFiltersUrl } from '../composables/useCongregationFiltersUrl'
 import { useCongregations } from '../composables/useCongregations'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
@@ -55,6 +56,9 @@ function resetCreateForm() {
   createForm.value = { name: '', description: '' }
 }
 
+const congregationFilters = useCongregationFilters(congregations)
+useCongregationFiltersUrl(congregationFilters)
+
 const {
   search,
   country,
@@ -66,7 +70,7 @@ const {
   isFiltered,
   filtered: filteredCongregations,
   reset,
-} = useCongregationFilters(congregations)
+} = congregationFilters
 
 // Check if user can edit/unpublish a congregation
 function canManageCongregation(congregation: ICongregationDetailed): boolean {

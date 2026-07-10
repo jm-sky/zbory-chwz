@@ -70,9 +70,11 @@ export function useCongregationFilters(
   // Changing country can strand a province that no longer exists in the list,
   // which would silently filter everything out.
   watch(availableProvinces, (provinces) => {
-    if (province.value !== ANY_VALUE && !provinces.includes(province.value)) {
-      province.value = ANY_VALUE
-    }
+    if (province.value === ANY_VALUE) return
+    if (provinces.includes(province.value)) return
+    // Keep URL-provided province while congregation data is still loading.
+    if (provinces.length === 0 && items.value.length === 0) return
+    province.value = ANY_VALUE
   })
 
   const hasBranches = computed<boolean>(() => items.value.some((item) => item.type === 'branch'))
