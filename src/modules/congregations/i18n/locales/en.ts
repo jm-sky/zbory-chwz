@@ -82,6 +82,16 @@ export const congregationsEn = {
         phonePlaceholder: '+48 123 456 789',
       },
     },
+    branches: {
+      title: 'Branches',
+      empty: 'No branches',
+      name: 'Branch name',
+      namePlaceholder: 'e.g. Praga Branch',
+      add: 'Add',
+      added: 'Branch added',
+      removed: 'Branch removed',
+      removeConfirm: 'Are you sure you want to remove this branch?',
+    },
     people: {
       title: 'People and services',
       empty: 'No assignments',
@@ -104,8 +114,7 @@ export const congregationsEn = {
       visibilityTitle: 'Visibility on church card',
       showOnCard: 'Show on church card',
       showOnCardHint: 'Checked people are visible on the public congregation card',
-      visibilityPublic: 'Visible publicly',
-      visibilityPrivate: 'Hidden',
+      removeConfirm: 'Are you sure you want to remove this person from the congregation?',
       visibility: {
         hidden: 'Hidden',
         public: 'Public',

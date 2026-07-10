@@ -43,6 +43,7 @@ async function addBranch() {
 }
 
 async function removeBranch(branchId: string) {
+  if (!confirm(t('congregations.branches.removeConfirm'))) return
   try {
     await churchApiService.deleteBranch(churchId, branchId)
     branches.value = branches.value.filter(b => b.id !== branchId)

@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.modules.auth.dependencies import CurrentUser
+from app.modules.churches.db_models import ServiceAssignmentDB
 from app.modules.churches.repositories import ChurchRepository, get_church_repository
 from app.modules.churches.schemas import (
     BranchCreateRequest,
@@ -30,15 +31,15 @@ async def _verify_church_access(
     church_repo: ChurchRepository,
     tenant_repo: TenantRepository,
 ) -> None:
-    church = await church_repo.ensure_church_access(church_id)
-    tenant = await tenant_repo.get_tenant(church_id)
-    if not tenant:
+    await church_repo.ensure_church_access(church_id)
+
+    if current_user.isAdmin or current_user.isOwner:
         return
+
     memberships = await tenant_repo.list_for_user(current_user.id)
     if any(m.tenant_id == church_id for _, m in memberships):
         return
-    if current_user.isAdmin or current_user.isOwner:
-        return
+
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
 
@@ -169,8 +170,8 @@ async def update_branch(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> BranchResponse:
     await _verify_church_access(church_id, current_user, repo, tenant_repo)
-    branch = await repo.update_branch(branch_id, payload)
-    if not branch or branch.church_id != church_id:
+    branch = await repo.update_branch(church_id, branch_id, payload)
+    if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
     return BranchResponse(
         id=branch.id,
@@ -182,7 +183,9 @@ async def update_branch(
     )
 
 
-@router.delete("/{church_id}/branches/{branch_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{church_id}/branches/{branch_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_branch(
     church_id: str,
     branch_id: str,
@@ -191,13 +194,11 @@ async def delete_branch(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> None:
     await _verify_church_access(church_id, current_user, repo, tenant_repo)
-    branches = await repo.list_branches(church_id)
-    if not any(b.id == branch_id for b in branches):
+    if not await repo.delete_branch(church_id, branch_id):
         raise HTTPException(status_code=404, detail="Branch not found")
-    await repo.delete_branch(branch_id)
 
 
-def _assignment_response(assignment) -> ServiceAssignmentResponse:
+def _assignment_response(assignment: ServiceAssignmentDB) -> ServiceAssignmentResponse:
     return ServiceAssignmentResponse.model_validate(assignment)
 
 
@@ -229,7 +230,12 @@ async def create_service_assignment(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> ServiceAssignmentResponse:
     await _verify_church_access(church_id, current_user, repo, tenant_repo)
-    assignment = await repo.create_service_assignment("church", church_id, payload)
+    assignment = await repo.create_service_assignment(
+        "church",
+        church_id,
+        payload,
+        can_grant_elevated_roles=current_user.isAdmin or current_user.isOwner,
+    )
     return _assignment_response(assignment)
 
 
@@ -246,8 +252,10 @@ async def update_service_assignment(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> ServiceAssignmentResponse:
     await _verify_church_access(church_id, current_user, repo, tenant_repo)
-    assignment = await repo.update_service_assignment(assignment_id, payload)
-    if not assignment or assignment.scope_id != church_id:
+    assignment = await repo.update_service_assignment(
+        "church", church_id, assignment_id, payload
+    )
+    if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
     return _assignment_response(assignment)
 
@@ -264,7 +272,5 @@ async def delete_service_assignment(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> None:
     await _verify_church_access(church_id, current_user, repo, tenant_repo)
-    assignments = await repo.list_service_assignments("church", church_id)
-    if not any(a.id == assignment_id for a in assignments):
+    if not await repo.delete_service_assignment("church", church_id, assignment_id):
         raise HTTPException(status_code=404, detail="Assignment not found")
-    await repo.delete_service_assignment(assignment_id)

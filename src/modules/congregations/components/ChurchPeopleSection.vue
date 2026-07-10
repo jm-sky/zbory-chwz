@@ -22,23 +22,26 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useHandleError } from '@/shared/composables/useHandleError'
-import ContactFieldWithVisibility from './ContactFieldWithVisibility.vue'
-import VisibilityLevelSelect from './VisibilityLevelSelect.vue'
 import type { IServiceAssignment, IServiceType } from '../types/church.types'
+import { churchApiService } from '../services/churchApiService'
 import {
   CHURCH_ACL_ROLES,
+  type ChurchAclRole,
   DEFAULT_CARD_VISIBILITY,
   DEFAULT_EMAIL_VISIBILITY,
   DEFAULT_PHONE_VISIBILITY,
-  type ChurchAclRole,
+  ELEVATED_ACL_ROLES,
   type VisibilityLevel,
 } from '../types/visibility.types'
-import { churchApiService } from '../services/churchApiService'
+import ContactFieldWithVisibility from './ContactFieldWithVisibility.vue'
+import VisibilityLevelSelect from './VisibilityLevelSelect.vue'
 
 const { churchId } = defineProps<{ churchId: string }>()
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 const { handleError } = useHandleError()
 
 const assignments = ref<IServiceAssignment[]>([])
@@ -84,15 +87,15 @@ const isPastorType = computed(() =>
 
 const showAccountRoleSelect = computed(() => createAccount.value || isPastorType.value)
 
-const roleOptions = computed((): Array<'none' | ChurchAclRole> => {
-  const roles = new Set<'none' | ChurchAclRole>(['none', ...CHURCH_ACL_ROLES])
-  for (const serviceType of serviceTypes.value) {
-    const suggested = serviceType.suggestedRole
-    if (suggested && CHURCH_ACL_ROLES.includes(suggested as ChurchAclRole)) {
-      roles.add(suggested as ChurchAclRole)
-    }
-  }
-  return Array.from(roles)
+const canGrantElevatedRoles = computed<boolean>(
+  () => !!(authStore.user?.isAdmin || authStore.user?.isOwner),
+)
+
+const roleOptions = computed<Array<'none' | ChurchAclRole>>(() => {
+  const roles = canGrantElevatedRoles.value
+    ? CHURCH_ACL_ROLES
+    : CHURCH_ACL_ROLES.filter(role => !ELEVATED_ACL_ROLES.includes(role))
+  return ['none', ...roles]
 })
 
 const serviceTypesEmpty = computed(() => !loading.value && serviceTypes.value.length === 0)
@@ -133,8 +136,8 @@ function roleLabel(role: string): string {
   return t(`congregations.people.roles.${role}`, role)
 }
 
-function isChurchAclRole(role: string): role is ChurchAclRole {
-  return CHURCH_ACL_ROLES.includes(role as ChurchAclRole)
+function isGrantableRole(role: string): role is ChurchAclRole {
+  return roleOptions.value.includes(role as ChurchAclRole)
 }
 
 function visibilityPayload(formData: ReturnType<typeof createEmptyForm>) {
@@ -240,6 +243,7 @@ async function saveEdit() {
 }
 
 async function removeAssignment(assignmentId: string) {
+  if (!confirm(t('congregations.people.removeConfirm'))) return
   try {
     await churchApiService.deleteServiceAssignment(churchId, assignmentId)
     assignments.value = assignments.value.filter(a => a.id !== assignmentId)
@@ -275,7 +279,7 @@ watch(selectedType, (serviceType) => {
   if (pastorSlugs.has(serviceType.slug)) {
     createAccount.value = true
   }
-  if (serviceType.suggestedRole && isChurchAclRole(serviceType.suggestedRole)) {
+  if (serviceType.suggestedRole && isGrantableRole(serviceType.suggestedRole)) {
     accountRole.value = serviceType.suggestedRole
   } else {
     accountRole.value = 'none'

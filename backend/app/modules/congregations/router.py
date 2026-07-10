@@ -1,10 +1,13 @@
 """API router for congregation management (addresses, service times, contact persons)."""
 
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 
 from app.modules.auth.dependencies import CurrentUser
+from app.modules.congregations.db_models import CongregationContactPersonDB
 from app.modules.congregations.repositories import (
     CongregationRepository,
     get_congregation_repository,
@@ -21,6 +24,7 @@ from app.modules.congregations.schemas import (
     ServiceTimeResponse,
     ServiceTimeUpdateRequest,
 )
+from app.modules.tenants.access import verify_tenant_access
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 
 router = APIRouter(prefix="/congregations", tags=["Congregations"])
@@ -35,13 +39,7 @@ async def get_address(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> AddressResponse:
     """Get address for a congregation."""
-    # Verify tenant exists and user has access
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     address = await repo.get_address_by_tenant_id(tenant_id)
     if not address:
@@ -77,13 +75,7 @@ async def create_address(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> AddressResponse:
     """Create or update address for a congregation."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     address = await repo.create_or_update_address(
         tenant_id=tenant_id,
@@ -118,13 +110,7 @@ async def update_address(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> AddressResponse:
     """Update address for a congregation."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     address = await repo.get_address_by_tenant_id(tenant_id)
     if not address:
@@ -146,8 +132,6 @@ async def update_address(
         address.country = payload.country
     if payload.status is not None:
         address.status = payload.status
-
-    from datetime import UTC, datetime
 
     address.updated_at = datetime.now(UTC)
 
@@ -176,13 +160,7 @@ async def delete_address(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> None:
     """Delete address for a congregation."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     await repo.delete_address(tenant_id)
 
@@ -196,13 +174,7 @@ async def get_service_times(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> list[ServiceTimeResponse]:
     """Get all service times for a congregation."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     service_times = await repo.get_service_times_by_tenant_id(tenant_id)
     return [
@@ -231,13 +203,7 @@ async def create_service_time(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> ServiceTimeResponse:
     """Create a service time for a congregation."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     service_time = await repo.create_service_time(
         tenant_id=tenant_id,
@@ -268,15 +234,13 @@ async def delete_service_time(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> None:
     """Delete a service time."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+
+    if not await repo.delete_service_time(tenant_id, service_time_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
+            detail=f"Service time {service_time_id} not found for tenant {tenant_id}",
         )
-
-    await repo.delete_service_time(service_time_id)
 
 
 # Contact persons endpoints
@@ -288,13 +252,7 @@ async def get_contact_persons(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> list[ContactPersonResponse]:
     """Get all contact persons for a congregation."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     contact_persons = await repo.get_contact_persons_by_tenant_id(tenant_id)
     return [
@@ -326,13 +284,7 @@ async def create_contact_person(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> ContactPersonResponse:
     """Create a contact person for a congregation."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     contact_person = await repo.create_contact_person(
         tenant_id=tenant_id,
@@ -369,16 +321,7 @@ async def update_contact_person(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> ContactPersonResponse:
     """Update a contact person."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
-
-    from sqlalchemy import select
-    from app.modules.congregations.db_models import CongregationContactPersonDB
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     stmt = select(CongregationContactPersonDB).where(
         CongregationContactPersonDB.id == contact_person_id,
@@ -404,8 +347,6 @@ async def update_contact_person(
         contact_person.phone = payload.phone
     if payload.order is not None:
         contact_person.order = payload.order
-
-    from datetime import UTC, datetime
 
     contact_person.updated_at = datetime.now(UTC)
 
@@ -437,15 +378,13 @@ async def delete_contact_person(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> None:
     """Delete a contact person."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+
+    if not await repo.delete_contact_person(tenant_id, contact_person_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
+            detail=f"Contact person {contact_person_id} not found for tenant {tenant_id}",
         )
-
-    await repo.delete_contact_person(contact_person_id)
 
 
 # Full congregation data endpoint
@@ -457,13 +396,7 @@ async def get_full_congregation(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> CongregationFullResponse:
     """Get full congregation data including address, service times, and contact persons."""
-    # Verify tenant exists
-    tenant = await tenant_repo.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tenant {tenant_id} not found",
-        )
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
     address = await repo.get_address_by_tenant_id(tenant_id)
     service_times = await repo.get_service_times_by_tenant_id(tenant_id)

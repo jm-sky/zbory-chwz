@@ -10,6 +10,10 @@ from app.modules.churches.acl_models import RoleDB, RolePermissionDB
 
 PASTORAL_ROLE_NAMES = frozenset({"bishop", "regional_bishop", "pastor", "diacon"})
 
+# Roles carrying governance permissions beyond a single church. Only global
+# admins/owners may grant them until PermissionService lands (issue #007).
+ELEVATED_ROLE_NAMES = frozenset({"bishop", "regional_bishop"})
+
 ROLE_SEED: list[tuple[str, str, list[str]]] = [
     (
         "bishop",
@@ -26,7 +30,13 @@ ROLE_SEED: list[tuple[str, str, list[str]]] = [
     (
         "regional_bishop",
         "region",
-        ["church.view", "church.edit", "church.create", "services.manage", "people.manage"],
+        [
+            "church.view",
+            "church.edit",
+            "church.create",
+            "services.manage",
+            "people.manage",
+        ],
     ),
     (
         "pastor",

@@ -14,7 +14,12 @@ from app.core.database import get_db
 from app.modules.auth.auth_utils import get_password_hash
 from app.modules.auth.db_models import UserDB
 from app.modules.churches.acl_models import UserRoleAssignmentDB
-from app.modules.churches.acl_seed import PASTORAL_ROLE_NAMES, ensure_acl_roles, resolve_acl_scope
+from app.modules.churches.acl_seed import (
+    ELEVATED_ROLE_NAMES,
+    PASTORAL_ROLE_NAMES,
+    ensure_acl_roles,
+    resolve_acl_scope,
+)
 from app.modules.churches.db_models import (
     BranchDB,
     ChurchDB,
@@ -94,9 +99,14 @@ class ChurchRepository:
         return branch
 
     async def update_branch(
-        self, branch_id: str, payload: BranchUpdateRequest
+        self, church_id: str, branch_id: str, payload: BranchUpdateRequest
     ) -> BranchDB | None:
-        result = await self.db.execute(select(BranchDB).where(BranchDB.id == branch_id))
+        result = await self.db.execute(
+            select(BranchDB).where(
+                BranchDB.id == branch_id,
+                BranchDB.church_id == church_id,
+            )
+        )
         branch = result.scalar_one_or_none()
         if not branch:
             return None
@@ -110,8 +120,13 @@ class ChurchRepository:
         await self.db.refresh(branch)
         return branch
 
-    async def delete_branch(self, branch_id: str) -> bool:
-        result = await self.db.execute(select(BranchDB).where(BranchDB.id == branch_id))
+    async def delete_branch(self, church_id: str, branch_id: str) -> bool:
+        result = await self.db.execute(
+            select(BranchDB).where(
+                BranchDB.id == branch_id,
+                BranchDB.church_id == church_id,
+            )
+        )
         branch = result.scalar_one_or_none()
         if not branch:
             return False
@@ -183,6 +198,7 @@ class ChurchRepository:
         payload: ServiceAssignmentCreateRequest,
         service_type: ServiceTypeDB | None,
         church: ChurchDB,
+        can_grant_elevated_roles: bool,
     ) -> None:
         if person.user_id:
             return
@@ -203,9 +219,10 @@ class ChurchRepository:
         )
         user_db = existing.scalar_one_or_none()
         if not user_db:
-            full_name = " ".join(
-                p for p in (person.first_name, person.last_name) if p
-            ).strip() or person.email
+            full_name = (
+                " ".join(p for p in (person.first_name, person.last_name) if p).strip()
+                or person.email
+            )
             user_db = UserDB(
                 id=generate_id(),
                 email=person.email.lower().strip(),
@@ -222,10 +239,10 @@ class ChurchRepository:
         person.user_id = user_db.id
         await self._ensure_tenant_membership(church.tenant_id, user_db.id)
 
-        role_name = payload.suggestedRole or (
-            service_type.suggested_role if service_type else None
+        role_name = self._resolve_grant_role(
+            payload, service_type, can_grant_elevated_roles
         )
-        if not role_name or role_name not in PASTORAL_ROLE_NAMES:
+        if not role_name:
             return
 
         roles_by_name = await ensure_acl_roles(self.db)
@@ -266,6 +283,25 @@ class ChurchRepository:
         )
         await self.db.flush()
 
+    @staticmethod
+    def _resolve_grant_role(
+        payload: ServiceAssignmentCreateRequest,
+        service_type: ServiceTypeDB | None,
+        can_grant_elevated_roles: bool,
+    ) -> str | None:
+        """Return the ACL role to grant, or None. Rejects elevated grants."""
+        role_name = payload.suggestedRole or (
+            service_type.suggested_role if service_type else None
+        )
+        if not role_name or role_name not in PASTORAL_ROLE_NAMES:
+            return None
+        if role_name in ELEVATED_ROLE_NAMES and not can_grant_elevated_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Only admins may grant the '{role_name}' role",
+            )
+        return role_name
+
     async def _ensure_tenant_membership(self, tenant_id: str, user_id: str) -> None:
         result = await self.db.execute(
             select(TenantMembershipDB).where(
@@ -290,6 +326,8 @@ class ChurchRepository:
         scope_type: str,
         scope_id: str,
         payload: ServiceAssignmentCreateRequest,
+        *,
+        can_grant_elevated_roles: bool = False,
     ) -> ServiceAssignmentDB:
         if not payload.serviceTypeId and not payload.customServiceName:
             raise HTTPException(
@@ -302,6 +340,9 @@ class ChurchRepository:
             service_type = await self.get_service_type(payload.serviceTypeId)
             if not service_type:
                 raise HTTPException(status_code=404, detail="Service type not found")
+
+        # Reject an elevated role grant before anything is written.
+        self._resolve_grant_role(payload, service_type, can_grant_elevated_roles)
 
         church = await self.ensure_church_access(scope_id)
 
@@ -323,7 +364,12 @@ class ChurchRepository:
         await self.db.flush()
 
         await self._maybe_create_user_and_acl(
-            assignment.id, person, payload, service_type, church
+            assignment.id,
+            person,
+            payload,
+            service_type,
+            church,
+            can_grant_elevated_roles,
         )
         await self.db.commit()
         await self.db.refresh(assignment)
@@ -338,11 +384,19 @@ class ChurchRepository:
         return loaded.scalar_one()
 
     async def update_service_assignment(
-        self, assignment_id: str, payload: ServiceAssignmentUpdateRequest
+        self,
+        scope_type: str,
+        scope_id: str,
+        assignment_id: str,
+        payload: ServiceAssignmentUpdateRequest,
     ) -> ServiceAssignmentDB | None:
         result = await self.db.execute(
             select(ServiceAssignmentDB)
-            .where(ServiceAssignmentDB.id == assignment_id)
+            .where(
+                ServiceAssignmentDB.id == assignment_id,
+                ServiceAssignmentDB.scope_type == scope_type,
+                ServiceAssignmentDB.scope_id == scope_id,
+            )
             .options(selectinload(ServiceAssignmentDB.person))
         )
         assignment = result.scalar_one_or_none()
@@ -385,9 +439,15 @@ class ChurchRepository:
         )
         return reloaded.scalar_one_or_none()
 
-    async def delete_service_assignment(self, assignment_id: str) -> bool:
+    async def delete_service_assignment(
+        self, scope_type: str, scope_id: str, assignment_id: str
+    ) -> bool:
         result = await self.db.execute(
-            select(ServiceAssignmentDB).where(ServiceAssignmentDB.id == assignment_id)
+            select(ServiceAssignmentDB).where(
+                ServiceAssignmentDB.id == assignment_id,
+                ServiceAssignmentDB.scope_type == scope_type,
+                ServiceAssignmentDB.scope_id == scope_id,
+            )
         )
         assignment = result.scalar_one_or_none()
         if not assignment:
@@ -444,11 +504,7 @@ class ChurchRepository:
             part for part in (person.first_name, person.last_name) if part
         ).strip()
         service_type = assignment.service_type
-        title = (
-            service_type.name
-            if service_type
-            else assignment.custom_service_name
-        )
+        title = service_type.name if service_type else assignment.custom_service_name
         contact_fields = self.filter_assignment_contact(
             assignment,
             is_authenticated=is_authenticated,

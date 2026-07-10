@@ -119,16 +119,19 @@ class CongregationRepository:
         await self.db.refresh(service_time)
         return service_time
 
-    async def delete_service_time(self, service_time_id: str) -> None:
-        """Delete a service time."""
+    async def delete_service_time(self, tenant_id: str, service_time_id: str) -> bool:
+        """Delete a service time belonging to the given tenant."""
         stmt = select(CongregationServiceTimeDB).where(
-            CongregationServiceTimeDB.id == service_time_id
+            CongregationServiceTimeDB.id == service_time_id,
+            CongregationServiceTimeDB.tenant_id == tenant_id,
         )
         result = await self.db.execute(stmt)
         service_time = result.scalar_one_or_none()
-        if service_time:
-            await self.db.delete(service_time)
-            await self.db.commit()
+        if not service_time:
+            return False
+        await self.db.delete(service_time)
+        await self.db.commit()
+        return True
 
     async def delete_all_service_times(self, tenant_id: str) -> None:
         """Delete all service times for a tenant."""
@@ -182,16 +185,21 @@ class CongregationRepository:
         await self.db.refresh(contact_person)
         return contact_person
 
-    async def delete_contact_person(self, contact_person_id: str) -> None:
-        """Delete a contact person."""
+    async def delete_contact_person(
+        self, tenant_id: str, contact_person_id: str
+    ) -> bool:
+        """Delete a contact person belonging to the given tenant."""
         stmt = select(CongregationContactPersonDB).where(
-            CongregationContactPersonDB.id == contact_person_id
+            CongregationContactPersonDB.id == contact_person_id,
+            CongregationContactPersonDB.tenant_id == tenant_id,
         )
         result = await self.db.execute(stmt)
         contact_person = result.scalar_one_or_none()
-        if contact_person:
-            await self.db.delete(contact_person)
-            await self.db.commit()
+        if not contact_person:
+            return False
+        await self.db.delete(contact_person)
+        await self.db.commit()
+        return True
 
     async def delete_all_contact_persons(self, tenant_id: str) -> None:
         """Delete all contact persons for a tenant."""

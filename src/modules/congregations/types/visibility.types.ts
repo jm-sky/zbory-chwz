@@ -16,6 +16,9 @@ export const CHURCH_ACL_ROLES: ChurchAclRole[] = [
   'diacon',
 ]
 
+/** Roles the backend only lets global admins/owners grant. */
+export const ELEVATED_ACL_ROLES: ChurchAclRole[] = ['bishop', 'regional_bishop']
+
 export const DEFAULT_CARD_VISIBILITY: VisibilityLevel = 'public'
 export const DEFAULT_PHONE_VISIBILITY: VisibilityLevel = 'public'
 export const DEFAULT_EMAIL_VISIBILITY: VisibilityLevel = 'authenticated'
