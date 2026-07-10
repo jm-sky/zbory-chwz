@@ -70,7 +70,7 @@ export default defineConfig(({ mode }) => {
             if (!id.includes('node_modules')) return
 
             if (id.includes('lucide-vue-next')) return 'vendor-icons'
-            if (id.includes('@unovis') || id.includes('elkjs') || id.includes('maplibre-gl') || id.includes('leaflet') || id.includes('three')) {
+            if (id.includes('@unovis') || id.includes('elkjs') || id.includes('maplibre-gl') || id.includes('leaflet') || id.includes('/three/')) {
               return 'vendor-charts'
             }
             if (id.includes('vee-validate') || id.includes('@vee-validate') || id.includes('/zod/')) return 'vendor-forms'
@@ -87,7 +87,6 @@ export default defineConfig(({ mode }) => {
             if (id.includes('vue-i18n')) return 'vendor-i18n'
             if (id.includes('vue-router')) return 'vendor-router'
             if (id.includes('pinia')) return 'vendor-pinia'
-            if (id.includes('@sentry/')) return 'vendor-sentry'
             if (id.includes('/vue/') || id.includes('/@vue/')) return 'vendor-vue'
 
             return 'vendor'
