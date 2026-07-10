@@ -28,5 +28,24 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 016 | [2026-07-10--016--congregation-write-endpoint-for-non-admins.md](2026-07-10--016--congregation-write-endpoint-for-non-admins.md) | Pastor nie zapisze podstawowych danych zboru (endpoint admin-only) | `todo` |
 | 017 | [2026-07-10--017--authorization-hardening-followups.md](2026-07-10--017--authorization-hardening-followups.md) | Hardening autoryzacji — `persons/search`, `POST /tenants`, `pastors` visibility | `todo` |
 | 018 | [2026-07-10--018--congregation-address-data-quality.md](2026-07-10--018--congregation-address-data-quality.md) | Adresy — Świebodzin/Rzuchowa i Dankowice do weryfikacji | `todo` |
+| 019 | [2026-07-09--019--church-phase-1-hierarchy.md](2026-07-09--019--church-phase-1-hierarchy.md) | Church platform Phase 1 — hierarchia, API, UI | `done` |
+| 020 | [2026-07-09--020--edit-congregation-page-bugfixes.md](2026-07-09--020--edit-congregation-page-bugfixes.md) | Edycja zboru — błędy, nawigacja, status, widoczność | `done` |
+| 021 | [2026-07-09--021--people-services-section-ux.md](2026-07-09--021--people-services-section-ux.md) | Ludzie i służby — UX widoczności, edycji, ról | `done` |
+| 022 | [2026-07-09--022--congregation-list-search.md](2026-07-09--022--congregation-list-search.md) | Lista zborów — prosta wyszukiwarka | `done` |
+| 023 | [2026-07-09--023--visibility-picker-icon-only.md](2026-07-09--023--visibility-picker-icon-only.md) | Picker widoczności e-mail/tel — ikona w stanie zwiniętym | `done` |
+| 024 | [2026-07-09--024--multiple-card-contacts-show-on-card.md](2026-07-09--024--multiple-card-contacts-show-on-card.md) | Wiele kontaktów na karcie + „Pokaż na wizytówce” | `done` |
+| 025 | [2026-07-10--025--congregation-export-json-markdown-filters.md](2026-07-10--025--congregation-export-json-markdown-filters.md) | Eksport JSON/Markdown + filtry listy | `done` |
+| 026 | [2026-07-10--026--country-iso-province-normalization.md](2026-07-10--026--country-iso-province-normalization.md) | Kraj ISO alpha-2 + normalizacja województw | `done` |
+| 027 | [2026-07-10--027--security-review-acl-hardening.md](2026-07-10--027--security-review-acl-hardening.md) | Review platformy — dokument w docs/reviews/ | `done` |
+| 028 | [2026-07-10--028--congregation-create-from-list.md](2026-07-10--028--congregation-create-from-list.md) | Tworzenie zboru z listy publicznej | `done` |
+| 029 | [2026-07-09--029--pwa-branding-zbory-chwz.md](2026-07-09--029--pwa-branding-zbory-chwz.md) | Rebranding PWA Gear Stack → Zbory CHWZ | `done` |
+| 030 | [2026-07-10--030--acl-endpoint-enforcement.md](2026-07-10--030--acl-endpoint-enforcement.md) | Enforcement ACL na endpointach congregation/church | `done` |
+| 031 | [2026-07-10--031--tenant-soft-delete-church-provisioning.md](2026-07-10--031--tenant-soft-delete-church-provisioning.md) | Soft delete tenantów + provisioning church | `done` |
+| 032 | [2026-07-10--032--congregation-delete-from-list.md](2026-07-10--032--congregation-delete-from-list.md) | Usuwanie zboru z listy (soft delete) | `done` |
+| 033 | [2026-07-10--033--tanstack-query-cache-invalidation.md](2026-07-10--033--tanstack-query-cache-invalidation.md) | TanStack Query — invalidacja po edycji | `done` |
+| 034 | [2026-07-10--034--export-in-three-dot-menu.md](2026-07-10--034--export-in-three-dot-menu.md) | Eksport w menu ⋯ | `done` |
+| 035 | [2026-07-09--035--visibility-enum-acl-tables.md](2026-07-09--035--visibility-enum-acl-tables.md) | Widoczność enum + tabele ACL (migracje 058–059) | `done` |
+| 036 | [2026-07-09--036--card-visibility-rendering.md](2026-07-09--036--card-visibility-rendering.md) | Karta zboru — renderowanie widoczności kontaktu | `done` |
+| 037 | [2026-07-08--037--backport-jwt-2fa-shared-core.md](2026-07-08--037--backport-jwt-2fa-shared-core.md) | Backport JWT hardening i 2FA (shared core) | `done` |
 
 When adding a new issue: pick next `NNN`, create `YYYY-MM-DD--NNN--slug.md`, add a row here.
