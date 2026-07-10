@@ -5,6 +5,7 @@ import { RouterLink } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import Card from '@/components/ui/card/Card.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import { GroupsRoutePaths } from '@/modules/groups/routes'
 import { usePermissions } from '@/shared/composables/usePermissions'
 import { AdminRoutePaths } from '../routes'
 
@@ -31,7 +32,7 @@ if (!canAccessAdminPanel.value) {
       </div>
 
       <!-- Quick Links -->
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card class="p-6">
           <div class="flex flex-col gap-4 flex-1">
             <div class="flex-1">
@@ -62,6 +63,23 @@ if (!canAccessAdminPanel.value) {
             <RouterLink :to="AdminRoutePaths.congregations">
               <Button class="w-full">
                 {{ t('admin.dashboard.congregations.button', 'Manage Congregations') }}
+              </Button>
+            </RouterLink>
+          </div>
+        </Card>
+        <Card class="p-6">
+          <div class="flex flex-col gap-4 flex-1">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold">
+                {{ t('groups.list.title', 'Grupy ludzi') }}
+              </h3>
+              <p class="text-sm text-muted-foreground">
+                {{ t('groups.list.subtitle', 'Struktury organizacyjne niezależne od pojedynczego zboru') }}
+              </p>
+            </div>
+            <RouterLink :to="GroupsRoutePaths.list">
+              <Button class="w-full">
+                {{ t('groups.list.title', 'Grupy ludzi') }}
               </Button>
             </RouterLink>
           </div>

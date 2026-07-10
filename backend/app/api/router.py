@@ -12,6 +12,7 @@ from app.modules.settings.router import router as settings_router
 from app.modules.stats.router import router as stats_router
 from app.modules.congregations.router import router as congregations_router
 from app.modules.churches.router import router as churches_router
+from app.modules.groups.router import router as groups_router
 from app.modules.tenants.router import (
     public_congregations_router,
     router as tenants_router,
@@ -43,10 +44,9 @@ api_router.include_router(users_router, prefix="/users", tags=["Users"])
 api_router.include_router(settings_router, prefix="/me/settings", tags=["Settings"])
 api_router.include_router(tenants_router)
 api_router.include_router(public_congregations_router)  # Public congregations list
-api_router.include_router(
-    congregations_router
-)  # Authenticated congregation management (addresses, service times, contact persons)
+api_router.include_router(congregations_router)  # Authenticated congregation management (addresses, service times, contact persons)
 api_router.include_router(churches_router)
+api_router.include_router(groups_router)
 
 # Register Two-Factor module (optional, added during development)
 try:

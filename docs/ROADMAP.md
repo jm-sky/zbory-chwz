@@ -42,10 +42,19 @@ Bez osobnego modelu „osoba kontaktowa”. Wystarczy **służba** (`service_ass
 
 ### Grupy ludzi
 
-🔄 **Status:** Planowane
+🚧 **Status:** W trakcie (faza 1 zaimplementowana)
 
 **Opis:**
-Definiowanie grup organizacyjnych poza zborami, np. Prezydium Rady Naczelnej, Grupa Ewangelizacji, Służba Więzienna.
+Definiowanie grup organizacyjnych poza zborami, np. Prezydium Rady Naczelnej, Grupa Ewangelizacji, Służba Więzienna. Widoczność konfigurowalna per grupa, opiekun grupy zarządza członkami bez pełnych uprawnień admina, członkostwo nie nadaje uprawnień ACL.
+
+**Zrealizowane (2026-07-10):**
+- Migracja `062` + tabele `people_groups`, `people_group_memberships`
+- API `/api/people-groups` (CRUD grup + członkostwa)
+- UI: lista grup (`/groups`), szczegóły grupy, dodawanie/usuwanie członków
+
+**Pozostało:**
+- Wyszukiwarka istniejących osób w UI (obecnie dopasowanie po `personId` tylko przez API)
+- Integracja z listami mailingowymi (#015)
 
 **Szczegóły:**
 - Issue: [#014](issues/2026-07-09--014--people-groups.md)
@@ -84,4 +93,4 @@ Pełna platforma zarządzania zborami CHWZ: hierarchia organizacyjna (wspólnota
 
 ---
 
-**Ostatnia aktualizacja:** 2026-07-09
+**Ostatnia aktualizacja:** 2026-07-10

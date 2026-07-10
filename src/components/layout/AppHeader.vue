@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SettingsIcon, ShieldIcon, UserIcon } from 'lucide-vue-next'
+import { SettingsIcon, ShieldIcon, UserIcon, UsersIcon } from 'lucide-vue-next'
 import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -9,6 +9,7 @@ import LogoText from '@/components/ui/LogoText.vue'
 import { AdminRoutePaths } from '@/modules/admin/routes'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRouteNames } from '@/modules/auth/config/routes'
+import { GroupsRoutePaths } from '@/modules/groups/routes'
 import { SettingsRoutePaths } from '@/modules/settings/routes'
 import { useUser } from '@/modules/user/composables/useUser'
 import { UserRoutePaths } from '@/modules/user/routes'
@@ -43,6 +44,11 @@ const coreLinks = computed<Link[]>(() => [
     to: SettingsRoutePaths.settings,
     label: t('settings.page.title', 'Settings'),
     icon: SettingsIcon,
+  },
+  {
+    to: GroupsRoutePaths.list,
+    label: t('groups.list.title', 'Grupy ludzi'),
+    icon: UsersIcon,
   },
   {
     to: AdminRoutePaths.dashboard,
