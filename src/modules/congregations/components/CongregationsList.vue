@@ -175,9 +175,17 @@ async function handleDelete(congregation: ICongregationDetailed) {
       :description="t('congregations.list.description', 'Lista zborów Chrześcijańskiej Wspólnoty Wolnych Zielonoświątkowców')"
     >
       <template #actions>
-        <Button v-if="canCreateOrDelete()" size="sm" @click="createDialogOpen = true">
+        <Button
+          v-if="canCreateOrDelete()"
+          v-tooltip="t('congregations.list.create', 'Dodaj zbór')"
+          size="sm"
+          :aria-label="t('congregations.list.create', 'Dodaj zbór')"
+          @click="createDialogOpen = true"
+        >
           <Plus class="size-4" />
-          {{ t('congregations.list.create', 'Dodaj zbór') }}
+          <span class="hidden sm:inline">
+            {{ t('congregations.list.create', 'Dodaj zbór') }}
+          </span>
         </Button>
         <CongregationExportMenu
           v-if="!isLoading && !error && congregations && congregations.length > 0"
