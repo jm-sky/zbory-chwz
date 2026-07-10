@@ -20,7 +20,6 @@ from app.modules.tenants.schemas import (
     TenantResponse,
 )
 
-
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
 # Public congregations router (for listing published congregations)
 public_congregations_router = APIRouter(prefix="/congregations", tags=["Congregations"])

@@ -111,7 +111,9 @@ class ServiceAssignmentResponse(BaseModel):
     id: str
     personId: str = Field(validation_alias="person_id")
     serviceTypeId: str | None = Field(default=None, validation_alias="service_type_id")
-    customServiceName: str | None = Field(default=None, validation_alias="custom_service_name")
+    customServiceName: str | None = Field(
+        default=None, validation_alias="custom_service_name"
+    )
     description: str | None = None
     scopeType: str = Field(validation_alias="scope_type")
     scopeId: str = Field(validation_alias="scope_id")

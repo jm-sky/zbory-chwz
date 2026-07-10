@@ -44,7 +44,5 @@ class AclService:
         return result.scalar_one_or_none() is not None
 
     async def _get_church(self, church_id: str) -> ChurchDB | None:
-        result = await self.db.execute(
-            select(ChurchDB).where(ChurchDB.id == church_id)
-        )
+        result = await self.db.execute(select(ChurchDB).where(ChurchDB.id == church_id))
         return result.scalar_one_or_none()

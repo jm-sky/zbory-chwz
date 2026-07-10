@@ -1,4 +1,4 @@
-import { EyeOff, Globe, LogIn, Shield, type LucideIcon } from 'lucide-vue-next'
+import { EyeOff, Globe, LogIn, type LucideIcon, Shield } from 'lucide-vue-next'
 import type { VisibilityLevel } from '../types/visibility.types'
 
 export const VISIBILITY_ICONS: Record<VisibilityLevel, LucideIcon> = {

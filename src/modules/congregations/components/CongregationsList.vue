@@ -7,16 +7,16 @@ import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import SearchInput from '@/components/ui/input/SearchInput.vue'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import SearchInput from '@/components/ui/input/SearchInput.vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useHandleError } from '@/shared/composables/useHandleError'
-import type { ICongregationDetailed, ICardContact } from '../types/congregation.types'
+import type { ICardContact, ICongregationDetailed } from '../types/congregation.types'
 import { useCongregations } from '../composables/useCongregations'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'

@@ -2,7 +2,15 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -19,7 +27,9 @@ class CommunityDB(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
-    visibility: Mapped[str] = mapped_column(String(32), default="hidden", nullable=False)
+    visibility: Mapped[str] = mapped_column(
+        String(32), default="hidden", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
@@ -27,7 +37,9 @@ class CommunityDB(Base):
 
 class RegionDB(Base):
     __tablename__ = "regions"
-    __table_args__ = (UniqueConstraint("community_id", "slug", name="uq_regions_community_slug"),)
+    __table_args__ = (
+        UniqueConstraint("community_id", "slug", name="uq_regions_community_slug"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     community_id: Mapped[str] = mapped_column(
@@ -54,7 +66,9 @@ class ChurchDB(Base):
         String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    visibility: Mapped[str] = mapped_column(String(32), default="hidden", nullable=False)
+    visibility: Mapped[str] = mapped_column(
+        String(32), default="hidden", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
@@ -62,7 +76,9 @@ class ChurchDB(Base):
 
 class BranchDB(Base):
     __tablename__ = "branches"
-    __table_args__ = (UniqueConstraint("church_id", "slug", name="uq_branches_church_slug"),)
+    __table_args__ = (
+        UniqueConstraint("church_id", "slug", name="uq_branches_church_slug"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     church_id: Mapped[str] = mapped_column(
@@ -70,7 +86,9 @@ class BranchDB(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(100), nullable=False)
-    visibility: Mapped[str] = mapped_column(String(32), default="hidden", nullable=False)
+    visibility: Mapped[str] = mapped_column(
+        String(32), default="hidden", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
@@ -97,7 +115,9 @@ class PersonDB(Base):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    assignments: Mapped[list["ServiceAssignmentDB"]] = relationship(back_populates="person")
+    assignments: Mapped[list["ServiceAssignmentDB"]] = relationship(
+        back_populates="person"
+    )
 
 
 class ServiceTypeDB(Base):
@@ -111,7 +131,9 @@ class ServiceTypeDB(Base):
     is_senior_tier: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_system: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    probation_supported: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    probation_supported: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
@@ -131,8 +153,12 @@ class ServiceAssignmentDB(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     scope_type: Mapped[str] = mapped_column(String(32), nullable=False)
     scope_id: Mapped[str] = mapped_column(String(36), nullable=False)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    ended_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     probation_ends_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -159,7 +185,9 @@ class ServiceAssignmentDB(Base):
 class ChurchSlugAliasDB(Base):
     __tablename__ = "church_slug_aliases"
     __table_args__ = (
-        UniqueConstraint("country_slug", "city_slug", "slug", name="uq_church_slug_path"),
+        UniqueConstraint(
+            "country_slug", "city_slug", "slug", name="uq_church_slug_path"
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -178,7 +206,9 @@ class ChurchSlugAliasDB(Base):
 
 class CityAliasDB(Base):
     __tablename__ = "city_aliases"
-    __table_args__ = (UniqueConstraint("country_slug", "alias_slug", name="uq_city_aliases"),)
+    __table_args__ = (
+        UniqueConstraint("country_slug", "alias_slug", name="uq_city_aliases"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     country_slug: Mapped[str] = mapped_column(String(100), nullable=False)
