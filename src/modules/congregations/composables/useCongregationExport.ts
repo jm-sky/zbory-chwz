@@ -24,6 +24,19 @@ export function useCongregationExport() {
     }
   }
 
+  function buildMarkdownContent(congregations: ICongregationDetailed[]): string {
+    return serializeCongregations(congregations, 'markdown', {
+      locale: locale.value,
+      labels: labels(),
+    })
+  }
+
+  function downloadMarkdown(congregations: ICongregationDetailed[]): void {
+    const content = buildMarkdownContent(congregations)
+    const blob = new Blob([content], { type: `${EXPORT_FORMAT_MIME.markdown};charset=utf-8` })
+    downloadBlob(blob, exportFilename('markdown'))
+  }
+
   function exportCongregations(
     congregations: ICongregationDetailed[],
     format: ExportFormat,
@@ -36,5 +49,5 @@ export function useCongregationExport() {
     downloadBlob(blob, exportFilename(format))
   }
 
-  return { exportCongregations }
+  return { buildMarkdownContent, downloadMarkdown, exportCongregations }
 }

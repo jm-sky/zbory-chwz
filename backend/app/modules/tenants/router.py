@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
-from app.modules.auth.dependencies import CurrentUser
+from app.modules.auth.dependencies import CurrentUser, OptionalCurrentUser
 from app.modules.churches.repositories import ChurchRepository, get_church_repository
 from app.modules.congregations.repositories import (
     CongregationRepository,
@@ -100,6 +100,7 @@ async def list_congregations_detailed(
         CongregationRepository, Depends(get_congregation_repository)
     ],
     church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
+    current_user: OptionalCurrentUser,
 ) -> PublicCongregationListResponse:
     """Public endpoint to list published congregations with detailed info (address, service times, contact).
 
@@ -185,5 +186,41 @@ async def list_congregations_detailed(
                     country=address.country,
                 )
             )
+
+    published_ids = {congregation.id for congregation in congregations}
+
+    if current_user is not None:
+        if current_user.isAdmin or current_user.isOwner:
+            draft_tenants = [
+                tenant
+                for tenant in all_tenants
+                if tenant.id not in published_ids
+            ]
+        else:
+            draft_tenants = [
+                tenant
+                for tenant, _membership in await repo.list_for_user(current_user.id)
+                if tenant.id not in published_ids
+            ]
+
+        if draft_tenants:
+            draft_addresses = await congregation_repo.get_addresses_by_status(("draft",))
+            for tenant in draft_tenants:
+                address = draft_addresses.get(tenant.id)
+                congregations.append(
+                    PublicCongregationResponse(
+                        id=tenant.id,
+                        name=tenant.name,
+                        description=tenant.description,
+                        status="draft",
+                        createdAt=tenant.created_at,
+                        type="church",
+                        city=address.city if address else None,
+                        street=address.street if address else None,
+                        postal_code=address.postal_code if address else None,
+                        province=address.province if address else None,
+                        country=address.country if address else None,
+                    )
+                )
 
     return PublicCongregationListResponse(congregations=congregations)

@@ -24,6 +24,8 @@ os.environ.setdefault("DATABASE_MAX_OVERFLOW", "0")
 from app.common.id_utils import generate_id
 from app.core.database import Base, get_db
 from app.modules.auth.db_models import UserDB
+from app.modules.auth.dependencies import get_optional_current_user
+from app.modules.auth.models import User
 from app.modules.churches.db_models import (
     BranchDB,
     ChurchDB,
@@ -36,10 +38,11 @@ from app.modules.congregations.db_models import (
     CongregationAddressDB,
     CongregationServiceTimeDB,
 )
-from app.modules.tenants.db_models import TenantDB
+from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
 from main import app
 
 OWNER_ID = "user-owner"
+MEMBER_ID = "user-member"
 WROCLAW = "church-wroclaw"
 MARKTREDWITZ = "church-marktredwitz"
 DRAFT = "church-draft"
@@ -56,6 +59,7 @@ async def _seed(session: AsyncSession) -> None:
     session.add_all(
         [
             UserDB(id=OWNER_ID, email="owner@example.com", name="Owner"),
+            UserDB(id=MEMBER_ID, email="member@example.com", name="Member"),
             CommunityDB(id=community_id, name="CHWZ", slug="chwz", created_at=now),
             ServiceTypeDB(
                 id=service_type_id,
@@ -164,7 +168,36 @@ async def _seed(session: AsyncSession) -> None:
             created_at=now,
         )
     )
+    session.add(
+        TenantMembershipDB(
+            tenant_id=DRAFT,
+            user_id=MEMBER_ID,
+            role="member",
+        )
+    )
     await session.commit()
+
+
+def _owner() -> User:
+    return User(
+        id=OWNER_ID,
+        email="owner@example.com",
+        name="Owner",
+        isAdmin=False,
+        isOwner=True,
+        createdAt=datetime.now(UTC),
+    )
+
+
+def _member() -> User:
+    return User(
+        id=MEMBER_ID,
+        email="member@example.com",
+        name="Member",
+        isAdmin=False,
+        isOwner=False,
+        createdAt=datetime.now(UTC),
+    )
 
 
 @pytest_asyncio.fixture
@@ -262,3 +295,28 @@ async def test_congregation_keeps_its_service_times_and_contacts(client) -> None
     assert church["contact_name"] == "Jan Kowalski"
     # E-mail defaults to authenticated-only visibility.
     assert church["card_contacts"][0]["email"] is None
+
+
+@pytest.mark.asyncio
+async def test_draft_congregation_visible_for_owner(client) -> None:
+    http_client = client
+    app.dependency_overrides[get_optional_current_user] = _owner
+    try:
+        items = await _detailed(http_client)
+        draft = items["ZBÓR ROBOCZY"]
+        assert draft["status"] == "draft"
+        assert draft["city"] == "Gdańsk"
+    finally:
+        app.dependency_overrides.pop(get_optional_current_user, None)
+
+
+@pytest.mark.asyncio
+async def test_draft_congregation_visible_for_member_of_that_tenant(client) -> None:
+    http_client = client
+    app.dependency_overrides[get_optional_current_user] = _member
+    try:
+        items = await _detailed(http_client)
+        assert "ZBÓR ROBOCZY" in items
+        assert items["ZBÓR ROBOCZY"]["status"] == "draft"
+    finally:
+        app.dependency_overrides.pop(get_optional_current_user, None)

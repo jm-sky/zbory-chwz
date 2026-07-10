@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Braces, FileText, MoreHorizontal } from 'lucide-vue-next'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import {
@@ -11,13 +12,20 @@ import {
 import type { ICongregationDetailed } from '../types/congregation.types'
 import type { ExportFormat } from '../utils/exportCongregations'
 import { useCongregationExport } from '../composables/useCongregationExport'
+import CongregationMarkdownExportDialog from './CongregationMarkdownExportDialog.vue'
 
 const { t } = useI18n()
 const { exportCongregations } = useCongregationExport()
 
 const { congregations } = defineProps<{ congregations: ICongregationDetailed[] }>()
 
+const markdownDialogOpen = ref(false)
+
 function handleExport(format: ExportFormat): void {
+  if (format === 'markdown') {
+    markdownDialogOpen.value = true
+    return
+  }
   exportCongregations(congregations, format)
 }
 </script>
@@ -46,4 +54,9 @@ function handleExport(format: ExportFormat): void {
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
+
+  <CongregationMarkdownExportDialog
+    v-model:open="markdownDialogOpen"
+    :congregations="congregations"
+  />
 </template>

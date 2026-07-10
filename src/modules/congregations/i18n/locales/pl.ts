@@ -11,6 +11,7 @@ export const congregationsPl = {
       createTitle: 'Dodaj nowy zbór',
       createDescription: 'Utwórz nowy zbór. Pełne dane (adres, godziny nabożeństw) uzupełnisz po utworzeniu.',
       createSuccess: 'Zbór został utworzony',
+      createDraftHint: 'Zbór jest widoczny jako szkic. Aby opublikować go publicznie, uzupełnij adres i ustaw status adresu na opublikowany.',
       createError: 'Nie udało się utworzyć zboru',
       nameRequired: 'Nazwa jest wymagana',
       deleteConfirm: 'Czy na pewno chcesz usunąć ten zbór?',
@@ -31,6 +32,8 @@ export const congregationsPl = {
       anyProvince: 'Wszystkie województwa',
       hideBranches: 'Ukryj placówki',
       reset: 'Wyczyść filtry',
+      more: 'Więcej',
+      less: 'Mniej',
       resultCount: 'Brak zborów | 1 zbór | {count} zbory | {count} zborów',
     },
     export: {
@@ -44,6 +47,10 @@ export const congregationsPl = {
       address: 'Adres',
       serviceTimes: 'Nabożeństwa',
       contact: 'Kontakt',
+      previewTitle: 'Podgląd eksportu Markdown',
+      previewDescription: 'Skopiuj treść lub pobierz plik .md',
+      download: 'Pobierz',
+      copyError: 'Nie udało się skopiować do schowka',
     },
     status: {
       unverified: 'Niezweryfikowany',

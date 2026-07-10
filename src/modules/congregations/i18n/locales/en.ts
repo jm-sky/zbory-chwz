@@ -11,6 +11,7 @@ export const congregationsEn = {
       createTitle: 'Add new congregation',
       createDescription: 'Create a new congregation. You can fill in the full details (address, service times) afterwards.',
       createSuccess: 'Congregation has been created',
+      createDraftHint: 'The congregation is visible as a draft. To publish it publicly, add an address and set the address status to published.',
       createError: 'Failed to create congregation',
       nameRequired: 'Name is required',
       deleteConfirm: 'Are you sure you want to delete this congregation?',
@@ -31,6 +32,8 @@ export const congregationsEn = {
       anyProvince: 'All provinces',
       hideBranches: 'Hide branches',
       reset: 'Clear filters',
+      more: 'More',
+      less: 'Less',
       resultCount: 'No congregations | 1 congregation | {count} congregations',
     },
     export: {
@@ -44,6 +47,10 @@ export const congregationsEn = {
       address: 'Address',
       serviceTimes: 'Services',
       contact: 'Contact',
+      previewTitle: 'Markdown export preview',
+      previewDescription: 'Copy the content or download a .md file',
+      download: 'Download',
+      copyError: 'Failed to copy to clipboard',
     },
     status: {
       unverified: 'Unverified',

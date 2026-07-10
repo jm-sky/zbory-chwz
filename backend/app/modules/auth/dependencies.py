@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 # HTTP Bearer security scheme
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 # Try to use 2FA-enabled auth service if available
 HAS_2FA = False
@@ -321,8 +322,37 @@ async def require_premium_or_higher(
     return current_user
 
 
+async def get_optional_current_user(
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(optional_security)
+    ],
+    user_repository: Annotated[UserRepositoryInterface, Depends(get_user_repository)],
+    blacklist_service: Annotated[
+        TokenBlacklistService, Depends(get_token_blacklist_service)
+    ],
+    two_factor_repository: Any = (
+        Depends(lambda: None) if not HAS_2FA else Depends(get_two_factor_repository)
+    ),
+) -> User | None:
+    """Return the authenticated user when a valid Bearer token is present, else None."""
+    if credentials is None:
+        return None
+    try:
+        token = credentials.credentials
+        if HAS_2FA and two_factor_repository is not None:
+            return await _verify_user_token(
+                token, user_repository, blacklist_service, two_factor_repository
+            )
+        return await _verify_user_token(
+            token, user_repository, blacklist_service, None
+        )
+    except HTTPException:
+        return None
+
+
 # Type alias for dependency injection
 CurrentUser = Annotated[User, Depends(get_current_user)]
+OptionalCurrentUser = Annotated[User | None, Depends(get_optional_current_user)]
 AdminUser = Annotated[User, Depends(require_admin)]
 OwnerUser = Annotated[User, Depends(require_owner)]
 AdminOrOwnerUser = Annotated[User, Depends(require_admin_or_owner)]
