@@ -1,4 +1,4 @@
-"""Pydantic schemas for the people directory (email export) module."""
+"""Pydantic schemas for the people directory (email export + person browser) module."""
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -27,3 +27,34 @@ class DirectoryPersonResponse(BaseModel):
 
 class DirectoryExportResponse(BaseModel):
     persons: list[DirectoryPersonResponse]
+
+
+class PersonAffiliationResponse(BaseModel):
+    kind: str  # "service" | "group"
+    label: str
+    context: str | None = None
+
+
+class PersonBrowseResponse(BaseModel):
+    id: str
+    firstName: str | None = None
+    lastName: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    affiliations: list[PersonAffiliationResponse] = []
+
+
+class PersonListResponse(BaseModel):
+    persons: list[PersonBrowseResponse]
+
+
+class PersonUpdateRequest(BaseModel):
+    firstName: str | None = None
+    lastName: str | None = None
+    email: str | None = None
+    phone: str | None = None
+
+
+class PersonMergeRequest(BaseModel):
+    keepPersonId: str
+    mergePersonId: str

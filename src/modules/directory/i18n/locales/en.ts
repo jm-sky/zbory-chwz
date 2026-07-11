@@ -1,5 +1,9 @@
 export const directoryEn = {
   directory: {
+    tabs: {
+      export: 'Address export',
+      persons: 'All people',
+    },
     export: {
       title: 'Email address export',
       subtitle: 'Filter people and copy their addresses to paste into your mail client',
@@ -20,6 +24,21 @@ export const directoryEn = {
       copyPlain: 'Copy addresses only',
       copyLabeled: 'Copy with labels',
       copied: 'Copied to clipboard',
+    },
+    persons: {
+      searchPlaceholder: 'Search by first name, last name, email, phone...',
+      empty: 'No people',
+      editTitle: 'Edit person',
+      firstName: 'First name',
+      lastName: 'Last name',
+      email: 'Email',
+      phone: 'Phone',
+      updated: 'Changes saved',
+      groupBadge: 'Group: {name}',
+      mergeLabel: 'Merge with another person (duplicate)',
+      mergeButton: 'Merge',
+      mergeConfirm: 'Merge {duplicate} into {keep}? This cannot be undone: all service assignments and group memberships will be moved over, and {duplicate} will be deleted.',
+      merged: 'People merged',
     },
   },
 }

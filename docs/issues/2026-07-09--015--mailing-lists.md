@@ -1,8 +1,8 @@
-# Eksport adresów e-mail (filtrowanie + kopiowanie)
+# Eksport adresów e-mail (filtrowanie + kopiowanie) + przeglądarka wszystkich osób
 
 **Status:** `done`
 **Created:** 2026-07-09
-**Updated:** 2026-07-11 — zakres MVP uproszczony i zaimplementowany, patrz plan
+**Updated:** 2026-07-11 — dodana przeglądarka wszystkich osób (podgląd/edycja/scalanie duplikatów) w tym samym module, patrz plan
 **Plan:** [2026-07-09--mailing-lists.md](../plans/2026-07-09--mailing-lists.md)
 **Depends on:** [#014](./2026-07-09--014--people-groups.md)
 
@@ -23,11 +23,19 @@ Administratorzy i pasterze potrzebują szybko zebrać adresy e-mail konkretnej g
 - [x] Strona UI: filtry (multi-select) → tabela wyników → ręczne dodanie/usunięcie osoby → dwa przyciski kopiowania (same adresy `;` / z etykietami `Imię Nazwisko <email>`)
 - [x] Dodanie osoby spoza wyniku przez wyszukiwarkę (`usePersonAutocomplete`, ten sam komponent co w grupach) lub dowolny wolny e-mail
 
+## Faza 2 — przeglądarka wszystkich osób (Ustalenia, 2026-07-11)
+
+- Dostęp analogiczny do eksportu adresów (ten sam zasięg ACL)
+- [x] Lista wszystkich osób w zasięgu, z wyszukiwaniem tekstowym i skrótem przynależności (służba + grupy) na osobę
+- [x] Podgląd i edycja danych osoby (imię, nazwisko, e-mail, telefon) — **bez usuwania**, świadomie poza zakresem
+- [x] Scalanie duplikatów: przenosi przypisania służby i członkostwa w grupach (z deduplikacją), uzupełnia puste pola kontaktowe z duplikatu, usuwa duplikat
+
 ## Poza zakresem (teraz)
 
 - Wysyłka masowa / kampanie / szablony HTML
 - Zapisane/nazwane filtry (listy trwałe)
 - Zgoda marketingowa / opt-out / audyt wysyłki (nie dotyczy, bo nic nie wysyłamy)
+- Usuwanie osoby z przeglądarki
 
 ## Powiązania
 
@@ -41,5 +49,6 @@ Administratorzy i pasterze potrzebują szybko zebrać adresy e-mail konkretnej g
 - [x] Użytkownik bez żadnej roli ACL dostaje 403 przy próbie użycia narzędzia
 - [x] Filtrowanie po regionie + roli + grupie działa łącznie (AND między wymiarami, OR wewnątrz wymiaru)
 - [x] Kopiowanie do schowka działa w obu formatach
+- [x] Przeglądarka osób: pastor widzi/edytuje tylko osoby swojego zboru, admin wszystkie; scalanie poprawnie deduplikuje członkostwa w grupach i przenosi przypisania służby
 
-Zweryfikowane: 9 testów integracyjnych (`backend/tests/integration/directory/`) + end-to-end w przeglądarce na prawdziwym Postgresie/Redisie.
+Zweryfikowane: 19 testów integracyjnych (`backend/tests/integration/directory/`, 9 + 10) + end-to-end w przeglądarce na prawdziwym Postgresie/Redisie dla obu faz.

@@ -63,20 +63,20 @@ Definiowanie grup organizacyjnych poza zborami, np. Prezydium Rady Naczelnej, Gr
 
 ---
 
-### Eksport adresów e-mail (filtrowanie + kopiowanie)
+### Eksport adresów e-mail + przeglądarka wszystkich osób
 
-✅ **Status:** Zrealizowane (faza 1)
+✅ **Status:** Zrealizowane (fazy 1–2)
 
 **Opis:**
-Narzędzie do budowania listy adresów e-mail (filtr: region + rola/służba + grupa ludzi) i kopiowania jej do schowka — do wklejenia w Gmail/Outlook. **Nie** wysyłka z poziomu aplikacji — MVP celowo bardzo okrojone względem pierwotnej koncepcji „list mailingowych” z kampaniami i dostawcą SMTP/ESP, którą odłożono bezterminowo. Dostęp oparty o istniejący ACL (`user_role_assignments`): pastor/diakon widzi swój zbór, regional_bishop swój region, bishop swoją wspólnotę, admin/owner wszystko.
+Narzędzie do budowania listy adresów e-mail (filtr: region + rola/służba + grupa ludzi) i kopiowania jej do schowka — do wklejenia w Gmail/Outlook. **Nie** wysyłka z poziomu aplikacji — MVP celowo bardzo okrojone względem pierwotnej koncepcji „list mailingowych” z kampaniami i dostawcą SMTP/ESP, którą odłożono bezterminowo. W tym samym module (druga zakładka) — przeglądarka wszystkich osób w zasięgu: podgląd z odznakami przynależności, edycja danych kontaktowych, scalanie duplikatów. Dostęp oparty o istniejący ACL (`user_role_assignments`): pastor/diakon widzi swój zbór, regional_bishop swój region, bishop swoją wspólnotę, admin/owner wszystko.
 
 **Zrealizowane (2026-07-11):**
-- API `/api/people-directory/filters` + `/export` (`backend/app/modules/directory`), zasięg egzekwowany po stronie backendu
-- UI: `/people-directory` — filtry, wyniki, ręczne dodawanie (wyszukiwarka osób lub dowolny e-mail), kopiowanie w 2 formatach
-- 9 testów integracyjnych + weryfikacja end-to-end w przeglądarce
+- API `/api/people-directory/filters` + `/export` (faza 1) oraz `/persons`, `/persons/{id}` (GET/PATCH), `/persons/merge` (faza 2) — `backend/app/modules/directory`, zasięg egzekwowany po stronie backendu
+- UI: `/people-directory` — zakładka „Eksport adresów” (filtry, wyniki, ręczne dodawanie, kopiowanie w 2 formatach) i zakładka „Wszystkie osoby” (wyszukiwanie, lista z odznakami przynależności, dialog edycji, scalanie duplikatów z potwierdzeniem)
+- 19 testów integracyjnych (9 + 10) + weryfikacja end-to-end w przeglądarce dla obu faz
 
 **Pozostało (opcjonalnie, później):**
-- Zapisane/nazwane filtry, wysyłka przez SMTP/ESP — nieplanowane, prawdopodobnie niepotrzebne
+- Zapisane/nazwane filtry, wysyłka przez SMTP/ESP, usuwanie osób — nieplanowane, prawdopodobnie niepotrzebne
 
 **Szczegóły:**
 - Issue: [#015](issues/2026-07-09--015--mailing-lists.md)

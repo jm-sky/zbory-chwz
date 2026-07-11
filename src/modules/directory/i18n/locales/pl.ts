@@ -1,5 +1,9 @@
 export const directoryPl = {
   directory: {
+    tabs: {
+      export: 'Eksport adresów',
+      persons: 'Wszystkie osoby',
+    },
     export: {
       title: 'Eksport adresów e-mail',
       subtitle: 'Filtruj osoby i skopiuj ich adresy do wklejenia w kliencie poczty',
@@ -20,6 +24,21 @@ export const directoryPl = {
       copyPlain: 'Kopiuj same adresy',
       copyLabeled: 'Kopiuj z etykietami',
       copied: 'Skopiowano do schowka',
+    },
+    persons: {
+      searchPlaceholder: 'Szukaj po imieniu, nazwisku, e-mailu, telefonie...',
+      empty: 'Brak osób',
+      editTitle: 'Edytuj osobę',
+      firstName: 'Imię',
+      lastName: 'Nazwisko',
+      email: 'E-mail',
+      phone: 'Telefon',
+      updated: 'Zapisano zmiany',
+      groupBadge: 'Grupa: {name}',
+      mergeLabel: 'Scal z inną osobą (duplikat)',
+      mergeButton: 'Scal',
+      mergeConfirm: 'Scalić {duplicate} w {keep}? Ta operacja jest nieodwracalna: wszystkie przypisania służby i członkostwa w grupach zostaną przeniesione, a {duplicate} zostanie usunięty.',
+      merged: 'Osoby scalone',
     },
   },
 }

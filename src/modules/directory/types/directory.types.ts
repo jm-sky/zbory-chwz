@@ -21,3 +21,30 @@ export interface IDirectoryExportParams {
   serviceTypeIds: string[]
   groupIds: string[]
 }
+
+export interface IPersonAffiliation {
+  kind: 'service' | 'group'
+  label: string
+  context: string | null
+}
+
+export interface IPersonBrowse {
+  id: string
+  firstName: string | null
+  lastName: string | null
+  email: string | null
+  phone: string | null
+  affiliations: IPersonAffiliation[]
+}
+
+export interface IPersonUpdateRequest {
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+}
+
+export interface IPersonMergeRequest {
+  keepPersonId: string
+  mergePersonId: string
+}

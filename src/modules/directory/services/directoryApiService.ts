@@ -3,6 +3,9 @@ import type {
   IDirectoryExportParams,
   IDirectoryFilters,
   IDirectoryPerson,
+  IPersonBrowse,
+  IPersonMergeRequest,
+  IPersonUpdateRequest,
 } from '../types/directory.types'
 
 class DirectoryApiService {
@@ -21,6 +24,37 @@ class DirectoryApiService {
       `/people-directory/export?${searchParams.toString()}`,
     )
     return data.persons
+  }
+
+  async listPersons(query?: string): Promise<IPersonBrowse[]> {
+    const { data } = await apiClient.get<{ persons: IPersonBrowse[] }>(
+      '/people-directory/persons',
+      { params: query ? { q: query } : undefined },
+    )
+    return data.persons
+  }
+
+  async getPerson(personId: string): Promise<IPersonBrowse> {
+    const { data } = await apiClient.get<IPersonBrowse>(
+      `/people-directory/persons/${personId}`,
+    )
+    return data
+  }
+
+  async updatePerson(personId: string, payload: IPersonUpdateRequest): Promise<IPersonBrowse> {
+    const { data } = await apiClient.patch<IPersonBrowse>(
+      `/people-directory/persons/${personId}`,
+      payload,
+    )
+    return data
+  }
+
+  async mergePersons(payload: IPersonMergeRequest): Promise<IPersonBrowse> {
+    const { data } = await apiClient.post<IPersonBrowse>(
+      '/people-directory/persons/merge',
+      payload,
+    )
+    return data
   }
 }
 
