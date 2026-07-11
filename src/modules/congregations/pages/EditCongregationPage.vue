@@ -366,7 +366,7 @@ onMounted(() => {
               </FormItem>
             </FormField>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4">
               <FormField v-slot="{ componentField }" name="city">
                 <FormItem>
                   <FormLabel required>
@@ -400,57 +400,59 @@ onMounted(() => {
               </FormField>
             </div>
 
-            <FormField v-slot="{ componentField }" name="country">
-              <FormItem>
-                <FormLabel>
-                  {{ t('congregations.edit.address.country', 'Kraj') }}
-                </FormLabel>
-                <Select v-bind="componentField">
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem
-                      v-for="option in countries"
-                      :key="option.code"
-                      :value="option.code"
-                    >
-                      {{ option.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            </FormField>
+            <div class="grid grid-cols-2 gap-4">
+              <FormField v-slot="{ componentField }" name="country">
+                <FormItem>
+                  <FormLabel>
+                    {{ t('congregations.edit.address.country', 'Kraj') }}
+                  </FormLabel>
+                  <Select v-bind="componentField">
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="option in countries"
+                        :key="option.code"
+                        :value="option.code"
+                      >
+                        {{ option.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
 
-            <FormField v-slot="{ componentField }" name="province">
-              <FormItem>
-                <FormLabel>
-                  {{ t('congregations.edit.address.province', 'Województwo') }}
-                </FormLabel>
-                <Select v-bind="componentField" :disabled="provinces.length === 0">
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue
-                        :placeholder="t('congregations.edit.address.provincePlaceholder', 'Wybierz województwo')"
-                      />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem
-                      v-for="option in provinces"
-                      :key="option"
-                      :value="option"
-                    >
-                      {{ provinceLabel(option) }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            </FormField>
+              <FormField v-slot="{ componentField }" name="province">
+                <FormItem>
+                  <FormLabel>
+                    {{ t('congregations.edit.address.province', 'Województwo') }}
+                  </FormLabel>
+                  <Select v-bind="componentField" :disabled="provinces.length === 0">
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          :placeholder="t('congregations.edit.address.provincePlaceholder', 'Wybierz województwo')"
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="option in provinces"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ provinceLabel(option) }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
+            </div>
 
             <FormField v-slot="{ componentField }" name="address_status">
               <FormItem>
@@ -557,10 +559,8 @@ onMounted(() => {
           </div>
         </form>
 
-        <div class="mt-8 space-y-6">
-          <ChurchBranchesSection :church-id="congregationId" />
-          <ChurchPeopleSection :church-id="congregationId" />
-        </div>
+        <ChurchPeopleSection :church-id="congregationId" />
+        <ChurchBranchesSection :church-id="congregationId" />
       </div>
     </div>
   </AuthenticatedLayout>
