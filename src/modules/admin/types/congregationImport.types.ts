@@ -14,9 +14,12 @@ export type TImportFieldKey =
   | 'contact_phone'
   | 'contact_email'
 
+export type TImportFieldGroup = 'address' | 'contact'
+
 export interface IImportFieldChange {
   field: TImportFieldKey
   label: string
+  group: TImportFieldGroup
   old_value: string | null
   new_value: string | null
 }
@@ -33,6 +36,7 @@ export interface IImportProposal {
   tenant_id: string | null
   matched_name: string | null
   confidence: number
+  contact_context: string | null
   fields: IImportFieldChange[]
 }
 

@@ -23,7 +23,7 @@ from app.core.database import Base, get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
 from app.modules.congregations import import_service as import_service_module
-from app.modules.congregations.db_models import CongregationAddressDB
+from app.modules.congregations.db_models import CongregationAddressDB, CongregationContactPersonDB
 from app.modules.ai.schemas import ExtractedCongregation, ExtractionResult
 from app.modules.tenants.db_models import TenantDB
 from main import app
@@ -75,6 +75,16 @@ async def _seed(session: AsyncSession) -> None:
             status="published",
             created_at=now,
             updated_at=now,
+        )
+    )
+    session.add(
+        CongregationContactPersonDB(
+            id=generate_id(),
+            tenant_id=EXISTING_TENANT_ID,
+            name="Jan Madeyski",
+            title="Diakon",
+            phone="+48668292049",
+            created_at=now,
         )
     )
     await session.commit()
@@ -168,6 +178,62 @@ async def test_analyze_proposes_new_congregation_when_no_match(ctx) -> None:
     assert proposal["tenant_id"] is None
     fields = {f["field"]: f["new_value"] for f in proposal["fields"]}
     assert fields["city"] == "Kraków"
+
+
+@pytest.mark.asyncio
+async def test_analyze_ignores_phone_formatting_differences(ctx) -> None:
+    client, login, fake_extraction = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+    fake_extraction(
+        ExtractionResult(
+            congregations=[
+                ExtractedCongregation(
+                    name="Zbor w Warszawie",
+                    contact_name="Jan Madeyski",
+                    contact_title="Diakon",
+                    contact_phone="668-292-049",
+                )
+            ]
+        )
+    )
+
+    response = await client.post("/api/admin/congregations/import/analyze", json={"raw_text": "notatka"})
+
+    assert response.status_code == 200
+    proposal = response.json()["proposals"][0]
+    fields = {f["field"] for f in proposal["fields"]}
+    # "668-292-049" and the stored "+48668292049" are the same number once
+    # normalized, so no field should be proposed as changed.
+    assert "contact_phone" not in fields
+    assert proposal["contact_context"] is None
+
+
+@pytest.mark.asyncio
+async def test_analyze_proposes_normalized_phone_when_number_actually_changes(ctx) -> None:
+    client, login, fake_extraction = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+    fake_extraction(
+        ExtractionResult(
+            congregations=[
+                ExtractedCongregation(
+                    name="Zbor w Warszawie",
+                    contact_name="Jan Madeyski",
+                    contact_title="Diakon",
+                    contact_phone="500-100-200",
+                )
+            ]
+        )
+    )
+
+    response = await client.post("/api/admin/congregations/import/analyze", json={"raw_text": "notatka"})
+
+    assert response.status_code == 200
+    proposal = response.json()["proposals"][0]
+    fields = {f["field"]: f for f in proposal["fields"]}
+    assert fields["contact_phone"]["group"] == "contact"
+    assert fields["contact_phone"]["old_value"] == "+48668292049"
+    assert fields["contact_phone"]["new_value"] == "+48500100200"
+    assert proposal["contact_context"] == "Diakon: Jan Madeyski"
 
 
 @pytest.mark.asyncio
