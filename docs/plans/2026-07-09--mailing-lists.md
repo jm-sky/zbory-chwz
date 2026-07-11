@@ -82,7 +82,9 @@ Kolejność sprawdzeń dla zasobu poza zasięgiem: najpierw istnienie (404), pot
 
 ### UI (zaimplementowane)
 
-Zakładka „Wszystkie osoby” (`PersonBrowserPanel.vue`) na stronie eksportu: wyszukiwarka + lista osób z odznakami przynależności → kliknięcie wiersza otwiera dialog edycji (imię/nazwisko/e-mail/telefon + przycisk „Zapisz”) → w tym samym dialogu, sekcja scalania z wyszukiwarką duplikatu i przyciskiem „Scal” (destructive, wyłączony do czasu wybrania kandydata, z potwierdzeniem).
+**Aktualizacja (2026-07-11, po feedbacku):** przeglądarka osób NIE jest już zakładką na stronie eksportu adresów — to osobna strona `/people-directory/persons` (`PersonBrowserPage.vue`, logika w `PersonBrowserPanel.vue`), z dwoma osobnymi punktami wejścia: linkiem w menu użytkownika (`AppHeader.vue`, obok „Eksport adresów e-mail”) i kartą na Admin Dashboard (`AdminDashboardPage.vue`, obok „Users”/„Congregations”/„Grupy ludzi”). Strona eksportu adresów wróciła do swojej pierwotnej, jednolitej postaci bez zakładek. Powód: dwie różne funkcje (eksport do wklejenia w mailu vs. zarządzanie danymi osób) zasługują na osobne miejsca w nawigacji, nie jedną stronę z tabami.
+
+Wyszukiwarka + lista osób z odznakami przynależności → kliknięcie wiersza otwiera dialog edycji (imię/nazwisko/e-mail/telefon + przycisk „Zapisz”) → w tym samym dialogu, sekcja scalania z wyszukiwarką duplikatu i przyciskiem „Scal” (destructive, wyłączony do czasu wybrania kandydata, z potwierdzeniem). Panel ma teraz własną obsługę braku dostępu (403 → przyjazny komunikat), bo już nie jest osłonięty przez access-check strony eksportu.
 
 ## Fazy
 
@@ -113,6 +115,12 @@ Zakładka „Wszystkie osoby” (`PersonBrowserPanel.vue`) na stronie eksportu: 
 - End-to-end w przeglądarce (prawdziwy Postgres + Redis, konto admina): zakładka „Wszystkie osoby” pokazuje listę z odznakami, wyszukiwanie tekstowe zawęża wyniki, edycja telefonu i zapis działa (toast potwierdzający), wyszukanie i wybranie duplikatu w sekcji scalania, potwierdzenie `confirm()` z poprawnie zinterpolowanym opisem konsekwencji, scalenie usuwa duplikat z listy i przenosi zaktualizowany numer telefonu na osobę zachowaną — zweryfikowane też bezpośrednio w bazie (tylko 1 rekord `Kowalski` pozostał, z nowym numerem)
 - Po drodze naprawiony błąd w scalaniu: `merge_persons()` pierwotnie przenosił tylko `user_id`, tracąc milcząco puste pola kontaktowe duplikatu — dodane uzupełnianie luk (imię/nazwisko/e-mail/telefon) przed usunięciem duplikatu
 - Po drodze naprawiony błąd 404 vs 403: sprawdzanie istnienia zasobu musi poprzedzać sprawdzanie zasięgu ACL, inaczej scalona (usunięta) osoba zwracała 403 zamiast 404
+
+### Faza 2b — przeglądarka osób jako osobna strona (2026-07-11)
+
+- Po feedbacku wydzielona z zakładki na stronie eksportu do samodzielnej strony `/people-directory/persons`, z linkiem w menu użytkownika i kartą na Admin Dashboard (patrz sekcja UI wyżej)
+- `pnpm type-check` / `lint` / `test:run` (69 testów) / `build` — czyste
+- End-to-end w przeglądarce: strona eksportu (`/people-directory`) nie ma już zakładek; link „Przeglądarka osób” w menu użytkownika prowadzi do `/people-directory/persons` i lista osób się ładuje; karta „Przeglądarka osób” na `/admin` prowadzi do tej samej strony
 
 ## Powiązane
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MailIcon, SettingsIcon, ShieldIcon, UserIcon, UsersIcon } from 'lucide-vue-next'
+import { ContactIcon, MailIcon, SettingsIcon, ShieldIcon, UserIcon, UsersIcon } from 'lucide-vue-next'
 import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -55,6 +55,11 @@ const coreLinks = computed<Link[]>(() => [
     to: DirectoryRoutePaths.export,
     label: t('directory.export.title', 'Eksport adresów e-mail'),
     icon: MailIcon,
+  },
+  {
+    to: DirectoryRoutePaths.persons,
+    label: t('directory.persons.title', 'Przeglądarka osób'),
+    icon: ContactIcon,
   },
   {
     to: AdminRoutePaths.dashboard,

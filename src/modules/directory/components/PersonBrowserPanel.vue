@@ -26,6 +26,7 @@ const { handleError } = useHandleError()
 
 const query = ref('')
 const loading = ref(true)
+const accessDenied = ref(false)
 const persons = ref<IPersonBrowse[]>([])
 let searchDebounce: ReturnType<typeof setTimeout> | null = null
 
@@ -50,7 +51,12 @@ async function load() {
   try {
     persons.value = await directoryApiService.listPersons(query.value || undefined)
   } catch (error) {
-    handleError(error)
+    const status = (error as { response?: { status?: number } }).response?.status
+    if (status === 403) {
+      accessDenied.value = true
+    } else {
+      handleError(error)
+    }
   } finally {
     loading.value = false
   }
@@ -167,7 +173,7 @@ onMounted(load)
 
 <template>
   <div class="space-y-4">
-    <div class="relative">
+    <div v-if="!accessDenied" class="relative">
       <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
       <Input
         v-model="query"
@@ -180,6 +186,10 @@ onMounted(load)
     <div v-if="loading" class="text-sm text-muted-foreground">
       {{ t('common.loading', 'Ładowanie...') }}
     </div>
+
+    <p v-else-if="accessDenied" class="text-sm text-muted-foreground">
+      {{ t('directory.persons.accessDenied', 'Nie masz roli w organizacji uprawniającej do przeglądarki osób.') }}
+    </p>
 
     <ul v-else class="space-y-2">
       <li

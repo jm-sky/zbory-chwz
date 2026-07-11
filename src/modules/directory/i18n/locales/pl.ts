@@ -1,9 +1,5 @@
 export const directoryPl = {
   directory: {
-    tabs: {
-      export: 'Eksport adresów',
-      persons: 'Wszystkie osoby',
-    },
     export: {
       title: 'Eksport adresów e-mail',
       subtitle: 'Filtruj osoby i skopiuj ich adresy do wklejenia w kliencie poczty',
@@ -26,6 +22,9 @@ export const directoryPl = {
       copied: 'Skopiowano do schowka',
     },
     persons: {
+      title: 'Przeglądarka osób',
+      subtitle: 'Przeglądaj, edytuj i scalaj duplikaty osób w Twoim zasięgu',
+      accessDenied: 'Nie masz roli w organizacji uprawniającej do przeglądarki osób.',
       searchPlaceholder: 'Szukaj po imieniu, nazwisku, e-mailu, telefonie...',
       empty: 'Brak osób',
       editTitle: 'Edytuj osobę',

@@ -5,6 +5,7 @@ import { RouterLink } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import Card from '@/components/ui/card/Card.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import { DirectoryRoutePaths } from '@/modules/directory/routes'
 import { GroupsRoutePaths } from '@/modules/groups/routes'
 import { usePermissions } from '@/shared/composables/usePermissions'
 import { AdminRoutePaths } from '../routes'
@@ -80,6 +81,23 @@ if (!canAccessAdminPanel.value) {
             <RouterLink :to="GroupsRoutePaths.list">
               <Button class="w-full">
                 {{ t('groups.list.title', 'Grupy ludzi') }}
+              </Button>
+            </RouterLink>
+          </div>
+        </Card>
+        <Card class="p-6">
+          <div class="flex flex-col gap-4 flex-1">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold">
+                {{ t('directory.persons.title', 'Przeglądarka osób') }}
+              </h3>
+              <p class="text-sm text-muted-foreground">
+                {{ t('directory.persons.subtitle', 'Przeglądaj, edytuj i scalaj duplikaty osób w Twoim zasięgu') }}
+              </p>
+            </div>
+            <RouterLink :to="DirectoryRoutePaths.persons">
+              <Button class="w-full">
+                {{ t('directory.persons.title', 'Przeglądarka osób') }}
               </Button>
             </RouterLink>
           </div>

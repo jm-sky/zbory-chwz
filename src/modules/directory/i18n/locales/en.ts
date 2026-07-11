@@ -1,9 +1,5 @@
 export const directoryEn = {
   directory: {
-    tabs: {
-      export: 'Address export',
-      persons: 'All people',
-    },
     export: {
       title: 'Email address export',
       subtitle: 'Filter people and copy their addresses to paste into your mail client',
@@ -26,6 +22,9 @@ export const directoryEn = {
       copied: 'Copied to clipboard',
     },
     persons: {
+      title: 'People browser',
+      subtitle: 'Browse, edit, and merge duplicate people within your scope',
+      accessDenied: 'You do not hold an organizational role that grants access to the people browser.',
       searchPlaceholder: 'Search by first name, last name, email, phone...',
       empty: 'No people',
       editTitle: 'Edit person',
