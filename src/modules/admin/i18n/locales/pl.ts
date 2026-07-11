@@ -33,6 +33,11 @@ export const adminPl = {
         description: 'Zarządzaj subskrypcjami użytkowników i planami płatności',
         button: 'Zarządzaj Subskrypcjami',
       },
+      congregations: {
+        title: 'Zbory',
+        description: 'Zarządzaj zborami i ich członkami',
+        button: 'Zarządzaj Zborami',
+      },
     },
     users: {
       title: 'Zarządzanie Użytkownikami',

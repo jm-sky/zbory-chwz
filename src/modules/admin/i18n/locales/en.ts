@@ -33,6 +33,11 @@ export const adminEn = {
         description: 'Manage user subscriptions and billing plans',
         button: 'Manage Subscriptions',
       },
+      congregations: {
+        title: 'Congregations',
+        description: 'Manage congregations and their members',
+        button: 'Manage Congregations',
+      },
     },
     users: {
       title: 'Users Management',
