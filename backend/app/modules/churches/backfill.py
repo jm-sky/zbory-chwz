@@ -360,6 +360,7 @@ async def _migrate_contact_persons(
             phone_visibility="public" if cp.phone else "hidden",
             email_visibility="public" if cp.email else "hidden",
             source_contact_person_id=cp.id,
+            sort_order=cp.order,
         )
         db.add(assignment)
         stats["contact_person_migrations"] += 1

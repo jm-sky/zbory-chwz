@@ -172,9 +172,21 @@ class ChurchRepository:
                 selectinload(ServiceAssignmentDB.person),
                 selectinload(ServiceAssignmentDB.service_type),
             )
-            .order_by(ServiceAssignmentDB.created_at)
+            .order_by(
+                ServiceAssignmentDB.sort_order,
+                ServiceAssignmentDB.created_at,
+            )
         )
         return list(result.scalars().all())
+
+    async def _next_sort_order(self, scope_type: str, scope_id: str) -> int:
+        result = await self.db.execute(
+            select(func.coalesce(func.max(ServiceAssignmentDB.sort_order), -1)).where(
+                ServiceAssignmentDB.scope_type == scope_type,
+                ServiceAssignmentDB.scope_id == scope_id,
+            )
+        )
+        return int(result.scalar_one()) + 1
 
     async def _resolve_person(self, payload: ServiceAssignmentCreateRequest) -> PersonDB:
         if payload.personId:
@@ -341,6 +353,10 @@ class ChurchRepository:
 
         person = await self._resolve_person(payload)
 
+        sort_order = payload.sortOrder
+        if sort_order is None:
+            sort_order = await self._next_sort_order(scope_type, scope_id)
+
         assignment = ServiceAssignmentDB(
             id=generate_id(),
             person_id=person.id,
@@ -352,6 +368,7 @@ class ChurchRepository:
             card_visibility=payload.cardVisibility,
             phone_visibility=payload.phoneVisibility,
             email_visibility=payload.emailVisibility,
+            sort_order=sort_order,
         )
         self.db.add(assignment)
         await self.db.flush()
@@ -408,6 +425,8 @@ class ChurchRepository:
             assignment.phone_visibility = payload.phoneVisibility
         if payload.emailVisibility is not None:
             assignment.email_visibility = payload.emailVisibility
+        if payload.sortOrder is not None:
+            assignment.sort_order = payload.sortOrder
 
         person = assignment.person
         if person:
@@ -468,7 +487,7 @@ class ChurchRepository:
                 selectinload(ServiceAssignmentDB.service_type),
             )
             .order_by(
-                func.coalesce(ServiceTypeDB.sort_order, 9999),
+                ServiceAssignmentDB.sort_order,
                 ServiceAssignmentDB.created_at,
             )
         )
@@ -491,7 +510,7 @@ class ChurchRepository:
                 selectinload(ServiceAssignmentDB.service_type),
             )
             .order_by(
-                func.coalesce(ServiceTypeDB.sort_order, 9999),
+                ServiceAssignmentDB.sort_order,
                 ServiceAssignmentDB.created_at,
             )
         )

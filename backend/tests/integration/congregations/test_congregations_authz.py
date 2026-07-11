@@ -344,3 +344,75 @@ async def test_pastor_with_create_account_still_requires_email(ctx) -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Email required to create user account"
+
+
+@pytest.mark.asyncio
+async def test_list_service_assignments_sorted_by_sort_order(ctx) -> None:
+    client, ids, login, session_factory = ctx
+    login(_api_user(MEMBER_ID))
+
+    async with session_factory() as session:
+        person_first = PersonDB(id=generate_id(), first_name="First", last_name="Person")
+        person_second = PersonDB(id=generate_id(), first_name="Second", last_name="Person")
+        session.add_all([person_first, person_second])
+        await session.flush()
+        session.add(
+            ServiceAssignmentDB(
+                id=generate_id(),
+                person_id=person_second.id,
+                service_type_id=ids["service_type"],
+                scope_type="church",
+                scope_id=CHURCH_A,
+                card_visibility="public",
+                phone_visibility="public",
+                email_visibility="public",
+                sort_order=1,
+            )
+        )
+        session.add(
+            ServiceAssignmentDB(
+                id=generate_id(),
+                person_id=person_first.id,
+                service_type_id=ids["service_type"],
+                scope_type="church",
+                scope_id=CHURCH_A,
+                card_visibility="public",
+                phone_visibility="public",
+                email_visibility="public",
+                sort_order=0,
+            )
+        )
+        await session.commit()
+
+    response = await client.get(f"/api/churches/{CHURCH_A}/service-assignments")
+    assert response.status_code == 200
+    names = [
+        " ".join(p for p in (a["person"]["firstName"], a["person"]["lastName"]) if p)
+        for a in response.json()
+    ]
+    assert names[0] == "First Person"
+    assert names[1] == "Second Person"
+
+
+@pytest.mark.asyncio
+async def test_patch_service_assignment_sort_order(ctx) -> None:
+    client, ids, login, _ = ctx
+    login(_api_user(MEMBER_ID))
+
+    create_response = await client.post(
+        f"/api/churches/{CHURCH_A}/service-assignments",
+        json={
+            "firstName": "Sort",
+            "lastName": "Test",
+            "serviceTypeId": ids["service_type"],
+        },
+    )
+    assert create_response.status_code == 201
+    assignment_id = create_response.json()["id"]
+
+    patch_response = await client.patch(
+        f"/api/churches/{CHURCH_A}/service-assignments/{assignment_id}",
+        json={"sortOrder": 5},
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["sortOrder"] == 5

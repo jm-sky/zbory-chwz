@@ -166,7 +166,9 @@ export const congregationsPl = {
       add: 'Dodaj osobę',
       visibilityTitle: 'Widoczność na karcie zboru',
       showOnCard: 'Pokaż na wizytówce',
-      showOnCardHint: 'Zaznaczone osoby są widoczne na publicznej karcie zboru',
+      showOnCardHint: 'Zaznaczone osoby są widoczne na publicznej karcie zboru. Kolejność na liście odpowiada kolejności na karcie zboru.',
+      moveUp: 'Przesuń wyżej',
+      moveDown: 'Przesuń niżej',
       removeConfirm: 'Czy na pewno chcesz usunąć tę osobę ze zboru?',
       visibility: {
         hidden: 'Ukryty',

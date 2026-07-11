@@ -39,6 +39,7 @@ export interface IServiceAssignment {
   cardVisibility: string
   phoneVisibility: string
   emailVisibility: string
+  sortOrder: number
   createdAt: string
   person: IPerson | null
   serviceType: IServiceType | null
@@ -64,6 +65,7 @@ export interface IServiceAssignmentCreateRequest {
   cardVisibility?: VisibilityLevel
   phoneVisibility?: VisibilityLevel
   emailVisibility?: VisibilityLevel
+  sortOrder?: number
 }
 
 export interface IServiceAssignmentUpdateRequest {
@@ -77,4 +79,5 @@ export interface IServiceAssignmentUpdateRequest {
   cardVisibility?: VisibilityLevel
   phoneVisibility?: VisibilityLevel
   emailVisibility?: VisibilityLevel
+  sortOrder?: number
 }

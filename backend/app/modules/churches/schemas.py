@@ -90,6 +90,7 @@ class ServiceAssignmentCreateRequest(BaseModel):
     cardVisibility: VisibilityLevel = "public"
     phoneVisibility: VisibilityLevel = "public"
     emailVisibility: VisibilityLevel = "authenticated"
+    sortOrder: int | None = Field(default=None, ge=0)
 
 
 class ServiceAssignmentUpdateRequest(BaseModel):
@@ -103,6 +104,7 @@ class ServiceAssignmentUpdateRequest(BaseModel):
     cardVisibility: VisibilityLevel | None = None
     phoneVisibility: VisibilityLevel | None = None
     emailVisibility: VisibilityLevel | None = None
+    sortOrder: int | None = Field(default=None, ge=0)
 
 
 class ServiceAssignmentResponse(BaseModel):
@@ -120,6 +122,7 @@ class ServiceAssignmentResponse(BaseModel):
     cardVisibility: str = Field(validation_alias="card_visibility")
     phoneVisibility: str = Field(validation_alias="phone_visibility")
     emailVisibility: str = Field(validation_alias="email_visibility")
+    sortOrder: int = Field(validation_alias="sort_order")
     createdAt: datetime = Field(validation_alias="created_at")
     person: PersonResponse | None = None
     serviceType: ServiceTypeResponse | None = Field(

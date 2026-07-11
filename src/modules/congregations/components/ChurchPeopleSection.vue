@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pencil, Plus, Trash2 } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -63,6 +63,7 @@ const editingId = ref<string | null>(null)
 const editUseCustomService = ref(false)
 const editForm = ref(createEmptyForm())
 const savingEdit = ref(false)
+const reordering = ref(false)
 
 const pastorSlugs = new Set(['mlodszy_pastor', 'pastor', 'senior_pastor'])
 
@@ -292,6 +293,41 @@ async function updateAssignmentVisibility(
   }
 }
 
+function renumberAssignments(items: IServiceAssignment[]): IServiceAssignment[] {
+  return items.map((item, idx) => ({ ...item, sortOrder: idx }))
+}
+
+async function moveAssignment(index: number, direction: 'up' | 'down') {
+  const targetIndex = direction === 'up' ? index - 1 : index + 1
+  if (targetIndex < 0 || targetIndex >= assignments.value.length) return
+
+  const previous = assignments.value.map(a => ({ ...a }))
+  const reordered = [...assignments.value]
+  const [item] = reordered.splice(index, 1)
+  reordered.splice(targetIndex, 0, item)
+  assignments.value = renumberAssignments(reordered)
+
+  const toUpdate = assignments.value.filter(a => {
+    const prev = previous.find(p => p.id === a.id)
+    return prev && prev.sortOrder !== a.sortOrder
+  })
+  if (toUpdate.length === 0) return
+
+  reordering.value = true
+  try {
+    await Promise.all(
+      toUpdate.map(a =>
+        churchApiService.updateServiceAssignment(churchId, a.id, { sortOrder: a.sortOrder }),
+      ),
+    )
+  } catch (error) {
+    assignments.value = previous
+    handleError(error)
+  } finally {
+    reordering.value = false
+  }
+}
+
 watch(selectedType, (serviceType) => {
   if (!serviceType) return
   if (pastorSlugs.has(serviceType.slug)) {
@@ -329,7 +365,7 @@ onMounted(load)
 
     <ul v-if="!loading" class="space-y-2">
       <li
-        v-for="item in assignments"
+        v-for="(item, index) in assignments"
         :key="item.id"
         class="flex items-start justify-between gap-2 rounded-md border px-3 py-2"
       >
@@ -382,6 +418,26 @@ onMounted(load)
           </div>
         </div>
         <div class="flex shrink-0 gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            :disabled="index === 0 || reordering || savingId === item.id"
+            :title="t('congregations.people.moveUp', 'Przesuń wyżej')"
+            @click="moveAssignment(index, 'up')"
+          >
+            <ChevronUp class="size-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            :disabled="index === assignments.length - 1 || reordering || savingId === item.id"
+            :title="t('congregations.people.moveDown', 'Przesuń niżej')"
+            @click="moveAssignment(index, 'down')"
+          >
+            <ChevronDown class="size-4" />
+          </Button>
           <Button
             type="button"
             variant="ghost"

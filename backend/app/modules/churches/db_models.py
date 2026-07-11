@@ -174,6 +174,7 @@ class ServiceAssignmentDB(Base):
     source_contact_person_id: Mapped[str | None] = mapped_column(
         String(36), nullable=True
     )
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )

@@ -166,7 +166,9 @@ export const congregationsEn = {
       add: 'Add person',
       visibilityTitle: 'Visibility on church card',
       showOnCard: 'Show on church card',
-      showOnCardHint: 'Checked people are visible on the public congregation card',
+      showOnCardHint: 'Checked people are visible on the public congregation card. List order matches the order on the church card.',
+      moveUp: 'Move up',
+      moveDown: 'Move down',
       removeConfirm: 'Are you sure you want to remove this person from the congregation?',
       visibility: {
         hidden: 'Hidden',
