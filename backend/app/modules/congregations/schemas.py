@@ -1,6 +1,7 @@
 """Pydantic schemas for congregation endpoints."""
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -104,3 +105,84 @@ class CongregationFullResponse(BaseModel):
     address: AddressResponse | None = None
     service_times: list[ServiceTimeResponse] = []
     contact_persons: list[ContactPersonResponse] = []
+
+
+# Text-to-address import (paste free-text notes, review a diff, then apply)
+
+ImportFieldKey = Literal[
+    "street",
+    "city",
+    "postal_code",
+    "province",
+    "country",
+    "contact_name",
+    "contact_title",
+    "contact_phone",
+    "contact_email",
+]
+
+
+class ImportAnalyzeRequest(BaseModel):
+    raw_text: str = Field(min_length=1)
+
+
+class ImportFieldChange(BaseModel):
+    """One field's current value vs. the AI-extracted value, for the review screen."""
+
+    field: ImportFieldKey
+    label: str
+    old_value: str | None = None
+    new_value: str | None = None
+
+
+class ImportCandidateTenant(BaseModel):
+    """A tenant the admin can manually pick instead of the auto-match."""
+
+    tenant_id: str
+    name: str
+
+
+class ImportProposal(BaseModel):
+    proposal_id: str
+    detected_name: str
+    match_type: Literal["matched", "new"]
+    tenant_id: str | None = None
+    matched_name: str | None = None
+    confidence: float = Field(ge=0, le=100)
+    fields: list[ImportFieldChange]
+
+
+class ImportAnalyzeResponse(BaseModel):
+    proposals: list[ImportProposal]
+    candidates: list[ImportCandidateTenant]
+
+
+class ImportApplyField(BaseModel):
+    field: ImportFieldKey
+    value: str | None = None
+    apply: bool = True
+
+
+class ImportApplyItem(BaseModel):
+    action: Literal["update", "create", "skip"]
+    tenant_id: str | None = None
+    congregation_name: str | None = None
+    fields: list[ImportApplyField] = []
+
+    @model_validator(mode="after")
+    def check_required_target(self) -> "ImportApplyItem":
+        if self.action == "update" and not self.tenant_id:
+            raise ValueError("tenant_id is required when action is 'update'")
+        if self.action == "create" and not self.congregation_name:
+            raise ValueError("congregation_name is required when action is 'create'")
+        return self
+
+
+class ImportApplyRequest(BaseModel):
+    items: list[ImportApplyItem]
+
+
+class ImportApplyResponse(BaseModel):
+    created: int
+    updated: int
+    skipped: int

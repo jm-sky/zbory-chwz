@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { Church, EyeOff, Globe, MoreHorizontal, Plus, RotateCcw, Trash2, Users } from 'lucide-vue-next'
+import { Church, EyeOff, Globe, MoreHorizontal, Plus, RotateCcw, Sparkles, Trash2, Users } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import DataTable from '@/components/data-table/DataTable.vue'
 import CommonPageHeader from '@/components/layout/CommonPageHeader.vue'
@@ -38,10 +39,12 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { IAdminUser } from '../types/admin.types'
 import type { IAddress, IAdminTenant, IAdminTenantMembership } from '../types/tenant.types'
+import { AdminRouteNames } from '../routes'
 import { adminApiService } from '../services/adminApiService'
 import type { ColumnDef } from '@tanstack/vue-table'
 
 const { t } = useI18n()
+const router = useRouter()
 const { handleError } = useHandleError()
 const queryClient = useQueryClient()
 const tenants = ref<IAdminTenant[]>([])
@@ -438,6 +441,10 @@ onMounted(() => {
           {{ showDeleted
             ? t('admin.congregations.hideDeleted', 'Hide deleted')
             : t('admin.congregations.showDeleted', 'Show deleted') }}
+        </Button>
+        <Button variant="outline" @click="router.push({ name: AdminRouteNames.congregationImport })">
+          <Sparkles class="size-4" />
+          {{ t('admin.congregationImport.navButton', 'Import z tekstu') }}
         </Button>
         <Dialog v-model:open="createDialogOpen">
           <DialogTrigger as-child>

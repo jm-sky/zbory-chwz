@@ -8,6 +8,7 @@ from fastapi import APIRouter
 from app.modules.admin.router import router as admin_router
 from app.modules.auth.router import router as auth_router
 from app.modules.churches.router import router as churches_router
+from app.modules.congregations.import_router import router as congregations_import_router
 from app.modules.congregations.router import router as congregations_router
 from app.modules.directory.router import router as directory_router
 from app.modules.groups.router import router as groups_router
@@ -48,6 +49,7 @@ api_router.include_router(settings_router, prefix="/me/settings", tags=["Setting
 api_router.include_router(tenants_router)
 api_router.include_router(public_congregations_router)  # Public congregations list
 api_router.include_router(congregations_router)  # Authenticated congregation management (addresses, service times, contact persons)
+api_router.include_router(congregations_import_router)  # Admin-only: AI-assisted address/contact import from pasted text
 api_router.include_router(churches_router)
 api_router.include_router(groups_router)
 api_router.include_router(directory_router)

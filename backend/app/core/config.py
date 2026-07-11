@@ -680,6 +680,29 @@ class RedisSettings(BaseSettings):
     )
 
 
+class AISettings(BaseSettings):
+    """AI configuration (OpenRouter integration).
+
+    Scoped to admin-only features (e.g. congregation address import) — no
+    per-user token/quota handling, unlike the fuller chat-assistant setup in
+    the sibling gear-stack app.
+    """
+
+    model_config = _base_config
+
+    enabled: bool = Field(default=True, validation_alias="AI_ENABLED")
+    openrouter_api_key: str = Field(default="", validation_alias="OPENROUTER_API_KEY")
+    openrouter_base_url: str = Field(
+        default="https://openrouter.ai/api/v1",
+        validation_alias="OPENROUTER_BASE_URL",
+    )
+    model: str = Field(
+        default="openai/gpt-4o-mini",
+        validation_alias="AI_MODEL",
+        description="OpenRouter model id; must support response_format json_schema",
+    )
+
+
 class WebAuthnSettings(BaseSettings):
     """WebAuthn configuration."""
 
@@ -726,6 +749,7 @@ class Settings(BaseSettings):
     sentry: SentrySettings = Field(default_factory=SentrySettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
     webauthn: WebAuthnSettings = Field(default_factory=WebAuthnSettings)
+    ai: AISettings = Field(default_factory=AISettings)
 
     # Legacy compatibility - still accessible at root level
     frontend_url: str = Field(
