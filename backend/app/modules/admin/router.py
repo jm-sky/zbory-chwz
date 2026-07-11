@@ -10,11 +10,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.modules.auth.dependencies import AdminOrOwnerUser
 from app.modules.auth.repositories import (
     UserRepository as AuthUserRepository,
+)
+from app.modules.auth.repositories import (
     get_user_repository as get_auth_user_repository,
 )
-from app.modules.auth.dependencies import AdminOrOwnerUser, AdminUser
 from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.users.repositories import UserRepository, get_user_repository
 from app.modules.users.schemas import UserUpdate
@@ -71,9 +73,7 @@ async def get_user_by_id(
     """Get user by ID (admin only)."""
     user = await service.get_user_by_id(user_id)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
     return user
 
 
@@ -92,9 +92,7 @@ async def update_user(
     """Update user (admin or owner only)."""
     user = await service.update_user(user_id, user_data, current_user)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
     return user
 
 
@@ -112,23 +110,21 @@ async def delete_user(
     """Delete user (admin or owner only)."""
     success = await service.delete_user(user_id, current_user)
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
 
 
 # Tenants/Congregations endpoints
+from app.modules.tenants.db_models import TenantMembershipDB
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 from app.modules.tenants.schemas import (
     TenantCreateRequest,
     TenantListResponse,
+    TenantMembershipCreateRequest,
+    TenantMembershipResponse,
+    TenantMembershipUpdateRequest,
     TenantResponse,
     TenantUpdateRequest,
-    TenantMembershipResponse,
-    TenantMembershipCreateRequest,
-    TenantMembershipUpdateRequest,
 )
-from app.modules.tenants.db_models import TenantMembershipDB
 from app.modules.users.repositories import UserRepository
 
 
@@ -141,9 +137,7 @@ from app.modules.users.repositories import UserRepository
 async def get_all_tenants(
     _: AdminOrOwnerUser,
     repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
-    include_deleted: bool = Query(
-        default=False, description="Include soft-deleted congregations"
-    ),
+    include_deleted: bool = Query(default=False, description="Include soft-deleted congregations"),
 ) -> TenantListResponse:
     """Get all tenants (admin only)."""
     tenants = await repo.list_all(include_deleted=include_deleted)
@@ -318,11 +312,7 @@ async def get_tenant_memberships(
 
     from sqlalchemy import select
 
-    stmt = (
-        select(TenantMembershipDB)
-        .where(TenantMembershipDB.tenant_id == tenant_id)
-        .order_by(TenantMembershipDB.created_at)
-    )
+    stmt = select(TenantMembershipDB).where(TenantMembershipDB.tenant_id == tenant_id).order_by(TenantMembershipDB.created_at)
     result = await repo.db.execute(stmt)
     memberships = result.scalars().all()
 

@@ -1,7 +1,7 @@
 """Redis client configuration and dependency injection."""
 
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import redis.asyncio as redis
 from redis.asyncio import Redis

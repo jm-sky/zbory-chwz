@@ -258,9 +258,7 @@ async def get_congregation_detail(
         can_manage=is_member,
     )
     card_contacts = [PublicCardContact(**contact) for contact in visible_contacts]
-    hidden_profile_contacts = (
-        [PublicCardContact(**contact) for contact in hidden_contacts] if is_member else []
-    )
+    hidden_profile_contacts = [PublicCardContact(**contact) for contact in hidden_contacts] if is_member else []
 
     branches = await church_repo.list_branches(tenant_id)
     visible_branches = [

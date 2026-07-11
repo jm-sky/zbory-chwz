@@ -1,7 +1,6 @@
 """Unit tests for ConvertEmptyStringsToNoneMiddleware."""
 
 import json
-from typing import Any
 
 import pytest
 from fastapi import FastAPI, Request, status
@@ -60,9 +59,7 @@ def client(test_app: FastAPI) -> TestClient:
 class TestConvertEmptyStringsToNoneMiddleware:
     """Tests for ConvertEmptyStringsToNoneMiddleware."""
 
-    def test_converts_empty_strings_to_none_in_simple_object(
-        self, client: TestClient
-    ) -> None:
+    def test_converts_empty_strings_to_none_in_simple_object(self, client: TestClient) -> None:
         """Test that empty strings are converted to None in simple objects."""
         data = {
             "name": "John",
@@ -96,10 +93,7 @@ class TestConvertEmptyStringsToNoneMiddleware:
         assert result["received"]["user"]["name"] == "John"
         assert result["received"]["user"]["email"] is None
         assert result["received"]["user"]["profile"]["bio"] is None
-        assert (
-            result["received"]["user"]["profile"]["avatar"]
-            == "https://example.com/avatar.jpg"
-        )
+        assert result["received"]["user"]["profile"]["avatar"] == "https://example.com/avatar.jpg"
 
     def test_converts_empty_strings_in_arrays(self, client: TestClient) -> None:
         """Test that empty strings are converted in arrays."""
@@ -254,9 +248,7 @@ class TestConvertEmptyStringsToNoneMiddleware:
         }
 
         # Test nested dict
-        assert _convert_empty_strings_to_none({"a": {"b": "", "c": "value"}}) == {
-            "a": {"b": None, "c": "value"}
-        }
+        assert _convert_empty_strings_to_none({"a": {"b": "", "c": "value"}}) == {"a": {"b": None, "c": "value"}}
 
         # Test list
         assert _convert_empty_strings_to_none(["", "value", ""]) == [

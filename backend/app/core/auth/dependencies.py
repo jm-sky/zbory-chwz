@@ -19,6 +19,4 @@ async def get_token_blacklist_service(
     Returns:
         TokenBlacklistService instance
     """
-    return TokenBlacklistService(
-        redis_client=redis, key_prefix=settings.redis.token_blacklist_prefix
-    )
+    return TokenBlacklistService(redis_client=redis, key_prefix=settings.redis.token_blacklist_prefix)

@@ -20,17 +20,19 @@ os.environ.setdefault("DATABASE_MAX_OVERFLOW", "0")
 
 from app.common.id_utils import generate_id
 from app.core.database import Base, get_db
+from app.modules.ai.schemas import ExtractedCongregation, ExtractionResult
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
+from app.modules.churches.db_models import PersonDB, ServiceAssignmentDB, ServiceTypeDB
 from app.modules.congregations import import_service as import_service_module
-from app.modules.congregations.db_models import CongregationAddressDB, CongregationContactPersonDB
-from app.modules.ai.schemas import ExtractedCongregation, ExtractionResult
+from app.modules.congregations.db_models import CongregationAddressDB
 from app.modules.tenants.db_models import TenantDB
 from main import app
 
 ADMIN_ID = "user-admin"
 MEMBER_ID = "user-member"
 EXISTING_TENANT_ID = "tenant-warszawa"
+DIACON_SERVICE_TYPE_ID = "service-type-diakon"
 
 
 def _api_user(user_id: str, *, is_admin: bool = False) -> User:
@@ -78,12 +80,37 @@ async def _seed(session: AsyncSession) -> None:
         )
     )
     session.add(
-        CongregationContactPersonDB(
-            id=generate_id(),
-            tenant_id=EXISTING_TENANT_ID,
-            name="Jan Madeyski",
-            title="Diakon",
+        ServiceTypeDB(
+            id=DIACON_SERVICE_TYPE_ID,
+            slug="diakon",
+            name="Diakon",
+            scope_type="church",
+            suggested_role="diacon",
+            is_senior_tier=False,
+            sort_order=70,
+        )
+    )
+    person_id = generate_id()
+    session.add(
+        PersonDB(
+            id=person_id,
+            first_name="Jan",
+            last_name="Madeyski",
             phone="+48668292049",
+        )
+    )
+    session.add(
+        ServiceAssignmentDB(
+            id=generate_id(),
+            person_id=person_id,
+            service_type_id=DIACON_SERVICE_TYPE_ID,
+            scope_type="church",
+            scope_id=EXISTING_TENANT_ID,
+            show_on_list=True,
+            profile_visibility="public",
+            phone_visibility="public",
+            email_visibility="hidden",
+            sort_order=0,
             created_at=now,
         )
     )
@@ -209,7 +236,9 @@ async def test_analyze_ignores_phone_formatting_differences(ctx) -> None:
 
 
 @pytest.mark.asyncio
-async def test_analyze_proposes_normalized_phone_when_number_actually_changes(ctx) -> None:
+async def test_analyze_proposes_normalized_phone_when_number_actually_changes(
+    ctx,
+) -> None:
     client, login, fake_extraction = ctx
     login(_api_user(ADMIN_ID, is_admin=True))
     fake_extraction(

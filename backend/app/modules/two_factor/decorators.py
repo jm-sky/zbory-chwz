@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 
@@ -29,16 +30,13 @@ def extract_user_from_token(request: Request) -> str | None:
     """
     try:
         if hasattr(request, "_body") and request._body:
-            body = (
-                request._body.decode()
-                if isinstance(request._body, bytes)
-                else request._body
-            )
+            body = request._body.decode() if isinstance(request._body, bytes) else request._body
             data = json.loads(body)
             token = data.get("twoFactorToken") or data.get("setupToken")
             if token:
                 # Simple JWT decode (just to get user_id, not full verification)
                 import jwt
+
                 from app.core.config import settings
 
                 payload: dict[str, Any] = jwt.decode(
@@ -54,15 +52,11 @@ def extract_user_from_token(request: Request) -> str | None:
         logger.debug(f"Could not extract user from token: {type(e).__name__}")
     except Exception as e:
         # Unexpected errors
-        logger.warning(
-            f"Unexpected error extracting user from token: {type(e).__name__}: {e}"
-        )
+        logger.warning(f"Unexpected error extracting user from token: {type(e).__name__}: {e}")
     return None
 
 
-def require_2fa_rate_limit(
-    max_attempts: int = 5, window_minutes: int = 15
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def require_2fa_rate_limit(max_attempts: int = 5, window_minutes: int = 15) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Per-user 2FA verification rate limiting decorator.
 
@@ -116,9 +110,7 @@ def require_2fa_rate_limit(
 
             # Clean old attempts outside window
             cutoff = now - timedelta(minutes=window_minutes)
-            _verification_attempts[user_id] = [
-                t for t in _verification_attempts[user_id] if t > cutoff
-            ]
+            _verification_attempts[user_id] = [t for t in _verification_attempts[user_id] if t > cutoff]
 
             # Execute function
             try:

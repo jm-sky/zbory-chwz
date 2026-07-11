@@ -24,23 +24,15 @@ async def upgrade() -> None:
     print("Adding deleted_at to tenants...")
 
     async with engine.begin() as conn:
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 ALTER TABLE tenants
                 ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ NULL
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
+                """))
+        await conn.execute(text("""
                 CREATE INDEX IF NOT EXISTS idx_tenants_deleted_at
                 ON tenants (deleted_at)
                 WHERE deleted_at IS NULL
-                """
-            )
-        )
+                """))
 
     print("Migration 060 upgrade complete.")
 
@@ -50,9 +42,7 @@ async def downgrade() -> None:
 
     async with engine.begin() as conn:
         await conn.execute(text("DROP INDEX IF EXISTS idx_tenants_deleted_at"))
-        await conn.execute(
-            text("ALTER TABLE tenants DROP COLUMN IF EXISTS deleted_at")
-        )
+        await conn.execute(text("ALTER TABLE tenants DROP COLUMN IF EXISTS deleted_at"))
 
     print("Migration 060 downgrade complete.")
 

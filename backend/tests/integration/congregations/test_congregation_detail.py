@@ -390,7 +390,9 @@ async def test_authenticated_non_member_sees_authenticated_fields(ctx) -> None:
 
 
 @pytest.mark.asyncio
-async def test_member_without_pastoral_access_sees_hidden_in_separate_section(ctx) -> None:
+async def test_member_without_pastoral_access_sees_hidden_in_separate_section(
+    ctx,
+) -> None:
     client, login = ctx
     login(_api_user(MEMBER_ID))
 
@@ -437,7 +439,9 @@ async def test_pastoral_user_sees_pastors_only_fields(ctx) -> None:
 
 
 @pytest.mark.asyncio
-async def test_member_with_can_manage_sees_pastors_only_email_on_visible_profile(ctx) -> None:
+async def test_member_with_can_manage_sees_pastors_only_email_on_visible_profile(
+    ctx,
+) -> None:
     client, login = ctx
     login(_api_user(MEMBER_ID))
 

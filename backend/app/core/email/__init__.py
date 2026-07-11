@@ -13,10 +13,10 @@ Usage:
     await email_service.send_welcome_email("user@example.com", "John Doe")
 """
 
-from .service import EmailService, get_email_service, get_email_service_with_audit
 from .adapter import EmailAdapter
 from .audit_adapter import AuditEmailAdapter
 from .retry_smtp_adapter import RetrySMTPAdapter
+from .service import EmailService, get_email_service, get_email_service_with_audit
 
 __all__ = [
     "EmailService",

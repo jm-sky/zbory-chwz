@@ -24,7 +24,7 @@ CONGREGATIONS = [
             {"day": "piątek", "time": "19:00"},
         ],
         "website": "chwz.waw.pl",
-        "contact_person": {"name": "Jan Madeyski", "title": "Diakon"},
+        "service_contact": {"name": "Jan Madeyski", "title": "Diakon"},
         "status": "published",
     },
     {
@@ -42,7 +42,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Arkadiusz Wawrzyniak",
             "title": "Pastor",
             "email": "arkadiusz.wawrzyniak@op.pl",
@@ -65,7 +65,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Jacek Kosztowniak",
             "title": "Pastor",
             "email": "jbkoszt@wp.pl",
@@ -88,7 +88,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "niedziela", "time": "11:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Andrzej Walawski",
             "title": "Pastor",
             "phone": "883 718 990",
@@ -110,7 +110,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Jarosław Wilczek",
             "title": "Pastor",
             "email": "lupus-40@o2.pl",
@@ -133,7 +133,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "19:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Arkadiusz Borejszo",
             "title": "Pastor",
             "email": "arkadiusz.borejszo@chwz.org.pl",
@@ -156,7 +156,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "środa", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Wiesław Świderski",
             "title": "Pastor",
             "email": "w.swiderski@chwz.gliwice",
@@ -179,7 +179,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Jacek Romanowski",
             "title": "Pastor",
             "email": "jacek.romanowski@chwz.org.pl",
@@ -202,7 +202,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Siergiej Zazulka",
             "title": "Pastor",
             "email": "zborgrabowka@wp.pl",
@@ -225,7 +225,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "czwartek", "time": "16:30"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Grzegorz Ostrowski",
             "title": "Pastor",
             "email": "kedzierzynchwz@wp.pl",
@@ -247,7 +247,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "środa", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Mirosław Kruba",
             "title": "Pastor",
             "email": "miroslawa.kruba@gmail.com",
@@ -270,7 +270,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Krzysztof Kwiecień",
             "title": "Pastor",
             "email": "kwiecien@post.pl",
@@ -293,7 +293,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Marek Kalata",
             "title": "Pastor",
             "email": "marek.kalata@wp.pl",
@@ -316,7 +316,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Roman Jawdyk",
             "title": "Pastor",
             "email": "roman.jawdyk@chwz.org.pl",
@@ -339,7 +339,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "środa", "time": "19:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Henryk Mróz",
             "title": "Pastor",
             "email": "h.mroz@tlen.pl",
@@ -362,7 +362,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "18:30"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Remigiusz Mamrosz",
             "title": "Pastor",
             "email": "remig11@wp.pl",
@@ -384,7 +384,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Mariusz Sawron",
             "title": "Pastor",
             "email": "mariuszs71@wp.pl",
@@ -407,7 +407,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "środa", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Leszek Bijak",
             "title": "Pastor",
             "email": "bellux@op.pl",
@@ -430,7 +430,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "19:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Wiesław Chmielewski",
             "title": "Pastor",
             "phone": "0049 172 568",
@@ -452,7 +452,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "sobota", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Jacek Frąckowiak",
             "title": "Pastor",
             "email": "jacek.fi6@wp.pl",
@@ -475,7 +475,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
-        "contact_person": {"name": "Stefan Andrasz", "title": "Pastor"},
+        "service_contact": {"name": "Stefan Andrasz", "title": "Pastor"},
         "status": "published_unverified",
     },
     {
@@ -493,7 +493,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "czwartek", "time": "17:30"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Daniel Wawrzyczek",
             "title": "Pastor",
             "email": "baohel@wp.pl",
@@ -516,7 +516,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "sobota", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Łukasz Tyc",
             "title": "Pastor",
             "email": "lukasz.tyc@wp.pl",
@@ -539,7 +539,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Andrzej Nazimek",
             "title": "Pastor",
             "email": "zimeryt@interia.pl",
@@ -562,7 +562,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "piątek", "time": "19:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Tomasz Smykowski",
             "title": "Pastor",
             "phone": "577 106 606",
@@ -584,7 +584,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "czwartek", "time": "19:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Tomasz Pękala",
             "title": "Pastor",
             "email": "tomaszpekala02@gmail.com",
@@ -607,7 +607,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "środa", "time": "16:30"}],
         "website": None,
-        "contact_person": {"name": "Józef Poręba", "title": "Pastor"},
+        "service_contact": {"name": "Józef Poręba", "title": "Pastor"},
         "status": "published_unverified",
     },
     {
@@ -625,7 +625,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Andrzej Poręba",
             "title": "Pastor",
             "email": "pandre@poczta.onet.pl",
@@ -648,7 +648,7 @@ CONGREGATIONS = [
         },
         "service_times": [{"day": "czwartek", "time": "18:00"}],
         "website": None,
-        "contact_person": {
+        "service_contact": {
             "name": "Ryszard Arlt",
             "title": "Pastor",
             "email": "artlik@onet.eu",

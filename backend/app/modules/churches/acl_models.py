@@ -14,21 +14,15 @@ class RoleDB(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     scope_type: Mapped[str] = mapped_column(String(32), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
 
 class RolePermissionDB(Base):
     __tablename__ = "role_permissions"
-    __table_args__ = (
-        UniqueConstraint("role_id", "permission", name="uq_role_permissions"),
-    )
+    __table_args__ = (UniqueConstraint("role_id", "permission", name="uq_role_permissions"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    role_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("roles.id", ondelete="CASCADE"), nullable=False
-    )
+    role_id: Mapped[str] = mapped_column(String(36), ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
     permission: Mapped[str] = mapped_column(String(64), nullable=False)
 
 
@@ -45,12 +39,8 @@ class UserRoleAssignmentDB(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    role_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("roles.id", ondelete="CASCADE"), nullable=False
-    )
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    role_id: Mapped[str] = mapped_column(String(36), ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
     scope_type: Mapped[str] = mapped_column(String(32), nullable=False)
     scope_id: Mapped[str] = mapped_column(String(36), nullable=False)
     source_assignment_id: Mapped[str | None] = mapped_column(
@@ -58,6 +48,4 @@ class UserRoleAssignmentDB(Base):
         ForeignKey("service_assignments.id", ondelete="CASCADE"),
         nullable=True,
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)

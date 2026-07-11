@@ -71,9 +71,7 @@ async def search_persons(
 ) -> PersonSearchResponse:
     _ = current_user
     persons = await repo.search_persons(q)
-    return PersonSearchResponse(
-        persons=[PersonResponse.model_validate(p) for p in persons]
-    )
+    return PersonSearchResponse(persons=[PersonResponse.model_validate(p) for p in persons])
 
 
 @router.get("/{church_id}", response_model=ChurchResponse)
@@ -133,9 +131,7 @@ async def update_branch(
     return BranchResponse.model_validate(branch)
 
 
-@router.delete(
-    "/{church_id}/branches/{branch_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/{church_id}/branches/{branch_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_branch(
     church_id: str,
     branch_id: str,
@@ -202,9 +198,7 @@ async def update_service_assignment(
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
 ) -> ServiceAssignmentResponse:
     await _verify_church_access(church_id, current_user, repo, tenant_repo)
-    assignment = await repo.update_service_assignment(
-        "church", church_id, assignment_id, payload
-    )
+    assignment = await repo.update_service_assignment("church", church_id, assignment_id, payload)
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
     return _assignment_response(assignment)

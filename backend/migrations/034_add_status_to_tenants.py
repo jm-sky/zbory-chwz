@@ -15,8 +15,9 @@ from pathlib import Path
 # Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.core.database import engine
 from sqlalchemy import text
+
+from app.core.database import engine
 
 
 async def upgrade() -> None:
@@ -25,14 +26,10 @@ async def upgrade() -> None:
 
     async with engine.begin() as conn:
         # Add status column with default value 'draft'
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 ALTER TABLE tenants
                 ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'draft'
-                """
-            )
-        )
+                """))
 
     print("✓ status column added successfully")
 
@@ -43,14 +40,10 @@ async def downgrade() -> None:
 
     async with engine.begin() as conn:
         # Drop status column
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 ALTER TABLE tenants
                 DROP COLUMN IF EXISTS status
-                """
-            )
-        )
+                """))
 
     print("✓ status column removed successfully")
 
@@ -59,9 +52,7 @@ async def main() -> None:
     """Run migration."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Add status column to tenants table migration"
-    )
+    parser = argparse.ArgumentParser(description="Add status column to tenants table migration")
     parser.add_argument(
         "action",
         choices=["upgrade", "downgrade"],

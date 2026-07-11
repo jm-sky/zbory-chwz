@@ -16,22 +16,21 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import text
+
 from app.core.database import engine
 
 
 async def column_exists(conn, table_name: str, column_name: str) -> bool:
     """Check if a column exists in a table."""
     result = await conn.execute(
-        text(
-            """
+        text("""
             SELECT EXISTS (
                 SELECT FROM information_schema.columns
                 WHERE table_schema = 'public'
                 AND table_name = :table_name
                 AND column_name = :column_name
             );
-        """
-        ),
+        """),
         {"table_name": table_name, "column_name": column_name},
     )
     return result.scalar() is True
@@ -43,14 +42,10 @@ async def upgrade() -> None:
 
     async with engine.begin() as conn:
         if not await column_exists(conn, "user_settings", "image_processing_mode"):
-            await conn.execute(
-                text(
-                    """
+            await conn.execute(text("""
                     ALTER TABLE user_settings
                     ADD COLUMN image_processing_mode VARCHAR(20) NULL DEFAULT 'balanced';
-                """
-                )
-            )
+                """))
             print("✓ Added image_processing_mode field to user_settings table")
         else:
             print("image_processing_mode column already exists, skipping migration...")
@@ -64,14 +59,10 @@ async def downgrade() -> None:
 
     async with engine.begin() as conn:
         if await column_exists(conn, "user_settings", "image_processing_mode"):
-            await conn.execute(
-                text(
-                    """
+            await conn.execute(text("""
                     ALTER TABLE user_settings
                     DROP COLUMN image_processing_mode;
-                """
-                )
-            )
+                """))
             print("✓ Removed image_processing_mode field from user_settings table")
         else:
             print("image_processing_mode column does not exist, skipping downgrade...")
@@ -83,9 +74,7 @@ async def main() -> None:
     """Run migration."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Add image processing mode to user settings migration"
-    )
+    parser = argparse.ArgumentParser(description="Add image processing mode to user settings migration")
     parser.add_argument(
         "action",
         choices=["upgrade", "downgrade"],

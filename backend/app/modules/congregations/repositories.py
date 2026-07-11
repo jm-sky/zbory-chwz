@@ -4,17 +4,15 @@ import logging
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import List
 
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.common.id_utils import generate_id
+from app.core.database import get_db
 from app.modules.congregations.db_models import (
     CongregationAddressDB,
-    CongregationContactPersonDB,
     CongregationServiceTimeDB,
 )
 from app.modules.congregations.geo import DEFAULT_COUNTRY
@@ -29,13 +27,9 @@ class CongregationRepository:
         self.db = db
 
     # Address operations
-    async def get_address_by_tenant_id(
-        self, tenant_id: str
-    ) -> CongregationAddressDB | None:
+    async def get_address_by_tenant_id(self, tenant_id: str) -> CongregationAddressDB | None:
         """Get address for a tenant."""
-        stmt = select(CongregationAddressDB).where(
-            CongregationAddressDB.tenant_id == tenant_id
-        )
+        stmt = select(CongregationAddressDB).where(CongregationAddressDB.tenant_id == tenant_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -79,29 +73,17 @@ class CongregationRepository:
         await self.db.refresh(address)
         return address
 
-    async def get_addresses_by_status(
-        self, statuses: Sequence[str]
-    ) -> dict[str, CongregationAddressDB]:
+    async def get_addresses_by_status(self, statuses: Sequence[str]) -> dict[str, CongregationAddressDB]:
         """Get addresses with any of the given statuses, keyed by tenant id."""
-        stmt = select(CongregationAddressDB).where(
-            CongregationAddressDB.status.in_(statuses)
-        )
+        stmt = select(CongregationAddressDB).where(CongregationAddressDB.status.in_(statuses))
         result = await self.db.execute(stmt)
         return {address.tenant_id: address for address in result.scalars()}
 
-    async def get_service_times_for_tenants(
-        self, tenant_ids: Sequence[str]
-    ) -> dict[str, list[CongregationServiceTimeDB]]:
+    async def get_service_times_for_tenants(self, tenant_ids: Sequence[str]) -> dict[str, list[CongregationServiceTimeDB]]:
         """Get service times for many tenants at once, keyed by tenant id."""
         if not tenant_ids:
             return {}
-        stmt = (
-            select(CongregationServiceTimeDB)
-            .where(CongregationServiceTimeDB.tenant_id.in_(tenant_ids))
-            .order_by(
-                CongregationServiceTimeDB.order, CongregationServiceTimeDB.created_at
-            )
-        )
+        stmt = select(CongregationServiceTimeDB).where(CongregationServiceTimeDB.tenant_id.in_(tenant_ids)).order_by(CongregationServiceTimeDB.order, CongregationServiceTimeDB.created_at)
         result = await self.db.execute(stmt)
         grouped: dict[str, list[CongregationServiceTimeDB]] = defaultdict(list)
         for service_time in result.scalars():
@@ -116,17 +98,9 @@ class CongregationRepository:
             await self.db.commit()
 
     # Service times operations
-    async def get_service_times_by_tenant_id(
-        self, tenant_id: str
-    ) -> List[CongregationServiceTimeDB]:
+    async def get_service_times_by_tenant_id(self, tenant_id: str) -> list[CongregationServiceTimeDB]:
         """Get all service times for a tenant."""
-        stmt = (
-            select(CongregationServiceTimeDB)
-            .where(CongregationServiceTimeDB.tenant_id == tenant_id)
-            .order_by(
-                CongregationServiceTimeDB.order, CongregationServiceTimeDB.created_at
-            )
-        )
+        stmt = select(CongregationServiceTimeDB).where(CongregationServiceTimeDB.tenant_id == tenant_id).order_by(CongregationServiceTimeDB.order, CongregationServiceTimeDB.created_at)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -167,81 +141,11 @@ class CongregationRepository:
 
     async def delete_all_service_times(self, tenant_id: str) -> None:
         """Delete all service times for a tenant."""
-        stmt = select(CongregationServiceTimeDB).where(
-            CongregationServiceTimeDB.tenant_id == tenant_id
-        )
+        stmt = select(CongregationServiceTimeDB).where(CongregationServiceTimeDB.tenant_id == tenant_id)
         result = await self.db.execute(stmt)
         service_times = result.scalars().all()
         for st in service_times:
             await self.db.delete(st)
-        await self.db.commit()
-
-    # Contact persons operations
-    async def get_contact_persons_by_tenant_id(
-        self, tenant_id: str
-    ) -> List[CongregationContactPersonDB]:
-        """Get all contact persons for a tenant."""
-        stmt = (
-            select(CongregationContactPersonDB)
-            .where(CongregationContactPersonDB.tenant_id == tenant_id)
-            .order_by(
-                CongregationContactPersonDB.order,
-                CongregationContactPersonDB.created_at,
-            )
-        )
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
-
-    async def create_contact_person(
-        self,
-        tenant_id: str,
-        *,
-        name: str,
-        title: str | None = None,
-        email: str | None = None,
-        phone: str | None = None,
-        order: int = 0,
-    ) -> CongregationContactPersonDB:
-        """Create a contact person for a tenant."""
-        contact_person = CongregationContactPersonDB(
-            id=generate_id(),
-            tenant_id=tenant_id,
-            name=name,
-            title=title,
-            email=email,
-            phone=phone,
-            order=order,
-        )
-        self.db.add(contact_person)
-        await self.db.commit()
-        await self.db.refresh(contact_person)
-        return contact_person
-
-    async def delete_contact_person(
-        self, tenant_id: str, contact_person_id: str
-    ) -> bool:
-        """Delete a contact person belonging to the given tenant."""
-        stmt = select(CongregationContactPersonDB).where(
-            CongregationContactPersonDB.id == contact_person_id,
-            CongregationContactPersonDB.tenant_id == tenant_id,
-        )
-        result = await self.db.execute(stmt)
-        contact_person = result.scalar_one_or_none()
-        if not contact_person:
-            return False
-        await self.db.delete(contact_person)
-        await self.db.commit()
-        return True
-
-    async def delete_all_contact_persons(self, tenant_id: str) -> None:
-        """Delete all contact persons for a tenant."""
-        stmt = select(CongregationContactPersonDB).where(
-            CongregationContactPersonDB.tenant_id == tenant_id
-        )
-        result = await self.db.execute(stmt)
-        contact_persons = result.scalars().all()
-        for cp in contact_persons:
-            await self.db.delete(cp)
         await self.db.commit()
 
 

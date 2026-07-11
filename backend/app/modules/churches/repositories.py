@@ -27,9 +27,6 @@ from app.modules.churches.acl_seed import (
 from app.modules.churches.db_models import (
     BranchDB,
     ChurchDB,
-    ChurchSlugAliasDB,
-    CityAliasDB,
-    CommunityDB,
     PersonDB,
     RegionDB,
     ServiceAssignmentDB,
@@ -42,14 +39,9 @@ from app.modules.churches.schemas import (
     ServiceAssignmentUpdateRequest,
 )
 from app.modules.churches.seed_data import PASTOR_SERVICE_SLUGS
-from app.modules.churches.slug_utils import church_slug, city_slug, country_slug
+from app.modules.churches.slug_utils import church_slug
 from app.modules.churches.visibility import VisibilityService
-from app.modules.congregations.db_models import (
-    CongregationAddressDB,
-    CongregationContactPersonDB,
-    CongregationServiceTimeDB,
-)
-from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
+from app.modules.tenants.db_models import TenantMembershipDB
 
 logger = logging.getLogger(__name__)
 

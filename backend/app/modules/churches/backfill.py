@@ -11,11 +11,11 @@ from app.modules.churches.db_models import (
     ChurchSlugAliasDB,
     CityAliasDB,
     CommunityDB,
-    PersonDB,
     RegionDB,
     ServiceAssignmentDB,
     ServiceTypeDB,
 )
+from app.modules.churches.repositories import ChurchRepository
 from app.modules.churches.seed_data import (
     CHWZ_COMMUNITY_SLUG,
     CHWZ_ORG_TENANT_NAME,
@@ -25,15 +25,12 @@ from app.modules.churches.seed_data import (
     REMOVED_SERVICE_TYPE_SLUGS,
     SERVICE_TYPE_MIGRATIONS,
     SERVICE_TYPES_SEED,
-    TITLE_TO_SERVICE_SLUG,
 )
 from app.modules.churches.slug_utils import church_slug, city_slug, country_slug
 from app.modules.congregations.db_models import (
     CongregationAddressDB,
-    CongregationContactPersonDB,
     CongregationServiceTimeDB,
 )
-from app.modules.churches.repositories import ChurchRepository
 from app.modules.tenants.db_models import TenantDB
 
 logger = logging.getLogger(__name__)
@@ -50,12 +47,11 @@ async def backfill_churches(repo: ChurchRepository) -> dict[str, int]:
         "churches": 0,
         "slug_aliases": 0,
         "congregation_links": 0,
-        "contact_person_migrations": 0,
     }
 
     community = await _get_or_create_community(db, stats)
     regions_by_slug = await _ensure_regions(db, community.id, stats)
-    service_types_by_slug = await _ensure_service_types(db, stats)
+    await _ensure_service_types(db, stats)
     await ensure_acl_roles(db)
     await _ensure_city_aliases(db, stats)
     org_tenant = await _get_or_create_org_tenant(db, stats)
@@ -81,11 +77,7 @@ async def backfill_churches(repo: ChurchRepository) -> dict[str, int]:
         db.add(church)
         await db.flush()
 
-        address_result = await db.execute(
-            select(CongregationAddressDB).where(
-                CongregationAddressDB.tenant_id == tenant.id
-            )
-        )
+        address_result = await db.execute(select(CongregationAddressDB).where(CongregationAddressDB.tenant_id == tenant.id))
         address = address_result.scalar_one_or_none()
         if address:
             await _ensure_church_slug_alias(
@@ -100,15 +92,12 @@ async def backfill_churches(repo: ChurchRepository) -> dict[str, int]:
         await _link_congregation_rows(db, tenant.id, stats)
         stats["churches"] += 1
 
-    await _migrate_contact_persons(db, service_types_by_slug, stats)
     await db.commit()
     return stats
 
 
 async def _get_or_create_community(db, stats: dict[str, int]) -> CommunityDB:
-    result = await db.execute(
-        select(CommunityDB).where(CommunityDB.slug == CHWZ_COMMUNITY_SLUG)
-    )
+    result = await db.execute(select(CommunityDB).where(CommunityDB.slug == CHWZ_COMMUNITY_SLUG))
     community = result.scalar_one_or_none()
     if community:
         return community
@@ -124,9 +113,7 @@ async def _get_or_create_community(db, stats: dict[str, int]) -> CommunityDB:
     return community
 
 
-async def _ensure_regions(
-    db, community_id: str, stats: dict[str, int]
-) -> dict[str, RegionDB]:
+async def _ensure_regions(db, community_id: str, stats: dict[str, int]) -> dict[str, RegionDB]:
     regions_by_slug: dict[str, RegionDB] = {}
     for item in REGIONS_SEED:
         result = await db.execute(
@@ -153,9 +140,7 @@ async def _ensure_regions(
 async def _ensure_service_types(db, stats: dict[str, int]) -> dict[str, ServiceTypeDB]:
     by_slug: dict[str, ServiceTypeDB] = {}
     for slug, name, scope, role, senior, order in SERVICE_TYPES_SEED:
-        result = await db.execute(
-            select(ServiceTypeDB).where(ServiceTypeDB.slug == slug)
-        )
+        result = await db.execute(select(ServiceTypeDB).where(ServiceTypeDB.slug == slug))
         existing = result.scalar_one_or_none()
         if existing:
             existing.name = name
@@ -191,26 +176,16 @@ async def _migrate_removed_service_types(
     stats: dict[str, int],
 ) -> None:
     for old_slug, new_slug in SERVICE_TYPE_MIGRATIONS.items():
-        old_result = await db.execute(
-            select(ServiceTypeDB).where(ServiceTypeDB.slug == old_slug)
-        )
+        old_result = await db.execute(select(ServiceTypeDB).where(ServiceTypeDB.slug == old_slug))
         old_type = old_result.scalar_one_or_none()
         new_type = service_types_by_slug.get(new_slug)
         if not old_type or not new_type:
             continue
-        result = await db.execute(
-            update(ServiceAssignmentDB)
-            .where(ServiceAssignmentDB.service_type_id == old_type.id)
-            .values(service_type_id=new_type.id)
-        )
-        stats["service_assignments_migrated"] = stats.get("service_assignments_migrated", 0) + (
-            result.rowcount or 0
-        )
+        result = await db.execute(update(ServiceAssignmentDB).where(ServiceAssignmentDB.service_type_id == old_type.id).values(service_type_id=new_type.id))
+        stats["service_assignments_migrated"] = stats.get("service_assignments_migrated", 0) + (result.rowcount or 0)
 
     for slug in REMOVED_SERVICE_TYPE_SLUGS:
-        result = await db.execute(
-            select(ServiceTypeDB).where(ServiceTypeDB.slug == slug)
-        )
+        result = await db.execute(select(ServiceTypeDB).where(ServiceTypeDB.slug == slug))
         service_type = result.scalar_one_or_none()
         if not service_type:
             continue
@@ -289,9 +264,7 @@ async def _ensure_city_aliases(db, stats: dict[str, int]) -> None:
 
 
 async def _get_or_create_org_tenant(db, stats: dict[str, int]) -> TenantDB:
-    result = await db.execute(
-        select(TenantDB).where(TenantDB.name == CHWZ_ORG_TENANT_NAME)
-    )
+    result = await db.execute(select(TenantDB).where(TenantDB.name == CHWZ_ORG_TENANT_NAME))
     org = result.scalar_one_or_none()
     if org:
         return org
@@ -321,14 +294,8 @@ async def _get_or_create_org_tenant(db, stats: dict[str, int]) -> TenantDB:
     return org
 
 
-async def _resolve_region_for_tenant(
-    db, tenant_id: str, regions_by_slug: dict[str, RegionDB]
-) -> str | None:
-    result = await db.execute(
-        select(CongregationAddressDB).where(
-            CongregationAddressDB.tenant_id == tenant_id
-        )
-    )
+async def _resolve_region_for_tenant(db, tenant_id: str, regions_by_slug: dict[str, RegionDB]) -> str | None:
+    result = await db.execute(select(CongregationAddressDB).where(CongregationAddressDB.tenant_id == tenant_id))
     address = result.scalar_one_or_none()
     if not address:
         return None
@@ -340,88 +307,10 @@ async def _resolve_region_for_tenant(
     return region.id if region else None
 
 
-def _split_person_name(full_name: str) -> tuple[str | None, str | None]:
-    parts = full_name.strip().split(None, 1)
-    if not parts:
-        return None, None
-    if len(parts) == 1:
-        return parts[0], None
-    return parts[0], parts[1]
-
-
-def _resolve_service_type_for_title(
-    title: str | None, service_types_by_slug: dict[str, ServiceTypeDB]
-) -> tuple[str | None, str | None]:
-    if not title:
-        return None, None
-    normalized = title.strip().lower()
-    slug = TITLE_TO_SERVICE_SLUG.get(normalized)
-    if slug and slug in service_types_by_slug:
-        return service_types_by_slug[slug].id, None
-    return None, title.strip()
-
-
-async def _migrate_contact_persons(
-    db, service_types_by_slug: dict[str, ServiceTypeDB], stats: dict[str, int]
-) -> None:
-    result = await db.execute(select(CongregationContactPersonDB))
-    contact_persons = list(result.scalars().all())
-
-    for cp in contact_persons:
-        already = await db.execute(
-            select(ServiceAssignmentDB).where(
-                ServiceAssignmentDB.source_contact_person_id == cp.id
-            )
-        )
-        if already.scalar_one_or_none():
-            continue
-
-        church_id = cp.church_id or cp.tenant_id
-        first_name, last_name = _split_person_name(cp.name)
-        service_type_id, custom_name = _resolve_service_type_for_title(
-            cp.title, service_types_by_slug
-        )
-
-        person = PersonDB(
-            id=generate_id(),
-            first_name=first_name,
-            last_name=last_name,
-            email=cp.email,
-            phone=cp.phone,
-        )
-        db.add(person)
-        await db.flush()
-
-        assignment = ServiceAssignmentDB(
-            id=generate_id(),
-            person_id=person.id,
-            service_type_id=service_type_id,
-            custom_service_name=custom_name,
-            description=None,
-            scope_type="church",
-            scope_id=church_id,
-            profile_visibility="public",
-            show_on_list=True,
-            phone_visibility="public" if cp.phone else "hidden",
-            email_visibility="public" if cp.email else "hidden",
-            source_contact_person_id=cp.id,
-            sort_order=cp.order,
-        )
-        db.add(assignment)
-        stats["contact_person_migrations"] += 1
-
-    await db.flush()
-
-
 async def _link_congregation_rows(db, church_id: str, stats: dict[str, int]) -> None:
     for model in (
         CongregationAddressDB,
         CongregationServiceTimeDB,
-        CongregationContactPersonDB,
     ):
-        await db.execute(
-            update(model)
-            .where(model.tenant_id == church_id)
-            .values(church_id=church_id)
-        )
+        await db.execute(update(model).where(model.tenant_id == church_id).values(church_id=church_id))
     stats["congregation_links"] += 1

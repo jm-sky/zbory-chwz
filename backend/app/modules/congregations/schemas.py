@@ -70,41 +70,12 @@ class ServiceTimeUpdateRequest(BaseModel):
     order: int | None = Field(default=None, ge=0)
 
 
-class ContactPersonResponse(BaseModel):
-    id: str
-    tenant_id: str
-    name: str
-    title: str | None = None
-    email: str | None = None
-    phone: str | None = None
-    order: int
-    created_at: datetime
-    updated_at: datetime
-
-
-class ContactPersonCreateRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
-    title: str | None = Field(default=None, max_length=100)
-    email: str | None = Field(default=None, max_length=255)
-    phone: str | None = Field(default=None, max_length=50)
-    order: int = Field(default=0, ge=0)
-
-
-class ContactPersonUpdateRequest(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
-    title: str | None = Field(default=None, max_length=100)
-    email: str | None = Field(default=None, max_length=255)
-    phone: str | None = Field(default=None, max_length=50)
-    order: int | None = Field(default=None, ge=0)
-
-
 class CongregationFullResponse(BaseModel):
-    """Full congregation data including address, service times, and contact persons."""
+    """Full congregation data including address and service times."""
 
     tenant_id: str
     address: AddressResponse | None = None
     service_times: list[ServiceTimeResponse] = []
-    contact_persons: list[ContactPersonResponse] = []
 
 
 # Text-to-address import (paste free-text notes, review a diff, then apply)

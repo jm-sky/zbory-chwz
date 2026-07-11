@@ -51,9 +51,7 @@ class TokenBlacklistService:
         token_hash = self._get_token_hash(token)
         return f"{self.key_prefix}{token_hash}"
 
-    async def blacklist_token(
-        self, token: str, expires_at: int, reason: str = "logout"
-    ) -> None:
+    async def blacklist_token(self, token: str, expires_at: int, reason: str = "logout") -> None:
         """Add token to blacklist.
 
         Args:
@@ -100,9 +98,7 @@ class TokenBlacklistService:
         exists = await self.redis.exists(self._get_jti_key(jti))
         return bool(exists)
 
-    async def blacklist_jti(
-        self, jti: str, expires_at: int, reason: str = "logout"
-    ) -> None:
+    async def blacklist_jti(self, jti: str, expires_at: int, reason: str = "logout") -> None:
         """Blacklist JTI until its natural expiration."""
         now = int(datetime.now(UTC).timestamp())
         ttl = expires_at - now
@@ -110,9 +106,7 @@ class TokenBlacklistService:
             return
         await self.redis.setex(self._get_jti_key(jti), ttl, f"{reason}:{now}")
 
-    async def revoke_session(
-        self, user_id: str, jti: str, expires_at: int, reason: str = "logout"
-    ) -> None:
+    async def revoke_session(self, user_id: str, jti: str, expires_at: int, reason: str = "logout") -> None:
         """Revoke a specific user session and remove it from active set."""
         await self.blacklist_jti(jti=jti, expires_at=expires_at, reason=reason)
         await self.redis.zrem(self._get_user_sessions_key(user_id), jti)
@@ -130,9 +124,7 @@ class TokenBlacklistService:
         exists = await self.redis.exists(key)
         return bool(exists)
 
-    async def blacklist_all_user_tokens(
-        self, user_id: str, reason: str = "account_deleted"
-    ) -> int:
+    async def blacklist_all_user_tokens(self, user_id: str, reason: str = "account_deleted") -> int:
         """Blacklist all tokens for a user.
 
         Note:
@@ -160,9 +152,7 @@ class TokenBlacklistService:
 
         count = 0
         for jti_raw, exp_score in sessions:
-            jti = (
-                jti_raw.decode("utf-8") if isinstance(jti_raw, bytes) else str(jti_raw)
-            )
+            jti = jti_raw.decode("utf-8") if isinstance(jti_raw, bytes) else str(jti_raw)
             expires_at = int(exp_score)
             await self.blacklist_jti(jti=jti, expires_at=expires_at, reason=reason)
             count += 1
@@ -183,9 +173,7 @@ class TokenBlacklistService:
 
         # Scan Redis keys (non-blocking)
         while True:
-            cursor, keys = await self.redis.scan(
-                cursor=cursor, match=pattern, count=100
-            )
+            cursor, keys = await self.redis.scan(cursor=cursor, match=pattern, count=100)
             count += len(keys)
 
             if cursor == 0:

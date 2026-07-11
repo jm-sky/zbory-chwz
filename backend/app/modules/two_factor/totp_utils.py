@@ -19,9 +19,7 @@ def _get_digits() -> int:
 
 
 def _get_issuer() -> str:
-    return getattr(
-        getattr(settings, "two_factor", object()), "totp_issuer", "FastAPI App"
-    )
+    return getattr(getattr(settings, "two_factor", object()), "totp_issuer", "FastAPI App")
 
 
 def _get_time_window() -> int:
@@ -47,9 +45,7 @@ def verify_totp_with_window(secret: str, code: str, window: int | None = None) -
     return bool(totp.verify(code, valid_window=valid_window))
 
 
-def get_totp_provisioning_uri(
-    secret: str, user_email: str, issuer: str | None = None
-) -> str:
+def get_totp_provisioning_uri(secret: str, user_email: str, issuer: str | None = None) -> str:
     """Build otpauth provisioning URI to be rendered as QR on frontend."""
 
     issuer_name = issuer or _get_issuer()

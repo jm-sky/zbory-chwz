@@ -18,10 +18,10 @@ from fastapi import Depends
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.common.id_utils import generate_id
 from app.common.repository_utils import normalize_email
 from app.common.search import SearchMixin
+from app.core.database import get_db
 
 from .auth_utils import (
     create_password_reset_token,
@@ -32,7 +32,6 @@ from .db_models import OAuthConnectionDB, UserDB
 from .exceptions import UserAlreadyExistsError
 from .models import User
 from .types.repository import UserRepositoryInterface
-
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +62,7 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             id=user_db.id,
             email=user_db.email,
             name=user_db.name,
-            hashedPassword=user_db.hashed_password
-            or "",  # OAuth users may not have password
+            hashedPassword=user_db.hashed_password or "",  # OAuth users may not have password
             isActive=user_db.is_active,
             isAdmin=user_db.is_admin,
             isOwner=user_db.is_owner,
@@ -184,9 +182,7 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
         # Convert to Pydantic User models
         return [self._map_user(user_db) for user_db in users_db]
 
-    async def count_users(
-        self, include_inactive: bool = False, search: str | None = None
-    ) -> int:
+    async def count_users(self, include_inactive: bool = False, search: str | None = None) -> int:
         """Count total users in database with optional search.
 
         Args:
@@ -276,18 +272,14 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
 
         return False
 
-    async def change_password(
-        self, user_id: str, current_password: str, new_password: str
-    ) -> bool:
+    async def change_password(self, user_id: str, current_password: str, new_password: str) -> bool:
         """Change user password after verifying current password."""
         user = await self.get_user_by_id(user_id)
         if not user or not user.isActive:
             return False
 
         # Verify current password (hashedPassword is guaranteed non-empty for active users)
-        if not user.hashedPassword or not verify_password(
-            current_password, user.hashedPassword
-        ):
+        if not user.hashedPassword or not verify_password(current_password, user.hashedPassword):
             return False
 
         # Update password
@@ -295,9 +287,7 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
         await self.update_user(user)
         return True
 
-    async def store_email_verification_token(
-        self, user_id: str, token: str, sent_at: datetime
-    ) -> User | None:
+    async def store_email_verification_token(self, user_id: str, token: str, sent_at: datetime) -> User | None:
         """Persist email verification token for a user."""
         user = await self.get_user_by_id(user_id)
         if not user:
@@ -332,16 +322,12 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             return False
 
         # Always remove OAuth connections tied to this user.
-        await self.db.execute(
-            delete(OAuthConnectionDB).where(OAuthConnectionDB.user_id == user_id)
-        )
+        await self.db.execute(delete(OAuthConnectionDB).where(OAuthConnectionDB.user_id == user_id))
         # Best-effort cleanup for 2FA artifacts (module may be disabled in some deployments).
         try:
             from app.modules.two_factor.db_models import PasskeyDB, TotpConfigDB
 
-            await self.db.execute(
-                delete(TotpConfigDB).where(TotpConfigDB.user_id == user_id)
-            )
+            await self.db.execute(delete(TotpConfigDB).where(TotpConfigDB.user_id == user_id))
             await self.db.execute(delete(PasskeyDB).where(PasskeyDB.user_id == user_id))
         except ImportError:
             pass
@@ -427,9 +413,7 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
 
         return self._map_user(user_db)
 
-    async def get_user_by_oauth_provider(
-        self, provider: str, provider_id: str
-    ) -> User | None:
+    async def get_user_by_oauth_provider(self, provider: str, provider_id: str) -> User | None:
         """Get user by OAuth provider and provider ID."""
         stmt = select(UserDB).where(
             UserDB.oauth_provider == provider,

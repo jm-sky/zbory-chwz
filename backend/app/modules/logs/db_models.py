@@ -5,15 +5,15 @@ including errors, warnings, and informational messages.
 """
 
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 
-from sqlalchemy import DateTime, String, Text, Index
+from sqlalchemy import DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 
 
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     """Log level enumeration."""
 
     DEBUG = "DEBUG"
@@ -50,9 +50,7 @@ class LogDB(Base):
     module: Mapped[str] = mapped_column(String(255), nullable=True)
     function: Mapped[str] = mapped_column(String(255), nullable=True)
     user_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
-    request_id: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, index=True
-    )
+    request_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     traceback: Mapped[str | None] = mapped_column(Text, nullable=True)
     extra_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -69,6 +67,4 @@ class LogDB(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<LogDB(id={self.id}, level={self.level}, message={self.message[:50]}...)>"
-        )
+        return f"<LogDB(id={self.id}, level={self.level}, message={self.message[:50]}...)>"

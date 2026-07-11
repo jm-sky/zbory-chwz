@@ -88,13 +88,8 @@ async def _users_create_async(
 
     if not no_input and not sys.stdin.isatty():
         console.print("[red]Interactive mode requires a TTY.[/red]")
-        console.print(
-            "Run with [cyan]-it[/cyan]: docker exec -it zbory-chwz-app python -m cli users create"
-        )
-        console.print(
-            "Or use [cyan]--no-input[/cyan] with all options: "
-            "--email ... --name ... --password ... --role admin"
-        )
+        console.print("Run with [cyan]-it[/cyan]: docker exec -it zbory-chwz-app python -m cli users create")
+        console.print("Or use [cyan]--no-input[/cyan] with all options: " "--email ... --name ... --password ... --role admin")
         raise typer.Exit(1)
 
     # Get user details interactively if not provided
@@ -249,10 +244,14 @@ async def _get_role(console: Any, role: str | None, no_input: bool) -> str:
     console.print()
 
     while True:
-        role_input = Prompt.ask(
-            "[cyan]Select role[/cyan] (1-2 or name)",
-            default="",
-        ).strip().lower()
+        role_input = (
+            Prompt.ask(
+                "[cyan]Select role[/cyan] (1-2 or name)",
+                default="",
+            )
+            .strip()
+            .lower()
+        )
 
         # Try to parse as number
         if role_input.isdigit():
@@ -380,9 +379,7 @@ def users_list(
     """
     if not json_output:
         if detailed is None:
-            detailed = typer.confirm(
-                "Show detailed info (email verified, 2FA)?", default=False
-            )
+            detailed = typer.confirm("Show detailed info (email verified, 2FA)?", default=False)
         if wide is None:
             wide = typer.confirm("Show full IDs and emails?", default=False)
     else:
@@ -658,15 +655,9 @@ async def _users_delete_async(identifier: str | None, yes: bool, hard: bool) -> 
         # Confirm deletion
         if not yes:
             if hard:
-                console.print(
-                    "\n[bold red]Warning:[/bold red] Hard delete permanently removes the user "
-                    "from the database. This cannot be undone!\n"
-                )
+                console.print("\n[bold red]Warning:[/bold red] Hard delete permanently removes the user " "from the database. This cannot be undone!\n")
             else:
-                console.print(
-                    "\n[bold yellow]Note:[/bold yellow] Soft delete deactivates the account and "
-                    "anonymizes email (the email can be reused).\n"
-                )
+                console.print("\n[bold yellow]Note:[/bold yellow] Soft delete deactivates the account and " "anonymizes email (the email can be reused).\n")
 
             if not Confirm.ask("Are you sure you want to delete this user?", default=False):
                 console.print("[yellow]Cancelled[/yellow]")
@@ -679,9 +670,7 @@ async def _users_delete_async(identifier: str | None, yes: bool, hard: bool) -> 
         if hard:
             console.print("\n[bold green]✓[/bold green] User permanently deleted\n")
         else:
-            console.print(
-                "\n[bold green]✓[/bold green] User soft-deleted successfully\n"
-            )
+            console.print("\n[bold green]✓[/bold green] User soft-deleted successfully\n")
 
     except Exception as e:
         console.print(f"\n[red]Error deleting user:[/red] {e}\n")
@@ -789,7 +778,7 @@ async def _users_toggle_admin_async(identifier: str | None, yes: bool) -> None:
         action = "promote to administrator" if new_admin_status else "demote to regular user"
 
         # Show user info
-        console.print(f"\n[bold cyan]User to modify:[/bold cyan]\n")
+        console.print("\n[bold cyan]User to modify:[/bold cyan]\n")
 
         user_info = f"""[bold]ID:[/bold] {user['id']}
 [bold]Email:[/bold] {user['email']}
@@ -808,7 +797,7 @@ async def _users_toggle_admin_async(identifier: str | None, yes: bool) -> None:
                 return
 
         # Toggle admin status
-        with console.status(f"[bold green]Updating user...", spinner="dots"):
+        with console.status("[bold green]Updating user...", spinner="dots"):
             await _toggle_admin_in_db(user["id"], new_admin_status)
 
         console.print(f"\n[bold green]✓[/bold green] User {'promoted to administrator' if new_admin_status else 'demoted to regular user'} successfully\n")
@@ -886,7 +875,7 @@ async def _users_toggle_owner_async(identifier: str | None, yes: bool) -> None:
         action = "promote to owner" if new_owner_status else "demote from owner"
 
         # Show user info
-        console.print(f"\n[bold cyan]User to modify:[/bold cyan]\n")
+        console.print("\n[bold cyan]User to modify:[/bold cyan]\n")
 
         current_role = "Owner" if user.get("isOwner") else ("Administrator" if user.get("isAdmin") else ("Premium" if user.get("isPremium") else "User"))
         new_role = "Owner" if new_owner_status else ("Administrator" if user.get("isAdmin") else ("Premium" if user.get("isPremium") else "User"))
@@ -908,7 +897,7 @@ async def _users_toggle_owner_async(identifier: str | None, yes: bool) -> None:
                 return
 
         # Toggle owner status
-        with console.status(f"[bold green]Updating user...", spinner="dots"):
+        with console.status("[bold green]Updating user...", spinner="dots"):
             await _toggle_owner_in_db(user["id"], new_owner_status)
             await _toggle_admin_in_db(user["id"], new_owner_status)
 
@@ -1049,7 +1038,7 @@ async def _users_set_role_async(identifier: str | None, role: str | None, yes: b
         is_premium = role == "premium"
 
         # Show user info
-        console.print(f"\n[bold cyan]User to modify:[/bold cyan]\n")
+        console.print("\n[bold cyan]User to modify:[/bold cyan]\n")
 
         user_info = f"""[bold]ID:[/bold] {user['id']}
 [bold]Email:[/bold] {user['email']}
@@ -1068,7 +1057,7 @@ async def _users_set_role_async(identifier: str | None, role: str | None, yes: b
                 return
 
         # Update role
-        with console.status(f"[bold green]Updating user role...", spinner="dots"):
+        with console.status("[bold green]Updating user role...", spinner="dots"):
             await _set_role_in_db(user["id"], is_admin, is_owner, is_premium)
 
         console.print(f"\n[bold green]✓[/bold green] User role set to {new_role_display} successfully\n")

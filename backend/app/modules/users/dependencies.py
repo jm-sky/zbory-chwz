@@ -14,6 +14,7 @@ from fastapi import Depends, HTTPException, status
 
 from app.modules.auth.dependencies import get_current_user as auth_get_current_user
 from app.modules.auth.models import User as AuthUser
+
 from .models import User
 
 

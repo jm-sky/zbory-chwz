@@ -115,9 +115,7 @@ class ServiceAssignmentResponse(BaseModel):
     id: str
     personId: str = Field(validation_alias="person_id")
     serviceTypeId: str | None = Field(default=None, validation_alias="service_type_id")
-    customServiceName: str | None = Field(
-        default=None, validation_alias="custom_service_name"
-    )
+    customServiceName: str | None = Field(default=None, validation_alias="custom_service_name")
     description: str | None = None
     scopeType: str = Field(validation_alias="scope_type")
     scopeId: str = Field(validation_alias="scope_id")
@@ -128,9 +126,7 @@ class ServiceAssignmentResponse(BaseModel):
     sortOrder: int = Field(validation_alias="sort_order")
     createdAt: datetime = Field(validation_alias="created_at")
     person: PersonResponse | None = None
-    serviceType: ServiceTypeResponse | None = Field(
-        default=None, validation_alias="service_type"
-    )
+    serviceType: ServiceTypeResponse | None = Field(default=None, validation_alias="service_type")
 
 
 class PersonSearchResponse(BaseModel):

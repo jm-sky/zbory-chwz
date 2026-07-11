@@ -125,7 +125,12 @@ async def _seed(session: AsyncSession) -> dict[str, str]:
 
     # Two duplicate records for "the same" person: one in A1 (in-scope for the pastor),
     # one in B1 (out of scope). A third, unrelated person also lives in B1.
-    person_a1 = PersonDB(id=generate_id(), first_name="Jan", last_name="Kowalski", email="jan.a1@example.com")
+    person_a1 = PersonDB(
+        id=generate_id(),
+        first_name="Jan",
+        last_name="Kowalski",
+        email="jan.a1@example.com",
+    )
     person_b1_duplicate = PersonDB(id=generate_id(), first_name="Janek", last_name="Kowalski", phone="+48600000000")
     person_b1_other = PersonDB(id=generate_id(), first_name="Inna", last_name="Osoba")
     session.add_all([person_a1, person_b1_duplicate, person_b1_other])
@@ -184,7 +189,12 @@ async def _seed(session: AsyncSession) -> dict[str, str]:
     # create two active memberships for the survivor.
     session.add_all(
         [
-            PeopleGroupMembershipDB(id=generate_id(), group_id=group_id, person_id=person_a1.id, joined_at=now),
+            PeopleGroupMembershipDB(
+                id=generate_id(),
+                group_id=group_id,
+                person_id=person_a1.id,
+                joined_at=now,
+            ),
             PeopleGroupMembershipDB(
                 id=generate_id(),
                 group_id=group_id,

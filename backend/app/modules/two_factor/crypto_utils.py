@@ -86,9 +86,7 @@ def generate_backup_codes(count: int = 10) -> tuple[list[str], list[str]]:
     return plain_codes, hashed_codes
 
 
-def verify_backup_code(
-    code: str, hashed_codes: list[str], used_codes: list[str]
-) -> bool:
+def verify_backup_code(code: str, hashed_codes: list[str], used_codes: list[str]) -> bool:
     """Verify that a backup code exists and has not been used."""
 
     normalized = code.replace(" ", "").replace("-", "").upper()

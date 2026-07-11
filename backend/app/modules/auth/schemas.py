@@ -32,9 +32,7 @@ def validate_password_strength(password: str) -> str:
     if not re.search(r"\d", password):
         raise ValueError("Password must contain at least one digit")
     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-        raise ValueError(
-            'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)'
-        )
+        raise ValueError('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)')
     return password
 
 
@@ -177,9 +175,7 @@ class DeleteAccountRequest(BaseModel):
         max_length=100,
         description="Current password for confirmation (optional but recommended)",
     )
-    confirmation: str = Field(
-        ..., min_length=1, description="Confirmation phrase like 'DELETE' or user email"
-    )
+    confirmation: str = Field(..., min_length=1, description="Confirmation phrase like 'DELETE' or user email")
 
 
 class EmailVerificationRequest(BaseModel):
@@ -215,9 +211,7 @@ class OAuthCallbackRequest(BaseModel):
 
     code: str = Field(..., description="Authorization code from provider")
     state: str = Field(..., description="CSRF protection state parameter")
-    recaptchaToken: str | None = Field(
-        default=None, description="reCAPTCHA token (optional)"
-    )
+    recaptchaToken: str | None = Field(default=None, description="reCAPTCHA token (optional)")
 
 
 class OAuthCallbackResponse(BaseModel):

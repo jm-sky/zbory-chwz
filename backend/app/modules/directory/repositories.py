@@ -186,7 +186,12 @@ class DirectoryRepository:
                 ServiceAssignmentDB.ended_at.is_(None),
             )
         )
-        for person_id, custom_name, service_type_name, church_name in assignment_rows.all():
+        for (
+            person_id,
+            custom_name,
+            service_type_name,
+            church_name,
+        ) in assignment_rows.all():
             label = service_type_name or custom_name or "?"
             affiliations[person_id].append(("service", label, church_name))
 

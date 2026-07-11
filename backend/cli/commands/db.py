@@ -3,7 +3,6 @@
 import asyncio
 import importlib.util
 import sys
-from datetime import UTC, datetime
 from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -62,9 +61,8 @@ def init_database(force: bool = typer.Option(False, "--force", "-f", help="Recre
         _import_model_modules()
 
         # Import SchemaMigration model to ensure it's included in metadata
-        from app.core.migrations import SchemaMigration  # noqa: F401
-
         from app.core.database import Base, engine, init_db
+        from app.core.migrations import SchemaMigration  # noqa: F401
 
         if force:
             async with engine.begin() as conn:
@@ -120,8 +118,8 @@ def migrate_database(
                 console.print("[yellow]Database is not initialized. Running 'db init' first...[/yellow]")
                 # Run init logic
                 _import_model_modules()
+                from app.core.database import init_db
                 from app.core.migrations import SchemaMigration  # noqa: F401
-                from app.core.database import Base, engine, init_db
 
                 await init_db()
 
@@ -292,8 +290,8 @@ def migrate_graceful(
                 console.print("[yellow]Database is not initialized. Running 'db init' first...[/yellow]")
                 # Run init logic
                 _import_model_modules()
+                from app.core.database import init_db
                 from app.core.migrations import SchemaMigration  # noqa: F401
-                from app.core.database import Base, engine, init_db
 
                 await init_db()
 
@@ -426,7 +424,7 @@ def migrate_graceful(
             console.print(f"  [yellow]⚠ Errors (ignored): {error_count}[/yellow]")
         if skipped_count > 0:
             console.print(f"  [yellow]○ Skipped (already applied): {skipped_count}[/yellow]")
-        console.print(f"\n[bold green]✓ Graceful migration completed[/bold green]")
+        console.print("\n[bold green]✓ Graceful migration completed[/bold green]")
 
     asyncio.run(_migrate_graceful())
 
@@ -498,20 +496,28 @@ def seed_database(
 
 
 async def _seed_congregations(db: "AsyncSession") -> None:
-    """Seed congregations with addresses, service times, and contact persons."""
+    """Seed congregations with addresses, service times, and service contacts."""
+    from sqlalchemy import select
+
     from app.common.id_utils import generate_id
     from app.modules.auth.db_models import UserDB
     from app.modules.auth.repositories import UserRepository
+    from app.modules.churches.backfill import _ensure_service_types
+    from app.modules.churches.contact_sync import upsert_primary_card_contact
+    from app.modules.churches.provisioning import provision_church_for_tenant
+    from app.modules.churches.repositories import ChurchRepository
     from app.modules.congregations.geo import DEFAULT_COUNTRY
     from app.modules.congregations.repositories import CongregationRepository
     from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
     from app.seeders import CONGREGATIONS
-    from sqlalchemy import select
 
     console.print("[bold cyan]Seeding congregations...[/bold cyan]")
 
     user_repo = UserRepository(db)
     congregation_repo = CongregationRepository(db)
+    church_repo = ChurchRepository(db)
+    service_type_stats: dict[str, int] = {"service_types": 0}
+    await _ensure_service_types(db, service_type_stats)
 
     created_count = 0
     updated_count = 0
@@ -556,18 +562,20 @@ async def _seed_congregations(db: "AsyncSession") -> None:
         result = await db.execute(select(TenantDB).where(TenantDB.name == name))
         existing_tenant = result.scalar_one_or_none()
 
-        # Get address, service times, and contact person data
+        # Get address, service times, and service contact data
         address_data = cong_data.get("address")
         service_times = cong_data.get("service_times", [])
-        contact_person = cong_data.get("contact_person")
+        service_contact = cong_data.get("service_contact")
         status = cong_data.get("status", "draft")
 
+        tenant_record: TenantDB
         if existing_tenant:
             # Update existing tenant
             existing_tenant.description = full_description
             existing_tenant.owner_id = owner.id
             existing_tenant.status = status
             tenant_id = existing_tenant.id
+            tenant_record = existing_tenant
             updated_count += 1
             console.print(f"[yellow]  Updated tenant: {name}[/yellow]")
         else:
@@ -581,6 +589,7 @@ async def _seed_congregations(db: "AsyncSession") -> None:
                 status=status,
             )
             db.add(tenant)
+            tenant_record = tenant
 
             # Create owner membership
             membership = TenantMembershipDB(
@@ -592,21 +601,21 @@ async def _seed_congregations(db: "AsyncSession") -> None:
 
             created_count += 1
             console.print(f"[green]  Created tenant: {name} (ID: {tenant_id})[/green]")
-            
+
             # Commit tenant and membership first so foreign keys work
             await db.commit()
             await db.refresh(tenant)
 
-        # Create or update address, service times, and contact person (for both new and existing tenants)
+        await provision_church_for_tenant(db, tenant_record)
+
+        # Create or update address, service times, and service contact (for both new and existing tenants)
         # Create/update address
         if address_data:
             city = address_data.get("city")
             if not city:
                 # Seeding a placeholder city silently poisons the city and province
                 # filters; fix the seeder entry instead.
-                raise ValueError(
-                    f"Congregation {name!r} has no city in the seeder data"
-                )
+                raise ValueError(f"Congregation {name!r} has no city in the seeder data")
 
             address = await congregation_repo.create_or_update_address(
                 tenant_id=tenant_id,
@@ -632,15 +641,16 @@ async def _seed_congregations(db: "AsyncSession") -> None:
             times_str = ", ".join([f"{st['day']} {st['time']}" for st in service_times])
             console.print(f"[cyan]    Created service times: {times_str}[/cyan]")
 
-        # Delete existing contact persons and create new ones
-        if contact_person:
-            await congregation_repo.delete_all_contact_persons(tenant_id)
-            await congregation_repo.create_contact_person(
-                tenant_id=tenant_id,
-                name=contact_person.get("name", ""),
-                title=contact_person.get("title"),
+        if service_contact:
+            await upsert_primary_card_contact(
+                church_repo,
+                tenant_id,
+                name=service_contact.get("name", ""),
+                title=service_contact.get("title"),
+                phone=service_contact.get("phone"),
+                email=service_contact.get("email"),
             )
-            console.print(f"[cyan]    Created contact person: {contact_person.get('name')} ({contact_person.get('title')})[/cyan]")
+            console.print(f"[cyan]    Created service contact: {service_contact.get('name')} " f"({service_contact.get('title')})[/cyan]")
 
     await db.commit()
     console.print(f"[bold green]✓ Created {created_count}, updated {updated_count} congregations[/bold green]")
@@ -686,9 +696,10 @@ async def _remove_congregations(db: "AsyncSession") -> None:
     Note: This does NOT delete users that were created by the seeder.
     Users must be deleted manually if desired.
     """
+    from sqlalchemy import delete, select
+
     from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
     from app.seeders import CONGREGATIONS
-    from sqlalchemy import delete, select
 
     # Get list of seeded congregation names
     seeded_names = [cong["name"] for cong in CONGREGATIONS]

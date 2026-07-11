@@ -7,14 +7,14 @@ through automatic retries with exponential backoff for transient errors.
 import asyncio
 import logging
 from smtplib import (
-    SMTPException,
-    SMTPServerDisconnected,
-    SMTPConnectError,
-    SMTPHeloError,
-    SMTPDataError,
     SMTPAuthenticationError,
+    SMTPConnectError,
+    SMTPDataError,
+    SMTPException,
+    SMTPHeloError,
     SMTPRecipientsRefused,
     SMTPSenderRefused,
+    SMTPServerDisconnected,
 )
 
 from .adapter import EmailAdapter
@@ -136,21 +136,14 @@ class RetrySMTPAdapter(EmailAdapter):
 
                 if success:
                     if attempt > 0:
-                        logger.info(
-                            f"Email sent successfully to {to} "
-                            f"after {attempt} retries"
-                        )
+                        logger.info(f"Email sent successfully to {to} " f"after {attempt} retries")
                     return True
 
                 # If send_email returned False without exception,
                 # treat as transient error and retry
                 if attempt < self.max_retries:
                     delay = self.initial_delay * (2**attempt)
-                    logger.warning(
-                        f"Email send to {to} failed (returned False), "
-                        f"retrying in {delay}s (attempt {attempt + 1}/"
-                        f"{self.max_retries})"
-                    )
+                    logger.warning(f"Email send to {to} failed (returned False), " f"retrying in {delay}s (attempt {attempt + 1}/" f"{self.max_retries})")
                     await asyncio.sleep(delay)
                     continue
 
@@ -158,10 +151,7 @@ class RetrySMTPAdapter(EmailAdapter):
 
             except PERMANENT_SMTP_ERRORS as e:
                 # Don't retry permanent errors
-                logger.error(
-                    f"Permanent SMTP error sending to {to}: "
-                    f"{type(e).__name__}: {e}. Not retrying."
-                )
+                logger.error(f"Permanent SMTP error sending to {to}: " f"{type(e).__name__}: {e}. Not retrying.")
                 return False
 
             except (*TRANSIENT_SMTP_ERRORS, SMTPException) as e:
@@ -171,36 +161,22 @@ class RetrySMTPAdapter(EmailAdapter):
                     # Calculate exponential backoff delay
                     delay = self.initial_delay * (2**attempt)
 
-                    logger.warning(
-                        f"Transient error sending to {to}: "
-                        f"{type(e).__name__}: {e}. "
-                        f"Retrying in {delay}s (attempt {attempt + 1}/"
-                        f"{self.max_retries})"
-                    )
+                    logger.warning(f"Transient error sending to {to}: " f"{type(e).__name__}: {e}. " f"Retrying in {delay}s (attempt {attempt + 1}/" f"{self.max_retries})")
 
                     await asyncio.sleep(delay)
                 else:
                     # Max retries exhausted
                     logger.error(
-                        f"Failed to send email to {to} after "
-                        f"{self.max_retries} retries. "
-                        f"Last error: {type(e).__name__}: {e}",
+                        f"Failed to send email to {to} after " f"{self.max_retries} retries. " f"Last error: {type(e).__name__}: {e}",
                         exc_info=True,
                     )
 
         # All retries exhausted
         if last_error:
-            logger.error(
-                f"All {self.max_retries} retries exhausted for {to}. "
-                f"Last error: {type(last_error).__name__}: {last_error}"
-            )
+            logger.error(f"All {self.max_retries} retries exhausted for {to}. " f"Last error: {type(last_error).__name__}: {last_error}")
 
         return False
 
     def __repr__(self) -> str:
         """String representation."""
-        return (
-            f"RetrySMTPAdapter(host={self.smtp_adapter.host}, "
-            f"port={self.smtp_adapter.port}, "
-            f"max_retries={self.max_retries})"
-        )
+        return f"RetrySMTPAdapter(host={self.smtp_adapter.host}, " f"port={self.smtp_adapter.port}, " f"max_retries={self.max_retries})"

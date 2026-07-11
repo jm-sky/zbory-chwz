@@ -119,21 +119,14 @@ async def upgrade() -> None:
                 {"country": country, "tenant_name": tenant_name},
             )
 
-        leftover = await conn.scalar(
-            text(
-                "SELECT count(*) FROM congregation_addresses WHERE country !~ '^[A-Z]{2}$'"
-            )
-        )
+        leftover = await conn.scalar(text("SELECT count(*) FROM congregation_addresses WHERE country !~ '^[A-Z]{2}$'"))
         if leftover:
             rows = await conn.execute(text("""
                     SELECT DISTINCT country FROM congregation_addresses
                     WHERE country !~ '^[A-Z]{2}$'
                     """))
             unmapped = ", ".join(repr(r[0]) for r in rows)
-            raise RuntimeError(
-                f"{leftover} address(es) have a country that is not an ISO code: "
-                f"{unmapped}. Map them in COUNTRY_BY_TENANT_NAME and re-run."
-            )
+            raise RuntimeError(f"{leftover} address(es) have a country that is not an ISO code: " f"{unmapped}. Map them in COUNTRY_BY_TENANT_NAME and re-run.")
 
         print("Backfilling province from city...")
         for city, province in PROVINCE_BY_CITY.items():
@@ -166,16 +159,8 @@ async def downgrade() -> None:
                 ALTER COLUMN country TYPE VARCHAR(100),
                 ALTER COLUMN country SET DEFAULT 'Poland'
                 """))
-        await conn.execute(
-            text(
-                "UPDATE congregation_addresses SET country = 'Poland' WHERE country = 'PL'"
-            )
-        )
-        await conn.execute(
-            text(
-                "UPDATE congregation_addresses SET country = 'Germany' WHERE country = 'DE'"
-            )
-        )
+        await conn.execute(text("UPDATE congregation_addresses SET country = 'Poland' WHERE country = 'PL'"))
+        await conn.execute(text("UPDATE congregation_addresses SET country = 'Germany' WHERE country = 'DE'"))
 
     print("Migration 061 downgrade complete. City and province backfill is kept.")
 

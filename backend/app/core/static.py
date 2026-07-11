@@ -6,7 +6,6 @@ from fastapi import APIRouter, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-
 router = APIRouter()
 
 
@@ -25,9 +24,7 @@ def setup_static_routes(app: FastAPI) -> None:
     if settings.storage.type == "local":
         uploads_path = Path(settings.storage.local_path)
         if uploads_path.exists():
-            app.mount(
-                "/uploads", StaticFiles(directory=str(uploads_path)), name="uploads"
-            )
+            app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
     # Check if dist directory exists (for production builds)
     dist_path = Path("dist")
@@ -40,9 +37,7 @@ def setup_static_routes(app: FastAPI) -> None:
 
         webfonts_path = dist_path / "webfonts"
         if webfonts_path.exists():
-            app.mount(
-                "/webfonts", StaticFiles(directory=str(webfonts_path)), name="webfonts"
-            )
+            app.mount("/webfonts", StaticFiles(directory=str(webfonts_path)), name="webfonts")
 
 
 @router.get("/favicon.ico", include_in_schema=False)

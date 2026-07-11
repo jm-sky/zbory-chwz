@@ -15,9 +15,7 @@ from app.modules.tenants.db_models import TenantDB
 
 
 async def get_or_create_community(db: AsyncSession) -> CommunityDB:
-    result = await db.execute(
-        select(CommunityDB).where(CommunityDB.slug == CHWZ_COMMUNITY_SLUG)
-    )
+    result = await db.execute(select(CommunityDB).where(CommunityDB.slug == CHWZ_COMMUNITY_SLUG))
     community = result.scalar_one_or_none()
     if community:
         return community
@@ -34,9 +32,7 @@ async def get_or_create_community(db: AsyncSession) -> CommunityDB:
 
 
 async def get_or_create_org_tenant(db: AsyncSession, owner_user_id: str) -> TenantDB:
-    result = await db.execute(
-        select(TenantDB).where(TenantDB.name == CHWZ_ORG_TENANT_NAME)
-    )
+    result = await db.execute(select(TenantDB).where(TenantDB.name == CHWZ_ORG_TENANT_NAME))
     org = result.scalar_one_or_none()
     if org:
         return org

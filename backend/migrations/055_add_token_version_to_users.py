@@ -16,21 +16,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import text
+
 from app.core.database import engine
 
 
 async def column_exists(conn, table_name: str, column_name: str) -> bool:
     result = await conn.execute(
-        text(
-            """
+        text("""
             SELECT EXISTS (
                 SELECT FROM information_schema.columns
                 WHERE table_schema = 'public'
                 AND table_name = :table_name
                 AND column_name = :column_name
             );
-        """
-        ),
+        """),
         {"table_name": table_name, "column_name": column_name},
     )
     return result.scalar() is True
@@ -44,11 +43,7 @@ async def upgrade() -> None:
             print("✓ Column token_version already exists, skipping...")
             return
 
-        await conn.execute(
-            text(
-                "ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0;"
-            )
-        )
+        await conn.execute(text("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0;"))
         print("✓ Added token_version column to users table")
 
 
@@ -66,9 +61,7 @@ async def downgrade() -> None:
 
 async def main() -> None:
     if len(sys.argv) < 2:
-        print(
-            "Usage: python migrations/055_add_token_version_to_users.py [upgrade|downgrade]"
-        )
+        print("Usage: python migrations/055_add_token_version_to_users.py [upgrade|downgrade]")
         sys.exit(1)
 
     command = sys.argv[1].lower()

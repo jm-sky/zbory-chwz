@@ -10,8 +10,8 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.common.id_utils import generate_id
+from app.core.database import get_db
 from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
 
 logger = logging.getLogger(__name__)
@@ -23,9 +23,7 @@ class TenantRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list_for_user(
-        self, user_id: str
-    ) -> list[tuple[TenantDB, TenantMembershipDB]]:
+    async def list_for_user(self, user_id: str) -> list[tuple[TenantDB, TenantMembershipDB]]:
         stmt = (
             select(TenantDB, TenantMembershipDB)
             .join(TenantMembershipDB, TenantMembershipDB.tenant_id == TenantDB.id)
@@ -63,14 +61,7 @@ class TenantRepository:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_tenant(
-        self,
-        *,
-        name: str,
-        description: str | None,
-        owner_user_id: str,
-        status: str = "draft"
-    ) -> tuple[TenantDB, TenantMembershipDB]:
+    async def create_tenant(self, *, name: str, description: str | None, owner_user_id: str, status: str = "draft") -> tuple[TenantDB, TenantMembershipDB]:
         tenant_id = generate_id()
         tenant = TenantDB(
             id=tenant_id,
@@ -91,9 +82,7 @@ class TenantRepository:
         await self.db.refresh(tenant)
         return tenant, membership
 
-    async def add_member(
-        self, tenant_id: str, user_id: str, role: str = "member"
-    ) -> TenantMembershipDB:
+    async def add_member(self, tenant_id: str, user_id: str, role: str = "member") -> TenantMembershipDB:
         stmt = select(TenantMembershipDB).where(
             TenantMembershipDB.tenant_id == tenant_id,
             TenantMembershipDB.user_id == user_id,
@@ -114,9 +103,7 @@ class TenantRepository:
         await self.db.refresh(membership)
         return membership
 
-    async def get_tenant(
-        self, tenant_id: str, *, include_deleted: bool = False
-    ) -> TenantDB | None:
+    async def get_tenant(self, tenant_id: str, *, include_deleted: bool = False) -> TenantDB | None:
         stmt = select(TenantDB).where(TenantDB.id == tenant_id)
         if not include_deleted:
             stmt = stmt.where(TenantDB.deleted_at.is_(None))

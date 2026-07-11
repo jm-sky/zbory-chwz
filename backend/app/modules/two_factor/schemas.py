@@ -155,9 +155,7 @@ class CompletePasskeyAuthenticationRequest(BaseModel):
 class UpdatePreferredMethodRequest(BaseModel):
     """Request to update preferred 2FA method."""
 
-    preferredMethod: str | None = (
-        None  # 'totp', 'webauthn', or null to clear preference
-    )
+    preferredMethod: str | None = None  # 'totp', 'webauthn', or null to clear preference
 
 
 class TotpStatusCompactResponse(BaseModel):

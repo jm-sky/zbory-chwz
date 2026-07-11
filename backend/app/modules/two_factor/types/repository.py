@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,22 +27,16 @@ class TwoFactorRepositoryInterface(Protocol):
 
     async def update_totp_last_verified(self, user_id: str) -> None: ...
 
-    async def update_backup_codes(
-        self, user_id: str, backup_codes_hashed_json: str
-    ) -> None: ...
+    async def update_backup_codes(self, user_id: str, backup_codes_hashed_json: str) -> None: ...
 
-    async def mark_backup_code_used(
-        self, user_id: str, used_codes_json: str
-    ) -> None: ...
+    async def mark_backup_code_used(self, user_id: str, used_codes_json: str) -> None: ...
 
     async def disable_totp(self, user_id: str) -> None: ...
 
     # Passkey methods
     async def get_passkeys(self, user_id: str) -> list[PasskeyDB]: ...
 
-    async def get_passkey_by_credential_id(
-        self, credential_id: str
-    ) -> PasskeyDB | None: ...
+    async def get_passkey_by_credential_id(self, credential_id: str) -> PasskeyDB | None: ...
 
     async def create_passkey(
         self,

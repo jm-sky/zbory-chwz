@@ -7,12 +7,12 @@ to the database when they occur in decorated functions.
 import functools
 import inspect
 import logging
-from typing import Any, Awaitable, Callable, TypeVar, ParamSpec, cast
+from collections.abc import Awaitable, Callable
+from typing import Any, ParamSpec, TypeVar, cast
 
 from fastapi import Request
 
 from .db_models import LogLevel
-
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def log_errors(
-    message: str | None = None, reraise: bool = True, level: LogLevel = LogLevel.ERROR
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
+def log_errors(message: str | None = None, reraise: bool = True, level: LogLevel = LogLevel.ERROR) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """Decorator to automatically log exceptions to database.
 
     This decorator catches exceptions in the decorated function and logs them

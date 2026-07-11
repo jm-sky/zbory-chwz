@@ -16,9 +16,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 os.environ.setdefault("ENVIRONMENT", "test")
-os.environ.setdefault(
-    "SECRET_KEY", "test-secret-key-min-32-characters-long-for-testing"
-)
+os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-characters-long-for-testing")
 os.environ.setdefault("ALLOWED_HOSTS", '["localhost","127.0.0.1"]')
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("DATABASE_POOL_SIZE", "1")
@@ -83,9 +81,7 @@ async def client():
 
 
 async def _create_tenant(c: AsyncClient, name: str = "Nowy Zbór") -> str:
-    response = await c.post(
-        "/api/admin/tenants", json={"name": name, "status": "draft"}
-    )
+    response = await c.post("/api/admin/tenants", json={"name": name, "status": "draft"})
     assert response.status_code == 201, response.text
     return response.json()["id"]
 
@@ -111,9 +107,7 @@ async def test_created_congregation_gets_a_church_row(client) -> None:
 
     # The edit page's church-backed sections must work straight away.
     assert (await c.get(f"/api/churches/{tenant_id}/branches")).status_code == 200
-    assert (
-        await c.get(f"/api/churches/{tenant_id}/service-assignments")
-    ).status_code == 200
+    assert (await c.get(f"/api/churches/{tenant_id}/service-assignments")).status_code == 200
 
 
 @pytest.mark.asyncio
@@ -121,9 +115,7 @@ async def test_branch_crud_serializes(client) -> None:
     c, _ = client
     tenant_id = await _create_tenant(c)
 
-    created = await c.post(
-        f"/api/churches/{tenant_id}/branches", json={"name": "Placówka Praga"}
-    )
+    created = await c.post(f"/api/churches/{tenant_id}/branches", json={"name": "Placówka Praga"})
     assert created.status_code == 201, created.text
     branch = created.json()
     assert branch["churchId"] == tenant_id

@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.database import get_db
 from app.modules.auth.repositories import UserRepository as AuthUserRepository
 from app.modules.auth.repositories import (
@@ -45,9 +44,7 @@ async def create_user(
 ) -> UserResponse:
     """Create a new user."""
     try:
-        user = await repo.create_user(
-            email=user_data.email, name=user_data.name, role=user_data.role
-        )
+        user = await repo.create_user(email=user_data.email, name=user_data.name, role=user_data.role)
         return UserResponse(**user.to_response())
     except UserAlreadyExistsError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
@@ -65,18 +62,14 @@ async def list_users(
     skip: int = Query(default=0, ge=0, description="Number of records to skip"),
     limit: int = Query(default=100, ge=1, le=1000, description="Max records to return"),
     include_inactive: bool = Query(default=False, description="Include inactive users"),
-    search: str | None = Query(
-        default=None, description="Search in name, email, and role"
-    ),
+    search: str | None = Query(default=None, description="Search in name, email, and role"),
 ) -> UserListResponse:
     """Get list of users with optional search.
 
     Search is performed across name, email, and role fields.
     Example: ?search=john will find users with 'john' in name, email, or role.
     """
-    users = await repo.get_all_users(
-        skip=skip, limit=limit, include_inactive=include_inactive, search=search
-    )
+    users = await repo.get_all_users(skip=skip, limit=limit, include_inactive=include_inactive, search=search)
     total = await repo.count_users(include_inactive=include_inactive, search=search)
 
     user_responses = [UserResponse(**u.to_response()) for u in users]
@@ -126,9 +119,7 @@ async def update_current_user_profile(
         avatar_url=user_data.avatarUrl,
     )
     if not updated_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return UserResponse(**updated_user.to_response())
 
 
@@ -156,14 +147,10 @@ async def get_public_user_profile(
     # Get user directly from auth repository to access all role fields
     auth_user = await auth_repo.get_user_by_id(user_id)
     if not auth_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
 
     # Check if profile is public
-    result = await db.execute(
-        select(UserSettingsDB).where(UserSettingsDB.user_id == user_id)
-    )
+    result = await db.execute(select(UserSettingsDB).where(UserSettingsDB.user_id == user_id))
     settings = result.scalars().first()
 
     # If no settings exist, profile is not public (default is False)
@@ -200,9 +187,7 @@ async def get_user(
     """Get user by ID."""
     user = await repo.get_user_by_id(user_id)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
     return UserResponse(**user.to_response())
 
 
@@ -251,9 +236,7 @@ async def delete_user(
     """Soft delete user."""
     success = await repo.delete_user(user_id)
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
     return MessageResponse(message=f"User {user_id} deactivated successfully")
 
 
@@ -271,7 +254,5 @@ async def hard_delete_user(
     """Permanently delete user."""
     success = await repo.hard_delete_user(user_id)
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
     return MessageResponse(message=f"User {user_id} permanently deleted")

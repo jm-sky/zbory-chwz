@@ -8,12 +8,12 @@ import logging
 from datetime import UTC, datetime
 
 from fastapi import Depends
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.common.search import SearchMixin
 from app.common.models import EmailAuditLog
+from app.common.search import SearchMixin
+from app.core.database import get_db
 
 logger = logging.getLogger(__name__)
 

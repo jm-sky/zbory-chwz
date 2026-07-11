@@ -2,7 +2,6 @@
 
 import asyncio
 import io
-from typing import Tuple
 
 from PIL import Image
 from PIL.Image import Image as PILImage
@@ -34,9 +33,7 @@ class ImageProcessor:
         self.jpeg_quality = jpeg_quality
         self.convert_to_webp = convert_to_webp
 
-    async def process_image(
-        self, image_bytes: bytes, mime_type: str
-    ) -> Tuple[bytes, str, int, int]:
+    async def process_image(self, image_bytes: bytes, mime_type: str) -> tuple[bytes, str, int, int]:
         """
         Process image: resize, compress, optionally convert to WebP.
 
@@ -50,9 +47,7 @@ class ImageProcessor:
         # Run synchronous PIL operations in thread pool to avoid blocking
         return await asyncio.to_thread(self._process_image_sync, image_bytes, mime_type)
 
-    def _process_image_sync(
-        self, image_bytes: bytes, mime_type: str
-    ) -> Tuple[bytes, str, int, int]:
+    def _process_image_sync(self, image_bytes: bytes, mime_type: str) -> tuple[bytes, str, int, int]:
         """
         Synchronous image processing implementation.
 
@@ -89,9 +84,7 @@ class ImageProcessor:
         # Resize if needed (preserve aspect ratio)
         try:
             if original_width > self.max_width or original_height > self.max_height:
-                img.thumbnail(
-                    (self.max_width, self.max_height), Image.Resampling.LANCZOS
-                )
+                img.thumbnail((self.max_width, self.max_height), Image.Resampling.LANCZOS)
         except OSError as e:
             # Handle errors during thumbnail operation (e.g., truncated image)
             error_msg = str(e).lower()
@@ -109,9 +102,7 @@ class ImageProcessor:
                 img.save(output, format="WEBP", quality=self.jpeg_quality, method=6)
                 mime_type = "image/webp"
             elif mime_type in ["image/jpeg", "image/jpg"]:
-                img.save(
-                    output, format="JPEG", quality=self.jpeg_quality, optimize=True
-                )
+                img.save(output, format="JPEG", quality=self.jpeg_quality, optimize=True)
             elif mime_type == "image/png":
                 img.save(output, format="PNG", optimize=True)
             elif mime_type == "image/gif":
@@ -119,9 +110,7 @@ class ImageProcessor:
             else:
                 # Keep original format
                 img_format = img.format or "JPEG"
-                img.save(
-                    output, format=img_format, quality=self.jpeg_quality, optimize=True
-                )
+                img.save(output, format=img_format, quality=self.jpeg_quality, optimize=True)
         except OSError as e:
             # Handle errors during save (e.g., corrupted image data)
             error_msg = str(e).lower()

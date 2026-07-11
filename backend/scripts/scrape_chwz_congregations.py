@@ -7,7 +7,6 @@ and formats it for the seeder with status 'need_verification'.
 
 import re
 from pathlib import Path
-from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -57,9 +56,7 @@ def extract_email(text: str) -> str | None:
 def extract_phone(text: str) -> str | None:
     """Extract phone number from text."""
     # Pattern for Polish phone numbers
-    phone_pattern = (
-        r"(\+?\d{2,3}[\s-]?\d{2,3}[\s-]?\d{3}[\s-]?\d{3})|(\d{3}[\s-]?\d{3}[\s-]?\d{3})"
-    )
+    phone_pattern = r"(\+?\d{2,3}[\s-]?\d{2,3}[\s-]?\d{3}[\s-]?\d{3})|(\d{3}[\s-]?\d{3}[\s-]?\d{3})"
     match = re.search(phone_pattern, text)
     if match:
         return match.group(0).strip()
@@ -133,9 +130,7 @@ def parse_address(text: str) -> dict[str, str | None]:
     if street_match:
         street = street_match.group(1).strip()
         # Clean up - remove any trailing keywords
-        street = re.sub(
-            r"\s+(Pastor|Telefon|E-mail).*$", "", street, flags=re.IGNORECASE
-        )
+        street = re.sub(r"\s+(Pastor|Telefon|E-mail).*$", "", street, flags=re.IGNORECASE)
         address["street"] = f"ul. {street}"
 
     return address
@@ -165,9 +160,7 @@ def scrape_congregations() -> list[dict]:
         if element.name == "hr":
             # Separator - save current congregation if we have one
             if current_name and current_data:
-                congregations.append(
-                    create_congregation_dict(current_name, current_data)
-                )
+                congregations.append(create_congregation_dict(current_name, current_data))
                 current_name = None
                 current_data = {}
 
@@ -232,9 +225,7 @@ def scrape_congregations() -> list[dict]:
                     continue
 
                 # Extract phone (standalone line or after "Telefon:")
-                if "telefon:" in line.lower() or re.search(
-                    r"\d{3}[\s-]?\d{3}[\s-]?\d{3}", line
-                ):
+                if "telefon:" in line.lower() or re.search(r"\d{3}[\s-]?\d{3}[\s-]?\d{3}", line):
                     phone = extract_phone(line)
                     if phone:
                         current_data["phone"] = phone
@@ -299,9 +290,7 @@ def scrape_congregations() -> list[dict]:
                         continue
 
                     # Extract phone
-                    if "telefon:" in line.lower() or re.search(
-                        r"\d{3}[\s-]?\d{3}[\s-]?\d{3}", line
-                    ):
+                    if "telefon:" in line.lower() or re.search(r"\d{3}[\s-]?\d{3}[\s-]?\d{3}", line):
                         phone = extract_phone(line)
                         if phone:
                             current_data["phone"] = phone
@@ -327,9 +316,7 @@ def create_congregation_dict(name: str, data: dict) -> dict:
     email = data.get("email")
     if email:
         # Extract just the email address if it's mixed with other text
-        email_match = re.search(
-            r"\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})\b", email
-        )
+        email_match = re.search(r"\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})\b", email)
         if email_match:
             email = email_match.group(1)
 
@@ -345,13 +332,7 @@ def create_congregation_dict(name: str, data: dict) -> dict:
     owner_email = email
     if not owner_email:
         # Create a placeholder email from congregation name
-        name_slug = (
-            name.lower()
-            .replace(" ", "-")
-            .replace(",", "")
-            .replace("'", "")
-            .replace('"', "")
-        )
+        name_slug = name.lower().replace(" ", "-").replace(",", "").replace("'", "").replace('"', "")
         name_slug = re.sub(r"[^a-z0-9-]", "", name_slug)
         owner_email = f"zbior.{name_slug}@example.com"
 
@@ -373,7 +354,7 @@ def create_congregation_dict(name: str, data: dict) -> dict:
         ),
         "service_times": data.get("service_times", []),
         "website": data.get("website"),
-        "contact_person": (
+        "service_contact": (
             {
                 "name": pastor,
                 "title": "Pastor" if pastor else None,
@@ -412,18 +393,16 @@ def format_for_seeder(congregations: list[dict]) -> str:
         # Service times
         lines.append('        "service_times": [')
         for st in cong.get("service_times", []):
-            lines.append(
-                f'            {{"day": {repr(st["day"])}, "time": {repr(st["time"])}}},'
-            )
+            lines.append(f'            {{"day": {repr(st["day"])}, "time": {repr(st["time"])}}},')
         lines.append("        ],")
 
         # Website
         lines.append(f'        "website": {repr(cong.get("website"))},')
 
         # Contact person
-        if cong.get("contact_person"):
-            cp = cong["contact_person"]
-            lines.append('        "contact_person": {')
+        if cong.get("service_contact"):
+            cp = cong["service_contact"]
+            lines.append('        "service_contact": {')
             lines.append(f'            "name": {repr(cp.get("name"))},')
             lines.append(f'            "title": {repr(cp.get("title"))},')
             if cp.get("email"):
@@ -432,7 +411,7 @@ def format_for_seeder(congregations: list[dict]) -> str:
                 lines.append(f'            "phone": {repr(cp.get("phone"))},')
             lines.append("        },")
         else:
-            lines.append('        "contact_person": None,')
+            lines.append('        "service_contact": None,')
 
         # Status
         lines.append(f'        "status": {repr(cong["status"])},')
@@ -455,12 +434,7 @@ def main():
         seeder_content = format_for_seeder(congregations)
 
         # Write to file
-        output_file = (
-            Path(__file__).parent.parent
-            / "app"
-            / "seeders"
-            / "chwz_congregations_scraped.py"
-        )
+        output_file = Path(__file__).parent.parent / "app" / "seeders" / "chwz_congregations_scraped.py"
         output_file.write_text(
             f'"""Congregation data scraped from chwz.info.pl/lista-zborow/\n'
             f"\n"

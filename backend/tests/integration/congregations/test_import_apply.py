@@ -20,7 +20,7 @@ from app.common.id_utils import generate_id
 from app.core.database import Base, get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
-from app.modules.churches.db_models import ChurchDB
+from app.modules.churches.db_models import ChurchDB, PersonDB, ServiceAssignmentDB
 from app.modules.congregations.db_models import CongregationAddressDB
 from app.modules.tenants.db_models import TenantDB
 from main import app
@@ -148,7 +148,11 @@ async def test_apply_creates_new_congregation(ctx) -> None:
                     "fields": [
                         {"field": "city", "value": "Kraków", "apply": True},
                         {"field": "country", "value": "PL", "apply": True},
-                        {"field": "contact_name", "value": "Jan Kowalski", "apply": True},
+                        {
+                            "field": "contact_name",
+                            "value": "Jan Kowalski",
+                            "apply": True,
+                        },
                     ],
                 }
             ]
@@ -166,6 +170,17 @@ async def test_apply_creates_new_congregation(ctx) -> None:
         address = await session.scalar(select(CongregationAddressDB).where(CongregationAddressDB.tenant_id == tenant.id))
         assert address is not None
         assert address.city == "Kraków"
+        assignment = await session.scalar(
+            select(ServiceAssignmentDB).where(
+                ServiceAssignmentDB.scope_type == "church",
+                ServiceAssignmentDB.scope_id == tenant.id,
+            )
+        )
+        assert assignment is not None
+        person = await session.scalar(select(PersonDB).where(PersonDB.id == assignment.person_id))
+        assert person is not None
+        assert person.first_name == "Jan"
+        assert person.last_name == "Kowalski"
 
 
 @pytest.mark.asyncio

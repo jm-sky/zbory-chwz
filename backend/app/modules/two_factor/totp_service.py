@@ -39,9 +39,7 @@ from .types.repository import TwoFactorRepositoryInterface
 logger = logging.getLogger(__name__)
 
 
-def _create_totp_setup_token(
-    user_id: str, secret: str, backup_codes_hashed: list[str]
-) -> str:
+def _create_totp_setup_token(user_id: str, secret: str, backup_codes_hashed: list[str]) -> str:
     """Create a short-lived JWT used during TOTP setup verification.
 
     Args:
@@ -185,16 +183,10 @@ class TotpService:
             }
 
         try:
-            backup_codes = (
-                json.loads(config.backup_codes) if config.backup_codes else []
-            )
-            used_codes = (
-                json.loads(config.backup_codes_used) if config.backup_codes_used else []
-            )
+            backup_codes = json.loads(config.backup_codes) if config.backup_codes else []
+            used_codes = json.loads(config.backup_codes_used) if config.backup_codes_used else []
         except json.JSONDecodeError as e:
-            logger.warning(
-                f"Failed to decode backup codes JSON for user {user_id}: {e}"
-            )
+            logger.warning(f"Failed to decode backup codes JSON for user {user_id}: {e}")
             backup_codes = []
             used_codes = []
 
@@ -295,12 +287,8 @@ class TotpService:
             if not user or not verify_password(password, user.hashedPassword):
                 raise InvalidTwoFactorCodeError("Invalid password")
         elif backup_code:
-            backup_codes = (
-                json.loads(config.backup_codes) if config.backup_codes else []
-            )
-            used_codes = (
-                json.loads(config.backup_codes_used) if config.backup_codes_used else []
-            )
+            backup_codes = json.loads(config.backup_codes) if config.backup_codes else []
+            used_codes = json.loads(config.backup_codes_used) if config.backup_codes_used else []
             if not verify_backup_code(backup_code, backup_codes, used_codes):
                 raise InvalidTwoFactorCodeError("Invalid backup code")
         else:
@@ -311,9 +299,7 @@ class TotpService:
 
         return {"success": True, "message": "TOTP disabled"}
 
-    async def verify_code(
-        self, user_id: str, code: str, mark_used: bool = False
-    ) -> tuple[bool, bool]:
+    async def verify_code(self, user_id: str, code: str, mark_used: bool = False) -> tuple[bool, bool]:
         """Verify TOTP code or backup code.
 
         Args:
@@ -339,16 +325,12 @@ class TotpService:
 
         # Try backup codes
         backup_codes = json.loads(config.backup_codes) if config.backup_codes else []
-        used_codes = (
-            json.loads(config.backup_codes_used) if config.backup_codes_used else []
-        )
+        used_codes = json.loads(config.backup_codes_used) if config.backup_codes_used else []
 
         if verify_backup_code(code, backup_codes, used_codes):
             if mark_used:
                 used_codes = mark_backup_code_used(code, used_codes)
-                await self.repository.mark_backup_code_used(
-                    user_id, json.dumps(used_codes)
-                )
+                await self.repository.mark_backup_code_used(user_id, json.dumps(used_codes))
             return (True, True)
 
         return (False, False)

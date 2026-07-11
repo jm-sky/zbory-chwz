@@ -88,8 +88,7 @@ def create_access_token(
     return _encode_token(
         claims,
         token_type="access",
-        expires_delta=expires_delta
-        or timedelta(minutes=settings.security.access_token_expires_minutes),
+        expires_delta=expires_delta or timedelta(minutes=settings.security.access_token_expires_minutes),
     )
 
 
@@ -169,9 +168,7 @@ def create_password_reset_token(data: dict[str, str]) -> str:
     return _encode_token(
         dict(data),
         token_type="password_reset",
-        expires_delta=timedelta(
-            hours=settings.security.password_reset_token_expires_hours
-        ),
+        expires_delta=timedelta(hours=settings.security.password_reset_token_expires_hours),
     )
 
 
@@ -180,7 +177,5 @@ def create_email_verification_token(data: dict[str, str]) -> str:
     return _encode_token(
         dict(data),
         token_type="email_verification",
-        expires_delta=timedelta(
-            hours=settings.security.email_verification_token_expires_hours
-        ),
+        expires_delta=timedelta(hours=settings.security.email_verification_token_expires_hours),
     )

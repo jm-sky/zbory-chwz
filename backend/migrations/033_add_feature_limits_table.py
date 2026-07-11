@@ -24,16 +24,14 @@ from app.core.database import engine
 async def table_exists(conn, table_name: str) -> bool:
     """Check if a table exists in the database (PostgreSQL compatible)."""
     result = await conn.execute(
-        text(
-            """
+        text("""
             SELECT EXISTS (
                 SELECT 1
                 FROM information_schema.tables
                 WHERE table_schema = 'public'
                 AND table_name = :table_name
             );
-        """
-        ),
+        """),
         {"table_name": table_name},
     )
     return result.scalar() is True
@@ -51,9 +49,7 @@ async def upgrade() -> None:
 
         # Create feature_limits table
         print("Creating feature_limits table...")
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE feature_limits (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     role VARCHAR(50) NOT NULL UNIQUE,
@@ -64,19 +60,13 @@ async def upgrade() -> None:
                     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
                     CONSTRAINT valid_role CHECK (role IN ('user', 'premium', 'admin', 'owner'))
                 )
-            """
-            )
-        )
-        await conn.execute(
-            text("CREATE INDEX idx_feature_limits_role ON feature_limits(role)")
-        )
+            """))
+        await conn.execute(text("CREATE INDEX idx_feature_limits_role ON feature_limits(role)"))
         print("✓ Created feature_limits table")
 
         # Insert default limits
         print("Inserting default limits...")
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 INSERT INTO feature_limits (role, ai_limit, storage_limit_bytes, description)
                 VALUES
                     ('user', 0.00, 20971520, 'Regular user: no AI access without own token, 20MB storage'),
@@ -84,9 +74,7 @@ async def upgrade() -> None:
                     ('admin', NULL, 209715200, 'Admin: unlimited AI, 200MB storage'),
                     ('owner', NULL, 1073741824, 'Owner: unlimited AI, 1GB storage')
                 ON CONFLICT (role) DO NOTHING
-            """
-            )
-        )
+            """))
         print("✓ Inserted default limits")
 
     print("✓ Migration completed successfully")

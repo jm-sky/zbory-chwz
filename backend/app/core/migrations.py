@@ -7,13 +7,11 @@ history of all executed migrations.
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import List
 
 from sqlalchemy import DateTime, String, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.database import Base, AsyncSessionLocal
+from app.core.database import AsyncSessionLocal, Base
 
 
 class SchemaMigration(Base):
@@ -37,16 +35,14 @@ class SchemaMigration(Base):
         return f"<SchemaMigration(version={self.version}, name={self.name}, applied_at={self.applied_at})>"
 
 
-async def get_applied_migrations() -> List[str]:
+async def get_applied_migrations() -> list[str]:
     """Get list of migration versions that have been applied.
 
     Returns:
         List of migration version strings (e.g., ['001', '002'])
     """
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(SchemaMigration.version).order_by(SchemaMigration.version)
-        )
+        result = await session.execute(select(SchemaMigration.version).order_by(SchemaMigration.version))
         return [row[0] for row in result.fetchall()]
 
 
@@ -60,9 +56,7 @@ async def is_migration_applied(version: str) -> bool:
         True if migration has been applied, False otherwise
     """
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(SchemaMigration).where(SchemaMigration.version == version)
-        )
+        result = await session.execute(select(SchemaMigration).where(SchemaMigration.version == version))
         return result.scalar_one_or_none() is not None
 
 
@@ -86,9 +80,7 @@ async def unmark_migration(version: str) -> None:
         version: Migration version string (e.g., '001')
     """
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(SchemaMigration).where(SchemaMigration.version == version)
-        )
+        result = await session.execute(select(SchemaMigration).where(SchemaMigration.version == version))
         migration = result.scalar_one_or_none()
         if migration:
             await session.delete(migration)
@@ -131,7 +123,7 @@ def get_migration_name_from_filename(filename: str) -> str | None:
     return None
 
 
-def discover_migrations(migrations_dir: Path) -> List[tuple[str, str, Path]]:
+def discover_migrations(migrations_dir: Path) -> list[tuple[str, str, Path]]:
     """Discover all migration files in the migrations directory.
 
     Args:
@@ -140,7 +132,7 @@ def discover_migrations(migrations_dir: Path) -> List[tuple[str, str, Path]]:
     Returns:
         List of tuples: (version, name, filepath) sorted by version
     """
-    migrations: List[tuple[str, str, Path]] = []
+    migrations: list[tuple[str, str, Path]] = []
 
     if not migrations_dir.exists():
         return migrations
@@ -176,6 +168,7 @@ async def is_database_initialized() -> bool:
         True if database is initialized, False otherwise
     """
     from sqlalchemy import inspect
+
     from app.core.database import engine
 
     try:

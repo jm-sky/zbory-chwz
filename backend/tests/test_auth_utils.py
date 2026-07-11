@@ -2,9 +2,10 @@
 
 from datetime import UTC, datetime, timedelta
 
-import pytest
 import jwt
+import pytest
 
+from app.core.config import settings
 from app.modules.auth.auth_utils import (
     create_access_token,
     create_email_verification_token,
@@ -15,7 +16,6 @@ from app.modules.auth.auth_utils import (
     verify_token,
 )
 from app.modules.auth.exceptions import ExpiredTokenError, InvalidTokenError
-from app.core.config import settings
 
 
 class TestPasswordHashing:
@@ -75,9 +75,7 @@ class TestTokenCreation:
 
     def test_create_access_token_with_email(self) -> None:
         """Test access token creation with email."""
-        token = create_access_token(
-            data={"sub": "user123", "email": "test@example.com"}
-        )
+        token = create_access_token(data={"sub": "user123", "email": "test@example.com"})
         payload = verify_token(token)
         assert payload["email"] == "test@example.com"
 
@@ -105,33 +103,25 @@ class TestTokenCreation:
 
     def test_create_password_reset_token_returns_string(self) -> None:
         """Test that password reset token is returned as string."""
-        token = create_password_reset_token(
-            {"sub": "user123", "email": "test@example.com"}
-        )
+        token = create_password_reset_token({"sub": "user123", "email": "test@example.com"})
         assert isinstance(token, str)
         assert len(token) > 0
 
     def test_create_password_reset_token_has_correct_type(self) -> None:
         """Test that password reset token has correct type."""
-        token = create_password_reset_token(
-            {"sub": "user123", "email": "test@example.com"}
-        )
+        token = create_password_reset_token({"sub": "user123", "email": "test@example.com"})
         payload = verify_token(token)
         assert payload["type"] == "password_reset"
 
     def test_create_email_verification_token_returns_string(self) -> None:
         """Test that email verification token is returned as string."""
-        token = create_email_verification_token(
-            {"sub": "user123", "email": "test@example.com"}
-        )
+        token = create_email_verification_token({"sub": "user123", "email": "test@example.com"})
         assert isinstance(token, str)
         assert len(token) > 0
 
     def test_create_email_verification_token_has_correct_type(self) -> None:
         """Test that email verification token has correct type."""
-        token = create_email_verification_token(
-            {"sub": "user123", "email": "test@example.com"}
-        )
+        token = create_email_verification_token({"sub": "user123", "email": "test@example.com"})
         payload = verify_token(token)
         assert payload["type"] == "email_verification"
 
@@ -154,9 +144,7 @@ class TestTokenVerification:
             "sub": "user123",
             "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
         }
-        invalid_token = jwt.encode(
-            payload, wrong_secret, algorithm=settings.security.jwt_algorithm
-        )
+        invalid_token = jwt.encode(payload, wrong_secret, algorithm=settings.security.jwt_algorithm)
 
         with pytest.raises(InvalidTokenError):
             verify_token(invalid_token)
@@ -165,9 +153,7 @@ class TestTokenVerification:
         """Test verification of expired token."""
         # Create token with past expiration
         expired_delta = timedelta(minutes=-1)
-        token = create_access_token(
-            data={"sub": "user123"}, expires_delta=expired_delta
-        )
+        token = create_access_token(data={"sub": "user123"}, expires_delta=expired_delta)
 
         with pytest.raises(ExpiredTokenError):
             verify_token(token)
@@ -205,27 +191,21 @@ class TestTokenOptions:
 
     def test_access_token_with_2fa_verified(self) -> None:
         """Test access token with 2FA verified flag."""
-        token = create_access_token(
-            data={"sub": "user123", "tfaVerified": True, "tfaMethod": "totp"}
-        )
+        token = create_access_token(data={"sub": "user123", "tfaVerified": True, "tfaMethod": "totp"})
         payload = verify_token(token)
         assert payload.get("tfaVerified") is True
         assert payload.get("tfaMethod") == "totp"
 
     def test_access_token_with_tenant_info(self) -> None:
         """Test access token with tenant information."""
-        token = create_access_token(
-            data={"sub": "user123", "tid": "tenant1", "trol": "admin"}
-        )
+        token = create_access_token(data={"sub": "user123", "tid": "tenant1", "trol": "admin"})
         payload = verify_token(token)
         assert payload.get("tid") == "tenant1"
         assert payload.get("trol") == "admin"
 
     def test_refresh_token_does_not_contain_tenant_info(self) -> None:
         """Test that refresh token does not preserve tenant info (security)."""
-        token = create_refresh_token(
-            data={"sub": "user123", "tid": "tenant1", "trol": "admin"}
-        )
+        token = create_refresh_token(data={"sub": "user123", "tid": "tenant1", "trol": "admin"})
         payload = verify_token(token)
         # Tenant info should NOT be in refresh token
         assert "tid" not in payload or payload.get("tid") is None

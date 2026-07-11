@@ -16,9 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 os.environ.setdefault("ENVIRONMENT", "test")
-os.environ.setdefault(
-    "SECRET_KEY", "test-secret-key-min-32-characters-long-for-testing"
-)
+os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-characters-long-for-testing")
 os.environ.setdefault("ALLOWED_HOSTS", '["localhost","127.0.0.1"]')
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("DATABASE_POOL_SIZE", "1")
@@ -118,9 +116,7 @@ async def _seed(session: AsyncSession) -> dict[str, str]:
         )
 
     # The member belongs to church A only.
-    session.add(
-        TenantMembershipDB(tenant_id=CHURCH_A, user_id=MEMBER_ID, role="member")
-    )
+    session.add(TenantMembershipDB(tenant_id=CHURCH_A, user_id=MEMBER_ID, role="member"))
 
     # An assignment living in church B — the cross-church PATCH target.
     person_b = PersonDB(id=generate_id(), first_name="Bogdan", last_name="B")
@@ -319,9 +315,7 @@ async def test_pastor_without_create_account_does_not_require_email(ctx) -> None
 
     assert response.status_code == 201
     async with session_factory() as session:
-        person = await session.scalar(
-            select(PersonDB).where(PersonDB.first_name == "Jan")
-        )
+        person = await session.scalar(select(PersonDB).where(PersonDB.first_name == "Jan"))
         assert person is not None
         assert person.email is None
         assert person.user_id is None
@@ -386,10 +380,7 @@ async def test_list_service_assignments_sorted_by_sort_order(ctx) -> None:
 
     response = await client.get(f"/api/churches/{CHURCH_A}/service-assignments")
     assert response.status_code == 200
-    names = [
-        " ".join(p for p in (a["person"]["firstName"], a["person"]["lastName"]) if p)
-        for a in response.json()
-    ]
+    names = [" ".join(p for p in (a["person"]["firstName"], a["person"]["lastName"]) if p) for a in response.json()]
     assert names[0] == "First Person"
     assert names[1] == "Second Person"
 

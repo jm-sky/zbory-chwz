@@ -1,7 +1,6 @@
 """Abstract storage adapter for file operations."""
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class StorageAdapter(ABC):
@@ -13,7 +12,7 @@ class StorageAdapter(ABC):
         file_content: bytes,
         destination_path: str,
         content_type: str,
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> str:
         """
         Upload file to storage.
@@ -83,7 +82,7 @@ class StorageAdapter(ABC):
         pass
 
     @abstractmethod
-    async def get_available_space(self) -> Optional[int]:
+    async def get_available_space(self) -> int | None:
         """
         Get available storage space in bytes.
 

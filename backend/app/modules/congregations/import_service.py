@@ -13,7 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.ai.provider import OpenRouterProvider
 from app.modules.ai.schemas import ExtractedCongregation
+from app.modules.churches.contact_sync import (
+    get_primary_contact_snapshot,
+    upsert_primary_card_contact,
+)
 from app.modules.churches.provisioning import provision_church_for_tenant
+from app.modules.churches.repositories import ChurchRepository
 from app.modules.churches.slug_utils import slugify
 from app.modules.congregations.geo import DEFAULT_COUNTRY, is_valid_province
 from app.modules.congregations.repositories import CongregationRepository
@@ -79,6 +84,7 @@ class CongregationImportService:
         self.db = db
         self._congregation_repo = CongregationRepository(db)
         self._tenant_repo = TenantRepository(db)
+        self._church_repo = ChurchRepository(db)
 
     async def analyze(self, raw_text: str) -> ImportAnalyzeResponse:
         provider = OpenRouterProvider()
@@ -102,8 +108,7 @@ class CongregationImportService:
         match_type: str = "matched" if tenant_id else "new"
 
         current_address = await self._congregation_repo.get_address_by_tenant_id(tenant_id) if tenant_id else None
-        current_contacts = await self._congregation_repo.get_contact_persons_by_tenant_id(tenant_id) if tenant_id else []
-        current_contact = current_contacts[0] if current_contacts else None
+        current_contact = await get_primary_contact_snapshot(self._church_repo, tenant_id) if tenant_id else None
 
         new_values = {
             "street": entry.street,
@@ -122,10 +127,10 @@ class CongregationImportService:
             "postal_code": current_address.postal_code if current_address else None,
             "province": current_address.province if current_address else None,
             "country": current_address.country if current_address else None,
-            "contact_name": current_contact.name if current_contact else None,
-            "contact_title": current_contact.title if current_contact else None,
-            "contact_phone": _normalize_phone(current_contact.phone) if current_contact else None,
-            "contact_email": current_contact.email if current_contact else None,
+            "contact_name": (current_contact["contact_name"] if current_contact else None),
+            "contact_title": (current_contact["contact_title"] if current_contact else None),
+            "contact_phone": (_normalize_phone(current_contact["contact_phone"]) if current_contact else None),
+            "contact_email": (current_contact["contact_email"] if current_contact else None),
         }
 
         if match_type == "new":
@@ -253,27 +258,22 @@ class CongregationImportService:
         )
 
     async def _apply_contact_fields(self, tenant_id: str, values: dict[str, str | None]) -> None:
-        contacts = await self._congregation_repo.get_contact_persons_by_tenant_id(tenant_id)
-        existing_contact = contacts[0] if contacts else None
+        current = await get_primary_contact_snapshot(self._church_repo, tenant_id)
 
-        name = values.get("contact_name") or (existing_contact.name if existing_contact else None)
+        name = values.get("contact_name") or current["contact_name"]
         if not name:
-            raise ValueError(f"Contact name is required to save a contact person for tenant {tenant_id}")
+            raise ValueError(f"Contact name is required to save a service contact for tenant {tenant_id}")
 
-        if existing_contact:
-            existing_contact.name = name
-            if "contact_title" in values:
-                existing_contact.title = values["contact_title"]
-            if "contact_phone" in values:
-                existing_contact.phone = _normalize_phone(values["contact_phone"])
-            if "contact_email" in values:
-                existing_contact.email = values["contact_email"]
-            await self.db.commit()
-        else:
-            await self._congregation_repo.create_contact_person(
-                tenant_id,
-                name=name,
-                title=values.get("contact_title"),
-                phone=_normalize_phone(values.get("contact_phone")),
-                email=values.get("contact_email"),
-            )
+        title = values.get("contact_title") if "contact_title" in values else current["contact_title"]
+        phone = _normalize_phone(values["contact_phone"]) if "contact_phone" in values else current["contact_phone"]
+        email = values.get("contact_email") if "contact_email" in values else current["contact_email"]
+
+        await upsert_primary_card_contact(
+            self._church_repo,
+            tenant_id,
+            name=name,
+            title=title,
+            phone=phone,
+            email=email,
+            fields=set(values.keys()) & _CONTACT_FIELDS,
+        )

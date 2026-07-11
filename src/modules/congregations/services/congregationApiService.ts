@@ -10,9 +10,6 @@ import type {
   ICongregationDetailed,
   ICongregationDetailedListResponse,
   ICongregationFull,
-  IContactPerson,
-  IContactPersonCreateRequest,
-  IContactPersonUpdateRequest,
   IServiceTime,
   IServiceTimeCreateRequest,
   IServiceTimeUpdateRequest,
@@ -155,7 +152,7 @@ class CongregationApiService {
   }
 
   /**
-   * Get full congregation data including address, service times, and contact persons
+   * Get full congregation data including address and service times
    */
   async getCongregationFull(id: string): Promise<ICongregationFull> {
     const response = await apiClient.get<ICongregationFull>(`/congregations/${id}/full`)
@@ -264,37 +261,6 @@ class CongregationApiService {
    */
   async deleteServiceTime(tenantId: string, serviceTimeId: string): Promise<void> {
     await apiClient.delete(`/congregations/${tenantId}/service-times/${serviceTimeId}`)
-  }
-
-  /**
-   * Get contact persons for a congregation
-   */
-  async getContactPersons(tenantId: string): Promise<IContactPerson[]> {
-    const response = await apiClient.get<IContactPerson[]>(`/congregations/${tenantId}/contact-persons`)
-    return response.data
-  }
-
-  /**
-   * Create contact person for a congregation
-   */
-  async createContactPerson(tenantId: string, data: IContactPersonCreateRequest): Promise<IContactPerson> {
-    const response = await apiClient.post<IContactPerson>(`/congregations/${tenantId}/contact-persons`, data)
-    return response.data
-  }
-
-  /**
-   * Update contact person for a congregation
-   */
-  async updateContactPerson(tenantId: string, contactPersonId: string, data: IContactPersonUpdateRequest): Promise<IContactPerson> {
-    const response = await apiClient.patch<IContactPerson>(`/congregations/${tenantId}/contact-persons/${contactPersonId}`, data)
-    return response.data
-  }
-
-  /**
-   * Delete contact person for a congregation
-   */
-  async deleteContactPerson(tenantId: string, contactPersonId: string): Promise<void> {
-    await apiClient.delete(`/congregations/${tenantId}/contact-persons/${contactPersonId}`)
   }
 }
 

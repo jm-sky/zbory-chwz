@@ -10,16 +10,15 @@ import logging
 from datetime import UTC, datetime
 
 from fastapi import Depends
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.common.id_utils import generate_id
 from app.common.search import SearchMixin
+from app.core.database import get_db
 
-from .models import Log
 from .db_models import LogDB, LogLevel
-
+from .models import Log
 
 logger = logging.getLogger(__name__)
 
@@ -156,9 +155,7 @@ class LogRepository(SearchMixin):
         # Convert to Pydantic Log models
         return [Log.model_validate(log_db) for log_db in logs_db]
 
-    async def get_error_logs(
-        self, skip: int = 0, limit: int = 100, user_id: str | None = None
-    ) -> list[Log]:
+    async def get_error_logs(self, skip: int = 0, limit: int = 100, user_id: str | None = None) -> list[Log]:
         """Get only ERROR and CRITICAL level logs."""
         stmt = select(LogDB).where(
             or_(

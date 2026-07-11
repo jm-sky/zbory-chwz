@@ -35,15 +35,21 @@ def test_can_view(
 
 
 def test_filter_contact_field() -> None:
-    assert VisibilityService.filter_contact_field(
-        "+48123456789",
-        "authenticated",
-        is_authenticated=False,
-        has_pastoral_access=False,
-    ) is None
-    assert VisibilityService.filter_contact_field(
-        "a@b.c",
-        "authenticated",
-        is_authenticated=True,
-        has_pastoral_access=False,
-    ) == "a@b.c"
+    assert (
+        VisibilityService.filter_contact_field(
+            "+48123456789",
+            "authenticated",
+            is_authenticated=False,
+            has_pastoral_access=False,
+        )
+        is None
+    )
+    assert (
+        VisibilityService.filter_contact_field(
+            "a@b.c",
+            "authenticated",
+            is_authenticated=True,
+            has_pastoral_access=False,
+        )
+        == "a@b.c"
+    )

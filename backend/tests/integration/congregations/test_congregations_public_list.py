@@ -13,9 +13,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 os.environ.setdefault("ENVIRONMENT", "test")
-os.environ.setdefault(
-    "SECRET_KEY", "test-secret-key-min-32-characters-long-for-testing"
-)
+os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-characters-long-for-testing")
 os.environ.setdefault("ALLOWED_HOSTS", '["localhost","127.0.0.1"]')
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("DATABASE_POOL_SIZE", "1")

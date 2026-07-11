@@ -1,7 +1,6 @@
 """Tenant management CLI commands."""
 
 import asyncio
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -26,7 +25,7 @@ def tenants_callback(ctx: typer.Context) -> None:
         show_group_interactive_menu("tenants", COMMAND_GROUPS["tenants"])
 
 
-async def _create_tenant_async(name: str, description: Optional[str], owner_email: str) -> None:
+async def _create_tenant_async(name: str, description: str | None, owner_email: str) -> None:
     from app.core.database import get_db
     from app.modules.auth.repositories import UserRepository
     from app.modules.tenants.repositories import TenantRepository
@@ -99,7 +98,7 @@ async def _list_tenants_async() -> None:
 def create_tenant(
     name: str = typer.Argument(..., help="Tenant name"),
     email: str = typer.Option(..., "--owner-email", "-e", prompt=True, help="Owner email"),
-    description: Optional[str] = typer.Option(None, "--description", "-d", help="Tenant description"),
+    description: str | None = typer.Option(None, "--description", "-d", help="Tenant description"),
 ) -> None:
     """Create tenant and assign owner."""
     asyncio.run(_create_tenant_async(name=name, description=description, owner_email=email))

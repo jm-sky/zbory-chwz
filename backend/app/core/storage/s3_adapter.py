@@ -1,6 +1,5 @@
 """AWS S3 storage adapter."""
 
-from typing import Optional
 
 try:
     import aioboto3
@@ -22,8 +21,8 @@ class S3StorageAdapter(StorageAdapter):
         aws_access_key_id: str,
         aws_secret_access_key: str,
         region_name: str = "us-east-1",
-        endpoint_url: Optional[str] = None,
-        public_endpoint_url: Optional[str] = None,
+        endpoint_url: str | None = None,
+        public_endpoint_url: str | None = None,
     ):
         """
         Initialize S3 storage adapter.
@@ -38,9 +37,7 @@ class S3StorageAdapter(StorageAdapter):
                 If not set, uses endpoint_url.
         """
         if not S3_AVAILABLE:
-            raise ImportError(
-                "aioboto3 is required for S3 storage. Install with: pip install aioboto3"
-            )
+            raise ImportError("aioboto3 is required for S3 storage. Install with: pip install aioboto3")
 
         self.bucket_name = bucket_name
         self.aws_access_key_id = aws_access_key_id
@@ -55,7 +52,7 @@ class S3StorageAdapter(StorageAdapter):
         file_content: bytes,
         destination_path: str,
         content_type: str,
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> str:
         """Upload file to S3."""
         async with self.session.client(
@@ -135,6 +132,6 @@ class S3StorageAdapter(StorageAdapter):
             )
             return url
 
-    async def get_available_space(self) -> Optional[int]:
+    async def get_available_space(self) -> int | None:
         """S3 has unlimited space (return None)."""
         return None

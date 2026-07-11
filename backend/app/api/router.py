@@ -8,7 +8,9 @@ from fastapi import APIRouter
 from app.modules.admin.router import router as admin_router
 from app.modules.auth.router import router as auth_router
 from app.modules.churches.router import router as churches_router
-from app.modules.congregations.import_router import router as congregations_import_router
+from app.modules.congregations.import_router import (
+    router as congregations_import_router,
+)
 from app.modules.congregations.router import router as congregations_router
 from app.modules.directory.router import router as directory_router
 from app.modules.google_contacts.router import router as google_contacts_router

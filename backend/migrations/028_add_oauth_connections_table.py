@@ -17,21 +17,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import text
+
 from app.core.database import engine
 
 
 async def table_exists(conn, table_name: str) -> bool:
     """Check if a table exists in the database."""
     result = await conn.execute(
-        text(
-            """
+        text("""
             SELECT EXISTS (
                 SELECT FROM information_schema.tables
                 WHERE table_schema = 'public'
                 AND table_name = :table_name
             );
-        """
-        ),
+        """),
         {"table_name": table_name},
     )
     return result.scalar() is True
@@ -45,9 +44,7 @@ async def upgrade() -> None:
         connections_exist = await table_exists(conn, "oauth_connections")
         if not connections_exist:
             print("Creating oauth_connections table...")
-            await conn.execute(
-                text(
-                    """
+            await conn.execute(text("""
                     CREATE TABLE oauth_connections (
                         id VARCHAR(36) PRIMARY KEY,
                         user_id VARCHAR(36) NOT NULL,
@@ -64,26 +61,16 @@ async def upgrade() -> None:
                         CONSTRAINT uq_oauth_connections_provider
                             UNIQUE (provider, provider_id)
                     );
-                """
-                )
-            )
+                """))
             # Create indexes for better query performance
-            await conn.execute(
-                text(
-                    """
+            await conn.execute(text("""
                     CREATE INDEX IF NOT EXISTS ix_oauth_connections_user_id
                     ON oauth_connections(user_id);
-                """
-                )
-            )
-            await conn.execute(
-                text(
-                    """
+                """))
+            await conn.execute(text("""
                     CREATE INDEX IF NOT EXISTS ix_oauth_connections_provider
                     ON oauth_connections(provider, provider_id);
-                """
-                )
-            )
+                """))
             print("✓ Created oauth_connections table")
         else:
             print("✓ oauth_connections table already exists")
@@ -97,13 +84,9 @@ async def downgrade() -> None:
         connections_exist = await table_exists(conn, "oauth_connections")
         if connections_exist:
             print("Dropping oauth_connections table...")
-            await conn.execute(
-                text(
-                    """
+            await conn.execute(text("""
                     DROP TABLE IF EXISTS oauth_connections CASCADE;
-                """
-                )
-            )
+                """))
             print("✓ Dropped oauth_connections table")
         else:
             print("✓ oauth_connections table does not exist")
@@ -112,9 +95,7 @@ async def downgrade() -> None:
 async def main() -> None:
     """Run migration based on command line argument."""
     if len(sys.argv) < 2:
-        print(
-            "Usage: python migrations/028_add_oauth_connections_table.py [upgrade|downgrade]"
-        )
+        print("Usage: python migrations/028_add_oauth_connections_table.py [upgrade|downgrade]")
         sys.exit(1)
 
     command = sys.argv[1].lower()
@@ -124,9 +105,7 @@ async def main() -> None:
         await downgrade()
     else:
         print(f"Unknown command: {command}")
-        print(
-            "Usage: python migrations/028_add_oauth_connections_table.py [upgrade|downgrade]"
-        )
+        print("Usage: python migrations/028_add_oauth_connections_table.py [upgrade|downgrade]")
         sys.exit(1)
 
 

@@ -7,10 +7,12 @@ from typing import TYPE_CHECKING
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.core.config import EmailSettings, settings
-from .i18n import SupportedLocale, DEFAULT_LOCALE, get_translations
+
+from .i18n import DEFAULT_LOCALE, SupportedLocale, get_translations
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
+
     from .adapter import EmailAdapter
 
 logger = logging.getLogger(__name__)
@@ -38,9 +40,7 @@ class EmailService:
         # Primary color from frontend: oklch(0.646 0.222 41.116) converted to hex for email compatibility
         self.primary_color = "#D97757"
 
-    def _render_translation(
-        self, translations: dict[str, object], key: str, context: dict[str, object]
-    ) -> str:
+    def _render_translation(self, translations: dict[str, object], key: str, context: dict[str, object]) -> str:
         """Render a translation string with context variables.
 
         Args:
@@ -107,9 +107,7 @@ class EmailService:
             # Render subject if it's a translation key
             if translations and subject.startswith("translation:"):
                 translation_key = subject.replace("translation:", "")
-                subject = self._render_translation(
-                    translations, translation_key, context
-                )
+                subject = self._render_translation(translations, translation_key, context)
 
             # Add common context variables (app_name, primary_color, frontend_url)
             context_with_defaults = {
@@ -129,9 +127,7 @@ class EmailService:
                 def translate(key: str, **kwargs: object) -> str:
                     """Helper function for translations in templates."""
                     assert translations is not None
-                    return self._render_translation(
-                        translations, key, {**context_with_defaults, **kwargs}
-                    )
+                    return self._render_translation(translations, key, {**context_with_defaults, **kwargs})
 
                 context_with_defaults["translate"] = translate
             else:
@@ -250,9 +246,7 @@ class EmailService:
         Returns:
             True if email sent successfully
         """
-        verification_link = (
-            f"{settings.frontend_url}/auth/verify-email?token={verification_token}"
-        )
+        verification_link = f"{settings.frontend_url}/auth/verify-email?token={verification_token}"
         context = {
             "name": name,
             "email": to,
@@ -415,10 +409,8 @@ def get_email_service() -> EmailService:
     """
     from .adapter import EmailAdapter
     from .file_adapter import FileEmailAdapter
-    from .smtp_adapter import SMTPEmailAdapter
     from .retry_smtp_adapter import RetrySMTPAdapter
-    from .audit_adapter import AuditEmailAdapter
-    from app.core.database import get_db
+    from .smtp_adapter import SMTPEmailAdapter
 
     # Get email settings from config
     email_settings: EmailSettings | None = getattr(settings, "email", None)
@@ -443,10 +435,7 @@ def get_email_service() -> EmailService:
                 use_tls=email_settings.smtp_use_tls,
                 max_retries=email_settings.max_retries,
             )
-            logger.info(
-                f"Using RetrySMTPAdapter with {email_settings.max_retries} "
-                f"max retries"
-            )
+            logger.info(f"Using RetrySMTPAdapter with {email_settings.max_retries} " f"max retries")
         else:
             adapter = SMTPEmailAdapter(
                 host=email_settings.smtp_host,
@@ -485,11 +474,10 @@ def get_email_service_with_audit(
         EmailService instance with audit support if enabled
     """
     from .adapter import EmailAdapter
-    from .file_adapter import FileEmailAdapter
-    from .smtp_adapter import SMTPEmailAdapter
-    from .retry_smtp_adapter import RetrySMTPAdapter
     from .audit_adapter import AuditEmailAdapter
-    from sqlalchemy.ext.asyncio import AsyncSession
+    from .file_adapter import FileEmailAdapter
+    from .retry_smtp_adapter import RetrySMTPAdapter
+    from .smtp_adapter import SMTPEmailAdapter
 
     # Get email settings from config
     email_settings: EmailSettings | None = getattr(settings, "email", None)

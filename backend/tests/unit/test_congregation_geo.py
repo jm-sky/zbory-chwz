@@ -59,7 +59,5 @@ def test_address_rejects_a_province_from_another_country() -> None:
 
 
 def test_address_accepts_a_matching_country_and_province() -> None:
-    address = AddressCreateRequest(
-        city="Wrocław", country="PL", province="dolnoslaskie"
-    )
+    address = AddressCreateRequest(city="Wrocław", country="PL", province="dolnoslaskie")
     assert address.province == "dolnoslaskie"

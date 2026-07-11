@@ -20,9 +20,7 @@ async def upgrade() -> None:
     print("Creating church hierarchy tables...")
 
     async with engine.begin() as conn:
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS communities (
                     id VARCHAR(36) PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
@@ -30,13 +28,9 @@ async def upgrade() -> None:
                     visibility VARCHAR(32) NOT NULL DEFAULT 'hidden',
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
-                """
-            )
-        )
+                """))
 
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS regions (
                     id VARCHAR(36) PRIMARY KEY,
                     community_id VARCHAR(36) NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
@@ -45,13 +39,9 @@ async def upgrade() -> None:
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     UNIQUE (community_id, slug)
                 )
-                """
-            )
-        )
+                """))
 
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS churches (
                     id VARCHAR(36) PRIMARY KEY,
                     community_id VARCHAR(36) NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
@@ -61,13 +51,9 @@ async def upgrade() -> None:
                     visibility VARCHAR(32) NOT NULL DEFAULT 'hidden',
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
-                """
-            )
-        )
+                """))
 
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS branches (
                     id VARCHAR(36) PRIMARY KEY,
                     church_id VARCHAR(36) NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
@@ -77,13 +63,9 @@ async def upgrade() -> None:
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     UNIQUE (church_id, slug)
                 )
-                """
-            )
-        )
+                """))
 
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS persons (
                     id VARCHAR(36) PRIMARY KEY,
                     first_name VARCHAR(255),
@@ -94,13 +76,9 @@ async def upgrade() -> None:
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
-                """
-            )
-        )
+                """))
 
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS service_types (
                     id VARCHAR(36) PRIMARY KEY,
                     slug VARCHAR(100) NOT NULL UNIQUE,
@@ -113,13 +91,9 @@ async def upgrade() -> None:
                     probation_supported BOOLEAN NOT NULL DEFAULT FALSE,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
-                """
-            )
-        )
+                """))
 
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS service_assignments (
                     id VARCHAR(36) PRIMARY KEY,
                     person_id VARCHAR(36) NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
@@ -133,13 +107,9 @@ async def upgrade() -> None:
                     probation_ends_at TIMESTAMPTZ,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
-                """
-            )
-        )
+                """))
 
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS church_slug_aliases (
                     id VARCHAR(36) PRIMARY KEY,
                     church_id VARCHAR(36) NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
@@ -151,13 +121,9 @@ async def upgrade() -> None:
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     UNIQUE (country_slug, city_slug, slug)
                 )
-                """
-            )
-        )
+                """))
 
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS city_aliases (
                     id VARCHAR(36) PRIMARY KEY,
                     country_slug VARCHAR(100) NOT NULL,
@@ -166,9 +132,7 @@ async def upgrade() -> None:
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     UNIQUE (country_slug, alias_slug)
                 )
-                """
-            )
-        )
+                """))
 
         for stmt in (
             "CREATE INDEX IF NOT EXISTS idx_churches_tenant_id ON churches(tenant_id)",

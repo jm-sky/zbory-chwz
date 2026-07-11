@@ -47,9 +47,7 @@ class ConvertEmptyStringsToNoneMiddleware:
 
     ALLOWED_METHODS = ("POST", "PUT", "PATCH")
 
-    def __init__(
-        self, app: Callable[[dict[str, Any], Callable, Callable], Awaitable[None]]
-    ) -> None:
+    def __init__(self, app: Callable[[dict[str, Any], Callable, Callable], Awaitable[None]]) -> None:
         """Initialize middleware with ASGI app."""
         self.app = app
 

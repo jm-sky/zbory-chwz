@@ -12,7 +12,7 @@ os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["DATABASE_POOL_SIZE"] = "1"
 os.environ["DATABASE_MAX_OVERFLOW"] = "0"
 
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient

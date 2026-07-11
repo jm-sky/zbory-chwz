@@ -59,9 +59,7 @@ class AdminService:
         return str(dt)
 
     # User operations
-    async def get_all_users(
-        self, skip: int = 0, limit: int = 100
-    ) -> list[AdminUserResponse]:
+    async def get_all_users(self, skip: int = 0, limit: int = 100) -> list[AdminUserResponse]:
         """Get all users with admin metadata.
 
         Args:
@@ -86,11 +84,9 @@ class AdminService:
                     isOwner=user.is_owner,
                     isPremium=user.is_premium,
                     isEmailVerified=user.is_email_verified,
-                    emailVerifiedAt=self._serialize_datetime(user.email_verified_at)
-                    or "",
+                    emailVerifiedAt=self._serialize_datetime(user.email_verified_at) or "",
                     createdAt=self._serialize_datetime(user.created_at) or "",
-                    updatedAt=self._serialize_datetime(user.created_at)
-                    or "",  # UserDB doesn't have updated_at
+                    updatedAt=self._serialize_datetime(user.created_at) or "",  # UserDB doesn't have updated_at
                 )
             )
 
@@ -122,13 +118,10 @@ class AdminService:
             isEmailVerified=user.is_email_verified,
             emailVerifiedAt=self._serialize_datetime(user.email_verified_at) or "",
             createdAt=self._serialize_datetime(user.created_at) or "",
-            updatedAt=self._serialize_datetime(user.created_at)
-            or "",  # UserDB doesn't have updated_at
+            updatedAt=self._serialize_datetime(user.created_at) or "",  # UserDB doesn't have updated_at
         )
 
-    async def update_user(
-        self, user_id: str, user_data: UserUpdate, current_user: "User"
-    ) -> AdminUserResponse | None:
+    async def update_user(self, user_id: str, user_data: UserUpdate, current_user: "User") -> AdminUserResponse | None:
         """Update user information.
 
         Args:
@@ -152,18 +145,13 @@ class AdminService:
         # Protection: Admin cannot assign Owner role
         if current_user.isAdmin and not current_user.isOwner:
             # Check if trying to set isOwner to True
-            if user_data.isOwner is True or (
-                user_data.role and user_data.role == "owner"
-            ):
+            if user_data.isOwner is True or (user_data.role and user_data.role == "owner"):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Administrators cannot assign Owner role",
                 )
             # Check if target user is Owner and trying to change their Owner status
-            if target_user.is_owner and (
-                user_data.isOwner is False
-                or (user_data.role and user_data.role != "owner")
-            ):
+            if target_user.is_owner and (user_data.isOwner is False or (user_data.role and user_data.role != "owner")):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Administrators cannot modify Owner users",
@@ -220,11 +208,9 @@ class AdminService:
             isActive=updated_user.is_active,
             isAdmin=updated_user.is_admin,
             isEmailVerified=updated_user.is_email_verified,
-            emailVerifiedAt=self._serialize_datetime(updated_user.email_verified_at)
-            or "",
+            emailVerifiedAt=self._serialize_datetime(updated_user.email_verified_at) or "",
             createdAt=self._serialize_datetime(updated_user.created_at) or "",
-            updatedAt=self._serialize_datetime(updated_user.created_at)
-            or "",  # UserDB doesn't have updated_at
+            updatedAt=self._serialize_datetime(updated_user.created_at) or "",  # UserDB doesn't have updated_at
         )
 
     async def delete_user(self, user_id: str, current_user: "User") -> bool:
@@ -249,10 +235,7 @@ class AdminService:
 
         # Protection 1: Cannot delete protected user email
         if settings.security.protected_user_email:
-            if (
-                target_user.email.lower()
-                == settings.security.protected_user_email.lower()
-            ):
+            if target_user.email.lower() == settings.security.protected_user_email.lower():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Cannot delete protected user",

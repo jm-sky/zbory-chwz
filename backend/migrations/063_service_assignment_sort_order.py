@@ -20,31 +20,21 @@ async def upgrade() -> None:
     print("Adding sort_order to service_assignments...")
 
     async with engine.begin() as conn:
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 ALTER TABLE service_assignments
                 ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0
-                """
-            )
-        )
+                """))
 
         # Copy order from legacy contact persons where backfill linked them.
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 UPDATE service_assignments sa
                 SET sort_order = cp."order"
                 FROM congregation_contact_persons cp
                 WHERE sa.source_contact_person_id = cp.id
-                """
-            )
-        )
+                """))
 
         # Remaining rows: preserve previous display order per church scope.
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 UPDATE service_assignments sa
                 SET sort_order = ranked.row_num - 1
                 FROM (
@@ -62,9 +52,7 @@ async def upgrade() -> None:
                 ) ranked
                 WHERE sa.id = ranked.id
                   AND sa.source_contact_person_id IS NULL
-                """
-            )
-        )
+                """))
 
     print("Migration 063 upgrade complete.")
 
@@ -73,14 +61,10 @@ async def downgrade() -> None:
     print("Removing sort_order from service_assignments...")
 
     async with engine.begin() as conn:
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
                 ALTER TABLE service_assignments
                 DROP COLUMN IF EXISTS sort_order
-                """
-            )
-        )
+                """))
 
     print("Migration 063 downgrade complete.")
 
