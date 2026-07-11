@@ -1,8 +1,8 @@
 # Eksport adresów e-mail — plan (MVP: filtrowanie + kopiowanie)
 
-**Status:** `planned`
+**Status:** `done` (faza 1)
 **Created:** 2026-07-09
-**Updated:** 2026-07-11 — zakres MVP radykalnie uproszczony po rozmowie planistycznej
+**Updated:** 2026-07-11 — zakres MVP radykalnie uproszczony po rozmowie planistycznej, faza 1 zaimplementowana i zweryfikowana end-to-end
 **Issue:** [#015](../issues/2026-07-09--015--mailing-lists.md)
 **Depends on:** [people-groups.md](./2026-07-09--people-groups.md) (done), istniejący ACL (`roles`/`user_role_assignments` w `app/modules/churches`)
 
@@ -30,26 +30,34 @@ Szybkie budowanie listy adresów e-mail do wklejenia w zewnętrzny klient poczty
 
 Brak nowych tabel. Zapytanie łączy istniejące dane: `persons` (adres e-mail) × `service_assignments` (region/zbór przez `scope_type`/`scope_id`, oraz `service_type_id` jako filtr roli) × `people_group_memberships` (filtr grupy, aktywne członkostwo — `left_at IS NULL`).
 
-## API (szkic)
+## API (zaimplementowane)
 
 ```
+GET /people-directory/filters
+  -> { regions: [{id,name}], serviceTypes: [{id,name}], groups: [{id,name}] }
+  (zawężone do zasięgu ACL wywołującego)
+
 GET /people-directory/export
   ?regionIds=...&serviceTypeIds=...&groupIds=...
   -> { persons: [{ id, firstName, lastName, email }] }
 ```
 
-Zwraca tylko osoby z niepustym `email`. Zasięg wyników zawężony po stronie backendu do ról ACL wywołującego (punkt 2) — nie da się tego obejść parametrami zapytania.
+Zwraca tylko osoby z niepustym `email`. Zasięg wyników zawężony po stronie backendu do ról ACL wywołującego (punkt 2) — nie da się tego obejść parametrami zapytania. Region + rola filtrowane **razem na tym samym** `service_assignment` (nie niezależnie) — „Region Północ + Pastor” znaczy „pastor w regionie Północ”, nie „ktoś z przypisaniem gdziekolwiek w Północy ORAZ osobno gdzieś jako pastor”. Grupa to niezależny, dodatkowy warunek AND. Brak roli ACL → `403`.
 
-## UI (szkic)
+Moduł: `backend/app/modules/directory/` (`schemas.py`, `repositories.py`, `router.py`), zarejestrowany w `app/api/router.py`.
 
-Nowa strona (nazwa robocza `/people-directory` lub `/mailing`): wielowyborowe filtry (region / rola / grupa, każdy zawężony do zasięgu ACL) → tabela wyników z możliwością usunięcia wiersza → pole dodania osoby (autocomplete) lub dowolnego e-maila → dwa przyciski kopiowania (same adresy / z etykietami).
+## UI (zaimplementowane)
+
+Strona `/people-directory`: checkboxy region / rola / grupa (każdy zawężony do zasięgu ACL) → przycisk „Szukaj” → lista wyników z usuwaniem wiersza → „Dodaj osobę” (ten sam `usePersonAutocomplete`/`PersonSuggestionsList` co w grupach) lub „Dodaj dowolny e-mail” → dwa przyciski kopiowania do schowka (same adresy `;` / z etykietami `Imię Nazwisko <email>`). Dostępna z głównej nawigacji dla każdego zalogowanego; brak roli ACL pokazuje przyjazny komunikat zamiast pustej strony.
+
+Moduł: `src/modules/directory/`.
 
 ## Fazy
 
 | Faza | Zakres | Status |
 |------|--------|--------|
 | 0 | Ten dokument + issue #015 | done |
-| 1 | Endpoint filtrowania (region + rola + grupa, zasięg ACL) + strona UI + kopiowanie do schowka | todo |
+| 1 | Endpoint filtrowania (region + rola + grupa, zasięg ACL) + strona UI + kopiowanie do schowka | done |
 | 2 (opcjonalnie, później) | Zapisane/nazwane filtry, wysyłka przez SMTP/ESP, kampanie | nieplanowane |
 
 ## Ryzyka
@@ -57,6 +65,12 @@ Nowa strona (nazwa robocza `/people-directory` lub `/mailing`): wielowyborowe fi
 - **Ekspozycja wielu adresów naraz w jednym eksporcie** — dostęp musi być ściśle ograniczony do ról ACL (punkt 2), inaczej to furtka do masowego zbierania adresów przez dowolnego pastora spoza jego zasięgu. Krytyczne, żeby zasięg był egzekwowany po stronie backendu, nie tylko ukryty w UI.
 - **Deduplikacja po `person_id`, nie po `email`** — jeśli dwie różne osoby (rekordy `person`) mają ten sam adres e-mail (np. współdzielone konto rodzinne), obie trafią na listę osobno. Akceptowalne dla MVP.
 - **„Rola” oznacza dwie różne rzeczy w tym dokumencie** (ACL do dostępu vs `service_type` do filtrowania) — trzeba to jasno rozdzielić w kodzie (różne nazwy pól/zmiennych), żeby nie pomylić uprawnień z filtrem wyników.
+
+## Zweryfikowane (2026-07-11)
+
+- 9 testów integracyjnych (`tests/integration/directory/`): pastor widzi tylko swój zbór, regional_bishop cały swój region (nie sąsiedni), admin wszystko, outsider bez roli ACL dostaje 403, region+rola łączone na tym samym przypisaniu (nie niezależnie), filtr grupy, `/filters` zwraca regiony zawężone do zasięgu
+- End-to-end w przeglądarce (prawdziwy Postgres + Redis): filtr „Pastor” poprawnie wyklucza osobę ze służbą „Diakon”, dodanie osoby przez wyszukiwarkę, dodanie dowolnego e-maila, kopiowanie do schowka w formacie `email;email`
+- Po drodze naprawiony błąd: checkboxy filtrów nie miały `id`/`for` między `Checkbox` a `Label`, więc kliknięcie w etykietę (a nie dokładnie w mały kwadrat) nie zaznaczało filtra — naprawione przez dodanie powiązania
 
 ## Powiązane
 

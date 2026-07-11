@@ -1,6 +1,7 @@
 import { adminRoutes } from '@/modules/admin/routes'
 import { AuthRouteNames, AuthRoutePaths, authRoutes } from '@/modules/auth/config/routes'
 import { congregationRoutes } from '@/modules/congregations/routes'
+import { directoryRoutes } from '@/modules/directory/routes'
 import { groupRoutes } from '@/modules/groups/routes'
 import { settingsRoutes } from '@/modules/settings/routes'
 import { userRoutes } from '@/modules/user/routes'
@@ -23,6 +24,7 @@ export const routes: RouteRecordRaw[] = [
   ...authRoutes,
   ...adminRoutes,
   ...congregationRoutes,
+  ...directoryRoutes,
   ...groupRoutes,
   ...settingsRoutes,
   ...userRoutes,

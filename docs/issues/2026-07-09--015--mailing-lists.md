@@ -1,8 +1,8 @@
 # Eksport adresów e-mail (filtrowanie + kopiowanie)
 
-**Status:** `planned`
+**Status:** `done`
 **Created:** 2026-07-09
-**Updated:** 2026-07-11 — zakres MVP uproszczony, patrz plan
+**Updated:** 2026-07-11 — zakres MVP uproszczony i zaimplementowany, patrz plan
 **Plan:** [2026-07-09--mailing-lists.md](../plans/2026-07-09--mailing-lists.md)
 **Depends on:** [#014](./2026-07-09--014--people-groups.md)
 
@@ -19,9 +19,9 @@ Administratorzy i pasterze potrzebują szybko zebrać adresy e-mail konkretnej g
 
 ## Zakres docelowy (high level)
 
-- [ ] Endpoint zwracający osoby z e-mailem, filtrowane po regionie / roli (`service_types`) / grupie (`people_groups`), zawężone do zasięgu ACL wywołującego
-- [ ] Strona UI: filtry (multi-select) → tabela wyników → ręczne dodanie/usunięcie osoby → dwa przyciski kopiowania (same adresy `;` / z etykietami `Imię Nazwisko <email>`)
-- [ ] Dodanie osoby spoza wyniku przez wyszukiwarkę (`usePersonAutocomplete`, ten sam komponent co w grupach) lub dowolny wolny e-mail
+- [x] Endpoint zwracający osoby z e-mailem, filtrowane po regionie / roli (`service_types`) / grupie (`people_groups`), zawężone do zasięgu ACL wywołującego
+- [x] Strona UI: filtry (multi-select) → tabela wyników → ręczne dodanie/usunięcie osoby → dwa przyciski kopiowania (same adresy `;` / z etykietami `Imię Nazwisko <email>`)
+- [x] Dodanie osoby spoza wyniku przez wyszukiwarkę (`usePersonAutocomplete`, ten sam komponent co w grupach) lub dowolny wolny e-mail
 
 ## Poza zakresem (teraz)
 
@@ -35,9 +35,11 @@ Administratorzy i pasterze potrzebują szybko zebrać adresy e-mail konkretnej g
 - Widoczność pól e-mail ([#012](./2026-07-09--012--unify-services-remove-contact-persons.md)) — świadomie ignorowana w tym narzędziu
 - ACL (`roles`/`user_role_assignments`) — źródło ograniczenia dostępu i zasięgu wyników
 
-## Acceptance criteria (gdy implementacja)
+## Acceptance criteria
 
-- Pastor widzi w eksporcie tylko osoby ze swojego zboru; regional_bishop — swojego regionu; bishop — swojej wspólnoty; admin/owner — wszystkich
-- Użytkownik bez żadnej roli ACL dostaje 403 przy próbie użycia narzędzia
-- Filtrowanie po regionie + roli + grupie działa łącznie (AND między wymiarami, OR wewnątrz wymiaru)
-- Kopiowanie do schowka działa w obu formatach
+- [x] Pastor widzi w eksporcie tylko osoby ze swojego zboru; regional_bishop — swojego regionu; bishop — swojej wspólnoty; admin/owner — wszystkich
+- [x] Użytkownik bez żadnej roli ACL dostaje 403 przy próbie użycia narzędzia
+- [x] Filtrowanie po regionie + roli + grupie działa łącznie (AND między wymiarami, OR wewnątrz wymiaru)
+- [x] Kopiowanie do schowka działa w obu formatach
+
+Zweryfikowane: 9 testów integracyjnych (`backend/tests/integration/directory/`) + end-to-end w przeglądarce na prawdziwym Postgresie/Redisie.

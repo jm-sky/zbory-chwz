@@ -7,14 +7,17 @@ from fastapi import APIRouter
 # add the necessary imports and include_router calls here.
 from app.modules.admin.router import router as admin_router
 from app.modules.auth.router import router as auth_router
+from app.modules.churches.router import router as churches_router
+from app.modules.congregations.router import router as congregations_router
+from app.modules.directory.router import router as directory_router
+from app.modules.groups.router import router as groups_router
 from app.modules.logs.router import router as logs_router
 from app.modules.settings.router import router as settings_router
 from app.modules.stats.router import router as stats_router
-from app.modules.congregations.router import router as congregations_router
-from app.modules.churches.router import router as churches_router
-from app.modules.groups.router import router as groups_router
 from app.modules.tenants.router import (
     public_congregations_router,
+)
+from app.modules.tenants.router import (
     router as tenants_router,
 )
 from app.modules.users.router import router as users_router
@@ -47,6 +50,7 @@ api_router.include_router(public_congregations_router)  # Public congregations l
 api_router.include_router(congregations_router)  # Authenticated congregation management (addresses, service times, contact persons)
 api_router.include_router(churches_router)
 api_router.include_router(groups_router)
+api_router.include_router(directory_router)
 
 # Register Two-Factor module (optional, added during development)
 try:

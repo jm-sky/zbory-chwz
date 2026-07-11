@@ -1,0 +1,25 @@
+export const directoryEn = {
+  directory: {
+    export: {
+      title: 'Email address export',
+      subtitle: 'Filter people and copy their addresses to paste into your mail client',
+      accessDenied: 'You do not hold an organizational role that grants access to address export.',
+      filters: 'Filters',
+      region: 'Region',
+      role: 'Role / service',
+      group: 'Group',
+      noOptions: 'No options',
+      search: 'Search',
+      results: 'Results',
+      resultCount: '{count} addresses',
+      empty: 'No results — apply filters or add manually',
+      addPerson: 'Add person',
+      addEmail: 'Add any email',
+      personHasNoEmail: 'This person has no email address',
+      invalidEmail: 'Invalid email address',
+      copyPlain: 'Copy addresses only',
+      copyLabeled: 'Copy with labels',
+      copied: 'Copied to clipboard',
+    },
+  },
+}

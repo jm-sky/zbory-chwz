@@ -56,7 +56,6 @@ Definiowanie grup organizacyjnych poza zborami, np. Prezydium Rady Naczelnej, Gr
 **Pozostało:**
 - UI do edycji roli istniejącego członka (backend `PATCH .../memberships/{id}` gotowy, frontend go nie używa)
 - Publiczna, niezalogowana strona grupy o `visibility: public` (dziś każda grupa wymaga zalogowania)
-- Integracja z eksportem adresów e-mail (#015)
 
 **Szczegóły:**
 - Issue: [#014](issues/2026-07-09--014--people-groups.md)
@@ -66,10 +65,18 @@ Definiowanie grup organizacyjnych poza zborami, np. Prezydium Rady Naczelnej, Gr
 
 ### Eksport adresów e-mail (filtrowanie + kopiowanie)
 
-🔄 **Status:** Planowane
+✅ **Status:** Zrealizowane (faza 1)
 
 **Opis:**
 Narzędzie do budowania listy adresów e-mail (filtr: region + rola/służba + grupa ludzi) i kopiowania jej do schowka — do wklejenia w Gmail/Outlook. **Nie** wysyłka z poziomu aplikacji — MVP celowo bardzo okrojone względem pierwotnej koncepcji „list mailingowych” z kampaniami i dostawcą SMTP/ESP, którą odłożono bezterminowo. Dostęp oparty o istniejący ACL (`user_role_assignments`): pastor/diakon widzi swój zbór, regional_bishop swój region, bishop swoją wspólnotę, admin/owner wszystko.
+
+**Zrealizowane (2026-07-11):**
+- API `/api/people-directory/filters` + `/export` (`backend/app/modules/directory`), zasięg egzekwowany po stronie backendu
+- UI: `/people-directory` — filtry, wyniki, ręczne dodawanie (wyszukiwarka osób lub dowolny e-mail), kopiowanie w 2 formatach
+- 9 testów integracyjnych + weryfikacja end-to-end w przeglądarce
+
+**Pozostało (opcjonalnie, później):**
+- Zapisane/nazwane filtry, wysyłka przez SMTP/ESP — nieplanowane, prawdopodobnie niepotrzebne
 
 **Szczegóły:**
 - Issue: [#015](issues/2026-07-09--015--mailing-lists.md)

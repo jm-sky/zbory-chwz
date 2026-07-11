@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SettingsIcon, ShieldIcon, UserIcon, UsersIcon } from 'lucide-vue-next'
+import { MailIcon, SettingsIcon, ShieldIcon, UserIcon, UsersIcon } from 'lucide-vue-next'
 import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -9,6 +9,7 @@ import LogoText from '@/components/ui/LogoText.vue'
 import { AdminRoutePaths } from '@/modules/admin/routes'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRouteNames } from '@/modules/auth/config/routes'
+import { DirectoryRoutePaths } from '@/modules/directory/routes'
 import { GroupsRoutePaths } from '@/modules/groups/routes'
 import { SettingsRoutePaths } from '@/modules/settings/routes'
 import { useUser } from '@/modules/user/composables/useUser'
@@ -49,6 +50,11 @@ const coreLinks = computed<Link[]>(() => [
     to: GroupsRoutePaths.list,
     label: t('groups.list.title', 'Grupy ludzi'),
     icon: UsersIcon,
+  },
+  {
+    to: DirectoryRoutePaths.export,
+    label: t('directory.export.title', 'Eksport adresów e-mail'),
+    icon: MailIcon,
   },
   {
     to: AdminRoutePaths.dashboard,

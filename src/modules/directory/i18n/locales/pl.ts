@@ -1,0 +1,25 @@
+export const directoryPl = {
+  directory: {
+    export: {
+      title: 'Eksport adresów e-mail',
+      subtitle: 'Filtruj osoby i skopiuj ich adresy do wklejenia w kliencie poczty',
+      accessDenied: 'Nie masz roli w organizacji uprawniającej do eksportu adresów.',
+      filters: 'Filtry',
+      region: 'Region',
+      role: 'Rola / służba',
+      group: 'Grupa',
+      noOptions: 'Brak opcji',
+      search: 'Szukaj',
+      results: 'Wyniki',
+      resultCount: '{count} adresów',
+      empty: 'Brak wyników — zastosuj filtry lub dodaj ręcznie',
+      addPerson: 'Dodaj osobę',
+      addEmail: 'Dodaj dowolny e-mail',
+      personHasNoEmail: 'Ta osoba nie ma adresu e-mail',
+      invalidEmail: 'Nieprawidłowy adres e-mail',
+      copyPlain: 'Kopiuj same adresy',
+      copyLabeled: 'Kopiuj z etykietami',
+      copied: 'Skopiowano do schowka',
+    },
+  },
+}
