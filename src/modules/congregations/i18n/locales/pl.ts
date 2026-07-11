@@ -185,7 +185,7 @@ export const congregationsPl = {
         pastor: 'Pastor',
         diacon: 'Diakon',
         bishop: 'Biskup',
-        regional_bishop: 'Biskup regionu',
+        regional_bishop: 'Biskup regionalny',
       },
       noServiceTypes: 'Brak typów służb w bazie. Uruchom: python -m cli db churches-backfill',
     },

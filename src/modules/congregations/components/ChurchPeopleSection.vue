@@ -67,7 +67,7 @@ const editForm = ref(createEmptyForm())
 const savingEdit = ref(false)
 const reordering = ref(false)
 
-const pastorSlugs = new Set(['mlodszy_pastor', 'pastor', 'senior_pastor'])
+const pastorSlugs = new Set(['pastor', 'senior_pastor'])
 
 function createEmptyForm() {
   return {

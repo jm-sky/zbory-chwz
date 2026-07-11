@@ -35,18 +35,25 @@ CITY_ALIASES_SEED = [
 
 SERVICE_TYPES_SEED = [
     ("biskup_naczelny", "Biskup naczelny", "community", "bishop", False, 10),
-    ("biskup_senior", "Biskup senior", "community", "bishop", True, 20),
-    ("biskup_regionu", "Biskup regionu", "region", "regional_bishop", False, 30),
-    ("biskup", "Biskup", "community", "bishop", False, 40),
+    ("biskup_regionu", "Biskup regionalny", "region", "regional_bishop", False, 20),
+    ("biskup", "Biskup", "community", "bishop", False, 30),
+    ("biskup_senior", "Biskup senior", "community", "bishop", True, 40),
     ("pastor", "Pastor", "church", "pastor", False, 50),
-    ("mlodszy_pastor", "Młodszy pastor", "church", "pastor", False, 60),
-    ("senior_pastor", "Senior pastor", "church", "pastor", True, 70),
-    ("diakon", "Diakon", "church", "diacon", False, 80),
-    ("senior_diakon", "Senior diakon", "church", "diacon", True, 90),
-    ("lider_mlodziezowy", "Lider młodzieżowy", "church", None, False, 100),
+    ("senior_pastor", "Pastor senior", "church", "pastor", True, 60),
+    ("diakon", "Diakon", "church", "diacon", False, 70),
+    ("diakon_skarbnik", "Diakon - Skarbnik", "church", "diacon", False, 80),
+    ("czlonek_rady", "Członek Rady", "church", None, False, 90),
+    ("lider_mlodziezowy", "Lider Młodzieży", "church", None, False, 100),
 ]
 
-PASTOR_SERVICE_SLUGS = frozenset({"pastor", "mlodszy_pastor", "senior_pastor"})
+REMOVED_SERVICE_TYPE_SLUGS = frozenset({"mlodszy_pastor", "senior_diakon"})
+
+SERVICE_TYPE_MIGRATIONS: dict[str, str] = {
+    "mlodszy_pastor": "pastor",
+    "senior_diakon": "diakon_skarbnik",
+}
+
+PASTOR_SERVICE_SLUGS = frozenset({"pastor", "senior_pastor"})
 
 TITLE_TO_SERVICE_SLUG: dict[str, str] = {
     "pastor": "pastor",

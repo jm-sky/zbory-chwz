@@ -22,6 +22,8 @@ from app.modules.churches.seed_data import (
     CITY_ALIASES_SEED,
     CITY_REGION_MAP,
     REGIONS_SEED,
+    REMOVED_SERVICE_TYPE_SLUGS,
+    SERVICE_TYPE_MIGRATIONS,
     SERVICE_TYPES_SEED,
     TITLE_TO_SERVICE_SLUG,
 )
@@ -156,6 +158,12 @@ async def _ensure_service_types(db, stats: dict[str, int]) -> dict[str, ServiceT
         )
         existing = result.scalar_one_or_none()
         if existing:
+            existing.name = name
+            existing.scope_type = scope
+            existing.suggested_role = role
+            existing.is_senior_tier = senior
+            existing.sort_order = order
+            existing.is_system = True
             by_slug[slug] = existing
             continue
         service_type = ServiceTypeDB(
@@ -171,8 +179,44 @@ async def _ensure_service_types(db, stats: dict[str, int]) -> dict[str, ServiceT
         db.add(service_type)
         by_slug[slug] = service_type
         stats["service_types"] += 1
+
+    await _migrate_removed_service_types(db, by_slug, stats)
     await db.flush()
     return by_slug
+
+
+async def _migrate_removed_service_types(
+    db,
+    service_types_by_slug: dict[str, ServiceTypeDB],
+    stats: dict[str, int],
+) -> None:
+    for old_slug, new_slug in SERVICE_TYPE_MIGRATIONS.items():
+        old_result = await db.execute(
+            select(ServiceTypeDB).where(ServiceTypeDB.slug == old_slug)
+        )
+        old_type = old_result.scalar_one_or_none()
+        new_type = service_types_by_slug.get(new_slug)
+        if not old_type or not new_type:
+            continue
+        result = await db.execute(
+            update(ServiceAssignmentDB)
+            .where(ServiceAssignmentDB.service_type_id == old_type.id)
+            .values(service_type_id=new_type.id)
+        )
+        stats["service_assignments_migrated"] = stats.get("service_assignments_migrated", 0) + (
+            result.rowcount or 0
+        )
+
+    for slug in REMOVED_SERVICE_TYPE_SLUGS:
+        result = await db.execute(
+            select(ServiceTypeDB).where(ServiceTypeDB.slug == slug)
+        )
+        service_type = result.scalar_one_or_none()
+        if not service_type:
+            continue
+        await db.delete(service_type)
+        service_types_by_slug.pop(slug, None)
+        stats["service_types_removed"] = stats.get("service_types_removed", 0) + 1
 
 
 async def _ensure_church_slug_alias(
