@@ -45,6 +45,36 @@ export interface ICardContact {
   email?: string | null
 }
 
+export interface ICongregationBranchSummary {
+  id: string
+  name: string
+}
+
+/** Full congregation detail, with fields already filtered server-side by the viewer's visibility level. */
+export interface ICongregationDetail {
+  id: string
+  name: string
+  description?: string | null
+  status?: CongregationStatus
+  createdAt: string
+  city?: string | null
+  street?: string | null
+  postal_code?: string | null
+  province?: string | null
+  /** ISO 3166-1 alpha-2 country code, e.g. 'PL' */
+  country?: string | null
+  // Full, unlimited service times
+  service_times: Array<{ day: string; time: string }>
+  // Full, unlimited contacts, filtered by viewer's visibility level
+  card_contacts: ICardContact[]
+  // Publicly visible branches (placówki)
+  branches: ICongregationBranchSummary[]
+  /** The viewer's membership role in this congregation, if any */
+  role?: string | null
+  /** Whether the viewer may edit this congregation (member or global admin/owner) */
+  canManage: boolean
+}
+
 export interface ICongregationListResponse {
   congregations: ICongregation[]
 }

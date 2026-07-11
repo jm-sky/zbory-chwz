@@ -2,16 +2,20 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.modules.auth.dependencies import CurrentUser, OptionalCurrentUser
+from app.modules.churches.acl_service import AclService, get_acl_service
 from app.modules.churches.repositories import ChurchRepository, get_church_repository
+from app.modules.churches.visibility import VisibilityService
 from app.modules.congregations.repositories import (
     CongregationRepository,
     get_congregation_repository,
 )
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 from app.modules.tenants.schemas import (
+    CongregationBranchSummary,
+    CongregationDetailResponse,
     PublicCardContact,
     PublicCongregationListResponse,
     PublicCongregationResponse,
@@ -91,14 +95,10 @@ async def list_congregations(
     return TenantListResponse(tenants=congregations)
 
 
-@public_congregations_router.get(
-    "/detailed", response_model=PublicCongregationListResponse
-)
+@public_congregations_router.get("/detailed", response_model=PublicCongregationListResponse)
 async def list_congregations_detailed(
     repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
-    congregation_repo: Annotated[
-        CongregationRepository, Depends(get_congregation_repository)
-    ],
+    congregation_repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
     current_user: OptionalCurrentUser,
 ) -> PublicCongregationListResponse:
@@ -117,23 +117,14 @@ async def list_congregations_detailed(
     published = [tenant for tenant in all_tenants if tenant.id in addresses]
     tenant_ids = [tenant.id for tenant in published]
 
-    service_times_by_tenant = await congregation_repo.get_service_times_for_tenants(
-        tenant_ids
-    )
-    assignments_by_church = await church_repo.list_public_card_assignments_for_churches(
-        tenant_ids
-    )
+    service_times_by_tenant = await congregation_repo.get_service_times_for_tenants(tenant_ids)
+    assignments_by_church = await church_repo.list_public_card_assignments_for_churches(tenant_ids)
     branches_by_church = await church_repo.list_public_branches_for_churches(tenant_ids)
 
     congregations: list[PublicCongregationResponse] = []
     for tenant in published:
         address = addresses[tenant.id]
-        service_times = [
-            {"day": st.day, "time": st.time}
-            for st in service_times_by_tenant.get(tenant.id, [])[
-                :MAX_PUBLIC_SERVICE_TIMES
-            ]
-        ]
+        service_times = [{"day": st.day, "time": st.time} for st in service_times_by_tenant.get(tenant.id, [])[:MAX_PUBLIC_SERVICE_TIMES]]
 
         card_contacts = [
             PublicCardContact(
@@ -191,17 +182,9 @@ async def list_congregations_detailed(
 
     if current_user is not None:
         if current_user.isAdmin or current_user.isOwner:
-            draft_tenants = [
-                tenant
-                for tenant in all_tenants
-                if tenant.id not in published_ids
-            ]
+            draft_tenants = [tenant for tenant in all_tenants if tenant.id not in published_ids]
         else:
-            draft_tenants = [
-                tenant
-                for tenant, _membership in await repo.list_for_user(current_user.id)
-                if tenant.id not in published_ids
-            ]
+            draft_tenants = [tenant for tenant, _membership in await repo.list_for_user(current_user.id) if tenant.id not in published_ids]
 
         if draft_tenants:
             draft_addresses = await congregation_repo.get_addresses_by_status(("draft",))
@@ -224,3 +207,92 @@ async def list_congregations_detailed(
                 )
 
     return PublicCongregationListResponse(congregations=congregations)
+
+
+@public_congregations_router.get("/{tenant_id}/detail", response_model=CongregationDetailResponse)
+async def get_congregation_detail(
+    tenant_id: str,
+    repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    congregation_repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
+    church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
+    acl_service: Annotated[AclService, Depends(get_acl_service)],
+    current_user: OptionalCurrentUser,
+) -> CongregationDetailResponse:
+    """Public endpoint for a single congregation, with fields filtered by the
+    viewer's visibility level (public / authenticated / pastors), plus full
+    access for members and global admins/owners (including unpublished drafts).
+    """
+    tenant = await repo.get_tenant(tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail=f"Congregation {tenant_id} not found")
+
+    is_authenticated = current_user is not None
+    is_admin = current_user is not None and (current_user.isAdmin or current_user.isOwner)
+
+    membership_role: str | None = None
+    if current_user is not None and not is_admin:
+        memberships = await repo.list_for_user(current_user.id)
+        membership_role = next(
+            (membership.role for membership_tenant, membership in memberships if membership_tenant.id == tenant_id),
+            None,
+        )
+    is_member = is_admin or membership_role is not None
+
+    has_pastoral_access = await acl_service.has_pastoral_access(current_user.id, tenant_id) if current_user is not None else False
+
+    address = await congregation_repo.get_address_by_tenant_id(tenant_id)
+    status_value = address.status if address else (tenant.status or "draft")
+    if status_value not in PUBLIC_ADDRESS_STATUSES and not is_member:
+        raise HTTPException(status_code=404, detail=f"Congregation {tenant_id} not found")
+
+    service_times = await congregation_repo.get_service_times_by_tenant_id(tenant_id)
+
+    assignments = await church_repo.list_service_assignments("church", tenant_id)
+    visible_assignments = [
+        assignment
+        for assignment in assignments
+        if VisibilityService.can_view(
+            assignment.card_visibility,
+            is_authenticated=is_authenticated,
+            has_pastoral_access=has_pastoral_access,
+        )
+    ]
+    card_contacts = [
+        PublicCardContact(
+            **church_repo.to_public_card_contact(
+                assignment,
+                is_authenticated=is_authenticated,
+                has_pastoral_access=has_pastoral_access,
+            )
+        )
+        for assignment in visible_assignments
+    ]
+
+    branches = await church_repo.list_branches(tenant_id)
+    visible_branches = [
+        branch
+        for branch in branches
+        if VisibilityService.can_view(
+            branch.visibility,
+            is_authenticated=is_authenticated,
+            has_pastoral_access=has_pastoral_access,
+        )
+    ]
+
+    return CongregationDetailResponse(
+        id=tenant.id,
+        name=tenant.name,
+        description=tenant.description,
+        status=status_value,
+        createdAt=tenant.created_at,
+        city=address.city if address else None,
+        street=address.street if address else None,
+        postal_code=address.postal_code if address else None,
+        province=address.province if address else None,
+        country=address.country if address else None,
+        service_times=[{"day": service_time.day, "time": service_time.time} for service_time in service_times],
+        card_contacts=card_contacts,
+        branches=[CongregationBranchSummary(id=branch.id, name=branch.name) for branch in visible_branches],
+        role=membership_role,
+        canManage=is_member,
+    )

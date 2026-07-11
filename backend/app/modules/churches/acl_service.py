@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from fastapi import Depends
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.modules.churches.acl_models import RoleDB, UserRoleAssignmentDB
 from app.modules.churches.acl_seed import PASTORAL_ROLE_NAMES
 from app.modules.churches.db_models import ChurchDB
@@ -20,16 +22,11 @@ class AclService:
             return False
 
         scope_filters = [
-            (UserRoleAssignmentDB.scope_type == "church")
-            & (UserRoleAssignmentDB.scope_id == church_id),
-            (UserRoleAssignmentDB.scope_type == "community")
-            & (UserRoleAssignmentDB.scope_id == church.community_id),
+            (UserRoleAssignmentDB.scope_type == "church") & (UserRoleAssignmentDB.scope_id == church_id),
+            (UserRoleAssignmentDB.scope_type == "community") & (UserRoleAssignmentDB.scope_id == church.community_id),
         ]
         if church.region_id:
-            scope_filters.append(
-                (UserRoleAssignmentDB.scope_type == "region")
-                & (UserRoleAssignmentDB.scope_id == church.region_id)
-            )
+            scope_filters.append((UserRoleAssignmentDB.scope_type == "region") & (UserRoleAssignmentDB.scope_id == church.region_id))
 
         result = await self.db.execute(
             select(UserRoleAssignmentDB.id)
@@ -46,3 +43,7 @@ class AclService:
     async def _get_church(self, church_id: str) -> ChurchDB | None:
         result = await self.db.execute(select(ChurchDB).where(ChurchDB.id == church_id))
         return result.scalar_one_or_none()
+
+
+def get_acl_service(db: AsyncSession = Depends(get_db)) -> AclService:
+    return AclService(db)
