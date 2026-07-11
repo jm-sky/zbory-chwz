@@ -220,9 +220,9 @@ async def get_congregation_detail(
 ) -> CongregationDetailResponse:
     """Public endpoint for a single congregation.
 
-    Lists every service assignment on the detail page; card_visibility only
-    affects the congregation list card, not this view. Phone and email are
-    still filtered per field by the viewer's permission level. Members and
+    Profile contacts are filtered by profile_visibility and the viewer's
+    permission level. Hidden contacts are returned separately for editors
+    (canManage). Phone and email are filtered per field. Members and
     global admins/owners also see unpublished drafts.
     """
     tenant = await repo.get_tenant(tenant_id)
@@ -251,16 +251,16 @@ async def get_congregation_detail(
     service_times = await congregation_repo.get_service_times_by_tenant_id(tenant_id)
 
     assignments = await church_repo.list_service_assignments("church", tenant_id)
-    card_contacts = [
-        PublicCardContact(
-            **church_repo.to_public_card_contact(
-                assignment,
-                is_authenticated=is_authenticated,
-                has_pastoral_access=has_pastoral_access,
-            )
-        )
-        for assignment in assignments
-    ]
+    visible_contacts, hidden_contacts = church_repo.profile_contacts_for_viewer(
+        assignments,
+        is_authenticated=is_authenticated,
+        has_pastoral_access=has_pastoral_access,
+        can_manage=is_member,
+    )
+    card_contacts = [PublicCardContact(**contact) for contact in visible_contacts]
+    hidden_profile_contacts = (
+        [PublicCardContact(**contact) for contact in hidden_contacts] if is_member else []
+    )
 
     branches = await church_repo.list_branches(tenant_id)
     visible_branches = [
@@ -287,6 +287,7 @@ async def get_congregation_detail(
         country=address.country if address else None,
         service_times=[{"day": service_time.day, "time": service_time.time} for service_time in service_times],
         card_contacts=card_contacts,
+        hidden_contacts=hidden_profile_contacts,
         branches=[CongregationBranchSummary(id=branch.id, name=branch.name) for branch in visible_branches],
         role=membership_role,
         canManage=is_member,

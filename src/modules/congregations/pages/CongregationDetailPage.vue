@@ -165,6 +165,48 @@ function formatServiceTimes(item: ICongregationDetail): string {
           </div>
         </div>
 
+        <!-- Hidden contacts (editors only) -->
+        <div v-if="congregation.hidden_contacts?.length">
+          <div class="flex items-center gap-3 opacity-60">
+            <User class="size-5 shrink-0 text-muted-foreground" />
+            <h3 class="text-sm font-medium text-muted-foreground">
+              {{ t('congregations.detail.hiddenContacts') }}
+            </h3>
+          </div>
+          <div class="mt-2 space-y-4 pl-8 opacity-60">
+            <div
+              v-for="(contact, contactIndex) in congregation.hidden_contacts"
+              :key="`hidden-contact-${contactIndex}`"
+              class="space-y-1"
+            >
+              <div>
+                <span class="font-medium text-foreground">{{ contact.name }}</span>
+                <span v-if="contact.title" class="text-muted-foreground">
+                  {{ ` - ${contact.title}` }}
+                </span>
+              </div>
+              <div v-if="contact.phone || contact.email" class="space-y-1">
+                <a
+                  v-if="contact.phone"
+                  :href="`tel:${contact.phone}`"
+                  class="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Phone class="size-3.5" />
+                  <span>{{ contact.phone }}</span>
+                </a>
+                <a
+                  v-if="contact.email"
+                  :href="`mailto:${contact.email}`"
+                  class="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Mail class="size-3.5" />
+                  <span class="break-all">{{ contact.email }}</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Branches -->
         <div v-if="congregation.branches.length > 0">
           <h3 class="mb-2 text-sm font-medium text-muted-foreground">

@@ -15,9 +15,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.modules.churches.visibility import (
-    DEFAULT_CARD_VISIBILITY,
     DEFAULT_EMAIL_VISIBILITY,
     DEFAULT_PHONE_VISIBILITY,
+    DEFAULT_PROFILE_VISIBILITY,
 )
 
 
@@ -162,8 +162,9 @@ class ServiceAssignmentDB(Base):
     probation_ends_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    card_visibility: Mapped[str] = mapped_column(
-        String(32), default=DEFAULT_CARD_VISIBILITY, nullable=False
+    show_on_list: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    profile_visibility: Mapped[str] = mapped_column(
+        String(32), default=DEFAULT_PROFILE_VISIBILITY, nullable=False
     )
     phone_visibility: Mapped[str] = mapped_column(
         String(32), default=DEFAULT_PHONE_VISIBILITY, nullable=False

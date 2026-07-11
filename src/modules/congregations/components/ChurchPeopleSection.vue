@@ -33,7 +33,7 @@ import { churchApiService } from '../services/churchApiService'
 import {
   CHURCH_ACL_ROLES,
   type ChurchAclRole,
-  DEFAULT_CARD_VISIBILITY,
+  DEFAULT_PROFILE_VISIBILITY,
   DEFAULT_EMAIL_VISIBILITY,
   DEFAULT_PHONE_VISIBILITY,
   ELEVATED_ACL_ROLES,
@@ -78,7 +78,8 @@ function createEmptyForm() {
     serviceTypeId: '',
     customServiceName: '',
     description: '',
-    cardVisibility: DEFAULT_CARD_VISIBILITY,
+    showOnList: true,
+    profileVisibility: DEFAULT_PROFILE_VISIBILITY,
     phoneVisibility: DEFAULT_PHONE_VISIBILITY,
     emailVisibility: DEFAULT_EMAIL_VISIBILITY,
   }
@@ -107,24 +108,30 @@ const roleOptions = computed<Array<'none' | ChurchAclRole>>(() => {
 
 const serviceTypesEmpty = computed(() => !loading.value && serviceTypes.value.length === 0)
 
-const showOnCardAdd = computed<boolean>({
-  get: () => form.value.cardVisibility === 'public',
+const showOnListAdd = computed<boolean>({
+  get: () => form.value.showOnList,
   set: (checked: boolean) => {
-    form.value.cardVisibility = checked ? 'public' : 'hidden'
+    form.value.showOnList = checked
   },
 })
 
-function isShownOnCard(assignment: IServiceAssignment): boolean {
-  return assignment.cardVisibility === 'public'
-}
-
-async function toggleShowOnCard(assignment: IServiceAssignment, checked: boolean | 'indeterminate') {
+async function toggleShowOnList(assignment: IServiceAssignment, checked: boolean | 'indeterminate') {
   if (checked === 'indeterminate') return
-  await updateAssignmentVisibility(
-    assignment,
-    'cardVisibility',
-    checked ? 'public' : 'hidden',
-  )
+  savingId.value = assignment.id
+  try {
+    const updated = await churchApiService.updateServiceAssignment(churchId, assignment.id, {
+      showOnList: checked,
+    })
+    const index = assignments.value.findIndex(a => a.id === assignment.id)
+    if (index >= 0) {
+      assignments.value[index] = updated
+    }
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+  } catch (error) {
+    handleError(error)
+  } finally {
+    savingId.value = null
+  }
 }
 
 function personLabel(assignment: IServiceAssignment): string {
@@ -149,7 +156,8 @@ function isGrantableRole(role: string): role is ChurchAclRole {
 
 function visibilityPayload(formData: ReturnType<typeof createEmptyForm>) {
   return {
-    cardVisibility: formData.cardVisibility,
+    showOnList: formData.showOnList,
+    profileVisibility: formData.profileVisibility,
     phoneVisibility: formData.phoneVisibility,
     emailVisibility: formData.emailVisibility,
   }
@@ -229,9 +237,10 @@ function openEdit(item: IServiceAssignment) {
     serviceTypeId: item.serviceTypeId ?? '',
     customServiceName: item.customServiceName ?? '',
     description: item.description ?? '',
-    cardVisibility: item.cardVisibility as VisibilityLevel,
+    profileVisibility: item.profileVisibility as VisibilityLevel,
     phoneVisibility: item.phoneVisibility as VisibilityLevel,
     emailVisibility: item.emailVisibility as VisibilityLevel,
+    showOnList: item.showOnList,
   }
   editDialogOpen.value = true
 }
@@ -279,7 +288,7 @@ async function removeAssignment(assignmentId: string) {
 
 async function updateAssignmentVisibility(
   assignment: IServiceAssignment,
-  field: 'cardVisibility' | 'phoneVisibility' | 'emailVisibility',
+  field: 'phoneVisibility' | 'emailVisibility',
   level: VisibilityLevel,
 ) {
   savingId.value = assignment.id
@@ -356,7 +365,7 @@ onMounted(load)
       {{ t('congregations.people.title', 'Ludzie i służby') }}
     </h3>
     <p class="text-sm text-muted-foreground">
-      {{ t('congregations.people.showOnCardHint', 'Zaznaczone osoby są widoczne na publicznej karcie zboru') }}
+      {{ t('congregations.people.showOnListHint', 'Osoby zaznaczone na liście pojawiają się na skróconej karcie w wyszukiwarce zborów. Kolejność odpowiada kolejności na liście.') }}
     </p>
 
     <div v-if="loading" class="text-sm text-muted-foreground">
@@ -415,12 +424,12 @@ onMounted(load)
           </div>
           <div class="flex items-center gap-2">
             <Checkbox
-              :model-value="isShownOnCard(item)"
+              :model-value="item.showOnList"
               :disabled="savingId === item.id"
-              @update:model-value="toggleShowOnCard(item, $event)"
+              @update:model-value="toggleShowOnList(item, $event)"
             />
             <Label class="text-sm">
-              {{ t('congregations.people.showOnCard', 'Pokaz na wizytówce') }}
+              {{ t('congregations.people.showOnList', 'Pokaż na liście zborów') }}
             </Label>
           </div>
         </div>
@@ -468,11 +477,17 @@ onMounted(load)
       </li>
     </ul>
 
-    <PersonLinkedBadge
-      v-if="personAutocomplete.linkedPersonId.value"
-      @unlink="personAutocomplete.unlink()"
-    />
-    <div class="grid gap-3 sm:grid-cols-2">
+    <div class="mt-2 space-y-4 border-t pt-6">
+      <h4 class="text-sm font-semibold">
+        {{ t('congregations.people.addFormTitle', 'Dodaj nową osobę') }}
+      </h4>
+
+      <div class="space-y-4 rounded-lg border bg-muted/30 p-4">
+        <PersonLinkedBadge
+          v-if="personAutocomplete.linkedPersonId.value"
+          @unlink="personAutocomplete.unlink()"
+        />
+        <div class="grid gap-3 sm:grid-cols-2">
       <div class="relative space-y-1">
         <Label>{{ t('congregations.people.firstName', 'Imię') }}</Label>
         <Input
@@ -563,9 +578,9 @@ onMounted(load)
     </div>
 
     <div class="flex items-center gap-2">
-      <Checkbox v-model="showOnCardAdd" />
+      <Checkbox v-model="showOnListAdd" />
       <Label>
-        {{ t('congregations.people.showOnCard', 'Pokaz na wizytówce') }}
+        {{ t('congregations.people.showOnList', 'Pokaż na liście zborów') }}
       </Label>
     </div>
 
@@ -597,10 +612,12 @@ onMounted(load)
       </Select>
     </div>
 
-    <Button type="button" @click="addPerson">
-      <Plus class="size-4" />
-      {{ t('congregations.people.add', 'Dodaj osobę') }}
-    </Button>
+        <Button type="button" @click="addPerson">
+          <Plus class="size-4" />
+          {{ t('congregations.people.add', 'Dodaj osobę') }}
+        </Button>
+      </div>
+    </div>
 
     <Dialog v-model:open="editDialogOpen">
       <DialogContent class="max-h-[85vh] max-w-lg overflow-y-auto">
@@ -669,8 +686,8 @@ onMounted(load)
         </div>
 
         <VisibilityLevelSelect
-          v-model="editForm.cardVisibility"
-          :label="t('congregations.people.visibilityTitle', 'Widoczność na karcie zboru')"
+          v-model="editForm.profileVisibility"
+          :label="t('congregations.people.profileVisibilityTitle', 'Widoczność w profilu zboru')"
         />
 
         <DialogFooter>

@@ -13,8 +13,8 @@ VISIBILITY_LEVELS: tuple[VisibilityLevel, ...] = (
     "pastors",
 )
 
-DEFAULT_CARD_VISIBILITY: VisibilityLevel = "public"
-DEFAULT_PHONE_VISIBILITY: VisibilityLevel = "public"
+DEFAULT_PROFILE_VISIBILITY: VisibilityLevel = "public"
+DEFAULT_PHONE_VISIBILITY: VisibilityLevel = "authenticated"
 DEFAULT_EMAIL_VISIBILITY: VisibilityLevel = "authenticated"
 
 

@@ -162,7 +162,7 @@ async def _seed(session: AsyncSession) -> None:
             service_type_id=service_type_id,
             scope_type="church",
             scope_id=WROCLAW,
-            card_visibility="public",
+            profile_visibility="public",
             phone_visibility="public",
             email_visibility="authenticated",
             created_at=now,

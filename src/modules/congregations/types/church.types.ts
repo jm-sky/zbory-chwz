@@ -36,7 +36,8 @@ export interface IServiceAssignment {
   description: string | null
   scopeType: string
   scopeId: string
-  cardVisibility: string
+  showOnList: boolean
+  profileVisibility: string
   phoneVisibility: string
   emailVisibility: string
   sortOrder: number
@@ -62,7 +63,8 @@ export interface IServiceAssignmentCreateRequest {
   description?: string
   createAccount?: boolean
   suggestedRole?: ChurchAclRole
-  cardVisibility?: VisibilityLevel
+  showOnList?: boolean
+  profileVisibility?: VisibilityLevel
   phoneVisibility?: VisibilityLevel
   emailVisibility?: VisibilityLevel
   sortOrder?: number
@@ -76,7 +78,8 @@ export interface IServiceAssignmentUpdateRequest {
   lastName?: string
   email?: string
   phone?: string
-  cardVisibility?: VisibilityLevel
+  showOnList?: boolean
+  profileVisibility?: VisibilityLevel
   phoneVisibility?: VisibilityLevel
   emailVisibility?: VisibilityLevel
   sortOrder?: number

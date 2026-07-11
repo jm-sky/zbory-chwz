@@ -65,8 +65,10 @@ export interface ICongregationDetail {
   country?: string | null
   // Full, unlimited service times
   service_times: Array<{ day: string; time: string }>
-  // Full, unlimited contacts, filtered by viewer's visibility level
+  // Visible profile contacts, filtered by viewer's visibility level
   card_contacts: ICardContact[]
+  // Hidden profile contacts; only present when canManage is true
+  hidden_contacts?: ICardContact[]
   // Publicly visible branches (placówki)
   branches: ICongregationBranchSummary[]
   /** The viewer's membership role in this congregation, if any */

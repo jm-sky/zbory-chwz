@@ -365,7 +365,8 @@ class ChurchRepository:
             description=payload.description,
             scope_type=scope_type,
             scope_id=scope_id,
-            card_visibility=payload.cardVisibility,
+            show_on_list=payload.showOnList,
+            profile_visibility=payload.profileVisibility,
             phone_visibility=payload.phoneVisibility,
             email_visibility=payload.emailVisibility,
             sort_order=sort_order,
@@ -419,8 +420,10 @@ class ChurchRepository:
             assignment.custom_service_name = payload.customServiceName
         if payload.description is not None:
             assignment.description = payload.description
-        if payload.cardVisibility is not None:
-            assignment.card_visibility = payload.cardVisibility
+        if payload.showOnList is not None:
+            assignment.show_on_list = payload.showOnList
+        if payload.profileVisibility is not None:
+            assignment.profile_visibility = payload.profileVisibility
         if payload.phoneVisibility is not None:
             assignment.phone_visibility = payload.phoneVisibility
         if payload.emailVisibility is not None:
@@ -480,7 +483,7 @@ class ChurchRepository:
             .where(
                 ServiceAssignmentDB.scope_type == "church",
                 ServiceAssignmentDB.scope_id == church_id,
-                ServiceAssignmentDB.card_visibility == "public",
+                ServiceAssignmentDB.show_on_list.is_(True),
             )
             .options(
                 selectinload(ServiceAssignmentDB.person),
@@ -503,7 +506,7 @@ class ChurchRepository:
             .where(
                 ServiceAssignmentDB.scope_type == "church",
                 ServiceAssignmentDB.scope_id.in_(church_ids),
-                ServiceAssignmentDB.card_visibility == "public",
+                ServiceAssignmentDB.show_on_list.is_(True),
             )
             .options(
                 selectinload(ServiceAssignmentDB.person),
@@ -542,6 +545,7 @@ class ChurchRepository:
         *,
         is_authenticated: bool,
         has_pastoral_access: bool,
+        bypass_field_visibility: bool = False,
     ) -> dict[str, str | None]:
         person = assignment.person
         if not person:
@@ -550,6 +554,14 @@ class ChurchRepository:
         name = " ".join(part for part in (person.first_name, person.last_name) if part).strip()
         service_type = assignment.service_type
         title = service_type.name if service_type else assignment.custom_service_name
+        if bypass_field_visibility:
+            return {
+                "name": name or None,
+                "title": title,
+                "phone": person.phone,
+                "email": person.email,
+            }
+
         contact_fields = self.filter_assignment_contact(
             assignment,
             is_authenticated=is_authenticated,
@@ -561,6 +573,47 @@ class ChurchRepository:
             "phone": contact_fields["phone"],
             "email": contact_fields["email"],
         }
+
+    def profile_contacts_for_viewer(
+        self,
+        assignments: list[ServiceAssignmentDB],
+        *,
+        is_authenticated: bool,
+        has_pastoral_access: bool,
+        can_manage: bool,
+    ) -> tuple[list[dict[str, str | None]], list[dict[str, str | None]]]:
+        visible: list[dict[str, str | None]] = []
+        hidden: list[dict[str, str | None]] = []
+
+        for assignment in assignments:
+            if assignment.profile_visibility == "hidden":
+                if can_manage:
+                    hidden.append(
+                        self.to_public_card_contact(
+                            assignment,
+                            is_authenticated=True,
+                            has_pastoral_access=True,
+                            bypass_field_visibility=True,
+                        )
+                    )
+                continue
+
+            if not VisibilityService.can_view(
+                assignment.profile_visibility,
+                is_authenticated=is_authenticated,
+                has_pastoral_access=has_pastoral_access,
+            ):
+                continue
+
+            visible.append(
+                self.to_public_card_contact(
+                    assignment,
+                    is_authenticated=is_authenticated,
+                    has_pastoral_access=has_pastoral_access,
+                )
+            )
+
+        return visible, hidden
 
     def filter_assignment_contact(
         self,

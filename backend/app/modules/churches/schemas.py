@@ -87,8 +87,9 @@ class ServiceAssignmentCreateRequest(BaseModel):
     description: str | None = None
     createAccount: bool = False
     suggestedRole: ChurchAclRole | None = None
-    cardVisibility: VisibilityLevel = "public"
-    phoneVisibility: VisibilityLevel = "public"
+    showOnList: bool = True
+    profileVisibility: VisibilityLevel = "public"
+    phoneVisibility: VisibilityLevel = "authenticated"
     emailVisibility: VisibilityLevel = "authenticated"
     sortOrder: int | None = Field(default=None, ge=0)
 
@@ -101,7 +102,8 @@ class ServiceAssignmentUpdateRequest(BaseModel):
     lastName: str | None = None
     email: str | None = None
     phone: str | None = None
-    cardVisibility: VisibilityLevel | None = None
+    showOnList: bool | None = None
+    profileVisibility: VisibilityLevel | None = None
     phoneVisibility: VisibilityLevel | None = None
     emailVisibility: VisibilityLevel | None = None
     sortOrder: int | None = Field(default=None, ge=0)
@@ -119,7 +121,8 @@ class ServiceAssignmentResponse(BaseModel):
     description: str | None = None
     scopeType: str = Field(validation_alias="scope_type")
     scopeId: str = Field(validation_alias="scope_id")
-    cardVisibility: str = Field(validation_alias="card_visibility")
+    showOnList: bool = Field(validation_alias="show_on_list")
+    profileVisibility: str = Field(validation_alias="profile_visibility")
     phoneVisibility: str = Field(validation_alias="phone_visibility")
     emailVisibility: str = Field(validation_alias="email_visibility")
     sortOrder: int = Field(validation_alias="sort_order")
