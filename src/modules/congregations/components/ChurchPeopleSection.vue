@@ -584,6 +584,11 @@ onMounted(load)
       </Label>
     </div>
 
+    <VisibilityLevelSelect
+      v-model="form.profileVisibility"
+      :label="t('congregations.people.profileVisibilityTitle', 'Widoczność w profilu zboru')"
+    />
+
     <div class="flex items-center gap-2">
       <Checkbox v-model="createAccount" />
       <Label>

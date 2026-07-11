@@ -610,6 +610,7 @@ class ChurchRepository:
                     assignment,
                     is_authenticated=is_authenticated,
                     has_pastoral_access=has_pastoral_access,
+                    bypass_field_visibility=can_manage,
                 )
             )
 

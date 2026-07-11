@@ -168,7 +168,14 @@ async def _seed(session: AsyncSession) -> None:
         phone="+48333333333",
         email="hidden@example.com",
     )
-    session.add_all([diacon_person, pastor_person, hidden_person])
+    editor_contact_person = PersonDB(
+        id=generate_id(),
+        first_name="Tomasz",
+        last_name="Smykowski",
+        phone="+48444444444",
+        email="tomasz@example.com",
+    )
+    session.add_all([diacon_person, pastor_person, hidden_person, editor_contact_person])
     await session.flush()
 
     session.add(
@@ -208,6 +215,19 @@ async def _seed(session: AsyncSession) -> None:
             show_on_list=False,
             phone_visibility="public",
             email_visibility="public",
+            created_at=now,
+        )
+    )
+    session.add(
+        ServiceAssignmentDB(
+            id=generate_id(),
+            person_id=editor_contact_person.id,
+            service_type_id=diacon_type_id,
+            scope_type="church",
+            scope_id=PUBLISHED_ID,
+            profile_visibility="public",
+            phone_visibility="public",
+            email_visibility="pastors",
             created_at=now,
         )
     )
@@ -329,11 +349,14 @@ async def test_anonymous_sees_only_public_fields(ctx) -> None:
 
     # Profile visibility filters contacts; hidden assignments are excluded.
     contact_names = {contact["name"] for contact in data["card_contacts"]}
-    assert contact_names == {"Anna Nowak"}
+    assert contact_names == {"Anna Nowak", "Tomasz Smykowski"}
     anna = next(c for c in data["card_contacts"] if c["name"] == "Anna Nowak")
     assert anna["phone"] == "+48222222222"
     # email_visibility is "authenticated" -> hidden from anonymous viewers
     assert anna["email"] is None
+    tomasz = next(c for c in data["card_contacts"] if c["name"] == "Tomasz Smykowski")
+    assert tomasz["phone"] == "+48444444444"
+    assert tomasz["email"] is None
     assert data.get("hidden_contacts", []) == []
 
     branch_names = {branch["name"] for branch in data["branches"]}
@@ -356,7 +379,10 @@ async def test_authenticated_non_member_sees_authenticated_fields(ctx) -> None:
     assert contact["email"] == "anna@example.com"
 
     contact_names = {contact["name"] for contact in data["card_contacts"]}
-    assert contact_names == {"Anna Nowak"}
+    assert contact_names == {"Anna Nowak", "Tomasz Smykowski"}
+    tomasz = next(c for c in data["card_contacts"] if c["name"] == "Tomasz Smykowski")
+    assert tomasz["phone"] == "+48444444444"
+    assert tomasz["email"] is None
     assert data.get("hidden_contacts", []) == []
 
     assert data["role"] is None
@@ -375,7 +401,11 @@ async def test_member_without_pastoral_access_sees_hidden_in_separate_section(ct
     assert data["canManage"] is True
 
     contact_names = {contact["name"] for contact in data["card_contacts"]}
-    assert contact_names == {"Anna Nowak"}
+    assert contact_names == {"Anna Nowak", "Tomasz Smykowski"}
+
+    tomasz = next(c for c in data["card_contacts"] if c["name"] == "Tomasz Smykowski")
+    assert tomasz["phone"] == "+48444444444"
+    assert tomasz["email"] == "tomasz@example.com"
 
     hidden_names = {contact["name"] for contact in data["hidden_contacts"]}
     assert hidden_names == {"Hidden Person"}
@@ -397,11 +427,29 @@ async def test_pastoral_user_sees_pastors_only_fields(ctx) -> None:
     assert response.status_code == 200
     data = response.json()
     contact_names = {contact["name"] for contact in data["card_contacts"]}
-    assert contact_names == {"Anna Nowak", "Jan Kowalski"}
+    assert contact_names == {"Anna Nowak", "Jan Kowalski", "Tomasz Smykowski"}
     pastor_contact = next(c for c in data["card_contacts"] if c["name"] == "Jan Kowalski")
     assert pastor_contact["phone"] == "+48111111111"
     assert pastor_contact["email"] == "jan@example.com"
+    tomasz = next(c for c in data["card_contacts"] if c["name"] == "Tomasz Smykowski")
+    assert tomasz["email"] == "tomasz@example.com"
     assert data.get("hidden_contacts", []) == []
+
+
+@pytest.mark.asyncio
+async def test_member_with_can_manage_sees_pastors_only_email_on_visible_profile(ctx) -> None:
+    client, login = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.get(f"/api/congregations/{PUBLISHED_ID}/detail")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["canManage"] is True
+
+    contact = next(c for c in data["card_contacts"] if c["name"] == "Tomasz Smykowski")
+    assert contact["phone"] == "+48444444444"
+    assert contact["email"] == "tomasz@example.com"
 
 
 @pytest.mark.asyncio
