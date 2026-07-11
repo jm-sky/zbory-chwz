@@ -1,7 +1,20 @@
 # Import adresów zborów z wklejonego tekstu (AI-assisted) — plan
 
-**Status:** `planned`
+**Status:** `verification needed`
 **Created:** 2026-07-11
+
+## Status update (2026-07-11)
+
+Zaimplementowano fazy 1-3 (backend: moduł `app/modules/ai`, endpointy
+`/admin/congregations/import/analyze` i `/apply`; frontend:
+`AdminCongregationImportPage.vue`). Zweryfikowano automatycznie:
+`pytest` (nowe testy + cały pakiet `tests/integration/congregations/`),
+`black`, `mypy`, `pnpm type-check`, `pnpm lint`, `pnpm build`. **Brak
+ręcznej weryfikacji end-to-end w przeglądarce z prawdziwym kluczem
+OpenRouter** (środowisko implementacyjne nie miało Dockera/Postgresa) —
+zalecane przed oznaczeniem jako `done`: uruchomić `docker compose -f
+backend/docker-compose.dev.yml up` + `pnpm dev`, ustawić
+`OPENROUTER_API_KEY`, i przejść scenariusz z sekcji Weryfikacja poniżej.
 
 ## Cel
 
