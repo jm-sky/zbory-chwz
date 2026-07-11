@@ -47,14 +47,16 @@ Bez osobnego modelu „osoba kontaktowa”. Wystarczy **służba** (`service_ass
 **Opis:**
 Definiowanie grup organizacyjnych poza zborami, np. Prezydium Rady Naczelnej, Grupa Ewangelizacji, Służba Więzienna. Widoczność konfigurowalna per grupa, opiekun grupy zarządza członkami bez pełnych uprawnień admina, członkostwo nie nadaje uprawnień ACL.
 
-**Zrealizowane (2026-07-10):**
+**Zrealizowane (2026-07-10/11):**
 - Migracja `062` + tabele `people_groups`, `people_group_memberships`
 - API `/api/people-groups` (CRUD grup + członkostwa)
 - UI: lista grup (`/groups`), szczegóły grupy, dodawanie/usuwanie członków
+- Wyszukiwarka osób (autocomplete) w formularzu dodawania członka — ta sama, wspólna z edytorem zboru
 
 **Pozostało:**
-- Wyszukiwarka istniejących osób w UI (obecnie dopasowanie po `personId` tylko przez API)
-- Integracja z listami mailingowymi (#015)
+- UI do edycji roli istniejącego członka (backend `PATCH .../memberships/{id}` gotowy, frontend go nie używa)
+- Publiczna, niezalogowana strona grupy o `visibility: public` (dziś każda grupa wymaga zalogowania)
+- Integracja z eksportem adresów e-mail (#015)
 
 **Szczegóły:**
 - Issue: [#014](issues/2026-07-09--014--people-groups.md)
@@ -62,12 +64,12 @@ Definiowanie grup organizacyjnych poza zborami, np. Prezydium Rady Naczelnej, Gr
 
 ---
 
-### Listy mailingowe
+### Eksport adresów e-mail (filtrowanie + kopiowanie)
 
-🔄 **Status:** Planowane (późniejsza faza)
+🔄 **Status:** Planowane
 
 **Opis:**
-Listy mailingowe oparte o grupy ludzi i adresy `persons` — komunikacja wewnętrzna CHWZ.
+Narzędzie do budowania listy adresów e-mail (filtr: region + rola/służba + grupa ludzi) i kopiowania jej do schowka — do wklejenia w Gmail/Outlook. **Nie** wysyłka z poziomu aplikacji — MVP celowo bardzo okrojone względem pierwotnej koncepcji „list mailingowych” z kampaniami i dostawcą SMTP/ESP, którą odłożono bezterminowo. Dostęp oparty o istniejący ACL (`user_role_assignments`): pastor/diakon widzi swój zbór, regional_bishop swój region, bishop swoją wspólnotę, admin/owner wszystko.
 
 **Szczegóły:**
 - Issue: [#015](issues/2026-07-09--015--mailing-lists.md)
@@ -93,4 +95,4 @@ Pełna platforma zarządzania zborami CHWZ: hierarchia organizacyjna (wspólnota
 
 ---
 
-**Ostatnia aktualizacja:** 2026-07-10
+**Ostatnia aktualizacja:** 2026-07-11

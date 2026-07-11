@@ -24,7 +24,7 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 012 | [2026-07-09--012--unify-services-remove-contact-persons.md](2026-07-09--012--unify-services-remove-contact-persons.md) | Tylko służby — widoczność osoby/tel/e-mail na karcie zboru | `verification needed` |
 | 013 | [2026-07-09--013--service-type-select-not-visible.md](2026-07-09--013--service-type-select-not-visible.md) | Bug: niewidoczne pozycje selecta służb przy dodawaniu | `done` |
 | 014 | [2026-07-09--014--people-groups.md](2026-07-09--014--people-groups.md) | Grupy ludzi (Prezydium, Grupa Ewangelizacji, …) | `in progress` |
-| 015 | [2026-07-09--015--mailing-lists.md](2026-07-09--015--mailing-lists.md) | Listy mailingowe (późniejsza faza) | `planned` |
+| 015 | [2026-07-09--015--mailing-lists.md](2026-07-09--015--mailing-lists.md) | Eksport adresów e-mail (filtr region/rola/grupa + kopiowanie, bez wysyłki) | `planned` |
 | 016 | [2026-07-10--016--congregation-write-endpoint-for-non-admins.md](2026-07-10--016--congregation-write-endpoint-for-non-admins.md) | Pastor nie zapisze podstawowych danych zboru (endpoint admin-only) | `todo` |
 | 017 | [2026-07-10--017--authorization-hardening-followups.md](2026-07-10--017--authorization-hardening-followups.md) | Hardening autoryzacji — `persons/search`, `POST /tenants`, `pastors` visibility | `todo` |
 | 018 | [2026-07-10--018--congregation-address-data-quality.md](2026-07-10--018--congregation-address-data-quality.md) | Adresy — Świebodzin/Rzuchowa i Dankowice do weryfikacji | `todo` |
