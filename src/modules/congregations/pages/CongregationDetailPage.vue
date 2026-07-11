@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Church, Clock, Mail, MapPin, Phone, User } from 'lucide-vue-next'
+import { Church, Clock, Mail, MapPin, Pencil, Phone, User } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -85,46 +85,53 @@ function formatServiceTimes(item: ICongregationDetail): string {
           </div>
         </template>
         <template v-if="congregation.canManage" #actions>
-          <ButtonLink :to="CongregationRoutePaths.editById(congregation.id)" size="sm">
-            {{ t('congregations.detail.edit') }}
+          <ButtonLink
+            :to="CongregationRoutePaths.editById(congregation.id)"
+            size="sm"
+            :aria-label="t('congregations.detail.edit')"
+          >
+            <Pencil class="size-4" />
+            <span class="hidden sm:inline">{{ t('congregations.detail.edit') }}</span>
           </ButtonLink>
         </template>
       </CommonPageHeader>
 
-      <div class="space-y-6">
+      <div class="space-y-6 pb-4 sm:pb-6">
         <!-- Address -->
-        <div v-if="formatAddress(congregation)" class="flex items-start gap-3">
-          <MapPin class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-          <div>
+        <div v-if="formatAddress(congregation)">
+          <div class="flex items-center gap-3">
+            <MapPin class="size-5 shrink-0 text-muted-foreground" />
             <h3 class="text-sm font-medium text-muted-foreground">
               {{ t('congregations.detail.address') }}
             </h3>
-            <p class="text-foreground">
-              {{ formatAddress(congregation) }}
-            </p>
           </div>
+          <p class="mt-1 pl-8 text-foreground">
+            {{ formatAddress(congregation) }}
+          </p>
         </div>
 
         <!-- Service Times -->
-        <div v-if="congregation.service_times.length > 0" class="flex items-start gap-3">
-          <Clock class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-          <div>
+        <div v-if="congregation.service_times.length > 0">
+          <div class="flex items-center gap-3">
+            <Clock class="size-5 shrink-0 text-muted-foreground" />
             <h3 class="text-sm font-medium text-muted-foreground">
               {{ t('congregations.detail.serviceTimes') }}
             </h3>
-            <p class="text-foreground">
-              {{ formatServiceTimes(congregation) }}
-            </p>
           </div>
+          <p class="mt-1 pl-8 text-foreground">
+            {{ formatServiceTimes(congregation) }}
+          </p>
         </div>
 
         <!-- Contacts -->
-        <div v-if="congregation.card_contacts.length > 0" class="flex items-start gap-3">
-          <User class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-          <div class="flex-1 min-w-0 space-y-4">
+        <div v-if="congregation.card_contacts.length > 0">
+          <div class="flex items-center gap-3">
+            <User class="size-5 shrink-0 text-muted-foreground" />
             <h3 class="text-sm font-medium text-muted-foreground">
               {{ t('congregations.detail.contacts') }}
             </h3>
+          </div>
+          <div class="mt-2 space-y-4 pl-8">
             <div
               v-for="(contact, contactIndex) in congregation.card_contacts"
               :key="`contact-${contactIndex}`"

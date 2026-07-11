@@ -247,11 +247,17 @@ async def get_congregation_detail(
 
     service_times = await congregation_repo.get_service_times_by_tenant_id(tenant_id)
 
+    # Members manage this congregation's card, so they see every assignment they
+    # chose to keep on it (any level above "hidden") regardless of their own
+    # pastoral access -- "pastors"-restricted contacts shouldn't vanish from the
+    # very people responsible for the page. Per-field phone/email visibility is
+    # left untouched: that reflects the assigned person's own sharing choice.
     assignments = await church_repo.list_service_assignments("church", tenant_id)
     visible_assignments = [
         assignment
         for assignment in assignments
-        if VisibilityService.can_view(
+        if (is_member and assignment.card_visibility != "hidden")
+        or VisibilityService.can_view(
             assignment.card_visibility,
             is_authenticated=is_authenticated,
             has_pastoral_access=has_pastoral_access,
@@ -272,7 +278,8 @@ async def get_congregation_detail(
     visible_branches = [
         branch
         for branch in branches
-        if VisibilityService.can_view(
+        if (is_member and branch.visibility != "hidden")
+        or VisibilityService.can_view(
             branch.visibility,
             is_authenticated=is_authenticated,
             has_pastoral_access=has_pastoral_access,
