@@ -436,19 +436,46 @@ onMounted(() => {
         :description="t('admin.congregations.subtitle', 'Manage congregations (tenants) and their members')"
       >
         <template #actions>
-          <Button variant="outline" @click="toggleShowDeleted">
-            <RotateCcw class="size-4" />
-            {{ showDeleted
+          <Button
+            v-tooltip="showDeleted
               ? t('admin.congregations.hideDeleted', 'Hide deleted')
-              : t('admin.congregations.showDeleted', 'Show deleted') }}
+              : t('admin.congregations.showDeleted', 'Show deleted')"
+            variant="outline"
+            size="sm"
+            :aria-label="showDeleted
+              ? t('admin.congregations.hideDeleted', 'Hide deleted')
+              : t('admin.congregations.showDeleted', 'Show deleted')"
+            @click="toggleShowDeleted"
+          >
+            <RotateCcw class="size-4" />
+            <span class="hidden sm:inline">
+              {{ showDeleted
+                ? t('admin.congregations.hideDeleted', 'Hide deleted')
+                : t('admin.congregations.showDeleted', 'Show deleted') }}
+            </span>
           </Button>
-          <Button variant="outline" @click="router.push({ name: AdminRouteNames.congregationImport })">
+          <Button
+            v-tooltip="t('admin.congregationImport.navButton', 'Import z tekstu')"
+            variant="outline"
+            size="sm"
+            :aria-label="t('admin.congregationImport.navButton', 'Import z tekstu')"
+            @click="router.push({ name: AdminRouteNames.congregationImport })"
+          >
             <Sparkles class="size-4" />
-            {{ t('admin.congregationImport.navButton', 'Import z tekstu') }}
+            <span class="hidden sm:inline">
+              {{ t('admin.congregationImport.navButton', 'Import z tekstu') }}
+            </span>
           </Button>
-          <Button @click="createDialogOpen = true">
+          <Button
+            v-tooltip="t('admin.congregations.create', 'Create Congregation')"
+            size="sm"
+            :aria-label="t('admin.congregations.create', 'Create Congregation')"
+            @click="createDialogOpen = true"
+          >
             <Plus class="size-4" />
-            {{ t('admin.congregations.create', 'Create Congregation') }}
+            <span class="hidden sm:inline">
+              {{ t('admin.congregations.create', 'Create Congregation') }}
+            </span>
           </Button>
         </template>
       </CommonPageHeader>

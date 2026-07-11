@@ -34,22 +34,22 @@ const emit = defineEmits<{
 
     <!-- Center section: title row + description -->
     <div>
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex min-w-0 flex-1 items-center gap-3">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 items-center gap-3 sm:flex-1">
           <slot name="before-icon" />
           <component
             :is="icon"
             v-if="icon"
             :class="cn('size-8 shrink-0 text-primary', iconClass)"
           />
-          <h1 class="text-3xl font-bold tracking-tight">
+          <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">
             {{ label }}
           </h1>
         </div>
 
         <div
           v-if="$slots.actions || $slots.dropdown"
-          class="flex shrink-0 flex-wrap items-center justify-end gap-2"
+          class="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end"
         >
           <slot name="actions" />
           <slot name="dropdown" />
