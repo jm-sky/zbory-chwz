@@ -36,11 +36,17 @@ echo -e "${GREEN}✅ Frontend build completed${NC}"
 # Step 3: Deploy to /var/www/zbory-chwz
 echo -e "${YELLOW}📋 Step 3: Deploying to ${DEPLOY_DIR}...${NC}"
 
-# Remove old files
-sudo rm -rf "${DEPLOY_DIR:?}"/*
+deploy_frontend() {
+  rm -rf "${DEPLOY_DIR:?}"/*
+  cp -r dist/* "$DEPLOY_DIR/"
+}
 
-# Copy new build
-sudo cp -r dist/* "$DEPLOY_DIR/"
+if [ -w "$DEPLOY_DIR" ]; then
+  deploy_frontend
+else
+  sudo rm -rf "${DEPLOY_DIR:?}"/*
+  sudo cp -r dist/* "$DEPLOY_DIR/"
+fi
 
 # Fix ownership to caddy:deploy
 sudo chown -R caddy:deploy "$DEPLOY_DIR"
