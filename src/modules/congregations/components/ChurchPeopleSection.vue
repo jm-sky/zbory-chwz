@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQueryClient } from '@tanstack/vue-query'
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -46,6 +47,7 @@ const { churchId } = defineProps<{ churchId: string }>()
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { handleError } = useHandleError()
+const queryClient = useQueryClient()
 
 const assignments = ref<IServiceAssignment[]>([])
 const serviceTypes = ref<IServiceType[]>([])
@@ -210,6 +212,7 @@ async function addPerson() {
     assignments.value.push(created)
     resetForm()
     toast.success(t('congregations.people.added', 'Osoba dodana'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
     handleError(error)
   }
@@ -254,6 +257,7 @@ async function saveEdit() {
     editDialogOpen.value = false
     editingId.value = null
     toast.success(t('congregations.people.updated', 'Zapisano zmiany'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
     handleError(error)
   } finally {
@@ -267,6 +271,7 @@ async function removeAssignment(assignmentId: string) {
     await churchApiService.deleteServiceAssignment(churchId, assignmentId)
     assignments.value = assignments.value.filter(a => a.id !== assignmentId)
     toast.success(t('congregations.people.removed', 'Usunięto przypisanie'))
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
     handleError(error)
   }
@@ -286,6 +291,7 @@ async function updateAssignmentVisibility(
     if (index >= 0) {
       assignments.value[index] = updated
     }
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
     handleError(error)
   } finally {
@@ -320,6 +326,7 @@ async function moveAssignment(index: number, direction: 'up' | 'down') {
         churchApiService.updateServiceAssignment(churchId, a.id, { sortOrder: a.sortOrder }),
       ),
     )
+    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
     assignments.value = previous
     handleError(error)
@@ -367,7 +374,7 @@ onMounted(load)
       <li
         v-for="(item, index) in assignments"
         :key="item.id"
-        class="flex items-start justify-between gap-2 rounded-md border px-3 py-2"
+        class="flex flex-col gap-2 rounded-md border px-3 py-2 sm:flex-row sm:items-start sm:justify-between"
       >
         <div class="min-w-0 flex-1 space-y-2">
           <div>
@@ -417,7 +424,7 @@ onMounted(load)
             </Label>
           </div>
         </div>
-        <div class="flex shrink-0 gap-1">
+        <div class="flex shrink-0 justify-end gap-1">
           <Button
             type="button"
             variant="ghost"
