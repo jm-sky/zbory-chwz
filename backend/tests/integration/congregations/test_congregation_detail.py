@@ -362,6 +362,27 @@ async def test_authenticated_non_member_sees_authenticated_fields(ctx) -> None:
 
 
 @pytest.mark.asyncio
+async def test_member_without_pastoral_access_sees_all_non_hidden_assignments(ctx) -> None:
+    client, login = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.get(f"/api/congregations/{PUBLISHED_ID}/detail")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["canManage"] is True
+
+    # A member managing the congregation sees the pastors-only contact too,
+    # since it's still on their own card -- just not the explicitly hidden one.
+    contact_names = {contact["name"] for contact in data["card_contacts"]}
+    assert contact_names == {"Anna Nowak", "Jan Kowalski"}
+    assert "Hidden Person" not in contact_names
+
+    branch_names = {branch["name"] for branch in data["branches"]}
+    assert branch_names == {"Placowka Publiczna"}
+
+
+@pytest.mark.asyncio
 async def test_pastoral_user_sees_pastors_only_fields(ctx) -> None:
     client, login = ctx
     login(_api_user(PASTOR_ID))
