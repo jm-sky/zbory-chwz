@@ -524,6 +524,11 @@ export default {
     },
     copied: 'Контекст скопирован в буфер обмена',
   },
+  personSearch: {
+    personExists: 'Человек уже существует',
+    unlink: 'Отвязать',
+    editWarning: 'Редактирование доступно в разделе людей',
+  },
   premium: {
     premiumFeature: 'Премиум функция',
     unlockPremiumFeatures: 'Разблокировать премиум функции — Обновитесь для доступа к AI-ассистенту и многому другому',

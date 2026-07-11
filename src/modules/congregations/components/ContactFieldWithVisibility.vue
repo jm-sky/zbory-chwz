@@ -14,6 +14,8 @@ import {
 } from '../types/visibility.types'
 import { getVisibilityIcon } from '../utils/visibility'
 
+defineOptions({ inheritAttrs: false })
+
 const modelValue = defineModel<string>({ required: true })
 const visibility = defineModel<VisibilityLevel>('visibility', { required: true })
 
@@ -34,6 +36,7 @@ function visibilityLabel(level: VisibilityLevel): string {
   <div class="flex max-w-md">
     <Input
       v-model="modelValue"
+      v-bind="$attrs"
       :type="type"
       :readonly="readonly"
       :disabled="disabled"

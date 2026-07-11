@@ -59,7 +59,19 @@ people_group_memberships
 
 1. **Lista grup** — `/groups` (nie tylko `/admin`, żeby opiekunowie bez roli admina też mieli dostęp)
 2. **Szczegóły grupy** — `/groups/:id`: nazwa, opis, widoczność, lista aktywnych członków
-3. **Dodaj członka** — prosty formularz (imię, nazwisko, e-mail, telefon, rola w grupie); dopasowanie po istniejącej osobie (`personId`) obsłużone w API, wyszukiwarka `persons` w UI zostaje na później
+3. **Dodaj członka** — formularz (imię, nazwisko, e-mail, telefon, rola w grupie) z wyszukiwarką osób (autocomplete na 4 polach, patrz niżej)
+
+## Ustalenia (2026-07-11) — wyszukiwarka osób (autocomplete) — zaimplementowane
+
+Dotyczy formularza "dodaj osobę" w grupach (`GroupDetailPage`) **oraz** w edytorze zboru (`ChurchPeopleSection` — sekcja "Ludzie i służby"). Cel: unikać duplikatów `persons` przy ręcznym wpisywaniu danych, bez wymuszania wyboru.
+
+1. **Bez osobnego pola combobox.** Każde z 4 istniejących pól (imię, nazwisko, e-mail, telefon) samo działa jak autocomplete — wpisywanie odpytuje wyszukiwarkę osób (debounce) i pokazuje podpowiedzi pod aktywnym polem.
+2. **Wybór podpowiedzi** uzupełnia wszystkie 4 pola danymi znalezionej osoby, zapamiętuje jej `personId` i pokazuje badge „Osoba już istnieje" z ikoną odpięcia (✕).
+3. **Dalsza edycja dowolnego pola po dopasowaniu automatycznie odpina** `personId` (bo backend przy ustawionym `personId` ignoruje pozostałe pola — pokazywanie edytowanych wartości bez faktycznego ich zapisania byłoby mylące) — z toastem informacyjnym „Edycja możliwa z poziomu przeglądarki osób". Ikona ✕ pozwala odpiąć świadomie, bez edycji.
+4. **Wyszukiwarka `GET /churches/persons/search`** rozszerzona o pole `phone` (dziś tylko imię/nazwisko/e-mail) z normalizacją formatowania (spacje/myślniki/nawiasy/`+` ignorowane po obu stronach porównania — wpisanie „600000000” trafia w zapisane „+48 600 000 000”) oraz dopasowanie dwuwyrazowe „imię nazwisko" niezależnie od kolejności słów, żeby wpisanie pełnego imienia i nazwiska trafiało w istniejącą osobę mimo że w bazie są to dwa osobne pola.
+5. **`first_name`/`last_name` w modelu `persons` zostają rozdzielone** — rozważano scalenie w jedno pole, odrzucone: dotyka 6 plików backendu i 8 plików frontendu (w tym eksport JSON/Markdown, CLI), traci strukturę (sortowanie po nazwisku, formalne formaty), wymagałoby migracji istniejących danych produkcyjnych. Ten sam efekt UX (wyszukiwanie po pełnym imieniu i nazwisku) osiągnięty przez rozszerzenie zapytania wyszukującego (pkt 4), bez zmiany schematu.
+6. **Wspólny kod** — `src/shared/composables/usePersonAutocomplete.ts`, `src/shared/services/personSearchService.ts`, `src/shared/components/PersonSuggestionsList.vue` + `PersonLinkedBadge.vue`, użyte w obu miejscach (grupy i edytor zboru) zamiast kopiowania. Wymagało drobnej poprawki w `ContactFieldWithVisibility.vue` (`inheritAttrs: false` + przekazanie `$attrs` na wewnętrzny input), żeby zdarzenia takie jak `blur` docierały do właściwego pola, a nie do otaczającego kontenera.
+7. **Zweryfikowane end-to-end** w przeglądarce (prawdziwy Postgres + Redis): wpisanie fragmentu istniejącej osoby pokazuje podpowiedź, wybór uzupełnia pola i pokazuje badge, dalsza edycja odpina z toastem — w obu miejscach (grupy i edytor zboru).
 
 ## Fazy
 
@@ -68,7 +80,7 @@ people_group_memberships
 | 0 | Ten dokument + issue #014 | done |
 | 1 | Tabele + CRUD API (migracja `062`, moduł `app/modules/groups`) | done |
 | 2 | UI: lista grup, szczegóły, dodawanie/usuwanie członków | done |
-| 2b | Wyszukiwarka istniejących `persons` w UI (obecnie tylko przez API) | todo |
+| 2b | Wyszukiwarka istniejących `persons` w UI (autocomplete na 4 polach, w grupach i w edytorze zboru) | done |
 | 3 | Integracja z listami mailingowymi ([#015](../issues/2026-07-09--015--mailing-lists.md)) | todo |
 
 ## Zależności

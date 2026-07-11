@@ -528,4 +528,9 @@ export default {
     premiumFeature: 'Funkcja Premium',
     unlockPremiumFeatures: 'Odblokuj Funkcje Premium - Uaktualnij, aby uzyskać dostęp do Asystenta AI i więcej',
   },
+  personSearch: {
+    personExists: 'Osoba już istnieje',
+    unlink: 'Odepnij',
+    editWarning: 'Edycja możliwa z poziomu przeglądarki osób',
+  },
 }

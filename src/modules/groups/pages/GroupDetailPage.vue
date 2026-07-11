@@ -25,8 +25,11 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import PersonLinkedBadge from '@/shared/components/PersonLinkedBadge.vue'
+import PersonSuggestionsList from '@/shared/components/PersonSuggestionsList.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import { usePermissions } from '@/shared/composables/usePermissions'
+import { usePersonAutocomplete } from '@/shared/composables/usePersonAutocomplete'
 import type { GroupVisibility, IGroupDetail, IGroupMembership } from '../types/group.types'
 import { GroupsRoutePaths } from '../routes'
 import { groupApiService } from '../services/groupApiService'
@@ -47,6 +50,8 @@ const savingEdit = ref(false)
 
 const memberForm = ref({ firstName: '', lastName: '', email: '', phone: '', roleLabel: '' })
 const addingMember = ref(false)
+
+const personAutocomplete = usePersonAutocomplete()
 
 const canManageMetadata = canAccessAdminPanel
 
@@ -124,6 +129,19 @@ async function deleteGroup() {
 
 function resetMemberForm() {
   memberForm.value = { firstName: '', lastName: '', email: '', phone: '', roleLabel: '' }
+  personAutocomplete.reset()
+}
+
+function onMemberFieldChange(field: 'firstName' | 'lastName' | 'email' | 'phone', value: string) {
+  personAutocomplete.handleFieldChange(field, value)
+}
+
+function onSelectPerson(person: Parameters<typeof personAutocomplete.selectPerson>[0]) {
+  const filled = personAutocomplete.selectPerson(person)
+  memberForm.value.firstName = filled.firstName
+  memberForm.value.lastName = filled.lastName
+  memberForm.value.email = filled.email
+  memberForm.value.phone = filled.phone
 }
 
 async function addMember() {
@@ -131,6 +149,7 @@ async function addMember() {
   addingMember.value = true
   try {
     const membership = await groupApiService.addMembership(group.value.id, {
+      personId: personAutocomplete.linkedPersonId.value ?? undefined,
       firstName: memberForm.value.firstName || undefined,
       lastName: memberForm.value.lastName || undefined,
       email: memberForm.value.email || undefined,
@@ -247,22 +266,63 @@ onMounted(load)
           </ul>
 
           <div v-if="canManageMembers" class="space-y-3 border-t pt-4">
+            <PersonLinkedBadge
+              v-if="personAutocomplete.linkedPersonId.value"
+              @unlink="personAutocomplete.unlink()"
+            />
             <div class="grid gap-3 sm:grid-cols-2">
-              <div class="space-y-1">
+              <div class="relative space-y-1">
                 <Label>{{ t('groups.fields.firstName', 'Imię') }}</Label>
-                <Input v-model="memberForm.firstName" />
+                <Input
+                  v-model="memberForm.firstName"
+                  @update:model-value="onMemberFieldChange('firstName', String($event))"
+                  @blur="personAutocomplete.closeSuggestions()"
+                />
+                <PersonSuggestionsList
+                  v-if="personAutocomplete.activeField.value === 'firstName'"
+                  :suggestions="personAutocomplete.suggestions.value"
+                  @select="onSelectPerson"
+                />
               </div>
-              <div class="space-y-1">
+              <div class="relative space-y-1">
                 <Label>{{ t('groups.fields.lastName', 'Nazwisko') }}</Label>
-                <Input v-model="memberForm.lastName" />
+                <Input
+                  v-model="memberForm.lastName"
+                  @update:model-value="onMemberFieldChange('lastName', String($event))"
+                  @blur="personAutocomplete.closeSuggestions()"
+                />
+                <PersonSuggestionsList
+                  v-if="personAutocomplete.activeField.value === 'lastName'"
+                  :suggestions="personAutocomplete.suggestions.value"
+                  @select="onSelectPerson"
+                />
               </div>
-              <div class="space-y-1">
+              <div class="relative space-y-1">
                 <Label>{{ t('groups.fields.email', 'E-mail') }}</Label>
-                <Input v-model="memberForm.email" type="email" />
+                <Input
+                  v-model="memberForm.email"
+                  type="email"
+                  @update:model-value="onMemberFieldChange('email', String($event))"
+                  @blur="personAutocomplete.closeSuggestions()"
+                />
+                <PersonSuggestionsList
+                  v-if="personAutocomplete.activeField.value === 'email'"
+                  :suggestions="personAutocomplete.suggestions.value"
+                  @select="onSelectPerson"
+                />
               </div>
-              <div class="space-y-1">
+              <div class="relative space-y-1">
                 <Label>{{ t('groups.fields.phone', 'Telefon') }}</Label>
-                <Input v-model="memberForm.phone" />
+                <Input
+                  v-model="memberForm.phone"
+                  @update:model-value="onMemberFieldChange('phone', String($event))"
+                  @blur="personAutocomplete.closeSuggestions()"
+                />
+                <PersonSuggestionsList
+                  v-if="personAutocomplete.activeField.value === 'phone'"
+                  :suggestions="personAutocomplete.suggestions.value"
+                  @select="onSelectPerson"
+                />
               </div>
               <div class="space-y-1 sm:col-span-2">
                 <Label>{{ t('groups.fields.roleLabel', 'Rola w grupie') }}</Label>

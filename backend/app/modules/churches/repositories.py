@@ -1,15 +1,17 @@
 """Repository layer for church hierarchy."""
 
 import logging
+import re
 import secrets
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import ColumnElement, and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.functions import Function
 
 from app.common.id_utils import generate_id
 from app.core.database import get_db
@@ -65,28 +67,18 @@ class ChurchRepository:
         return list(result.scalars().all())
 
     async def list_service_types(self) -> list[ServiceTypeDB]:
-        result = await self.db.execute(
-            select(ServiceTypeDB).order_by(ServiceTypeDB.sort_order)
-        )
+        result = await self.db.execute(select(ServiceTypeDB).order_by(ServiceTypeDB.sort_order))
         return list(result.scalars().all())
 
     async def get_service_type(self, service_type_id: str) -> ServiceTypeDB | None:
-        result = await self.db.execute(
-            select(ServiceTypeDB).where(ServiceTypeDB.id == service_type_id)
-        )
+        result = await self.db.execute(select(ServiceTypeDB).where(ServiceTypeDB.id == service_type_id))
         return result.scalar_one_or_none()
 
     async def list_branches(self, church_id: str) -> list[BranchDB]:
-        result = await self.db.execute(
-            select(BranchDB)
-            .where(BranchDB.church_id == church_id)
-            .order_by(BranchDB.name)
-        )
+        result = await self.db.execute(select(BranchDB).where(BranchDB.church_id == church_id).order_by(BranchDB.name))
         return list(result.scalars().all())
 
-    async def create_branch(
-        self, church_id: str, payload: BranchCreateRequest
-    ) -> BranchDB:
+    async def create_branch(self, church_id: str, payload: BranchCreateRequest) -> BranchDB:
         slug = payload.slug or church_slug(payload.name)
         branch = BranchDB(
             id=generate_id(),
@@ -100,9 +92,7 @@ class ChurchRepository:
         await self.db.refresh(branch)
         return branch
 
-    async def update_branch(
-        self, church_id: str, branch_id: str, payload: BranchUpdateRequest
-    ) -> BranchDB | None:
+    async def update_branch(self, church_id: str, branch_id: str, payload: BranchUpdateRequest) -> BranchDB | None:
         result = await self.db.execute(
             select(BranchDB).where(
                 BranchDB.id == branch_id,
@@ -137,18 +127,33 @@ class ChurchRepository:
         return True
 
     async def search_persons(self, query: str, limit: int = 20) -> list[PersonDB]:
-        pattern = f"%{query.strip()}%"
-        stmt = (
-            select(PersonDB)
-            .where(
-                or_(
-                    PersonDB.first_name.ilike(pattern),
-                    PersonDB.last_name.ilike(pattern),
-                    PersonDB.email.ilike(pattern),
-                )
-            )
-            .limit(limit)
-        )
+        trimmed = query.strip()
+        pattern = f"%{trimmed}%"
+        conditions: list[ColumnElement[bool]] = [
+            PersonDB.first_name.ilike(pattern),
+            PersonDB.last_name.ilike(pattern),
+            PersonDB.email.ilike(pattern),
+            PersonDB.phone.ilike(pattern),
+        ]
+
+        # Phone numbers are stored/typed with varying spacing ("+48 600 000 000"
+        # vs "600000000") — compare digits only so formatting doesn't matter.
+        phone_digits = re.sub(r"\D", "", trimmed)
+        if phone_digits:
+            normalized_phone: Function[str] = func.replace(PersonDB.phone, " ", "")
+            for char in ("-", "(", ")", "+"):
+                normalized_phone = func.replace(normalized_phone, char, "")
+            conditions.append(normalized_phone.ilike(f"%{phone_digits}%"))
+
+        # "Jan Kowalski" should match a person even though first/last name are
+        # separate columns — try both word orders.
+        words = trimmed.split()
+        if len(words) == 2:
+            word_a, word_b = (f"%{w}%" for w in words)
+            conditions.append(and_(PersonDB.first_name.ilike(word_a), PersonDB.last_name.ilike(word_b)))
+            conditions.append(and_(PersonDB.first_name.ilike(word_b), PersonDB.last_name.ilike(word_a)))
+
+        stmt = select(PersonDB).where(or_(*conditions)).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -156,9 +161,7 @@ class ChurchRepository:
         result = await self.db.execute(select(PersonDB).where(PersonDB.id == person_id))
         return result.scalar_one_or_none()
 
-    async def list_service_assignments(
-        self, scope_type: str, scope_id: str
-    ) -> list[ServiceAssignmentDB]:
+    async def list_service_assignments(self, scope_type: str, scope_id: str) -> list[ServiceAssignmentDB]:
         result = await self.db.execute(
             select(ServiceAssignmentDB)
             .where(
@@ -173,9 +176,7 @@ class ChurchRepository:
         )
         return list(result.scalars().all())
 
-    async def _resolve_person(
-        self, payload: ServiceAssignmentCreateRequest
-    ) -> PersonDB:
+    async def _resolve_person(self, payload: ServiceAssignmentCreateRequest) -> PersonDB:
         if payload.personId:
             person = await self.get_person(payload.personId)
             if not person:
@@ -215,15 +216,10 @@ class ChurchRepository:
                 detail="Email required to create user account",
             )
 
-        existing = await self.db.execute(
-            select(UserDB).where(UserDB.email == person.email.lower().strip())
-        )
+        existing = await self.db.execute(select(UserDB).where(UserDB.email == person.email.lower().strip()))
         user_db = existing.scalar_one_or_none()
         if not user_db:
-            full_name = (
-                " ".join(p for p in (person.first_name, person.last_name) if p).strip()
-                or person.email
-            )
+            full_name = " ".join(p for p in (person.first_name, person.last_name) if p).strip() or person.email
             user_db = UserDB(
                 id=generate_id(),
                 email=person.email.lower().strip(),
@@ -240,9 +236,7 @@ class ChurchRepository:
         person.user_id = user_db.id
         await self._ensure_tenant_membership(church.tenant_id, user_db.id)
 
-        role_name = self._resolve_grant_role(
-            payload, service_type, can_grant_elevated_roles
-        )
+        role_name = self._resolve_grant_role(payload, service_type, can_grant_elevated_roles)
         if not role_name:
             return
 
@@ -291,9 +285,7 @@ class ChurchRepository:
         can_grant_elevated_roles: bool,
     ) -> str | None:
         """Return the ACL role to grant, or None. Rejects elevated grants."""
-        role_name = payload.suggestedRole or (
-            service_type.suggested_role if service_type else None
-        )
+        role_name = payload.suggestedRole or (service_type.suggested_role if service_type else None)
         if not role_name or role_name not in PASTORAL_ROLE_NAMES:
             return None
         if role_name in ELEVATED_ROLE_NAMES and not can_grant_elevated_roles:
@@ -440,9 +432,7 @@ class ChurchRepository:
         )
         return reloaded.scalar_one_or_none()
 
-    async def delete_service_assignment(
-        self, scope_type: str, scope_id: str, assignment_id: str
-    ) -> bool:
+    async def delete_service_assignment(self, scope_type: str, scope_id: str, assignment_id: str) -> bool:
         result = await self.db.execute(
             select(ServiceAssignmentDB).where(
                 ServiceAssignmentDB.id == assignment_id,
@@ -453,11 +443,7 @@ class ChurchRepository:
         assignment = result.scalar_one_or_none()
         if not assignment:
             return False
-        await self.db.execute(
-            delete(UserRoleAssignmentDB).where(
-                UserRoleAssignmentDB.source_assignment_id == assignment_id
-            )
-        )
+        await self.db.execute(delete(UserRoleAssignmentDB).where(UserRoleAssignmentDB.source_assignment_id == assignment_id))
         await self.db.delete(assignment)
         await self.db.commit()
         return True
@@ -468,9 +454,7 @@ class ChurchRepository:
             raise HTTPException(status_code=404, detail="Church not found")
         return church
 
-    async def list_public_card_assignments(
-        self, church_id: str
-    ) -> list[ServiceAssignmentDB]:
+    async def list_public_card_assignments(self, church_id: str) -> list[ServiceAssignmentDB]:
         result = await self.db.execute(
             select(ServiceAssignmentDB)
             .outerjoin(ServiceAssignmentDB.service_type)
@@ -490,9 +474,7 @@ class ChurchRepository:
         )
         return list(result.scalars().all())
 
-    async def list_public_card_assignments_for_churches(
-        self, church_ids: Sequence[str]
-    ) -> dict[str, list[ServiceAssignmentDB]]:
+    async def list_public_card_assignments_for_churches(self, church_ids: Sequence[str]) -> dict[str, list[ServiceAssignmentDB]]:
         """Public card assignments for many churches at once, keyed by church id."""
         if not church_ids:
             return {}
@@ -518,9 +500,7 @@ class ChurchRepository:
             grouped[assignment.scope_id].append(assignment)
         return grouped
 
-    async def list_public_branches_for_churches(
-        self, church_ids: Sequence[str]
-    ) -> dict[str, list[BranchDB]]:
+    async def list_public_branches_for_churches(self, church_ids: Sequence[str]) -> dict[str, list[BranchDB]]:
         """Publicly visible branches for many churches at once, keyed by church id."""
         if not church_ids:
             return {}
@@ -548,9 +528,7 @@ class ChurchRepository:
         if not person:
             return {"name": None, "title": None, "phone": None, "email": None}
 
-        name = " ".join(
-            part for part in (person.first_name, person.last_name) if part
-        ).strip()
+        name = " ".join(part for part in (person.first_name, person.last_name) if part).strip()
         service_type = assignment.service_type
         title = service_type.name if service_type else assignment.custom_service_name
         contact_fields = self.filter_assignment_contact(

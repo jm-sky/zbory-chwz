@@ -23,7 +23,10 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import PersonLinkedBadge from '@/shared/components/PersonLinkedBadge.vue'
+import PersonSuggestionsList from '@/shared/components/PersonSuggestionsList.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
+import { usePersonAutocomplete } from '@/shared/composables/usePersonAutocomplete'
 import type { IServiceAssignment, IServiceType } from '../types/church.types'
 import { churchApiService } from '../services/churchApiService'
 import {
@@ -53,6 +56,7 @@ const useCustomService = ref(false)
 const createAccount = ref(false)
 const accountRole = ref<'none' | ChurchAclRole>('none')
 const form = ref(createEmptyForm())
+const personAutocomplete = usePersonAutocomplete()
 
 const editDialogOpen = ref(false)
 const editingId = ref<string | null>(null)
@@ -169,11 +173,25 @@ function resetForm() {
   useCustomService.value = false
   createAccount.value = false
   accountRole.value = 'none'
+  personAutocomplete.reset()
+}
+
+function onPersonFieldChange(field: 'firstName' | 'lastName' | 'email' | 'phone', value: string) {
+  personAutocomplete.handleFieldChange(field, value)
+}
+
+function onSelectPerson(person: Parameters<typeof personAutocomplete.selectPerson>[0]) {
+  const filled = personAutocomplete.selectPerson(person)
+  form.value.firstName = filled.firstName
+  form.value.lastName = filled.lastName
+  form.value.email = filled.email
+  form.value.phone = filled.phone
 }
 
 async function addPerson() {
   try {
     const payload = {
+      personId: personAutocomplete.linkedPersonId.value ?? undefined,
       firstName: form.value.firstName || undefined,
       lastName: form.value.lastName || undefined,
       email: form.value.email || undefined,
@@ -387,28 +405,64 @@ onMounted(load)
       </li>
     </ul>
 
+    <PersonLinkedBadge
+      v-if="personAutocomplete.linkedPersonId.value"
+      @unlink="personAutocomplete.unlink()"
+    />
     <div class="grid gap-3 sm:grid-cols-2">
-      <div class="space-y-1">
+      <div class="relative space-y-1">
         <Label>{{ t('congregations.people.firstName', 'Imię') }}</Label>
-        <Input v-model="form.firstName" />
+        <Input
+          v-model="form.firstName"
+          @update:model-value="onPersonFieldChange('firstName', String($event))"
+          @blur="personAutocomplete.closeSuggestions()"
+        />
+        <PersonSuggestionsList
+          v-if="personAutocomplete.activeField.value === 'firstName'"
+          :suggestions="personAutocomplete.suggestions.value"
+          @select="onSelectPerson"
+        />
       </div>
-      <div class="space-y-1">
+      <div class="relative space-y-1">
         <Label>{{ t('congregations.people.lastName', 'Nazwisko') }}</Label>
-        <Input v-model="form.lastName" />
+        <Input
+          v-model="form.lastName"
+          @update:model-value="onPersonFieldChange('lastName', String($event))"
+          @blur="personAutocomplete.closeSuggestions()"
+        />
+        <PersonSuggestionsList
+          v-if="personAutocomplete.activeField.value === 'lastName'"
+          :suggestions="personAutocomplete.suggestions.value"
+          @select="onSelectPerson"
+        />
       </div>
-      <div class="space-y-1">
+      <div class="relative space-y-1">
         <Label>{{ t('congregations.people.email', 'E-mail') }}</Label>
         <ContactFieldWithVisibility
           v-model="form.email"
           v-model:visibility="form.emailVisibility"
           type="email"
+          @update:model-value="onPersonFieldChange('email', String($event))"
+          @blur="personAutocomplete.closeSuggestions()"
+        />
+        <PersonSuggestionsList
+          v-if="personAutocomplete.activeField.value === 'email'"
+          :suggestions="personAutocomplete.suggestions.value"
+          @select="onSelectPerson"
         />
       </div>
-      <div class="space-y-1">
+      <div class="relative space-y-1">
         <Label>{{ t('congregations.people.phone', 'Telefon') }}</Label>
         <ContactFieldWithVisibility
           v-model="form.phone"
           v-model:visibility="form.phoneVisibility"
+          @update:model-value="onPersonFieldChange('phone', String($event))"
+          @blur="personAutocomplete.closeSuggestions()"
+        />
+        <PersonSuggestionsList
+          v-if="personAutocomplete.activeField.value === 'phone'"
+          :suggestions="personAutocomplete.suggestions.value"
+          @select="onSelectPerson"
         />
       </div>
     </div>

@@ -524,6 +524,11 @@ export default {
     },
     copied: 'Context copied to clipboard',
   },
+  personSearch: {
+    personExists: 'Person already exists',
+    unlink: 'Unlink',
+    editWarning: 'Edit this person from the people browser',
+  },
   premium: {
     premiumFeature: 'Premium Feature',
     unlockPremiumFeatures: 'Unlock Premium Features - Upgrade to access AI Assistant and more',
