@@ -75,6 +75,39 @@ class PublicCongregationListResponse(BaseModel):
     congregations: list[PublicCongregationResponse]
 
 
+class CongregationBranchSummary(BaseModel):
+    """A branch (placówka) listed on its parent congregation's detail page."""
+
+    id: str
+    name: str
+
+
+class CongregationDetailResponse(BaseModel):
+    """Full congregation detail, with fields filtered by the viewer's visibility level."""
+
+    id: str
+    name: str
+    description: str | None = None
+    status: str | None = None
+    createdAt: datetime
+    # Address info
+    city: str | None = None
+    street: str | None = None
+    postal_code: str | None = None
+    province: str | None = None
+    country: str | None = None
+    # Full (unlimited) service times
+    service_times: list[dict[str, str]] = []
+    # Full (unlimited) contact list, filtered by viewer's visibility level
+    card_contacts: list[PublicCardContact] = []
+    # Publicly visible branches (placówki) of this congregation
+    branches: list[CongregationBranchSummary] = []
+    # The viewer's membership role in this congregation, if any
+    role: str | None = None
+    # Whether the viewer may edit this congregation (member or global admin/owner)
+    canManage: bool = False
+
+
 class TenantMembershipResponse(BaseModel):
     tenant_id: str
     user_id: str

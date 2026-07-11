@@ -107,6 +107,11 @@ async function handleEdit(congregation: ICongregationDetailed) {
   router.push(CongregationRoutePaths.editById(congregation.id))
 }
 
+function handleOpen(congregation: ICongregationDetailed) {
+  if (congregation.type === 'branch') return
+  router.push(CongregationRoutePaths.detailById(congregation.id))
+}
+
 async function handleUnpublish(congregation: ICongregationDetailed) {
   if (!confirm(t('congregations.list.unpublishConfirm', 'Czy na pewno chcesz cofnąć publikację tego zboru?'))) {
     return
@@ -287,12 +292,14 @@ async function handleDelete(congregation: ICongregationDetailed) {
           :key="congregation.id"
           :class="[
             'group rounded-lg border p-6 transition-all hover:shadow-md',
+            congregation.type !== 'branch' ? 'cursor-pointer' : '',
             congregation.status === 'draft'
               ? 'border-dashed bg-muted/20 border-muted-foreground/30 opacity-75 hover:border-muted-foreground/50'
               : congregation.status === 'published_unverified'
                 ? 'bg-muted/30 border-muted-foreground/20 hover:border-muted-foreground/40 opacity-90'
                 : 'bg-card hover:border-primary/50'
           ]"
+          @click="handleOpen(congregation)"
         >
           <!-- Header -->
           <div class="mb-4 flex items-start gap-4">
@@ -348,11 +355,16 @@ async function handleDelete(congregation: ICongregationDetailed) {
             <!-- Actions Dropdown -->
             <DropdownMenu v-if="canManageCongregation(congregation)">
               <DropdownMenuTrigger as-child>
-                <Button variant="ghost" size="icon" class="shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="shrink-0"
+                  @click.stop
+                >
                   <MoreHorizontal class="size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" @click.stop>
                 <DropdownMenuItem @click="handleEdit(congregation)">
                   <Edit class="size-4" />
                   <span>{{ t('common.edit', 'Edytuj') }}</span>
@@ -415,6 +427,7 @@ async function handleDelete(congregation: ICongregationDetailed) {
                   v-if="contact.phone"
                   :href="`tel:${contact.phone}`"
                   class="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+                  @click.stop
                 >
                   <Phone class="size-3.5" />
                   <span>{{ contact.phone }}</span>
@@ -423,6 +436,7 @@ async function handleDelete(congregation: ICongregationDetailed) {
                   v-if="contact.email"
                   :href="`mailto:${contact.email}`"
                   class="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+                  @click.stop
                 >
                   <Mail class="size-3.5" />
                   <span class="break-all">{{ contact.email }}</span>

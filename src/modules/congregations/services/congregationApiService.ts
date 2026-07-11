@@ -5,6 +5,7 @@ import type {
   IAddressCreateRequest,
   IAddressUpdateRequest,
   ICongregation,
+  ICongregationDetail,
   ICongregationDetailed,
   ICongregationDetailedListResponse,
   ICongregationFull,
@@ -104,6 +105,15 @@ class CongregationApiService {
       // Fallback to basic list
       return this.getCongregations()
     }
+  }
+
+  /**
+   * Get full detail for a single congregation, with fields filtered server-side
+   * by the viewer's visibility level (public endpoint, personalized when authenticated)
+   */
+  async getCongregationDetail(id: string): Promise<ICongregationDetail> {
+    const response = await apiClient.get<ICongregationDetail>(`/congregations/${id}/detail`)
+    return response.data
   }
 
   /**
