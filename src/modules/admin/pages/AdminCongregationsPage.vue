@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   DropdownMenu,
@@ -436,86 +435,87 @@ onMounted(() => {
         :label="t('admin.congregations.title', 'Congregations Management')"
         :description="t('admin.congregations.subtitle', 'Manage congregations (tenants) and their members')"
       >
-        <Button variant="outline" @click="toggleShowDeleted">
-          <RotateCcw class="size-4" />
-          {{ showDeleted
-            ? t('admin.congregations.hideDeleted', 'Hide deleted')
-            : t('admin.congregations.showDeleted', 'Show deleted') }}
-        </Button>
-        <Button variant="outline" @click="router.push({ name: AdminRouteNames.congregationImport })">
-          <Sparkles class="size-4" />
-          {{ t('admin.congregationImport.navButton', 'Import z tekstu') }}
-        </Button>
-        <Dialog v-model:open="createDialogOpen">
-          <DialogTrigger as-child>
-            <Button>
-              <Plus class="size-4" />
-              {{ t('admin.congregations.create', 'Create Congregation') }}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {{ t('admin.congregations.createTitle', 'Create New Congregation') }}
-              </DialogTitle>
-              <DialogDescription>
-                {{ t('admin.congregations.createDescription', 'Add a new congregation to the system') }}
-              </DialogDescription>
-            </DialogHeader>
-            <div class="space-y-4 py-4">
-              <div class="space-y-2">
-                <Label for="create-name">
-                  {{ t('admin.congregations.name', 'Name') }} *
-                </Label>
-                <Input
-                  id="create-name"
-                  v-model="formData.name"
-                  :placeholder="t('admin.congregations.namePlaceholder', 'Enter congregation name')"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label for="create-description">
-                  {{ t('admin.congregations.description', 'Description') }}
-                </Label>
-                <Input
-                  id="create-description"
-                  v-model="formData.description"
-                  :placeholder="t('admin.congregations.descriptionPlaceholder', 'Enter description (optional)')"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label for="create-status">
-                  {{ t('admin.congregations.status', 'Status') }}
-                </Label>
-                <Select v-model="formData.status">
-                  <SelectTrigger id="create-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">
-                      {{ t('admin.congregations.statusDraft', 'Draft') }}
-                    </SelectItem>
-                    <SelectItem value="published">
-                      {{ t('admin.congregations.statusPublished', 'Published') }}
-                    </SelectItem>
-                    <SelectItem value="published_unverified">
-                      {{ t('admin.congregations.statusPublishedUnverified', 'Published (Unverified)') }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" @click="createDialogOpen = false">
-                {{ t('common.cancel', 'Cancel') }}
-              </Button>
-              <Button @click="createTenant">
-                {{ t('common.create', 'Create') }}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <template #actions>
+          <Button variant="outline" @click="toggleShowDeleted">
+            <RotateCcw class="size-4" />
+            {{ showDeleted
+              ? t('admin.congregations.hideDeleted', 'Hide deleted')
+              : t('admin.congregations.showDeleted', 'Show deleted') }}
+          </Button>
+          <Button variant="outline" @click="router.push({ name: AdminRouteNames.congregationImport })">
+            <Sparkles class="size-4" />
+            {{ t('admin.congregationImport.navButton', 'Import z tekstu') }}
+          </Button>
+          <Button @click="createDialogOpen = true">
+            <Plus class="size-4" />
+            {{ t('admin.congregations.create', 'Create Congregation') }}
+          </Button>
+        </template>
       </CommonPageHeader>
+
+      <Dialog v-model:open="createDialogOpen">
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {{ t('admin.congregations.createTitle', 'Create New Congregation') }}
+            </DialogTitle>
+            <DialogDescription>
+              {{ t('admin.congregations.createDescription', 'Add a new congregation to the system') }}
+            </DialogDescription>
+          </DialogHeader>
+          <div class="space-y-4 py-4">
+            <div class="space-y-2">
+              <Label for="create-name">
+                {{ t('admin.congregations.name', 'Name') }} *
+              </Label>
+              <Input
+                id="create-name"
+                v-model="formData.name"
+                :placeholder="t('admin.congregations.namePlaceholder', 'Enter congregation name')"
+              />
+            </div>
+            <div class="space-y-2">
+              <Label for="create-description">
+                {{ t('admin.congregations.description', 'Description') }}
+              </Label>
+              <Input
+                id="create-description"
+                v-model="formData.description"
+                :placeholder="t('admin.congregations.descriptionPlaceholder', 'Enter description (optional)')"
+              />
+            </div>
+            <div class="space-y-2">
+              <Label for="create-status">
+                {{ t('admin.congregations.status', 'Status') }}
+              </Label>
+              <Select v-model="formData.status">
+                <SelectTrigger id="create-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">
+                    {{ t('admin.congregations.statusDraft', 'Draft') }}
+                  </SelectItem>
+                  <SelectItem value="published">
+                    {{ t('admin.congregations.statusPublished', 'Published') }}
+                  </SelectItem>
+                  <SelectItem value="published_unverified">
+                    {{ t('admin.congregations.statusPublishedUnverified', 'Published (Unverified)') }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" @click="createDialogOpen = false">
+              {{ t('common.cancel', 'Cancel') }}
+            </Button>
+            <Button @click="createTenant">
+              {{ t('common.create', 'Create') }}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <!-- Edit Dialog -->
       <Dialog v-model:open="editDialogOpen">
