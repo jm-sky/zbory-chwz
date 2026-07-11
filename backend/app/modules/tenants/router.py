@@ -218,9 +218,12 @@ async def get_congregation_detail(
     acl_service: Annotated[AclService, Depends(get_acl_service)],
     current_user: OptionalCurrentUser,
 ) -> CongregationDetailResponse:
-    """Public endpoint for a single congregation, with fields filtered by the
-    viewer's visibility level (public / authenticated / pastors), plus full
-    access for members and global admins/owners (including unpublished drafts).
+    """Public endpoint for a single congregation.
+
+    Lists every service assignment on the detail page; card_visibility only
+    affects the congregation list card, not this view. Phone and email are
+    still filtered per field by the viewer's permission level. Members and
+    global admins/owners also see unpublished drafts.
     """
     tenant = await repo.get_tenant(tenant_id)
     if not tenant:
@@ -247,22 +250,7 @@ async def get_congregation_detail(
 
     service_times = await congregation_repo.get_service_times_by_tenant_id(tenant_id)
 
-    # Members manage this congregation's card, so they see every assignment they
-    # chose to keep on it (any level above "hidden") regardless of their own
-    # pastoral access -- "pastors"-restricted contacts shouldn't vanish from the
-    # very people responsible for the page. Per-field phone/email visibility is
-    # left untouched: that reflects the assigned person's own sharing choice.
     assignments = await church_repo.list_service_assignments("church", tenant_id)
-    visible_assignments = [
-        assignment
-        for assignment in assignments
-        if (is_member and assignment.card_visibility != "hidden")
-        or VisibilityService.can_view(
-            assignment.card_visibility,
-            is_authenticated=is_authenticated,
-            has_pastoral_access=has_pastoral_access,
-        )
-    ]
     card_contacts = [
         PublicCardContact(
             **church_repo.to_public_card_contact(
@@ -271,7 +259,7 @@ async def get_congregation_detail(
                 has_pastoral_access=has_pastoral_access,
             )
         )
-        for assignment in visible_assignments
+        for assignment in assignments
     ]
 
     branches = await church_repo.list_branches(tenant_id)

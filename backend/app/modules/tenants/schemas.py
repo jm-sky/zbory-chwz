@@ -98,7 +98,7 @@ class CongregationDetailResponse(BaseModel):
     country: str | None = None
     # Full (unlimited) service times
     service_times: list[dict[str, str]] = []
-    # Full (unlimited) contact list, filtered by viewer's visibility level
+    # All service assignments; phone/email filtered by per-field visibility
     card_contacts: list[PublicCardContact] = []
     # Publicly visible branches (placówki) of this congregation
     branches: list[CongregationBranchSummary] = []

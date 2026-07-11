@@ -326,13 +326,19 @@ async def test_anonymous_sees_only_public_fields(ctx) -> None:
     assert data["city"] == "Warszawa"
     assert len(data["service_times"]) == 1
 
-    # Only the public-visibility assignment is exposed; hidden and pastors-only ones are not.
+    # Every assignment is listed; card_visibility does not apply on the detail page.
     contact_names = {contact["name"] for contact in data["card_contacts"]}
-    assert contact_names == {"Anna Nowak"}
-    contact = data["card_contacts"][0]
-    assert contact["phone"] == "+48222222222"
+    assert contact_names == {"Anna Nowak", "Jan Kowalski", "Hidden Person"}
+    anna = next(c for c in data["card_contacts"] if c["name"] == "Anna Nowak")
+    assert anna["phone"] == "+48222222222"
     # email_visibility is "authenticated" -> hidden from anonymous viewers
-    assert contact["email"] is None
+    assert anna["email"] is None
+    jan = next(c for c in data["card_contacts"] if c["name"] == "Jan Kowalski")
+    assert jan["phone"] is None
+    assert jan["email"] is None
+    hidden = next(c for c in data["card_contacts"] if c["name"] == "Hidden Person")
+    assert hidden["phone"] == "+48333333333"
+    assert hidden["email"] == "hidden@example.com"
 
     branch_names = {branch["name"] for branch in data["branches"]}
     assert branch_names == {"Placowka Publiczna"}
@@ -353,16 +359,19 @@ async def test_authenticated_non_member_sees_authenticated_fields(ctx) -> None:
     contact = next(c for c in data["card_contacts"] if c["name"] == "Anna Nowak")
     assert contact["email"] == "anna@example.com"
 
-    # Still no pastors-only assignment.
+    # All assignments are listed; pastors-only contact fields stay hidden.
     contact_names = {contact["name"] for contact in data["card_contacts"]}
-    assert "Jan Kowalski" not in contact_names
+    assert contact_names == {"Anna Nowak", "Jan Kowalski", "Hidden Person"}
+    jan = next(c for c in data["card_contacts"] if c["name"] == "Jan Kowalski")
+    assert jan["phone"] is None
+    assert jan["email"] is None
 
     assert data["role"] is None
     assert data["canManage"] is False
 
 
 @pytest.mark.asyncio
-async def test_member_without_pastoral_access_sees_all_non_hidden_assignments(ctx) -> None:
+async def test_member_without_pastoral_access_sees_all_assignments(ctx) -> None:
     client, login = ctx
     login(_api_user(MEMBER_ID))
 
@@ -372,11 +381,8 @@ async def test_member_without_pastoral_access_sees_all_non_hidden_assignments(ct
     data = response.json()
     assert data["canManage"] is True
 
-    # A member managing the congregation sees the pastors-only contact too,
-    # since it's still on their own card -- just not the explicitly hidden one.
     contact_names = {contact["name"] for contact in data["card_contacts"]}
-    assert contact_names == {"Anna Nowak", "Jan Kowalski"}
-    assert "Hidden Person" not in contact_names
+    assert contact_names == {"Anna Nowak", "Jan Kowalski", "Hidden Person"}
 
     branch_names = {branch["name"] for branch in data["branches"]}
     assert branch_names == {"Placowka Publiczna"}
@@ -392,7 +398,7 @@ async def test_pastoral_user_sees_pastors_only_fields(ctx) -> None:
     assert response.status_code == 200
     data = response.json()
     contact_names = {contact["name"] for contact in data["card_contacts"]}
-    assert contact_names == {"Anna Nowak", "Jan Kowalski"}
+    assert contact_names == {"Anna Nowak", "Jan Kowalski", "Hidden Person"}
     pastor_contact = next(c for c in data["card_contacts"] if c["name"] == "Jan Kowalski")
     assert pastor_contact["phone"] == "+48111111111"
     assert pastor_contact["email"] == "jan@example.com"
