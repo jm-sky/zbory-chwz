@@ -1,6 +1,6 @@
 # Synchronizacja z Google Contacts — plan
 
-**Status:** `in-progress` (Faza 1 zaimplementowana)
+**Status:** `in-progress` (Fazy 1-3 zaimplementowane, Faza 4 — export — do zrobienia)
 **Created:** 2026-07-10
 **Issue:** [#038](../issues/2026-07-10--038--google-contacts-sync.md)
 **Depends on:** [church-assignment-visibility.md](./2026-07-09--church-assignment-visibility.md)
@@ -93,8 +93,8 @@ flowchart LR
 |------|--------|--------|
 | 0 | Ten dokument + issue #038 | ✅ |
 | 1 | Połączenie Google Contacts (readonly) + wczytanie i filtr tekstowy | ✅ backend + frontend |
-| 2 | Klasyfikacja zbór/osoba + ekran mapowania (dopasowanie/tworzenie, podgląd) | ⏳ (heurystyka klasyfikacji już gotowa w `classification.py`, brakuje ekranu mapowania + frontendu) |
-| 3 | Import do bazy: `church` oraz `person` + `service_assignment` | ⏳ |
+| 2 | Klasyfikacja zbór/osoba + ekran mapowania (dopasowanie/tworzenie, podgląd) | ✅ backend + frontend |
+| 3 | Import do bazy: `church` oraz `person` + `service_assignment` | ✅ backend + frontend |
 | 4 | Export — zapis/aktualizacja pojedynczego kontaktu w Google (write scope, incremental auth) | ⏳ |
 
 ### Faza 1 — szczegóły implementacji
@@ -105,7 +105,15 @@ flowchart LR
 - Endpointy (admin/owner only): `POST /api/google-contacts/auth-url`, `POST /api/google-contacts/callback`, `GET/DELETE /api/google-contacts/connection`, `GET /api/google-contacts/contacts` (filtr „zbór”/„chwz” zastosowany po stronie backendu, People API nie wspiera takiego wyszukiwania natywnie).
 - Testy: `tests/unit/google_contacts/`, `tests/integration/google_contacts/`.
 - Frontend: `src/modules/admin/pages/AdminGoogleContactsPage.vue` (status połączenia, connect/disconnect, wczytanie i lista dopasowanych kontaktów) + `AdminGoogleContactsCallbackPage.vue` (obsługa powrotu z Google, state z `sessionStorage`), trasy `/admin/google-contacts` i `/admin/google-contacts/callback` (admin/owner only), kafelek na `AdminDashboardPage.vue`.
-- Nie zrobione w tej fazie: tabela `google_contacts_import_log`, ekran mapowania (ręczna korekta klasyfikacji + dopasowanie do istniejącego rekordu), właściwy import do bazy.
+### Fazy 2-3 — szczegóły implementacji
+
+- Backend: `app/modules/google_contacts/import_service.py` — `analyze()` (dopasowanie zboru po nazwie fuzzy-match rapidfuzz, próg 80.0, jak w `congregations/import_service.py`; dopasowanie osoby po dokładnym e-mailu/telefonie — nowa metoda `ChurchRepository.find_person_by_email_or_phone`) i `apply()` (tworzy/aktualizuje `TenantDB`+`ChurchDB` przez `provision_church_for_tenant`, adres/kontakt przez `CongregationRepository`, osobę+`service_assignment` przez `ChurchRepository.create_service_assignment` — reużyte 1:1 z istniejącego modułu `churches`).
+- Endpointy: `POST /api/google-contacts/import/analyze`, `POST /api/google-contacts/import/apply` (admin/owner only).
+- Tabela audytu `google_contacts_import_log` (migracja `067_google_contacts_import_log.py`) — jeden wpis na kontakt na decyzję (created/updated/skipped).
+- Rozszerzenie Fazy 1: `GoogleContactSuggestion` dostał pola `firstName`/`lastName`/`addressStreet`/`addressCity`/`addressPostalCode`/`addressProvince`/`addressCountry` (potrzebne do tworzenia rekordów, nie tylko podglądu).
+- Frontend: `AdminGoogleContactsPage.vue` rozszerzony o zaznaczanie kontaktów + korektę typu (zbór/osoba), przycisk „Analizuj wybrane” → ekran mapowania (karty per zbór/osoba, edytowalne pola, wybór celu dopasowania, „Pomiń”), przycisk „Importuj do bazy”.
+- **Świadome uproszczenie względem AI-import (`AdminCongregationImportPage.vue`)**: potwierdzenie jest na poziomie całego kontaktu (edytuj pola → zapisz), bez osobnych checkboxów per pole — plan wymaga tylko możliwości korekty przed zapisem, nie granularnego diffa pole-po-polu.
+- Nie zrobione: brak UI do ręcznego wyszukania *innej* istniejącej osoby niż auto-dopasowana (tylko potwierdź/create-new); tworzenie konta użytkownika (`createAccount`)/nadawanie ról ACL przy imporcie osoby — celowo pominięte, admin może to zrobić później w standardowym UI zboru.
 
 ## Ryzyka
 

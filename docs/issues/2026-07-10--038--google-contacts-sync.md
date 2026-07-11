@@ -1,6 +1,6 @@
 # Synchronizacja z Google Contacts
 
-**Status:** `planned`
+**Status:** `in-progress` (import — Fazy 1-3 — gotowy; export nie zaczęty)
 **Created:** 2026-07-10
 **Plan:** [2026-07-10--google-contacts-sync.md](../plans/2026-07-10--google-contacts-sync.md)
 **Depends on:** [#012](./2026-07-09--012--unify-services-remove-contact-persons.md)
@@ -16,11 +16,11 @@ Administratorzy zborów prowadzą prywatne książki kontaktów w Google, w któ
 
 - [x] Osobne połączenie OAuth „Google Contacts” (inne niż logowanie), z osobnymi scope dla odczytu i zapisu (Faza 1 — write scope przygotowany, nieużyty jeszcze przez export; UI: `/admin/google-contacts`)
 - [x] Wczytanie kontaktów użytkownika z filtrem tekstowym „zbór” / „chwz” (nazwa, organizacja, notatki) (Faza 1, backend + frontend)
-- [ ] Klasyfikacja kontaktu: zbór vs osoba (heurystyka gotowa i widoczna w UI jako badge; brakuje ręcznej korekty na ekranie mapowania)
-- [ ] Ekran mapowania:
-  - zbór → auto-dopasowanie po nazwie + potwierdzenie, albo utworzenie nowego zboru
-  - osoba → auto-dopasowanie po e-mail/telefon + potwierdzenie, wybór roli (`service_type`) przy dodaniu do zboru, albo tylko poprawa danych osoby globalnej
-- [ ] Akcja „Importuj do bazy” (tylko admin/owner) — tworzy/aktualizuje `church` (dla zboru) lub `person` + opcjonalnie `service_assignment` (dla osoby)
+- [x] Klasyfikacja kontaktu: zbór vs osoba (heurystyka + ręczna korekta typu na liście kontaktów przed analizą)
+- [x] Ekran mapowania:
+  - zbór → auto-dopasowanie po nazwie (fuzzy match) + potwierdzenie, albo utworzenie nowego zboru
+  - osoba → auto-dopasowanie po e-mail/telefon + potwierdzenie, wybór roli (`service_type`/własna nazwa) przy dodaniu do zboru, albo tylko poprawa danych osoby globalnej
+- [x] Akcja „Importuj do bazy” (tylko admin/owner) — tworzy/aktualizuje `church` (dla zboru) lub `person` + opcjonalnie `service_assignment` (dla osoby), z audytem w `google_contacts_import_log`
 - [ ] Akcja „Zapisz / popraw w Google” (dowolny zalogowany) — tworzy/aktualizuje kontakt w Google Contacts użytkownika, ręcznie per kontakt, po zgodzie na dodatkowy (write) scope
 
 ## Poza zakresem (teraz)

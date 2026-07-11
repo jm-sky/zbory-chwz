@@ -35,3 +35,24 @@ class GoogleContactsConnectionDB(Base):
 
     def __repr__(self) -> str:
         return f"<GoogleContactsConnectionDB(id={self.id}, user_id={self.user_id}, scope={self.scope})>"
+
+
+class GoogleContactsImportLogDB(Base):
+    """Audit trail for Google Contacts import decisions (Phase 3).
+
+    One row per contact the admin decided on (create/update/skip), regardless
+    of whether it resulted in a church or a person record.
+    """
+
+    __tablename__ = "google_contacts_import_log"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    google_resource_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(16), nullable=False)  # church | person
+    matched_entity_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    action: Mapped[str] = mapped_column(String(16), nullable=False)  # created | updated | skipped
+    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<GoogleContactsImportLogDB(id={self.id}, entity_type={self.entity_type}, action={self.action})>"

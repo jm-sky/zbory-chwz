@@ -8,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.id_utils import generate_id
 from app.core.database import get_db
-from app.modules.google_contacts.db_models import GoogleContactsConnectionDB
+from app.modules.google_contacts.db_models import (
+    GoogleContactsConnectionDB,
+    GoogleContactsImportLogDB,
+)
 
 
 class GoogleContactsRepository:
@@ -78,6 +81,27 @@ class GoogleContactsRepository:
         connection.revoked_at = datetime.now(UTC)
         await self.db.commit()
         return True
+
+    async def log_import(
+        self,
+        *,
+        user_id: str,
+        google_resource_name: str,
+        entity_type: str,
+        matched_entity_id: str | None,
+        action: str,
+    ) -> None:
+        self.db.add(
+            GoogleContactsImportLogDB(
+                id=generate_id(),
+                user_id=user_id,
+                google_resource_name=google_resource_name,
+                entity_type=entity_type,
+                matched_entity_id=matched_entity_id,
+                action=action,
+            )
+        )
+        await self.db.commit()
 
 
 def get_google_contacts_repository(

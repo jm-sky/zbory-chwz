@@ -1,5 +1,9 @@
 import { apiClient } from '@/shared/services/apiClient'
 import type {
+  IGoogleContactsAnalyzeRequest,
+  IGoogleContactsAnalyzeResponse,
+  IGoogleContactsApplyRequest,
+  IGoogleContactsApplyResponse,
   IGoogleContactsAuthUrlResponse,
   IGoogleContactsConnection,
   IGoogleContactsListResponse,
@@ -31,6 +35,16 @@ class GoogleContactsApiService {
 
   async listContacts(): Promise<IGoogleContactsListResponse> {
     const response = await apiClient.get<IGoogleContactsListResponse>('/google-contacts/contacts')
+    return response.data
+  }
+
+  async analyzeImport(request: IGoogleContactsAnalyzeRequest): Promise<IGoogleContactsAnalyzeResponse> {
+    const response = await apiClient.post<IGoogleContactsAnalyzeResponse>('/google-contacts/import/analyze', request)
+    return response.data
+  }
+
+  async applyImport(request: IGoogleContactsApplyRequest): Promise<IGoogleContactsApplyResponse> {
+    const response = await apiClient.post<IGoogleContactsApplyResponse>('/google-contacts/import/apply', request)
     return response.data
   }
 }

@@ -141,15 +141,25 @@ def _to_suggestion(contact: dict) -> GoogleContactSuggestion:
     emails = contact.get("emailAddresses") or []
     phones = contact.get("phoneNumbers") or []
     bios = contact.get("biographies") or []
+    addresses = contact.get("addresses") or []
+    address = addresses[0] if addresses else {}
+    name = names[0] if names else {}
 
     return GoogleContactSuggestion(
         resourceName=contact.get("resourceName", ""),
-        displayName=names[0].get("displayName") if names else None,
+        displayName=name.get("displayName"),
+        firstName=name.get("givenName"),
+        lastName=name.get("familyName"),
         organizationName=organizations[0].get("name") if organizations else None,
         emailAddresses=[e.get("value") for e in emails if e.get("value")],
         phoneNumbers=[p.get("value") for p in phones if p.get("value")],
         notes=bios[0].get("value") if bios else None,
         suggestedType=classify_contact(contact),
+        addressStreet=address.get("streetAddress"),
+        addressCity=address.get("city"),
+        addressPostalCode=address.get("postalCode"),
+        addressProvince=address.get("region"),
+        addressCountry=address.get("countryCode"),
     )
 
 

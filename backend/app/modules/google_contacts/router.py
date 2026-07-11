@@ -12,7 +12,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.modules.auth.decorators import rate_limit
 from app.modules.auth.dependencies import AdminOrOwnerUser
+from app.modules.google_contacts.import_service import (
+    GoogleContactsImportService,
+    get_google_contacts_import_service,
+)
 from app.modules.google_contacts.schemas import (
+    GoogleContactsAnalyzeRequest,
+    GoogleContactsAnalyzeResponse,
+    GoogleContactsApplyRequest,
+    GoogleContactsApplyResponse,
     GoogleContactsAuthUrlResponse,
     GoogleContactsCallbackRequest,
     GoogleContactsConnectionResponse,
@@ -112,3 +120,36 @@ async def list_contacts(
         totalFetched=total_fetched,
         matchedCount=len(suggestions),
     )
+
+
+@router.post(
+    "/import/analyze",
+    response_model=GoogleContactsAnalyzeResponse,
+    summary="Analyze selected Google contacts for import",
+    description="Fuzzy-match churches by name and exact-match persons by email/phone against existing records",
+)
+async def analyze_import(
+    request: GoogleContactsAnalyzeRequest,
+    current_user: AdminOrOwnerUser,
+    import_service: Annotated[GoogleContactsImportService, Depends(get_google_contacts_import_service)],
+) -> GoogleContactsAnalyzeResponse:
+    return await import_service.analyze(request)
+
+
+@router.post(
+    "/import/apply",
+    response_model=GoogleContactsApplyResponse,
+    summary="Apply the confirmed import decisions",
+    description="Creates/updates churches and persons per the admin's confirmed choices on the mapping screen",
+)
+async def apply_import(
+    request: GoogleContactsApplyRequest,
+    current_user: AdminOrOwnerUser,
+    import_service: Annotated[GoogleContactsImportService, Depends(get_google_contacts_import_service)],
+) -> GoogleContactsApplyResponse:
+    try:
+        return await import_service.apply(request, user_id=current_user.id)
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

@@ -161,6 +161,50 @@ class ChurchRepository:
         result = await self.db.execute(select(PersonDB).where(PersonDB.id == person_id))
         return result.scalar_one_or_none()
 
+    async def create_standalone_person(
+        self,
+        *,
+        first_name: str | None,
+        last_name: str | None,
+        email: str | None,
+        phone: str | None,
+    ) -> str:
+        """Create a person not (yet) linked to any church via a service assignment."""
+        person = PersonDB(
+            id=generate_id(),
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+        )
+        self.db.add(person)
+        await self.db.commit()
+        return person.id
+
+    async def find_person_by_email_or_phone(self, *, email: str | None, phone: str | None) -> tuple[PersonDB, str] | None:
+        """Exact-match lookup for confident auto-matching (e.g. Google Contacts
+        import), as opposed to `search_persons`'s broad autocomplete matching.
+
+        Returns (person, matched_by) for the first exact hit, preferring email.
+        """
+        if email:
+            result = await self.db.execute(select(PersonDB).where(func.lower(PersonDB.email) == email.lower().strip()))
+            person = result.scalars().first()
+            if person:
+                return person, "email"
+
+        phone_digits = re.sub(r"\D", "", phone) if phone else ""
+        if phone_digits:
+            normalized_phone: Function[str] = func.replace(PersonDB.phone, " ", "")
+            for char in ("-", "(", ")", "+"):
+                normalized_phone = func.replace(normalized_phone, char, "")
+            result = await self.db.execute(select(PersonDB).where(normalized_phone == phone_digits))
+            person = result.scalars().first()
+            if person:
+                return person, "phone"
+
+        return None
+
     async def list_service_assignments(self, scope_type: str, scope_id: str) -> list[ServiceAssignmentDB]:
         result = await self.db.execute(
             select(ServiceAssignmentDB)
