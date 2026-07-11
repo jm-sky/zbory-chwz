@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Shield } from 'lucide-vue-next'
+import { Contact, Shield } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
@@ -98,6 +98,24 @@ if (!canAccessAdminPanel.value) {
             <RouterLink :to="DirectoryRoutePaths.persons">
               <Button class="w-full">
                 {{ t('directory.persons.title', 'Przeglądarka osób') }}
+              </Button>
+            </RouterLink>
+          </div>
+        </Card>
+        <Card class="p-6">
+          <div class="flex flex-col gap-4 flex-1">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold flex items-center gap-2">
+                <Contact class="size-5 text-primary" />
+                {{ t('admin.googleContacts.title', 'Google Contacts') }}
+              </h3>
+              <p class="text-sm text-muted-foreground">
+                {{ t('admin.googleContacts.subtitle', 'Wczytaj zbory i osoby ze swojej książki kontaktów Google') }}
+              </p>
+            </div>
+            <RouterLink :to="AdminRoutePaths.googleContacts">
+              <Button class="w-full">
+                {{ t('admin.googleContacts.title', 'Google Contacts') }}
               </Button>
             </RouterLink>
           </div>

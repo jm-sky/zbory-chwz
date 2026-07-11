@@ -14,9 +14,9 @@ Administratorzy zborów prowadzą prywatne książki kontaktów w Google, w któ
 
 ## Zakres docelowy (high level)
 
-- [x] Osobne połączenie OAuth „Google Contacts” (inne niż logowanie), z osobnymi scope dla odczytu i zapisu (backend, Faza 1 — write scope przygotowany, nieużyty jeszcze przez export)
-- [x] Wczytanie kontaktów użytkownika z filtrem tekstowym „zbór” / „chwz” (nazwa, organizacja, notatki) (backend, Faza 1)
-- [ ] Klasyfikacja kontaktu: zbór vs osoba (heurystyka gotowa w backendzie; brakuje ręcznej korekty na ekranie mapowania — frontend)
+- [x] Osobne połączenie OAuth „Google Contacts” (inne niż logowanie), z osobnymi scope dla odczytu i zapisu (Faza 1 — write scope przygotowany, nieużyty jeszcze przez export; UI: `/admin/google-contacts`)
+- [x] Wczytanie kontaktów użytkownika z filtrem tekstowym „zbór” / „chwz” (nazwa, organizacja, notatki) (Faza 1, backend + frontend)
+- [ ] Klasyfikacja kontaktu: zbór vs osoba (heurystyka gotowa i widoczna w UI jako badge; brakuje ręcznej korekty na ekranie mapowania)
 - [ ] Ekran mapowania:
   - zbór → auto-dopasowanie po nazwie + potwierdzenie, albo utworzenie nowego zboru
   - osoba → auto-dopasowanie po e-mail/telefon + potwierdzenie, wybór roli (`service_type`) przy dodaniu do zboru, albo tylko poprawa danych osoby globalnej

@@ -92,7 +92,7 @@ flowchart LR
 | Faza | Zakres | Status |
 |------|--------|--------|
 | 0 | Ten dokument + issue #038 | ✅ |
-| 1 | Połączenie Google Contacts (readonly) + wczytanie i filtr tekstowy | ✅ backend (`app/modules/google_contacts/`, migracja 066) |
+| 1 | Połączenie Google Contacts (readonly) + wczytanie i filtr tekstowy | ✅ backend + frontend |
 | 2 | Klasyfikacja zbór/osoba + ekran mapowania (dopasowanie/tworzenie, podgląd) | ⏳ (heurystyka klasyfikacji już gotowa w `classification.py`, brakuje ekranu mapowania + frontendu) |
 | 3 | Import do bazy: `church` oraz `person` + `service_assignment` | ⏳ |
 | 4 | Export — zapis/aktualizacja pojedynczego kontaktu w Google (write scope, incremental auth) | ⏳ |
@@ -104,7 +104,8 @@ flowchart LR
 - Tokeny szyfrowane (Fernet, jak w module 2FA) w tabeli `google_contacts_connections` (migracja `066_google_contacts_connections.py`).
 - Endpointy (admin/owner only): `POST /api/google-contacts/auth-url`, `POST /api/google-contacts/callback`, `GET/DELETE /api/google-contacts/connection`, `GET /api/google-contacts/contacts` (filtr „zbór”/„chwz” zastosowany po stronie backendu, People API nie wspiera takiego wyszukiwania natywnie).
 - Testy: `tests/unit/google_contacts/`, `tests/integration/google_contacts/`.
-- Nie zrobione w tej fazie: frontend (przycisk „Połącz Google Contacts”, lista wyników), tabela `google_contacts_import_log`, ekran mapowania.
+- Frontend: `src/modules/admin/pages/AdminGoogleContactsPage.vue` (status połączenia, connect/disconnect, wczytanie i lista dopasowanych kontaktów) + `AdminGoogleContactsCallbackPage.vue` (obsługa powrotu z Google, state z `sessionStorage`), trasy `/admin/google-contacts` i `/admin/google-contacts/callback` (admin/owner only), kafelek na `AdminDashboardPage.vue`.
+- Nie zrobione w tej fazie: tabela `google_contacts_import_log`, ekran mapowania (ręczna korekta klasyfikacji + dopasowanie do istniejącego rekordu), właściwy import do bazy.
 
 ## Ryzyka
 
