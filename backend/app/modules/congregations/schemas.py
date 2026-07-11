@@ -131,6 +131,7 @@ class ImportFieldChange(BaseModel):
 
     field: ImportFieldKey
     label: str
+    group: Literal["address", "contact"]
     old_value: str | None = None
     new_value: str | None = None
 
@@ -149,6 +150,7 @@ class ImportProposal(BaseModel):
     tenant_id: str | None = None
     matched_name: str | None = None
     confidence: float = Field(ge=0, le=100)
+    contact_context: str | None = None
     fields: list[ImportFieldChange]
 
 

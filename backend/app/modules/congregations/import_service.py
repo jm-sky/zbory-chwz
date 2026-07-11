@@ -5,6 +5,7 @@ entry's name against existing tenants -> build a field-by-field diff for
 admin review -> apply only the fields the admin explicitly accepted.
 """
 
+import re
 import uuid
 
 from rapidfuzz import fuzz, process
@@ -45,6 +46,30 @@ _FIELD_LABELS: dict[str, str] = {
 
 _ADDRESS_FIELDS = {"street", "city", "postal_code", "province", "country"}
 _CONTACT_FIELDS = {"contact_name", "contact_title", "contact_phone", "contact_email"}
+
+_FIELD_GROUPS: dict[str, str] = {
+    **dict.fromkeys(_ADDRESS_FIELDS, "address"),
+    **dict.fromkeys(_CONTACT_FIELDS, "contact"),
+}
+
+# Poland is the only country the app supports today (see geo.DEFAULT_COUNTRY),
+# so a phone number without a country code is assumed to be a Polish one.
+_DEFAULT_PHONE_COUNTRY_CODE = "48"
+
+
+def _normalize_phone(value: str | None) -> str | None:
+    """Strip formatting and apply the default country code, so e.g. '668-292-049'
+    and '+48 668 292 049' compare as the same number instead of a false diff."""
+    if not value:
+        return None
+    digits = re.sub(r"[^\d+]", "", value)
+    if not digits:
+        return None
+    if digits.startswith("00"):
+        digits = f"+{digits[2:]}"
+    if not digits.startswith("+"):
+        digits = f"+{_DEFAULT_PHONE_COUNTRY_CODE}{digits}"
+    return digits
 
 
 class CongregationImportService:
@@ -88,7 +113,7 @@ class CongregationImportService:
             "country": entry.country or DEFAULT_COUNTRY,
             "contact_name": entry.contact_name,
             "contact_title": entry.contact_title,
-            "contact_phone": entry.contact_phone,
+            "contact_phone": _normalize_phone(entry.contact_phone),
             "contact_email": entry.contact_email,
         }
         old_values = {
@@ -99,7 +124,7 @@ class CongregationImportService:
             "country": current_address.country if current_address else None,
             "contact_name": current_contact.name if current_contact else None,
             "contact_title": current_contact.title if current_contact else None,
-            "contact_phone": current_contact.phone if current_contact else None,
+            "contact_phone": _normalize_phone(current_contact.phone) if current_contact else None,
             "contact_email": current_contact.email if current_contact else None,
         }
 
@@ -115,11 +140,21 @@ class CongregationImportService:
             ImportFieldChange(
                 field=key,  # type: ignore[arg-type]
                 label=_FIELD_LABELS[key],
+                group=_FIELD_GROUPS[key],  # type: ignore[arg-type]
                 old_value=old_values[key],
                 new_value=new_values[key],
             )
             for key in field_keys
         ]
+
+        contact_context = None
+        if any(_FIELD_GROUPS[key] == "contact" for key in field_keys):
+            context_name = new_values["contact_name"] or old_values["contact_name"]
+            context_title = new_values["contact_title"] or old_values["contact_title"]
+            if context_title and context_name:
+                contact_context = f"{context_title}: {context_name}"
+            else:
+                contact_context = context_title or context_name
 
         return ImportProposal(
             proposal_id=str(uuid.uuid4()),
@@ -128,6 +163,7 @@ class CongregationImportService:
             tenant_id=tenant_id,
             matched_name=matched_name,
             confidence=round(confidence, 1),
+            contact_context=contact_context,
             fields=fields,
         )
 
@@ -229,7 +265,7 @@ class CongregationImportService:
             if "contact_title" in values:
                 existing_contact.title = values["contact_title"]
             if "contact_phone" in values:
-                existing_contact.phone = values["contact_phone"]
+                existing_contact.phone = _normalize_phone(values["contact_phone"])
             if "contact_email" in values:
                 existing_contact.email = values["contact_email"]
             await self.db.commit()
@@ -238,6 +274,6 @@ class CongregationImportService:
                 tenant_id,
                 name=name,
                 title=values.get("contact_title"),
-                phone=values.get("contact_phone"),
+                phone=_normalize_phone(values.get("contact_phone")),
                 email=values.get("contact_email"),
             )

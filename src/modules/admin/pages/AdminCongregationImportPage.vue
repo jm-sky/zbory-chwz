@@ -25,6 +25,7 @@ import { useHandleError } from '@/shared/composables/useHandleError'
 import type {
   IImportApplyItem,
   IImportCandidateTenant,
+  TImportFieldGroup,
   TImportFieldKey,
 } from '../types/congregationImport.types'
 import { AdminRouteNames } from '../routes'
@@ -35,6 +36,7 @@ const CREATE_NEW_VALUE = '__create_new__'
 interface FieldState {
   field: TImportFieldKey
   label: string
+  group: TImportFieldGroup
   oldValue: string | null
   newValue: string
   apply: boolean
@@ -45,6 +47,7 @@ interface ProposalState {
   detectedName: string
   matchType: 'matched' | 'new'
   confidence: number
+  contactContext: string | null
   skip: boolean
   targetTenantId: string
   congregationName: string
@@ -63,6 +66,10 @@ const candidates = ref<IImportCandidateTenant[]>([])
 const proposalStates = ref<ProposalState[]>([])
 
 const hasProposals = computed(() => proposalStates.value.length > 0)
+
+function fieldsByGroup(state: ProposalState, group: TImportFieldGroup): FieldState[] {
+  return state.fields.filter(field => field.group === group)
+}
 
 function matchLabel(state: ProposalState): string {
   if (state.matchType === 'matched') {
@@ -83,12 +90,14 @@ async function analyze() {
       detectedName: proposal.detected_name,
       matchType: proposal.match_type,
       confidence: proposal.confidence,
+      contactContext: proposal.contact_context,
       skip: false,
       targetTenantId: proposal.tenant_id ?? CREATE_NEW_VALUE,
       congregationName: proposal.detected_name,
       fields: proposal.fields.map(field => ({
         field: field.field,
         label: field.label,
+        group: field.group,
         oldValue: field.old_value,
         newValue: field.new_value ?? '',
         apply: field.new_value !== null && field.new_value !== field.old_value,
@@ -223,15 +232,42 @@ function goBack() {
             <p v-if="state.fields.length === 0" class="text-sm text-muted-foreground">
               {{ t('admin.congregationImport.noChanges', 'Brak zmian do zastosowania') }}
             </p>
-            <div v-for="field in state.fields" :key="field.field" class="flex items-center gap-3">
-              <Checkbox v-model="field.apply" />
-              <div class="flex-1 space-y-1">
-                <Label class="text-xs text-muted-foreground">{{ field.label }}</Label>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span v-if="field.oldValue" class="text-sm text-muted-foreground line-through">
-                    {{ field.oldValue }}
-                  </span>
-                  <Input v-model="field.newValue" class="max-w-xs" />
+
+            <div v-if="fieldsByGroup(state, 'address').length > 0" class="space-y-3">
+              <h4 class="text-sm font-semibold">
+                {{ t('admin.congregationImport.addressSection', 'Adres') }}
+              </h4>
+              <div v-for="field in fieldsByGroup(state, 'address')" :key="field.field" class="flex items-center gap-3">
+                <Checkbox v-model="field.apply" />
+                <div class="flex-1 space-y-1">
+                  <Label class="text-xs text-muted-foreground">{{ field.label }}</Label>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span v-if="field.oldValue" class="text-sm text-muted-foreground line-through">
+                      {{ field.oldValue }}
+                    </span>
+                    <Input v-model="field.newValue" class="max-w-xs" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="fieldsByGroup(state, 'contact').length > 0" class="space-y-3">
+              <h4 class="text-sm font-semibold">
+                {{ t('admin.congregationImport.contactSection', 'Osoba kontaktowa') }}
+                <span v-if="state.contactContext" class="font-normal text-muted-foreground">
+                  ({{ state.contactContext }})
+                </span>
+              </h4>
+              <div v-for="field in fieldsByGroup(state, 'contact')" :key="field.field" class="flex items-center gap-3">
+                <Checkbox v-model="field.apply" />
+                <div class="flex-1 space-y-1">
+                  <Label class="text-xs text-muted-foreground">{{ field.label }}</Label>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span v-if="field.oldValue" class="text-sm text-muted-foreground line-through">
+                      {{ field.oldValue }}
+                    </span>
+                    <Input v-model="field.newValue" class="max-w-xs" />
+                  </div>
                 </div>
               </div>
             </div>
