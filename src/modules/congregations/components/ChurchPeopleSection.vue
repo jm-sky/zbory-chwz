@@ -33,9 +33,9 @@ import { churchApiService } from '../services/churchApiService'
 import {
   CHURCH_ACL_ROLES,
   type ChurchAclRole,
-  DEFAULT_PROFILE_VISIBILITY,
   DEFAULT_EMAIL_VISIBILITY,
   DEFAULT_PHONE_VISIBILITY,
+  DEFAULT_PROFILE_VISIBILITY,
   ELEVATED_ACL_ROLES,
   type VisibilityLevel,
 } from '../types/visibility.types'
@@ -488,134 +488,134 @@ onMounted(load)
           @unlink="personAutocomplete.unlink()"
         />
         <div class="grid gap-3 sm:grid-cols-2">
-      <div class="relative space-y-1">
-        <Label>{{ t('congregations.people.firstName', 'Imię') }}</Label>
-        <Input
-          v-model="form.firstName"
-          @update:model-value="onPersonFieldChange('firstName', String($event))"
-          @blur="personAutocomplete.closeSuggestions()"
-        />
-        <PersonSuggestionsList
-          v-if="personAutocomplete.activeField.value === 'firstName'"
-          :suggestions="personAutocomplete.suggestions.value"
-          @select="onSelectPerson"
-        />
-      </div>
-      <div class="relative space-y-1">
-        <Label>{{ t('congregations.people.lastName', 'Nazwisko') }}</Label>
-        <Input
-          v-model="form.lastName"
-          @update:model-value="onPersonFieldChange('lastName', String($event))"
-          @blur="personAutocomplete.closeSuggestions()"
-        />
-        <PersonSuggestionsList
-          v-if="personAutocomplete.activeField.value === 'lastName'"
-          :suggestions="personAutocomplete.suggestions.value"
-          @select="onSelectPerson"
-        />
-      </div>
-      <div class="relative space-y-1">
-        <Label>{{ t('congregations.people.email', 'E-mail') }}</Label>
-        <ContactFieldWithVisibility
-          v-model="form.email"
-          v-model:visibility="form.emailVisibility"
-          type="email"
-          @update:model-value="onPersonFieldChange('email', String($event))"
-          @blur="personAutocomplete.closeSuggestions()"
-        />
-        <PersonSuggestionsList
-          v-if="personAutocomplete.activeField.value === 'email'"
-          :suggestions="personAutocomplete.suggestions.value"
-          @select="onSelectPerson"
-        />
-      </div>
-      <div class="relative space-y-1">
-        <Label>{{ t('congregations.people.phone', 'Telefon') }}</Label>
-        <ContactFieldWithVisibility
-          v-model="form.phone"
-          v-model:visibility="form.phoneVisibility"
-          @update:model-value="onPersonFieldChange('phone', String($event))"
-          @blur="personAutocomplete.closeSuggestions()"
-        />
-        <PersonSuggestionsList
-          v-if="personAutocomplete.activeField.value === 'phone'"
-          :suggestions="personAutocomplete.suggestions.value"
-          @select="onSelectPerson"
-        />
-      </div>
-    </div>
+          <div class="relative space-y-1">
+            <Label>{{ t('congregations.people.firstName', 'Imię') }}</Label>
+            <Input
+              v-model="form.firstName"
+              @update:model-value="onPersonFieldChange('firstName', String($event))"
+              @blur="personAutocomplete.closeSuggestions()"
+            />
+            <PersonSuggestionsList
+              v-if="personAutocomplete.activeField.value === 'firstName'"
+              :suggestions="personAutocomplete.suggestions.value"
+              @select="onSelectPerson"
+            />
+          </div>
+          <div class="relative space-y-1">
+            <Label>{{ t('congregations.people.lastName', 'Nazwisko') }}</Label>
+            <Input
+              v-model="form.lastName"
+              @update:model-value="onPersonFieldChange('lastName', String($event))"
+              @blur="personAutocomplete.closeSuggestions()"
+            />
+            <PersonSuggestionsList
+              v-if="personAutocomplete.activeField.value === 'lastName'"
+              :suggestions="personAutocomplete.suggestions.value"
+              @select="onSelectPerson"
+            />
+          </div>
+          <div class="relative space-y-1">
+            <Label>{{ t('congregations.people.email', 'E-mail') }}</Label>
+            <ContactFieldWithVisibility
+              v-model="form.email"
+              v-model:visibility="form.emailVisibility"
+              type="email"
+              @update:model-value="onPersonFieldChange('email', String($event))"
+              @blur="personAutocomplete.closeSuggestions()"
+            />
+            <PersonSuggestionsList
+              v-if="personAutocomplete.activeField.value === 'email'"
+              :suggestions="personAutocomplete.suggestions.value"
+              @select="onSelectPerson"
+            />
+          </div>
+          <div class="relative space-y-1">
+            <Label>{{ t('congregations.people.phone', 'Telefon') }}</Label>
+            <ContactFieldWithVisibility
+              v-model="form.phone"
+              v-model:visibility="form.phoneVisibility"
+              @update:model-value="onPersonFieldChange('phone', String($event))"
+              @blur="personAutocomplete.closeSuggestions()"
+            />
+            <PersonSuggestionsList
+              v-if="personAutocomplete.activeField.value === 'phone'"
+              :suggestions="personAutocomplete.suggestions.value"
+              @select="onSelectPerson"
+            />
+          </div>
+        </div>
 
-    <div class="flex items-center gap-2">
-      <Checkbox v-model="useCustomService" />
-      <Label>{{ t('congregations.people.customService', 'Inna służba') }}</Label>
-    </div>
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="useCustomService" />
+          <Label>{{ t('congregations.people.customService', 'Inna służba') }}</Label>
+        </div>
 
-    <div v-if="useCustomService" class="space-y-1">
-      <Label>{{ t('congregations.people.customServiceName', 'Nazwa służby') }}</Label>
-      <Input v-model="form.customServiceName" />
-    </div>
-    <div v-else class="space-y-1">
-      <Label>{{ t('congregations.people.service', 'Służba') }}</Label>
-      <Select v-model="form.serviceTypeId">
-        <SelectTrigger>
-          <SelectValue :placeholder="t('congregations.people.servicePlaceholder', 'Wybierz służbę')" />
-        </SelectTrigger>
-        <SelectContent class="z-[100]">
-          <SelectItem
-            v-for="st in serviceTypes"
-            :key="st.id"
-            :value="st.id"
-          >
-            {{ st.name }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+        <div v-if="useCustomService" class="space-y-1">
+          <Label>{{ t('congregations.people.customServiceName', 'Nazwa służby') }}</Label>
+          <Input v-model="form.customServiceName" />
+        </div>
+        <div v-else class="space-y-1">
+          <Label>{{ t('congregations.people.service', 'Służba') }}</Label>
+          <Select v-model="form.serviceTypeId">
+            <SelectTrigger>
+              <SelectValue :placeholder="t('congregations.people.servicePlaceholder', 'Wybierz służbę')" />
+            </SelectTrigger>
+            <SelectContent class="z-[100]">
+              <SelectItem
+                v-for="st in serviceTypes"
+                :key="st.id"
+                :value="st.id"
+              >
+                {{ st.name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-    <div class="space-y-1">
-      <Label>{{ t('congregations.people.description', 'Opis') }}</Label>
-      <Textarea v-model="form.description" rows="2" />
-    </div>
+        <div class="space-y-1">
+          <Label>{{ t('congregations.people.description', 'Opis') }}</Label>
+          <Textarea v-model="form.description" rows="2" />
+        </div>
 
-    <div class="flex items-center gap-2">
-      <Checkbox v-model="showOnListAdd" />
-      <Label>
-        {{ t('congregations.people.showOnList', 'Pokaż na liście zborów') }}
-      </Label>
-    </div>
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="showOnListAdd" />
+          <Label>
+            {{ t('congregations.people.showOnList', 'Pokaż na liście zborów') }}
+          </Label>
+        </div>
 
-    <VisibilityLevelSelect
-      v-model="form.profileVisibility"
-      :label="t('congregations.people.profileVisibilityTitle', 'Widoczność w profilu zboru')"
-    />
+        <VisibilityLevelSelect
+          v-model="form.profileVisibility"
+          :label="t('congregations.people.profileVisibilityTitle', 'Widoczność w profilu zboru')"
+        />
 
-    <div class="flex items-center gap-2">
-      <Checkbox v-model="createAccount" />
-      <Label>
-        {{ t('congregations.people.createAccount', 'Utwórz konto użytkownika') }}
-        <span v-if="isPastorType && createAccount" class="text-muted-foreground">
-          ({{ t('congregations.people.pastorInactive', 'pastor: konto nieaktywne') }})
-        </span>
-      </Label>
-    </div>
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="createAccount" />
+          <Label>
+            {{ t('congregations.people.createAccount', 'Utwórz konto użytkownika') }}
+            <span v-if="isPastorType && createAccount" class="text-muted-foreground">
+              ({{ t('congregations.people.pastorInactive', 'pastor: konto nieaktywne') }})
+            </span>
+          </Label>
+        </div>
 
-    <div v-if="showAccountRoleSelect" class="space-y-1">
-      <Label>{{ t('congregations.people.accountRole', 'Uprawnienia') }}</Label>
-      <Select v-model="accountRole">
-        <SelectTrigger>
-          <SelectValue :placeholder="t('congregations.people.accountRolePlaceholder', 'Wybierz uprawnienia')" />
-        </SelectTrigger>
-        <SelectContent class="z-[100]">
-          <SelectItem
-            v-for="role in roleOptions"
-            :key="role"
-            :value="role"
-          >
-            {{ roleLabel(role) }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+        <div v-if="showAccountRoleSelect" class="space-y-1">
+          <Label>{{ t('congregations.people.accountRole', 'Uprawnienia') }}</Label>
+          <Select v-model="accountRole">
+            <SelectTrigger>
+              <SelectValue :placeholder="t('congregations.people.accountRolePlaceholder', 'Wybierz uprawnienia')" />
+            </SelectTrigger>
+            <SelectContent class="z-[100]">
+              <SelectItem
+                v-for="role in roleOptions"
+                :key="role"
+                :value="role"
+              >
+                {{ roleLabel(role) }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <Button type="button" @click="addPerson">
           <Plus class="size-4" />

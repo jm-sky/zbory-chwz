@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { apiClient } from '@/shared/services/apiClient'
 import type {
   CongregationStatus,
@@ -210,8 +211,8 @@ class CongregationApiService {
     try {
       const response = await apiClient.get<IAddress>(`/congregations/${tenantId}/address`)
       return response.data
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
         return null
       }
       throw error
