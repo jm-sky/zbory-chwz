@@ -84,6 +84,19 @@ Narzędzie do budowania listy adresów e-mail (filtr: region + rola/służba + g
 
 ---
 
+### Synchronizacja z Google Contacts
+
+🔄 **Status:** Planowane
+
+**Opis:**
+Import zborów i osób z Google Contacts do bazy (admin/owner, filtr tekstowy „zbór”/„chwz”, ekran mapowania) oraz eksport pojedynczego kontaktu (osoby lub zboru) z aplikacji do własnej książki Google Contacts (dowolny zalogowany użytkownik).
+
+**Szczegóły:**
+- Issue: [#038](issues/2026-07-10--038--google-contacts-sync.md)
+- Plan: [google-contacts-sync.md](plans/2026-07-10--google-contacts-sync.md)
+
+---
+
 ### Platforma zborów — hierarchia, ACL, publiczne URL
 
 🔄 **Status:** Planowane

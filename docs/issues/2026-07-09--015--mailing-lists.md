@@ -17,6 +17,10 @@ Administratorzy i pasterze potrzebują szybko zebrać adresy e-mail konkretnej g
 - Brak zgody/opt-out/audytu wysyłki — aplikacja niczego nie wysyła.
 - Brak trwałości — żadnej nowej tabeli, wynik budowany na żądanie.
 
+## Ustalenia (2026-07-10)
+
+Wysyłka **nie wymaga** osobnej zgody marketingowej ani `email_visibility` — każdy `persons.email` w bazie jest potencjalnym adresatem. Świadomie zaakceptowane ryzyko RODO; wymaga jawnej polityki prywatności i mechanizmu opt-out (patrz plan, sekcja Ryzyka).
+
 ## Zakres docelowy (high level)
 
 - [x] Endpoint zwracający osoby z e-mailem, filtrowane po regionie / roli (`service_types`) / grupie (`people_groups`), zawężone do zasięgu ACL wywołującego
