@@ -48,6 +48,7 @@ interface ProposalState {
   matchType: 'matched' | 'new'
   confidence: number
   contactContext: string | null
+  contactPersonId: string | null
   skip: boolean
   targetTenantId: string
   congregationName: string
@@ -91,6 +92,7 @@ async function analyze() {
       matchType: proposal.match_type,
       confidence: proposal.confidence,
       contactContext: proposal.contact_context,
+      contactPersonId: proposal.contact_person_id,
       skip: false,
       targetTenantId: proposal.tenant_id ?? CREATE_NEW_VALUE,
       congregationName: proposal.detected_name,
@@ -127,7 +129,7 @@ function buildApplyItems(): IImportApplyItem[] {
       return { action: 'create', congregation_name: state.congregationName, fields }
     }
 
-    return { action: 'update', tenant_id: state.targetTenantId, fields }
+    return { action: 'update', tenant_id: state.targetTenantId, contact_person_id: state.contactPersonId, fields }
   })
 }
 

@@ -122,6 +122,7 @@ class ImportProposal(BaseModel):
     matched_name: str | None = None
     confidence: float = Field(ge=0, le=100)
     contact_context: str | None = None
+    contact_person_id: str | None = None
     fields: list[ImportFieldChange]
 
 
@@ -140,6 +141,7 @@ class ImportApplyItem(BaseModel):
     action: Literal["update", "create", "skip"]
     tenant_id: str | None = None
     congregation_name: str | None = None
+    contact_person_id: str | None = None
     fields: list[ImportApplyField] = []
 
     @model_validator(mode="after")

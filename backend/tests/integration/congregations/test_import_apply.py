@@ -20,7 +20,7 @@ from app.common.id_utils import generate_id
 from app.core.database import Base, get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
-from app.modules.churches.db_models import ChurchDB, PersonDB, ServiceAssignmentDB
+from app.modules.churches.db_models import ChurchDB, PersonDB, ServiceAssignmentDB, ServiceTypeDB
 from app.modules.congregations.db_models import CongregationAddressDB
 from app.modules.tenants.db_models import TenantDB
 from main import app
@@ -28,6 +28,7 @@ from main import app
 ADMIN_ID = "user-admin"
 MEMBER_ID = "user-member"
 EXISTING_TENANT_ID = "tenant-warszawa"
+DIACON_SERVICE_TYPE_ID = "service-type-diakon"
 
 
 def _api_user(user_id: str, *, is_admin: bool = False) -> User:
@@ -62,6 +63,17 @@ async def _seed(session: AsyncSession) -> None:
             status="published",
             created_at=now,
             updated_at=now,
+        )
+    )
+    session.add(
+        ServiceTypeDB(
+            id=DIACON_SERVICE_TYPE_ID,
+            slug="diakon",
+            name="Diakon",
+            scope_type="church",
+            suggested_role="diacon",
+            is_senior_tier=False,
+            sort_order=70,
         )
     )
     await session.commit()
@@ -223,6 +235,97 @@ async def test_apply_skip_item_makes_no_changes(ctx) -> None:
         result = await session.execute(select(CongregationAddressDB).where(CongregationAddressDB.tenant_id == EXISTING_TENANT_ID))
         address = result.scalar_one()
         assert address.street == "Stara 1"
+
+
+@pytest.mark.asyncio
+async def test_apply_updates_only_the_pinned_contact_when_multiple_exist(ctx) -> None:
+    """With two contacts on a congregation, applying must edit the one the
+    analyze step matched by name - not silently overwrite whichever one
+    happens to come first."""
+    client, login, session_factory = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    now = datetime.now(UTC)
+    jan_person_id = generate_id()
+    marek_person_id = generate_id()
+    jan_assignment_id = generate_id()
+    marek_assignment_id = generate_id()
+    async with session_factory() as session:
+        session.add(
+            PersonDB(
+                id=jan_person_id,
+                first_name="Jan",
+                last_name="Madeyski",
+                phone="+48668292049",
+            )
+        )
+        session.add(
+            PersonDB(
+                id=marek_person_id,
+                first_name="Marek",
+                last_name="Kowalski",
+                phone="+48111222333",
+            )
+        )
+        session.add(
+            ServiceAssignmentDB(
+                id=jan_assignment_id,
+                person_id=jan_person_id,
+                service_type_id=DIACON_SERVICE_TYPE_ID,
+                scope_type="church",
+                scope_id=EXISTING_TENANT_ID,
+                show_on_list=True,
+                profile_visibility="public",
+                phone_visibility="public",
+                email_visibility="hidden",
+                sort_order=0,
+                created_at=now,
+            )
+        )
+        session.add(
+            ServiceAssignmentDB(
+                id=marek_assignment_id,
+                person_id=marek_person_id,
+                service_type_id=DIACON_SERVICE_TYPE_ID,
+                scope_type="church",
+                scope_id=EXISTING_TENANT_ID,
+                show_on_list=True,
+                profile_visibility="public",
+                phone_visibility="public",
+                email_visibility="hidden",
+                sort_order=1,
+                created_at=now,
+            )
+        )
+        await session.commit()
+
+    response = await client.post(
+        "/api/admin/congregations/import/apply",
+        json={
+            "items": [
+                {
+                    "action": "update",
+                    "tenant_id": EXISTING_TENANT_ID,
+                    "contact_person_id": jan_assignment_id,
+                    "fields": [
+                        {"field": "contact_phone", "value": "+48600700800", "apply": True},
+                    ],
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"created": 0, "updated": 1, "skipped": 0}
+
+    async with session_factory() as session:
+        jan = await session.get(PersonDB, jan_person_id)
+        marek = await session.get(PersonDB, marek_person_id)
+        assert jan is not None
+        assert marek is not None
+        assert jan.phone == "+48600700800"
+        # The other deacon must be untouched.
+        assert marek.phone == "+48111222333"
 
 
 @pytest.mark.asyncio

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from rapidfuzz import fuzz, process
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +13,11 @@ from app.modules.churches.schemas import (
     ServiceAssignmentUpdateRequest,
 )
 from app.modules.churches.seed_data import TITLE_TO_SERVICE_SLUG
+from app.modules.churches.slug_utils import slugify
+
+# Below this rapidfuzz score (0-100), an extracted contact name is treated as
+# having no match rather than risking an edit to the wrong person.
+CONTACT_MATCH_THRESHOLD = 80.0
 
 
 def split_person_name(full_name: str) -> tuple[str | None, str | None]:
@@ -61,13 +67,9 @@ async def load_service_types_by_slug(db: AsyncSession) -> dict[str, ServiceTypeD
     return {service_type.slug: service_type for service_type in result.scalars().all()}
 
 
-async def get_primary_contact_snapshot(
-    church_repo: ChurchRepository,
-    tenant_id: str,
-) -> dict[str, str | None]:
-    assignments = await church_repo.list_service_assignments("church", tenant_id)
-    primary = pick_primary_card_assignment(assignments)
-    if not primary or not primary.person:
+def assignment_contact_snapshot(assignment: ServiceAssignmentDB) -> dict[str, str | None]:
+    person = assignment.person
+    if not person:
         return {
             "contact_name": None,
             "contact_title": None,
@@ -75,13 +77,66 @@ async def get_primary_contact_snapshot(
             "contact_email": None,
         }
 
-    person = primary.person
     return {
         "contact_name": person_display_name(person) or None,
-        "contact_title": assignment_title(primary),
+        "contact_title": assignment_title(assignment),
         "contact_phone": person.phone,
         "contact_email": person.email,
     }
+
+
+def match_contact_assignment(
+    detected_name: str | None,
+    assignments: list[ServiceAssignmentDB],
+    *,
+    threshold: float = CONTACT_MATCH_THRESHOLD,
+) -> ServiceAssignmentDB | None:
+    """Pick which existing service assignment the extracted name refers to.
+
+    A single existing assignment is used as-is (matches the old behavior).
+    With several, only a confident name match is used; an unclear match
+    returns None so the caller creates a new contact instead of overwriting
+    the wrong person.
+    """
+    if len(assignments) <= 1:
+        return assignments[0] if assignments else None
+    if not detected_name:
+        return None
+
+    name_slugs = {
+        assignment.id: slugify(person_display_name(assignment.person) or "")
+        for assignment in assignments
+        if assignment.person
+    }
+    if not name_slugs:
+        return None
+
+    match = process.extractOne(slugify(detected_name), name_slugs, scorer=fuzz.WRatio)
+    if match is None:
+        return None
+
+    _, score, matched_assignment_id = match
+    if score < threshold:
+        return None
+
+    return next(assignment for assignment in assignments if assignment.id == matched_assignment_id)
+
+
+async def get_primary_contact_snapshot(
+    church_repo: ChurchRepository,
+    tenant_id: str,
+) -> dict[str, str | None]:
+    assignments = await church_repo.list_service_assignments("church", tenant_id)
+    primary = pick_primary_card_assignment(assignments)
+    if not primary:
+        return {
+            "contact_name": None,
+            "contact_title": None,
+            "contact_phone": None,
+            "contact_email": None,
+        }
+
+    return assignment_contact_snapshot(primary)
 
 
 async def upsert_primary_card_contact(

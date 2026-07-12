@@ -143,6 +143,9 @@ function formatServiceTimes(item: ICongregationDetail): string {
                   {{ ` - ${contact.title}` }}
                 </span>
               </div>
+              <p v-if="contact.description" class="text-sm text-muted-foreground">
+                {{ contact.description }}
+              </p>
               <div v-if="contact.phone || contact.email" class="space-y-1">
                 <a
                   v-if="contact.phone"
@@ -185,6 +188,9 @@ function formatServiceTimes(item: ICongregationDetail): string {
                   {{ ` - ${contact.title}` }}
                 </span>
               </div>
+              <p v-if="contact.description" class="text-sm text-muted-foreground">
+                {{ contact.description }}
+              </p>
               <div v-if="contact.phone || contact.email" class="space-y-1">
                 <a
                   v-if="contact.phone"

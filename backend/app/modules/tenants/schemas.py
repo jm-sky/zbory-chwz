@@ -39,6 +39,7 @@ class PublicCardContact(BaseModel):
     title: str | None = None
     phone: str | None = None
     email: str | None = None
+    description: str | None = None
 
 
 class PublicCongregationResponse(BaseModel):

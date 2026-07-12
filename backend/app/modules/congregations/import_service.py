@@ -14,11 +14,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.ai.provider import OpenRouterProvider
 from app.modules.ai.schemas import ExtractedCongregation
 from app.modules.churches.contact_sync import (
-    get_primary_contact_snapshot,
+    assignment_contact_snapshot,
+    load_service_types_by_slug,
+    match_contact_assignment,
+    resolve_service_type_for_title,
+    split_person_name,
     upsert_primary_card_contact,
 )
 from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.churches.repositories import ChurchRepository
+from app.modules.churches.schemas import ServiceAssignmentCreateRequest, ServiceAssignmentUpdateRequest
 from app.modules.churches.slug_utils import slugify
 from app.modules.congregations.geo import DEFAULT_COUNTRY, is_valid_province
 from app.modules.congregations.repositories import CongregationRepository
@@ -108,7 +113,9 @@ class CongregationImportService:
         match_type: str = "matched" if tenant_id else "new"
 
         current_address = await self._congregation_repo.get_address_by_tenant_id(tenant_id) if tenant_id else None
-        current_contact = await get_primary_contact_snapshot(self._church_repo, tenant_id) if tenant_id else None
+        assignments = await self._church_repo.list_service_assignments("church", tenant_id) if tenant_id else []
+        matched_assignment = match_contact_assignment(entry.contact_name, assignments) if tenant_id else None
+        current_contact = assignment_contact_snapshot(matched_assignment) if matched_assignment else None
 
         new_values = {
             "street": entry.street,
@@ -160,6 +167,11 @@ class CongregationImportService:
                 contact_context = f"{context_title}: {context_name}"
             else:
                 contact_context = context_title or context_name
+            if matched_assignment is None and len(assignments) > 0:
+                # Couldn't confidently match one of several existing contacts,
+                # so applying will create a new one rather than risk editing
+                # the wrong person.
+                contact_context = f"{contact_context} (nowa osoba)" if contact_context else "nowa osoba"
 
         return ImportProposal(
             proposal_id=str(uuid.uuid4()),
@@ -169,6 +181,7 @@ class CongregationImportService:
             matched_name=matched_name,
             confidence=round(confidence, 1),
             contact_context=contact_context,
+            contact_person_id=matched_assignment.id if matched_assignment else None,
             fields=fields,
         )
 
@@ -219,16 +232,16 @@ class CongregationImportService:
                 tenant_id = item.tenant_id
                 updated += 1
 
-            await self._apply_fields(tenant_id, values)
+            await self._apply_fields(tenant_id, values, item.contact_person_id)
 
         return ImportApplyResponse(created=created, updated=updated, skipped=skipped)
 
-    async def _apply_fields(self, tenant_id: str, values: dict[str, str | None]) -> None:
+    async def _apply_fields(self, tenant_id: str, values: dict[str, str | None], contact_person_id: str | None) -> None:
         if _ADDRESS_FIELDS & values.keys():
             await self._apply_address_fields(tenant_id, values)
 
         if _CONTACT_FIELDS & values.keys():
-            await self._apply_contact_fields(tenant_id, values)
+            await self._apply_contact_fields(tenant_id, values, contact_person_id)
 
     async def _apply_address_fields(self, tenant_id: str, values: dict[str, str | None]) -> None:
         existing = await self._congregation_repo.get_address_by_tenant_id(tenant_id)
@@ -257,23 +270,92 @@ class CongregationImportService:
             status=existing.status if existing else "draft",
         )
 
-    async def _apply_contact_fields(self, tenant_id: str, values: dict[str, str | None]) -> None:
-        current = await get_primary_contact_snapshot(self._church_repo, tenant_id)
+    async def _apply_contact_fields(
+        self,
+        tenant_id: str,
+        values: dict[str, str | None],
+        contact_person_id: str | None,
+    ) -> None:
+        assignments = await self._church_repo.list_service_assignments("church", tenant_id)
+        if contact_person_id:
+            target = next((assignment for assignment in assignments if assignment.id == contact_person_id), None)
+        else:
+            # No contact was pinned during analyze (e.g. an older client) -
+            # fall back to the same confident-match-or-nothing logic rather
+            # than guessing which of several contacts to overwrite.
+            target = match_contact_assignment(values.get("contact_name"), assignments)
 
-        name = values.get("contact_name") or current["contact_name"]
+        if target:
+            current = assignment_contact_snapshot(target)
+            name = values.get("contact_name") or current["contact_name"]
+            if not name:
+                raise ValueError(f"Contact name is required to save a service contact for tenant {tenant_id}")
+
+            title = values.get("contact_title") if "contact_title" in values else current["contact_title"]
+            phone = _normalize_phone(values["contact_phone"]) if "contact_phone" in values else current["contact_phone"]
+            email = values.get("contact_email") if "contact_email" in values else current["contact_email"]
+            first_name, last_name = split_person_name(name)
+            service_types_by_slug = await load_service_types_by_slug(self._church_repo.db)
+            service_type_id, custom_service_name = resolve_service_type_for_title(title, service_types_by_slug)
+
+            update_payload: dict[str, object] = {}
+            if "contact_name" in values or not values.get("contact_name"):
+                update_payload["firstName"] = first_name
+                update_payload["lastName"] = last_name
+            if "contact_phone" in values:
+                update_payload["phone"] = phone
+            if "contact_email" in values:
+                update_payload["email"] = email
+            if "contact_title" in values:
+                update_payload["serviceTypeId"] = service_type_id
+                update_payload["customServiceName"] = custom_service_name
+
+            await self._church_repo.update_service_assignment(
+                "church",
+                tenant_id,
+                target.id,
+                ServiceAssignmentUpdateRequest.model_validate(update_payload),
+            )
+            return
+
+        name = values.get("contact_name")
         if not name:
             raise ValueError(f"Contact name is required to save a service contact for tenant {tenant_id}")
 
-        title = values.get("contact_title") if "contact_title" in values else current["contact_title"]
-        phone = _normalize_phone(values["contact_phone"]) if "contact_phone" in values else current["contact_phone"]
-        email = values.get("contact_email") if "contact_email" in values else current["contact_email"]
+        if assignments:
+            first_name, last_name = split_person_name(name)
+            service_types_by_slug = await load_service_types_by_slug(self._church_repo.db)
+            title = values.get("contact_title")
+            service_type_id, custom_service_name = resolve_service_type_for_title(title, service_types_by_slug)
+            if not service_type_id and not custom_service_name:
+                custom_service_name = title or "Kontakt"
+
+            phone = _normalize_phone(values.get("contact_phone"))
+            email = values.get("contact_email")
+            await self._church_repo.create_service_assignment(
+                "church",
+                tenant_id,
+                ServiceAssignmentCreateRequest(
+                    firstName=first_name,
+                    lastName=last_name,
+                    email=email,
+                    phone=phone,
+                    serviceTypeId=service_type_id,
+                    customServiceName=custom_service_name,
+                    showOnList=True,
+                    profileVisibility="public",
+                    phoneVisibility="public" if phone else "hidden",
+                    emailVisibility="public" if email else "hidden",
+                ),
+            )
+            return
 
         await upsert_primary_card_contact(
             self._church_repo,
             tenant_id,
             name=name,
-            title=title,
-            phone=phone,
-            email=email,
+            title=values.get("contact_title"),
+            phone=_normalize_phone(values.get("contact_phone")),
+            email=values.get("contact_email"),
             fields=set(values.keys()) & _CONTACT_FIELDS,
         )
