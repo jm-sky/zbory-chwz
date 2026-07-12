@@ -593,7 +593,7 @@ class ChurchRepository:
     ) -> dict[str, str | None]:
         person = assignment.person
         if not person:
-            return {"name": None, "title": None, "phone": None, "email": None}
+            return {"name": None, "title": None, "phone": None, "email": None, "description": None}
 
         name = " ".join(part for part in (person.first_name, person.last_name) if part).strip()
         service_type = assignment.service_type
@@ -604,6 +604,7 @@ class ChurchRepository:
                 "title": title,
                 "phone": person.phone,
                 "email": person.email,
+                "description": assignment.description,
             }
 
         contact_fields = self.filter_assignment_contact(
@@ -616,6 +617,7 @@ class ChurchRepository:
             "title": title,
             "phone": contact_fields["phone"],
             "email": contact_fields["email"],
+            "description": assignment.description,
         }
 
     def profile_contacts_for_viewer(

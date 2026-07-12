@@ -43,6 +43,7 @@ export interface ICardContact {
   title?: string | null
   phone?: string | null
   email?: string | null
+  description?: string | null
 }
 
 export interface ICongregationBranchSummary {

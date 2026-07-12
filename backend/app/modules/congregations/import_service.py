@@ -15,6 +15,7 @@ from app.modules.ai.provider import OpenRouterProvider
 from app.modules.ai.schemas import ExtractedCongregation
 from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.churches.slug_utils import slugify
+from app.modules.congregations.db_models import CongregationContactPersonDB
 from app.modules.congregations.geo import DEFAULT_COUNTRY, is_valid_province
 from app.modules.congregations.repositories import CongregationRepository
 from app.modules.congregations.schemas import (
@@ -31,6 +32,11 @@ from app.modules.tenants.repositories import TenantRepository
 # Below this rapidfuzz score (0-100), a name is treated as having no match
 # rather than risking a wrong auto-match (see docs/issues/...--018--...).
 _MATCH_THRESHOLD = 80.0
+
+# Same idea for contact persons: a congregation can have several (e.g. two
+# deacons), and blindly editing whichever one happens to be first would
+# silently overwrite the wrong person's data.
+_CONTACT_MATCH_THRESHOLD = 80.0
 
 _FIELD_LABELS: dict[str, str] = {
     "street": "Ulica",
@@ -103,7 +109,7 @@ class CongregationImportService:
 
         current_address = await self._congregation_repo.get_address_by_tenant_id(tenant_id) if tenant_id else None
         current_contacts = await self._congregation_repo.get_contact_persons_by_tenant_id(tenant_id) if tenant_id else []
-        current_contact = current_contacts[0] if current_contacts else None
+        current_contact = self._match_contact(entry.contact_name, current_contacts)
 
         new_values = {
             "street": entry.street,
@@ -155,6 +161,11 @@ class CongregationImportService:
                 contact_context = f"{context_title}: {context_name}"
             else:
                 contact_context = context_title or context_name
+            if current_contact is None and len(current_contacts) > 0:
+                # Couldn't confidently match one of several existing contacts,
+                # so applying will create a new one rather than risk editing
+                # the wrong person.
+                contact_context = f"{contact_context} (nowa osoba)" if contact_context else "nowa osoba"
 
         return ImportProposal(
             proposal_id=str(uuid.uuid4()),
@@ -164,6 +175,7 @@ class CongregationImportService:
             matched_name=matched_name,
             confidence=round(confidence, 1),
             contact_context=contact_context,
+            contact_person_id=current_contact.id if current_contact else None,
             fields=fields,
         )
 
@@ -186,6 +198,34 @@ class CongregationImportService:
 
         matched_name = next(t.name for t in tenants if t.id == matched_tenant_id)
         return matched_tenant_id, matched_name, score
+
+    def _match_contact(
+        self,
+        detected_name: str | None,
+        contacts: list[CongregationContactPersonDB],
+    ) -> CongregationContactPersonDB | None:
+        """Pick which existing contact person the extracted name refers to.
+
+        A single existing contact is used as-is (matches the old behavior).
+        With several, only a confident name match is used; an unclear match
+        returns None so the caller creates a new contact instead of
+        overwriting the wrong person.
+        """
+        if len(contacts) <= 1:
+            return contacts[0] if contacts else None
+        if not detected_name:
+            return None
+
+        name_slugs = {contact.id: slugify(contact.name) for contact in contacts}
+        match = process.extractOne(slugify(detected_name), name_slugs, scorer=fuzz.WRatio)
+        if match is None:
+            return None
+
+        _, score, matched_contact_id = match
+        if score < _CONTACT_MATCH_THRESHOLD:
+            return None
+
+        return next(contact for contact in contacts if contact.id == matched_contact_id)
 
     async def apply(self, request: ImportApplyRequest, *, owner_user_id: str) -> ImportApplyResponse:
         created = updated = skipped = 0
@@ -214,16 +254,16 @@ class CongregationImportService:
                 tenant_id = item.tenant_id
                 updated += 1
 
-            await self._apply_fields(tenant_id, values)
+            await self._apply_fields(tenant_id, values, item.contact_person_id)
 
         return ImportApplyResponse(created=created, updated=updated, skipped=skipped)
 
-    async def _apply_fields(self, tenant_id: str, values: dict[str, str | None]) -> None:
+    async def _apply_fields(self, tenant_id: str, values: dict[str, str | None], contact_person_id: str | None) -> None:
         if _ADDRESS_FIELDS & values.keys():
             await self._apply_address_fields(tenant_id, values)
 
         if _CONTACT_FIELDS & values.keys():
-            await self._apply_contact_fields(tenant_id, values)
+            await self._apply_contact_fields(tenant_id, values, contact_person_id)
 
     async def _apply_address_fields(self, tenant_id: str, values: dict[str, str | None]) -> None:
         existing = await self._congregation_repo.get_address_by_tenant_id(tenant_id)
@@ -252,9 +292,15 @@ class CongregationImportService:
             status=existing.status if existing else "draft",
         )
 
-    async def _apply_contact_fields(self, tenant_id: str, values: dict[str, str | None]) -> None:
+    async def _apply_contact_fields(self, tenant_id: str, values: dict[str, str | None], contact_person_id: str | None) -> None:
         contacts = await self._congregation_repo.get_contact_persons_by_tenant_id(tenant_id)
-        existing_contact = contacts[0] if contacts else None
+        if contact_person_id:
+            existing_contact = next((c for c in contacts if c.id == contact_person_id), None)
+        else:
+            # No contact was pinned during analyze (e.g. an older client) -
+            # fall back to the same confident-match-or-nothing logic rather
+            # than guessing which of several contacts to overwrite.
+            existing_contact = self._match_contact(values.get("contact_name"), contacts)
 
         name = values.get("contact_name") or (existing_contact.name if existing_contact else None)
         if not name:

@@ -37,6 +37,7 @@ export interface IImportProposal {
   matched_name: string | null
   confidence: number
   contact_context: string | null
+  contact_person_id: string | null
   fields: IImportFieldChange[]
 }
 
@@ -59,6 +60,7 @@ export interface IImportApplyItem {
   action: 'update' | 'create' | 'skip'
   tenant_id?: string | null
   congregation_name?: string | null
+  contact_person_id?: string | null
   fields: IImportApplyField[]
 }
 

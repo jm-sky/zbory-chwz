@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 os.environ.setdefault("ENVIRONMENT", "test")
@@ -125,7 +126,7 @@ async def ctx(monkeypatch):
                 lambda: _FakeProvider(result),
             )
 
-        yield client, login, fake_extraction
+        yield client, login, fake_extraction, session_factory
 
     app.dependency_overrides.clear()
     await engine.dispose()
@@ -133,7 +134,7 @@ async def ctx(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_analyze_matches_existing_congregation_by_fuzzy_name(ctx) -> None:
-    client, login, fake_extraction = ctx
+    client, login, fake_extraction, _ = ctx
     login(_api_user(ADMIN_ID, is_admin=True))
     fake_extraction(
         ExtractionResult(
@@ -166,7 +167,7 @@ async def test_analyze_matches_existing_congregation_by_fuzzy_name(ctx) -> None:
 
 @pytest.mark.asyncio
 async def test_analyze_proposes_new_congregation_when_no_match(ctx) -> None:
-    client, login, fake_extraction = ctx
+    client, login, fake_extraction, _ = ctx
     login(_api_user(ADMIN_ID, is_admin=True))
     fake_extraction(ExtractionResult(congregations=[ExtractedCongregation(name="Zbór w Krakowie", city="Kraków", country="PL")]))
 
@@ -182,7 +183,7 @@ async def test_analyze_proposes_new_congregation_when_no_match(ctx) -> None:
 
 @pytest.mark.asyncio
 async def test_analyze_ignores_phone_formatting_differences(ctx) -> None:
-    client, login, fake_extraction = ctx
+    client, login, fake_extraction, _ = ctx
     login(_api_user(ADMIN_ID, is_admin=True))
     fake_extraction(
         ExtractionResult(
@@ -210,7 +211,7 @@ async def test_analyze_ignores_phone_formatting_differences(ctx) -> None:
 
 @pytest.mark.asyncio
 async def test_analyze_proposes_normalized_phone_when_number_actually_changes(ctx) -> None:
-    client, login, fake_extraction = ctx
+    client, login, fake_extraction, _ = ctx
     login(_api_user(ADMIN_ID, is_admin=True))
     fake_extraction(
         ExtractionResult(
@@ -237,8 +238,60 @@ async def test_analyze_proposes_normalized_phone_when_number_actually_changes(ct
 
 
 @pytest.mark.asyncio
+async def test_analyze_matches_correct_contact_among_several(ctx) -> None:
+    """A congregation with two deacons must not treat the first one as "the"
+    contact - the extracted name should be matched to the right person."""
+    client, login, fake_extraction, session_factory = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    async with session_factory() as session:
+        session.add(
+            CongregationContactPersonDB(
+                id=generate_id(),
+                tenant_id=EXISTING_TENANT_ID,
+                name="Marek Kowalski",
+                title="Diakon",
+                phone="+48111222333",
+                order=0,
+                created_at=datetime.now(UTC),
+            )
+        )
+        await session.commit()
+
+    fake_extraction(
+        ExtractionResult(
+            congregations=[
+                ExtractedCongregation(
+                    name="Zbor w Warszawie",
+                    contact_name="Jan Madeyski",
+                    contact_title="Diakon",
+                    contact_phone="668-292-049",
+                )
+            ]
+        )
+    )
+
+    response = await client.post("/api/admin/congregations/import/analyze", json={"raw_text": "notatka"})
+
+    assert response.status_code == 200
+    proposal = response.json()["proposals"][0]
+
+    async with session_factory() as session:
+        result = await session.execute(select(CongregationContactPersonDB).where(CongregationContactPersonDB.name == "Jan Madeyski"))
+        jan = result.scalar_one()
+
+    # Jan Madeyski already exists with the exact same data, so this is a
+    # 100% match and no fields should be proposed as changed - and it must
+    # never be confused with the other deacon, Marek Kowalski.
+    fields = {f["field"] for f in proposal["fields"]}
+    assert "contact_name" not in fields
+    assert "contact_phone" not in fields
+    assert proposal["contact_person_id"] == jan.id
+
+
+@pytest.mark.asyncio
 async def test_analyze_requires_admin(ctx) -> None:
-    client, login, fake_extraction = ctx
+    client, login, fake_extraction, _ = ctx
     login(_api_user(MEMBER_ID))
     fake_extraction(ExtractionResult(congregations=[]))
 
