@@ -5,6 +5,8 @@ export const AdminRoutePaths = {
   users: '/admin/users',
   congregations: '/admin/congregations',
   congregationImport: '/admin/congregations/import',
+  googleContacts: '/admin/google-contacts',
+  googleContactsCallback: '/admin/google-contacts/callback',
 }
 
 export const AdminRouteNames = {
@@ -12,6 +14,8 @@ export const AdminRouteNames = {
   users: 'admin-users',
   congregations: 'admin-congregations',
   congregationImport: 'admin-congregation-import',
+  googleContacts: 'admin-google-contacts',
+  googleContactsCallback: 'admin-google-contacts-callback',
 }
 
 export const adminRoutes: RouteRecordRaw[] = [
@@ -38,5 +42,17 @@ export const adminRoutes: RouteRecordRaw[] = [
     name: AdminRouteNames.congregationImport,
     component: () => import('@/modules/admin/pages/AdminCongregationImportPage.vue'),
     meta: { layout: 'authenticated', requiresAuth: true, requiresAdmin: true, title: 'admin.congregationImport.title' },
+  },
+  {
+    path: AdminRoutePaths.googleContacts,
+    name: AdminRouteNames.googleContacts,
+    component: () => import('@/modules/admin/pages/AdminGoogleContactsPage.vue'),
+    meta: { layout: 'authenticated', requiresAuth: true, requiresAdmin: true, title: 'admin.googleContacts.title' },
+  },
+  {
+    path: AdminRoutePaths.googleContactsCallback,
+    name: AdminRouteNames.googleContactsCallback,
+    component: () => import('@/modules/admin/pages/AdminGoogleContactsCallbackPage.vue'),
+    meta: { layout: 'authenticated', requiresAuth: true, requiresAdmin: true, title: 'admin.googleContacts.title' },
   },
 ]

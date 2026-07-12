@@ -382,6 +382,15 @@ class OAuthSettings(BaseSettings):
         description="Google OAuth redirect URI",
     )
 
+    # Google Contacts (People API) — reuses the Google OAuth client above
+    # (google_client_id/google_client_secret) with a separate redirect URI,
+    # since this is an independent, incremental-auth connection (not login).
+    google_contacts_redirect_uri: str = Field(
+        default="",
+        validation_alias="GOOGLE_CONTACTS_REDIRECT_URI",
+        description="Google Contacts (People API) OAuth redirect URI",
+    )
+
     # Facebook OAuth
     facebook_client_id: str = Field(
         default="",
