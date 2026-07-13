@@ -191,3 +191,35 @@ async def test_callback_stores_connection_then_contacts_are_filtered(ctx, monkey
 
     disconnect_response = await client.delete("/api/google-contacts/connection")
     assert disconnect_response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_contacts_accepts_custom_keywords(ctx, monkeypatch) -> None:
+    client, login = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    async def fake_exchange_code_for_token(code: str) -> GoogleContactsTokenResponse:
+        return GoogleContactsTokenResponse(
+            accessToken="access-token",
+            tokenType="Bearer",
+            scope="https://www.googleapis.com/auth/contacts.readonly",
+            expiresIn=3600,
+            refreshToken="refresh-token",
+        )
+
+    async def fake_list_connections(access_token: str) -> list[dict]:
+        return RAW_CONTACTS
+
+    monkeypatch.setattr(google_contacts_oauth_provider, "exchange_code_for_token", fake_exchange_code_for_token)
+    monkeypatch.setattr(google_contacts_oauth_provider, "list_connections", fake_list_connections)
+
+    await client.post("/api/google-contacts/callback", json={"code": "auth-code", "state": "some-state"})
+
+    contacts_response = await client.get("/api/google-contacts/contacts", params={"keywords": "nowak"})
+    assert contacts_response.status_code == 200
+    body = contacts_response.json()
+    assert body["matchedCount"] == 1
+    assert body["contacts"][0]["resourceName"] == "people/c2"
+
+    empty_keywords_response = await client.get("/api/google-contacts/contacts", params={"keywords": ""})
+    assert empty_keywords_response.status_code == 400

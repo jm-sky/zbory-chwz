@@ -8,12 +8,14 @@ Phase 1 of docs/plans/2026-07-10--google-contacts-sync.md: readonly connection
 from __future__ import annotations
 
 import secrets
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import cast
 
 from fastapi import Depends, HTTPException, status
 
 from app.modules.google_contacts.classification import (
+    FILTER_KEYWORDS,
     classify_contact,
     contact_matches_filter,
 )
@@ -120,7 +122,17 @@ class GoogleContactsService:
         )
         return token_response.accessToken
 
-    async def load_filtered_contacts(self, user_id: str) -> tuple[list[GoogleContactSuggestion], int]:
+    async def load_filtered_contacts(
+        self,
+        user_id: str,
+        keywords: Sequence[str] = FILTER_KEYWORDS,
+    ) -> tuple[list[GoogleContactSuggestion], int]:
+        if not any(keyword.strip() for keyword in keywords):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="At least one filter keyword is required.",
+            )
+
         connection = await self.repository.get_active_connection(user_id)
         if not connection:
             raise HTTPException(
@@ -131,11 +143,11 @@ class GoogleContactsService:
         access_token = await self._get_valid_access_token(connection)
         raw_contacts = await self.provider.list_connections(access_token)
 
-        suggestions = [_to_suggestion(contact) for contact in raw_contacts if contact_matches_filter(contact)]
+        suggestions = [_to_suggestion(contact, keywords) for contact in raw_contacts if contact_matches_filter(contact, keywords)]
         return suggestions, len(raw_contacts)
 
 
-def _to_suggestion(contact: dict) -> GoogleContactSuggestion:
+def _to_suggestion(contact: dict, keywords: Sequence[str] = FILTER_KEYWORDS) -> GoogleContactSuggestion:
     names = contact.get("names") or []
     organizations = contact.get("organizations") or []
     emails = contact.get("emailAddresses") or []
@@ -154,7 +166,7 @@ def _to_suggestion(contact: dict) -> GoogleContactSuggestion:
         emailAddresses=[e.get("value") for e in emails if e.get("value")],
         phoneNumbers=[p.get("value") for p in phones if p.get("value")],
         notes=bios[0].get("value") if bios else None,
-        suggestedType=classify_contact(contact),
+        suggestedType=classify_contact(contact, keywords),
         addressStreet=address.get("streetAddress"),
         addressCity=address.get("city"),
         addressPostalCode=address.get("postalCode"),

@@ -26,7 +26,7 @@ from app.core.database import Base, get_db
 from app.modules.auth.db_models import UserDB
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
-from app.modules.churches.db_models import ChurchDB, CommunityDB, PersonDB
+from app.modules.churches.db_models import ChurchDB, CommunityDB, PersonDB, ServiceAssignmentDB
 from app.modules.congregations.db_models import CongregationAddressDB
 from app.modules.tenants.db_models import TenantDB
 from main import app
@@ -239,6 +239,18 @@ async def test_apply_creates_church_with_address_and_contact(ctx) -> None:
         address = (await session.execute(select(CongregationAddressDB).where(CongregationAddressDB.tenant_id == tenant.id))).scalar_one()
         assert address.city == "Gdańsk"
         assert address.street == "Długa 1"
+
+        assignment = (
+            await session.execute(
+                select(ServiceAssignmentDB).where(
+                    ServiceAssignmentDB.scope_type == "church",
+                    ServiceAssignmentDB.scope_id == tenant.id,
+                )
+            )
+        ).scalar_one()
+        contact_person = (await session.execute(select(PersonDB).where(PersonDB.id == assignment.person_id))).scalar_one()
+        assert contact_person.phone == "+48123456789"
+        assert contact_person.email == "gdansk@chwz.example"
 
 
 @pytest.mark.asyncio

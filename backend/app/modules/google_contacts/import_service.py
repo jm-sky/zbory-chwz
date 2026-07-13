@@ -14,6 +14,7 @@ from rapidfuzz import fuzz, process
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.modules.churches.contact_sync import upsert_primary_card_contact
 from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.churches.repositories import ChurchRepository
 from app.modules.churches.schemas import ServiceAssignmentCreateRequest
@@ -249,26 +250,20 @@ class GoogleContactsImportService:
         )
 
     async def _apply_church_contact(self, tenant_id: str, item: GoogleContactChurchApplyItem) -> None:
-        contacts = await self._congregation_repo.get_contact_persons_by_tenant_id(tenant_id)
-        existing_contact = contacts[0] if contacts else None
-        name = item.name or (existing_contact.name if existing_contact else None)
+        name = item.name
+        if not name:
+            existing_tenant = await self._get_tenant(tenant_id)
+            name = existing_tenant.name if existing_tenant else None
         if not name:
             return
 
-        if existing_contact:
-            existing_contact.name = name
-            if item.phone:
-                existing_contact.phone = item.phone
-            if item.email:
-                existing_contact.email = item.email
-            await self.db.commit()
-        else:
-            await self._congregation_repo.create_contact_person(
-                tenant_id,
-                name=name,
-                phone=item.phone,
-                email=item.email,
-            )
+        await upsert_primary_card_contact(
+            self._church_repo,
+            tenant_id,
+            name=name,
+            phone=item.phone,
+            email=item.email,
+        )
 
     async def _apply_person_item(self, item: GoogleContactPersonApplyItem) -> str:
         if item.assignToChurch:

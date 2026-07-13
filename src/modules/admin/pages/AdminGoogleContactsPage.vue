@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import SearchInput from '@/components/ui/input/SearchInput.vue'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
@@ -27,12 +28,15 @@ import { googleContactsApiService } from '../services/googleContactsApiService'
 
 const CREATE_NEW_VALUE = '__create_new__'
 const GOOGLE_CONTACTS_OAUTH_STATE_KEY = 'google_contacts_oauth_state'
+const DEFAULT_KEYWORDS = 'zbór, chwz'
 
 interface SelectableContact {
   contact: IGoogleContactSuggestion
   selected: boolean
   type: TGoogleContactType
 }
+
+type TMatchLocation = 'name' | 'description'
 
 interface ChurchProposalState {
   resourceName: string
@@ -89,6 +93,54 @@ const hasLoadedContacts = computed(() => totalFetched.value !== null)
 const selectableContacts = ref<SelectableContact[]>([])
 const selectedCount = computed(() => selectableContacts.value.filter(c => c.selected).length)
 
+const keywordsInput = ref<string>(DEFAULT_KEYWORDS)
+const keywordsList = computed<string[]>(() =>
+  keywordsInput.value.split(',').map(keyword => keyword.trim()).filter(Boolean),
+)
+const keywordsUsed = ref<string[]>([])
+
+const searchQuery = ref<string>('')
+const matchInName = ref<boolean>(true)
+const matchInDescription = ref<boolean>(true)
+
+function matchLocations(contact: IGoogleContactSuggestion, keywords: string[]): TMatchLocation[] {
+  const nameText = `${contact.displayName ?? ''} ${contact.organizationName ?? ''}`.toLowerCase()
+  const descriptionText = (contact.notes ?? '').toLowerCase()
+  const lowerKeywords = keywords.map(keyword => keyword.toLowerCase())
+  const locations: TMatchLocation[] = []
+  if (lowerKeywords.some(keyword => nameText.includes(keyword))) locations.push('name')
+  if (lowerKeywords.some(keyword => descriptionText.includes(keyword))) locations.push('description')
+  return locations
+}
+
+const filteredContacts = computed<SelectableContact[]>(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  return selectableContacts.value.filter((item) => {
+    if (query) {
+      const haystack = [item.contact.displayName, item.contact.organizationName, item.contact.notes]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      if (!haystack.includes(query)) return false
+    }
+    const locations = matchLocations(item.contact, keywordsUsed.value)
+    return (matchInName.value && locations.includes('name')) || (matchInDescription.value && locations.includes('description'))
+  })
+})
+
+const visibleSelectionState = computed<boolean | 'indeterminate'>(() => {
+  const visible = filteredContacts.value
+  if (visible.length === 0) return false
+  const selectedVisible = visible.filter(item => item.selected).length
+  if (selectedVisible === 0) return false
+  return selectedVisible === visible.length ? true : 'indeterminate'
+})
+
+function toggleVisibleSelection(value: boolean | 'indeterminate') {
+  const shouldSelect = value === true
+  for (const item of filteredContacts.value) item.selected = shouldSelect
+}
+
 const isAnalyzing = ref(false)
 const isApplying = ref(false)
 const churchProposals = ref<ChurchProposalState[]>([])
@@ -114,6 +166,10 @@ function resetLoadedState() {
   totalFetched.value = null
   churchProposals.value = []
   personProposals.value = []
+  keywordsUsed.value = []
+  searchQuery.value = ''
+  matchInName.value = true
+  matchInDescription.value = true
 }
 
 const disconnectMutation = useMutation({
@@ -132,19 +188,25 @@ function disconnect() {
 }
 
 async function loadContacts() {
+  if (keywordsList.value.length === 0) return
+
   isLoadingContacts.value = true
   try {
-    const response = await googleContactsApiService.listContacts()
+    const response = await googleContactsApiService.listContacts(keywordsList.value)
     selectableContacts.value = response.contacts.map(contact => ({
       contact,
       selected: true,
       type: contact.suggestedType,
     }))
     totalFetched.value = response.totalFetched
+    keywordsUsed.value = keywordsList.value
+    searchQuery.value = ''
+    matchInName.value = true
+    matchInDescription.value = true
     churchProposals.value = []
     personProposals.value = []
     if (response.matchedCount === 0) {
-      toast.info(t('admin.googleContacts.noneFound', 'Nie znaleziono kontaktów pasujących do filtra „zbór”/„chwz”'))
+      toast.info(t('admin.googleContacts.noneFound', 'Nie znaleziono kontaktów pasujących do podanych słów kluczowych'))
     }
   } catch (error) {
     handleError(error, { fallbackMessage: t('admin.googleContacts.loadContactsError', 'Nie udało się wczytać kontaktów') })
@@ -336,11 +398,27 @@ function goBack() {
 
       <Card v-if="connection?.connected">
         <CardHeader>
-          <CardTitle>{{ t('admin.googleContacts.contactsTitle', 'Kontakty pasujące do filtra „zbór” / „chwz”') }}</CardTitle>
+          <CardTitle v-if="keywordsUsed.length > 0">
+            {{ t('admin.googleContacts.contactsTitleWithKeywords', 'Kontakty pasujące do słów') }}: „{{ keywordsUsed.join('”, „') }}”
+          </CardTitle>
+          <CardTitle v-else>
+            {{ t('admin.googleContacts.contactsTitle', 'Kontakty pasujące do słów kluczowych') }}
+          </CardTitle>
         </CardHeader>
         <CardContent class="space-y-4">
+          <div class="space-y-1">
+            <Label for="google-contacts-keywords">
+              {{ t('admin.googleContacts.keywordsLabel', 'Słowa kluczowe (oddzielone przecinkami)') }}
+            </Label>
+            <Input
+              id="google-contacts-keywords"
+              v-model="keywordsInput"
+              :placeholder="DEFAULT_KEYWORDS"
+            />
+          </div>
+
           <div class="flex flex-wrap items-center gap-3">
-            <Button :disabled="isLoadingContacts" @click="loadContacts">
+            <Button :disabled="isLoadingContacts || keywordsList.length === 0" @click="loadContacts">
               <RefreshCw class="size-4" />
               {{ isLoadingContacts
                 ? t('admin.googleContacts.loadingContacts', 'Wczytywanie...')
@@ -352,11 +430,39 @@ function goBack() {
           </div>
 
           <p v-if="hasLoadedContacts && selectableContacts.length === 0" class="text-sm text-muted-foreground">
-            {{ t('admin.googleContacts.empty', 'Brak kontaktów pasujących do filtra') }}
+            {{ t('admin.googleContacts.empty', 'Brak kontaktów pasujących do podanych słów kluczowych') }}
           </p>
 
           <div v-if="selectableContacts.length > 0" class="space-y-3">
-            <Card v-for="item in selectableContacts" :key="item.contact.resourceName" class="p-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <SearchInput
+                v-model="searchQuery"
+                class="max-w-xs"
+                :placeholder="t('admin.googleContacts.searchPlaceholder', 'Szukaj w wczytanych kontaktach...')"
+              />
+              <label class="flex items-center gap-2 text-sm">
+                <Checkbox v-model="matchInName" />
+                {{ t('admin.googleContacts.filterInName', 'W nazwie') }}
+              </label>
+              <label class="flex items-center gap-2 text-sm">
+                <Checkbox v-model="matchInDescription" />
+                {{ t('admin.googleContacts.filterInDescription', 'W opisie') }}
+              </label>
+              <span class="text-sm text-muted-foreground">
+                {{ t('admin.googleContacts.visibleCount', 'Widoczne') }} {{ filteredContacts.length }} / {{ selectableContacts.length }}
+              </span>
+            </div>
+
+            <label class="flex items-center gap-2 text-sm">
+              <Checkbox :model-value="visibleSelectionState" @update:model-value="toggleVisibleSelection" />
+              {{ t('admin.googleContacts.selectVisible', 'Zaznacz/odznacz widoczne') }}
+            </label>
+
+            <p v-if="filteredContacts.length === 0" class="text-sm text-muted-foreground">
+              {{ t('admin.googleContacts.noVisibleContacts', 'Brak kontaktów pasujących do wyszukiwania/filtrów') }}
+            </p>
+
+            <Card v-for="item in filteredContacts" :key="item.contact.resourceName" class="p-4">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="flex items-start gap-3">
                   <Checkbox v-model="item.selected" class="mt-1" />
