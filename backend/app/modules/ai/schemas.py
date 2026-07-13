@@ -1,6 +1,25 @@
 """Pydantic models for AI structured extraction."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# Some models return the literal string "null" (or similar placeholders) for a
+# missing field instead of a real JSON null, despite the strict schema - see
+# docs/plans/2026-07-11--congregation-address-text-import.md. Left unnormalized,
+# this string flows into the diff UI as a visible "null" and can even be
+# proposed for saving over a real existing value.
+_NULL_LIKE = {"null", "none", "n/a", "brak", ""}
+
+_NULLABLE_FIELDS = (
+    "street",
+    "city",
+    "postal_code",
+    "province",
+    "country",
+    "contact_name",
+    "contact_title",
+    "contact_phone",
+    "contact_email",
+)
 
 
 class ExtractedCongregation(BaseModel):
@@ -16,6 +35,13 @@ class ExtractedCongregation(BaseModel):
     contact_title: str | None = Field(default=None, description="e.g. 'Pastor', 'Diakon'")
     contact_phone: str | None = None
     contact_email: str | None = None
+
+    @field_validator(*_NULLABLE_FIELDS, mode="before")
+    @classmethod
+    def _blank_null_like_to_none(cls, value: object) -> object:
+        if isinstance(value, str) and value.strip().lower() in _NULL_LIKE:
+            return None
+        return value
 
 
 class ExtractionResult(BaseModel):
