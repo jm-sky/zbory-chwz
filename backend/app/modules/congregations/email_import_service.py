@@ -1,10 +1,9 @@
 """Orchestrates polling the clergy e-mail update mailbox.
 
-Phase 3 (docs/plans/2026-07-13--clergy-email-updates.md): fetch unseen mail,
-resolve the sender and target congregation, run the existing AI extraction
-pipeline, and land the result in the `email_import_messages` review queue.
-Phase 4 adds the second AI verification pass and the auto-apply gate on top
-of this — nothing here writes to congregation data yet.
+Phase 3+4 (docs/plans/2026-07-13--clergy-email-updates.md): fetch unseen
+mail, resolve the sender and target congregation, run the AI extraction
+pipeline, and either queue the proposal for admin review or - if every gate
+in `_maybe_apply` passes - apply it immediately and log the change.
 """
 
 from __future__ import annotations
@@ -18,12 +17,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.id_utils import generate_id
 from app.core.config import get_settings
+from app.core.email.service import get_email_service
 from app.modules.ai.provider import OpenRouterProvider
 from app.modules.ai.schemas import ExtractionResult
+from app.modules.churches.db_models import PersonDB
+from app.modules.churches.repositories import ChurchRepository
 from app.modules.churches.slug_utils import slugify
-from app.modules.congregations.email_import_db_models import EmailImportMessageDB
+from app.modules.congregations.email_import_db_models import CongregationChangeLogDB, EmailImportMessageDB
+from app.modules.congregations.field_diff import FIELD_GROUPS, FIELD_LABELS, FieldDiff, build_field_diff
 from app.modules.congregations.imap_client import ImapClient, InboundEmail
-from app.modules.congregations.sender_resolver import SenderResolver
+from app.modules.congregations.import_service import CongregationImportService
+from app.modules.congregations.repositories import CongregationRepository
+from app.modules.congregations.sender_resolver import SenderResolution, SenderResolver
 from app.modules.tenants.db_models import TenantDB
 from app.modules.tenants.repositories import TenantRepository
 
@@ -37,11 +42,18 @@ class PollResult:
     skipped_duplicate: int = 0
 
 
+def _person_label(person: PersonDB) -> str:
+    name = " ".join(part for part in (person.first_name, person.last_name) if part).strip()
+    return name or person.email or "Nieznany nadawca"
+
+
 class EmailImportService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self._resolver = SenderResolver(db)
         self._tenant_repo = TenantRepository(db)
+        self._congregation_repo = CongregationRepository(db)
+        self._church_repo = ChurchRepository(db)
 
     async def poll_and_process(self) -> PollResult:
         settings = get_settings().email_import
@@ -120,16 +132,164 @@ class EmailImportService:
             )
             return
 
-        entry_name = extraction.congregations[0].name
-        final = await self._resolver.resolve(inbound.from_address, entry_name, tenants, name_slugs)
+        entry = extraction.congregations[0]
+        final = await self._resolver.resolve(inbound.from_address, entry.name, tenants, name_slugs)
 
-        await self._save_message(
+        if final.kind != "matched_by_name":
+            await self._save_message(
+                inbound,
+                resolution=final.kind,
+                sender_person_id=final.person.id if final.person else None,
+                tenant_id=final.tenant_id,
+                extraction=extraction,
+            )
+            return
+
+        assert final.person is not None and final.tenant_id is not None
+        diff = await build_field_diff(entry, final.tenant_id, self._congregation_repo, self._church_repo)
+        await self._resolve_and_maybe_apply(inbound, extraction, final, diff, tenant_names.get(final.tenant_id, ""))
+
+    async def _resolve_and_maybe_apply(
+        self,
+        inbound: InboundEmail,
+        extraction: ExtractionResult,
+        final: SenderResolution,
+        diff: FieldDiff,
+        church_name: str,
+    ) -> None:
+        assert final.person is not None and final.tenant_id is not None
+        changed = diff.changed_keys()
+
+        if not changed:
+            await self._save_message(inbound, resolution="matched_by_name", sender_person_id=final.person.id, tenant_id=final.tenant_id, extraction=extraction)
+            return
+
+        # Hard, free-to-check gates before spending an AI call: anti-spoofing
+        # (SPF/DKIM/DMARC all pass) and, if any contact field changed, that
+        # the sender is editing *their own* contact record - never someone
+        # else's, even within a church they're otherwise authorized for.
+        auth_pass = inbound.auth_spf == "pass" and inbound.auth_dkim == "pass" and inbound.auth_dmarc == "pass"
+        contact_changed = any(FIELD_GROUPS[key] == "contact" for key in changed)
+        sender_owns_contact = diff.matched_assignment is not None and diff.matched_assignment.person_id == final.person.id
+        structurally_eligible = auth_pass and (not contact_changed or sender_owns_contact)
+
+        verification_score: float | None = None
+        verification_reasoning: str | None = None
+        auto_apply = False
+
+        if structurally_eligible:
+            provider = OpenRouterProvider()
+            sender_context = f"{_person_label(final.person)}, zbór: {church_name}"
+            diff_summary = "\n".join(f"- {FIELD_LABELS[key]}: {diff.old_values[key] or '(brak)'} -> {diff.new_values[key]}" for key in changed)
+            verification = await provider.verify_extraction(inbound.text_body, sender_context, diff_summary)
+            verification_score = verification.trust_score
+            verification_reasoning = verification.reasoning
+            threshold = get_settings().email_import.trust_auto_apply_threshold
+            auto_apply = verification.trust_score >= threshold
+
+        if not auto_apply:
+            await self._save_message(
+                inbound,
+                resolution="matched_by_name",
+                sender_person_id=final.person.id,
+                tenant_id=final.tenant_id,
+                extraction=extraction,
+                verification_score=verification_score,
+                verification_reasoning=verification_reasoning,
+            )
+            return
+
+        assert verification_score is not None and verification_reasoning is not None
+        await self._apply_and_log(inbound, extraction, final, diff, changed, church_name, verification_score, verification_reasoning)
+
+    async def _apply_and_log(
+        self,
+        inbound: InboundEmail,
+        extraction: ExtractionResult,
+        final: SenderResolution,
+        diff: FieldDiff,
+        changed: list[str],
+        church_name: str,
+        trust_score: float,
+        reasoning: str,
+    ) -> None:
+        assert final.person is not None and final.tenant_id is not None
+        values = {key: diff.new_values[key] for key in changed}
+        contact_person_id = diff.matched_assignment.id if diff.matched_assignment else None
+
+        # Apply first, log second: if this raises, nothing (message row
+        # included) gets persisted, so the next poll retries the whole
+        # e-mail from scratch instead of leaving a misleading "handled" row
+        # that dedup would otherwise skip forever.
+        import_service = CongregationImportService(self.db)
+        await import_service.apply_fields(final.tenant_id, values, contact_person_id)
+
+        actor_label = f"{_person_label(final.person)} (automatycznie, AI {trust_score:.2f})"
+
+        message = await self._save_message(
             inbound,
-            resolution=final.kind,
-            sender_person_id=final.person.id if final.person else None,
+            resolution="matched_by_name",
+            sender_person_id=final.person.id,
             tenant_id=final.tenant_id,
             extraction=extraction,
+            verification_score=trust_score,
+            verification_reasoning=reasoning,
+            status="auto_applied",
         )
+
+        for key in changed:
+            self.db.add(
+                CongregationChangeLogDB(
+                    id=generate_id(),
+                    tenant_id=final.tenant_id,
+                    section=FIELD_GROUPS[key],
+                    field=key,
+                    old_value=diff.old_values[key],
+                    new_value=diff.new_values[key],
+                    source="email_auto",
+                    actor_label=actor_label,
+                    actor_person_id=final.person.id,
+                    email_import_message_id=message.id,
+                )
+            )
+        await self.db.commit()
+        await self._congregation_repo.touch_last_updated(final.tenant_id, actor_label)
+
+        await self._notify_admin(final, church_name, inbound, changed, diff, trust_score, reasoning)
+
+    async def _notify_admin(
+        self,
+        final: SenderResolution,
+        church_name: str,
+        inbound: InboundEmail,
+        changed: list[str],
+        diff: FieldDiff,
+        trust_score: float,
+        reasoning: str,
+    ) -> None:
+        assert final.person is not None
+        admin_email = get_settings().security.superadmin_email
+        if not admin_email:
+            logger.warning("SUPERADMIN_EMAIL not configured; skipping auto-apply notification")
+            return
+
+        changes = [{"label": FIELD_LABELS[key], "old_value": diff.old_values[key], "new_value": diff.new_values[key]} for key in changed]
+        try:
+            await get_email_service().send_email(
+                to=admin_email,
+                subject=f"Automatyczna aktualizacja danych zboru: {church_name}",
+                template_name="email_import_auto_applied",
+                context={
+                    "church_name": church_name,
+                    "sender_label": _person_label(final.person),
+                    "sender_email": inbound.from_address,
+                    "trust_score": f"{trust_score:.2f}",
+                    "changes": changes,
+                    "reasoning": reasoning,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to send auto-apply admin notification for tenant %s", final.tenant_id)
 
     async def _save_message(
         self,
@@ -139,7 +299,10 @@ class EmailImportService:
         sender_person_id: str | None,
         tenant_id: str | None,
         extraction: ExtractionResult | None,
-    ) -> None:
+        verification_score: float | None = None,
+        verification_reasoning: str | None = None,
+        status: str = "pending",
+    ) -> EmailImportMessageDB:
         message = EmailImportMessageDB(
             id=generate_id(),
             message_id=inbound.message_id,
@@ -151,7 +314,11 @@ class EmailImportService:
             auth_dkim=inbound.auth_dkim,
             auth_dmarc=inbound.auth_dmarc,
             extraction_json=extraction.model_dump_json() if extraction else None,
-            status="pending",
+            verification_score=verification_score,
+            verification_reasoning=verification_reasoning,
+            status=status,
         )
         self.db.add(message)
         await self.db.commit()
+        await self.db.refresh(message)
+        return message

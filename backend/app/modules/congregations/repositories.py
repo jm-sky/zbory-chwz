@@ -73,6 +73,21 @@ class CongregationRepository:
         await self.db.refresh(address)
         return address
 
+    async def touch_last_updated(self, tenant_id: str, label: str) -> None:
+        """Stamp the "last updated by" badge shown on the congregation profile.
+
+        No-op if the tenant has no address row yet - the e-mail import flow
+        only ever updates existing congregations, so this should always find
+        one in practice; a paste-import that creates a brand-new congregation
+        writes street/city/etc. via create_or_update_address first.
+        """
+        existing = await self.get_address_by_tenant_id(tenant_id)
+        if existing is None:
+            return
+        existing.last_updated_at = datetime.now(UTC)
+        existing.last_updated_label = label
+        await self.db.commit()
+
     async def get_addresses_by_status(self, statuses: Sequence[str]) -> dict[str, CongregationAddressDB]:
         """Get addresses with any of the given statuses, keyed by tenant id."""
         stmt = select(CongregationAddressDB).where(CongregationAddressDB.status.in_(statuses))
