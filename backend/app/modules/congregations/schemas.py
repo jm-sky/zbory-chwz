@@ -23,6 +23,8 @@ class AddressResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    last_updated_at: datetime | None = None
+    last_updated_label: str | None = None
 
 
 class AddressCreateRequest(BaseModel):

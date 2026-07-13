@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { ICongregationFull } from '../types/congregation.types'
+import ChangeHistorySection from '../components/ChangeHistorySection.vue'
 import ChurchBranchesSection from '../components/ChurchBranchesSection.vue'
 import ChurchPeopleSection from '../components/ChurchPeopleSection.vue'
 import { CongregationRoutePaths } from '../routes'
@@ -265,6 +266,17 @@ onMounted(() => {
           </div>
         </div>
       </div>
+
+      <p
+        v-if="congregationFull?.address?.last_updated_label"
+        class="max-w-4xl mx-auto text-xs text-muted-foreground"
+      >
+        {{ t('congregations.edit.lastUpdatedBy', 'Ostatnia zmiana danych') }}:
+        {{ congregationFull.address.last_updated_label }}
+        <span v-if="congregationFull.address.last_updated_at">
+          · {{ new Date(congregationFull.address.last_updated_at).toLocaleString() }}
+        </span>
+      </p>
 
       <div class="max-w-4xl mx-auto space-y-6">
         <!-- Basic Info Section -->
@@ -561,6 +573,7 @@ onMounted(() => {
 
         <ChurchPeopleSection :church-id="congregationId" />
         <ChurchBranchesSection :church-id="congregationId" />
+        <ChangeHistorySection :tenant-id="congregationId" />
       </div>
     </div>
   </AuthenticatedLayout>

@@ -83,6 +83,8 @@ async def get_address(
         status=address.status,
         created_at=address.created_at,
         updated_at=address.updated_at,
+        last_updated_at=address.last_updated_at,
+        last_updated_label=address.last_updated_label,
     )
 
 
@@ -122,6 +124,8 @@ async def create_address(
         status=address.status,
         created_at=address.created_at,
         updated_at=address.updated_at,
+        last_updated_at=address.last_updated_at,
+        last_updated_label=address.last_updated_label,
     )
 
 
@@ -180,6 +184,8 @@ async def update_address(
         status=address.status,
         created_at=address.created_at,
         updated_at=address.updated_at,
+        last_updated_at=address.last_updated_at,
+        last_updated_label=address.last_updated_label,
     )
 
 
@@ -302,6 +308,8 @@ async def get_full_congregation(
                 status=address.status,
                 created_at=address.created_at,
                 updated_at=address.updated_at,
+                last_updated_at=address.last_updated_at,
+                last_updated_label=address.last_updated_label,
             )
             if address
             else None

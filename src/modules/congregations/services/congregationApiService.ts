@@ -5,6 +5,7 @@ import type {
   IAddress,
   IAddressCreateRequest,
   IAddressUpdateRequest,
+  IChangeLogResponse,
   ICongregation,
   ICongregationDetail,
   ICongregationDetailed,
@@ -261,6 +262,24 @@ class CongregationApiService {
    */
   async deleteServiceTime(tenantId: string, serviceTimeId: string): Promise<void> {
     await apiClient.delete(`/congregations/${tenantId}/service-times/${serviceTimeId}`)
+  }
+
+  /**
+   * Change history for a congregation's address/contact data. Returns null
+   * when the current user isn't allowed to see it (admin/tenant-member/
+   * pastoral ACL only) - the caller should simply hide the section, not
+   * show an error.
+   */
+  async getChangeLog(tenantId: string): Promise<IChangeLogResponse | null> {
+    try {
+      const response = await apiClient.get<IChangeLogResponse>(`/congregations/${tenantId}/change-log`)
+      return response.data
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 403) {
+        return null
+      }
+      throw error
+    }
   }
 }
 
