@@ -336,6 +336,35 @@ async def test_analyze_matches_correct_contact_among_several(ctx) -> None:
 
 
 @pytest.mark.asyncio
+async def test_analyze_treats_literal_null_string_from_ai_as_missing(ctx) -> None:
+    """Some models emit the string "null" instead of a real JSON null for a
+    field they found nothing for. That must not surface as visible "null"
+    text nor be proposed as an overwrite of the real, existing value."""
+    client, login, fake_extraction, _ = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+    fake_extraction(
+        ExtractionResult(
+            congregations=[
+                ExtractedCongregation(
+                    name="Zbor w Warszawie",
+                    contact_name="Jan Madeyski",
+                    contact_title="Diakon",
+                    contact_phone="668-292-049",
+                    contact_email="null",
+                )
+            ]
+        )
+    )
+
+    response = await client.post("/api/admin/congregations/import/analyze", json={"raw_text": "notatka"})
+
+    assert response.status_code == 200
+    proposal = response.json()["proposals"][0]
+    fields = {f["field"]: f for f in proposal["fields"]}
+    assert "contact_email" not in fields
+
+
+@pytest.mark.asyncio
 async def test_analyze_requires_admin(ctx) -> None:
     client, login, fake_extraction, _ = ctx
     login(_api_user(MEMBER_ID))
