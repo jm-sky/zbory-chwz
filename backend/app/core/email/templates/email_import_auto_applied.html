@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Automatyczna aktualizacja danych zboru - {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1>Automatycznie zastosowano aktualizację danych zboru</h1>
+<p>System automatycznie zastosował aktualizację danych przesłaną e-mailem, bo spełniła wszystkie warunki bramki zaufania. Poniżej podsumowanie na potrzeby audytu.</p>
+
+<div class="info-box">
+  <p><strong>Zbór:</strong> {{ church_name }}</p>
+  <p><strong>Nadawca:</strong> {{ sender_label }} ({{ sender_email }})</p>
+  <p><strong>Wynik weryfikacji AI:</strong> {{ trust_score }}</p>
+</div>
+
+<h2>Zastosowane zmiany</h2>
+<table style="width:100%; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Pole</th>
+      <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Poprzednia wartość</th>
+      <th style="text-align:left; border-bottom:1px solid #e5e7eb; padding:8px;">Nowa wartość</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for change in changes %}
+    <tr>
+      <td style="padding:8px; border-bottom:1px solid #f3f4f6;">{{ change.label }}</td>
+      <td style="padding:8px; border-bottom:1px solid #f3f4f6; color:#6b7280;">{{ change.old_value or "—" }}</td>
+      <td style="padding:8px; border-bottom:1px solid #f3f4f6;">{{ change.new_value }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Uzasadnienie AI</h2>
+<p>{{ reasoning }}</p>
+
+<div class="warning-box">
+  <p>Jeśli ta zmiana jest błędna, popraw dane ręcznie w panelu administracyjnym - pełna historia zmian jest widoczna na profilu zboru.</p>
+</div>
+{% endblock %}

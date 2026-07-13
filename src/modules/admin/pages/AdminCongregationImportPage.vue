@@ -28,6 +28,7 @@ import type {
   TImportFieldGroup,
   TImportFieldKey,
 } from '../types/congregationImport.types'
+import EmailImportInboxSection from '../components/EmailImportInboxSection.vue'
 import { AdminRouteNames } from '../routes'
 import { congregationImportApiService } from '../services/congregationImportApiService'
 
@@ -157,6 +158,10 @@ async function apply() {
 function goBack() {
   router.push({ name: AdminRouteNames.congregations })
 }
+
+async function onInboxItemApplied() {
+  await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+}
 </script>
 
 <template>
@@ -169,6 +174,8 @@ function goBack() {
         with-back-button
         @back="goBack"
       />
+
+      <EmailImportInboxSection @applied="onInboxItemApplied" />
 
       <Card>
         <CardHeader>

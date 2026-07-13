@@ -1,5 +1,7 @@
 import { apiClient } from '@/shared/services/apiClient'
 import type {
+  IEmailImportApproveRequest,
+  IEmailImportInboxListResponse,
   IImportAnalyzeResponse,
   IImportApplyRequest,
   IImportApplyResponse,
@@ -23,6 +25,25 @@ class CongregationImportApiService {
       request,
     )
     return response.data
+  }
+
+  async listInbox(): Promise<IEmailImportInboxListResponse> {
+    const response = await apiClient.get<IEmailImportInboxListResponse>(
+      '/admin/congregations/import/inbox',
+    )
+    return response.data
+  }
+
+  async approveInboxItem(messageId: string, request: IEmailImportApproveRequest): Promise<IImportApplyResponse> {
+    const response = await apiClient.post<IImportApplyResponse>(
+      `/admin/congregations/import/inbox/${messageId}/approve`,
+      request,
+    )
+    return response.data
+  }
+
+  async rejectInboxItem(messageId: string): Promise<void> {
+    await apiClient.post(`/admin/congregations/import/inbox/${messageId}/reject`)
   }
 }
 

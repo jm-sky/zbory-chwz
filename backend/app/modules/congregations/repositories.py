@@ -15,6 +15,7 @@ from app.modules.congregations.db_models import (
     CongregationAddressDB,
     CongregationServiceTimeDB,
 )
+from app.modules.congregations.email_import_db_models import CongregationChangeLogDB
 from app.modules.congregations.geo import DEFAULT_COUNTRY
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,26 @@ class CongregationRepository:
         await self.db.commit()
         await self.db.refresh(address)
         return address
+
+    async def touch_last_updated(self, tenant_id: str, label: str) -> None:
+        """Stamp the "last updated by" badge shown on the congregation profile.
+
+        No-op if the tenant has no address row yet - the e-mail import flow
+        only ever updates existing congregations, so this should always find
+        one in practice; a paste-import that creates a brand-new congregation
+        writes street/city/etc. via create_or_update_address first.
+        """
+        existing = await self.get_address_by_tenant_id(tenant_id)
+        if existing is None:
+            return
+        existing.last_updated_at = datetime.now(UTC)
+        existing.last_updated_label = label
+        await self.db.commit()
+
+    async def get_change_log(self, tenant_id: str) -> list[CongregationChangeLogDB]:
+        stmt = select(CongregationChangeLogDB).where(CongregationChangeLogDB.tenant_id == tenant_id).order_by(CongregationChangeLogDB.created_at.desc())
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
 
     async def get_addresses_by_status(self, statuses: Sequence[str]) -> dict[str, CongregationAddressDB]:
         """Get addresses with any of the given statuses, keyed by tenant id."""

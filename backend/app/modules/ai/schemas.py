@@ -48,3 +48,14 @@ class ExtractionResult(BaseModel):
     """Top-level shape the model must return."""
 
     congregations: list[ExtractedCongregation] = Field(default_factory=list)
+
+
+class VerificationResult(BaseModel):
+    """Second-pass trust assessment for a clergy e-mail update proposal.
+
+    See docs/plans/2026-07-13--clergy-email-updates.md - gates whether an
+    e-mail-sourced change can be auto-applied without admin review.
+    """
+
+    trust_score: float = Field(ge=0.0, le=1.0, description="0-1 confidence this update is legitimate and internally consistent")
+    reasoning: str = Field(description="Short justification in Polish")

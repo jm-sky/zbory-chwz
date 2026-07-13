@@ -5,10 +5,8 @@ entry's name against existing tenants -> build a field-by-field diff for
 admin review -> apply only the fields the admin explicitly accepted.
 """
 
-import re
 import uuid
 
-from rapidfuzz import fuzz, process
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.ai.provider import OpenRouterProvider
@@ -25,6 +23,12 @@ from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.churches.repositories import ChurchRepository
 from app.modules.churches.schemas import ServiceAssignmentCreateRequest, ServiceAssignmentUpdateRequest
 from app.modules.churches.slug_utils import slugify
+from app.modules.congregations.field_diff import ADDRESS_FIELDS as _ADDRESS_FIELDS
+from app.modules.congregations.field_diff import CONTACT_FIELDS as _CONTACT_FIELDS
+from app.modules.congregations.field_diff import FIELD_GROUPS as _FIELD_GROUPS
+from app.modules.congregations.field_diff import FIELD_LABELS as _FIELD_LABELS
+from app.modules.congregations.field_diff import build_field_diff
+from app.modules.congregations.field_diff import normalize_phone as _normalize_phone
 from app.modules.congregations.geo import DEFAULT_COUNTRY, is_valid_province
 from app.modules.congregations.repositories import CongregationRepository
 from app.modules.congregations.schemas import (
@@ -35,51 +39,9 @@ from app.modules.congregations.schemas import (
     ImportFieldChange,
     ImportProposal,
 )
+from app.modules.congregations.tenant_matching import match_tenant_by_name
 from app.modules.tenants.db_models import TenantDB
 from app.modules.tenants.repositories import TenantRepository
-
-# Below this rapidfuzz score (0-100), a name is treated as having no match
-# rather than risking a wrong auto-match (see docs/issues/...--018--...).
-_MATCH_THRESHOLD = 80.0
-
-_FIELD_LABELS: dict[str, str] = {
-    "street": "Ulica",
-    "city": "Miasto",
-    "postal_code": "Kod pocztowy",
-    "province": "Województwo",
-    "country": "Kraj",
-    "contact_name": "Osoba kontaktowa",
-    "contact_title": "Funkcja",
-    "contact_phone": "Telefon",
-    "contact_email": "E-mail",
-}
-
-_ADDRESS_FIELDS = {"street", "city", "postal_code", "province", "country"}
-_CONTACT_FIELDS = {"contact_name", "contact_title", "contact_phone", "contact_email"}
-
-_FIELD_GROUPS: dict[str, str] = {
-    **dict.fromkeys(_ADDRESS_FIELDS, "address"),
-    **dict.fromkeys(_CONTACT_FIELDS, "contact"),
-}
-
-# Poland is the only country the app supports today (see geo.DEFAULT_COUNTRY),
-# so a phone number without a country code is assumed to be a Polish one.
-_DEFAULT_PHONE_COUNTRY_CODE = "48"
-
-
-def _normalize_phone(value: str | None) -> str | None:
-    """Strip formatting and apply the default country code, so e.g. '668-292-049'
-    and '+48 668 292 049' compare as the same number instead of a false diff."""
-    if not value:
-        return None
-    digits = re.sub(r"[^\d+]", "", value)
-    if not digits:
-        return None
-    if digits.startswith("00"):
-        digits = f"+{digits[2:]}"
-    if not digits.startswith("+"):
-        digits = f"+{_DEFAULT_PHONE_COUNTRY_CODE}{digits}"
-    return digits
 
 
 class CongregationImportService:
@@ -109,36 +71,12 @@ class CongregationImportService:
         tenants: list[TenantDB],
         name_slugs: dict[str, str],
     ) -> ImportProposal:
-        tenant_id, matched_name, confidence = self._match_tenant(entry.name, tenants, name_slugs)
+        tenant_id, matched_name, confidence = match_tenant_by_name(entry.name, tenants, name_slugs)
         match_type: str = "matched" if tenant_id else "new"
 
-        current_address = await self._congregation_repo.get_address_by_tenant_id(tenant_id) if tenant_id else None
-        assignments = await self._church_repo.list_service_assignments("church", tenant_id) if tenant_id else []
-        matched_assignment = match_contact_assignment(entry.contact_name, assignments) if tenant_id else None
-        current_contact = assignment_contact_snapshot(matched_assignment) if matched_assignment else None
-
-        new_values = {
-            "street": entry.street,
-            "city": entry.city,
-            "postal_code": entry.postal_code,
-            "province": entry.province,
-            "country": entry.country or DEFAULT_COUNTRY,
-            "contact_name": entry.contact_name,
-            "contact_title": entry.contact_title,
-            "contact_phone": _normalize_phone(entry.contact_phone),
-            "contact_email": entry.contact_email,
-        }
-        old_values = {
-            "street": current_address.street if current_address else None,
-            "city": current_address.city if current_address else None,
-            "postal_code": current_address.postal_code if current_address else None,
-            "province": current_address.province if current_address else None,
-            "country": current_address.country if current_address else None,
-            "contact_name": (current_contact["contact_name"] if current_contact else None),
-            "contact_title": (current_contact["contact_title"] if current_contact else None),
-            "contact_phone": (_normalize_phone(current_contact["contact_phone"]) if current_contact else None),
-            "contact_email": (current_contact["contact_email"] if current_contact else None),
-        }
+        diff = await build_field_diff(entry, tenant_id, self._congregation_repo, self._church_repo)
+        new_values, old_values = diff.new_values, diff.old_values
+        assignments, matched_assignment = diff.assignments, diff.matched_assignment
 
         if match_type == "new":
             # A brand-new congregation needs every field visible and editable
@@ -146,7 +84,7 @@ class CongregationImportService:
             field_keys = list(_FIELD_LABELS)
         else:
             # For an existing congregation, only show what actually changed.
-            field_keys = [key for key in _FIELD_LABELS if new_values[key] is not None and new_values[key] != old_values[key]]
+            field_keys = diff.changed_keys()
 
         fields = [
             ImportFieldChange(
@@ -185,26 +123,6 @@ class CongregationImportService:
             fields=fields,
         )
 
-    def _match_tenant(
-        self,
-        detected_name: str,
-        tenants: list[TenantDB],
-        name_slugs: dict[str, str],
-    ) -> tuple[str | None, str | None, float]:
-        if not name_slugs:
-            return None, None, 0.0
-
-        match = process.extractOne(slugify(detected_name), name_slugs, scorer=fuzz.WRatio)
-        if match is None:
-            return None, None, 0.0
-
-        _, score, matched_tenant_id = match
-        if score < _MATCH_THRESHOLD:
-            return None, None, score
-
-        matched_name = next(t.name for t in tenants if t.id == matched_tenant_id)
-        return matched_tenant_id, matched_name, score
-
     async def apply(self, request: ImportApplyRequest, *, owner_user_id: str) -> ImportApplyResponse:
         created = updated = skipped = 0
 
@@ -232,11 +150,11 @@ class CongregationImportService:
                 tenant_id = item.tenant_id
                 updated += 1
 
-            await self._apply_fields(tenant_id, values, item.contact_person_id)
+            await self.apply_fields(tenant_id, values, item.contact_person_id)
 
         return ImportApplyResponse(created=created, updated=updated, skipped=skipped)
 
-    async def _apply_fields(self, tenant_id: str, values: dict[str, str | None], contact_person_id: str | None) -> None:
+    async def apply_fields(self, tenant_id: str, values: dict[str, str | None], contact_person_id: str | None) -> None:
         if _ADDRESS_FIELDS & values.keys():
             await self._apply_address_fields(tenant_id, values)
 

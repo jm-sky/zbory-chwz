@@ -67,6 +67,12 @@ COMMAND_GROUPS = {
             "ai": "Test AI module (OpenRouter)",
         },
     },
+    "mail": {
+        "name": "Clergy E-mail Import",
+        "commands": {
+            "poll-inbox": "Poll the clergy update mailbox and queue proposals for review",
+        },
+    },
 }
 
 # Commands that require arguments (command_path -> list of argument prompts)

@@ -97,6 +97,8 @@ export interface IAddress {
   status: string
   created_at: string
   updated_at: string
+  last_updated_at?: string | null
+  last_updated_label?: string | null
 }
 
 export interface IServiceTime {
@@ -142,4 +144,21 @@ export interface IServiceTimeUpdateRequest {
   day?: string
   time?: string
   order?: number
+}
+
+/** Field-level change history (docs/plans/2026-07-13--clergy-email-updates.md). */
+export interface IChangeLogEntry {
+  id: string
+  section: 'address' | 'contact'
+  field: string
+  field_label: string
+  old_value: string | null
+  new_value: string | null
+  source: 'admin_manual' | 'import_paste' | 'email_auto' | 'email_reviewed'
+  actor_label: string
+  created_at: string
+}
+
+export interface IChangeLogResponse {
+  entries: IChangeLogEntry[]
 }

@@ -73,3 +73,34 @@ export interface IImportApplyResponse {
   updated: number
   skipped: number
 }
+
+/**
+ * Clergy e-mail import review queue (docs/plans/2026-07-13--clergy-email-updates.md).
+ * Everything the auto-apply gate didn't clear lands here for admin review.
+ */
+
+export type TEmailImportResolution = 'own_church' | 'matched_by_name' | 'unauthorized' | 'unknown_sender' | 'ambiguous'
+export type TEmailImportStatus = 'pending' | 'auto_applied' | 'approved' | 'rejected'
+
+export interface IEmailImportInboxItem {
+  message_id: string
+  created_at: string
+  raw_from: string
+  sender_label: string | null
+  resolution: TEmailImportResolution
+  auth_spf: string | null
+  auth_dkim: string | null
+  auth_dmarc: string | null
+  verification_score: number | null
+  verification_reasoning: string | null
+  status: TEmailImportStatus
+  proposal: IImportProposal | null
+}
+
+export interface IEmailImportInboxListResponse {
+  items: IEmailImportInboxItem[]
+}
+
+export interface IEmailImportApproveRequest {
+  fields: IImportApplyField[]
+}

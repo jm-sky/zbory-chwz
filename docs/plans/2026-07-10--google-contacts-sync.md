@@ -101,7 +101,7 @@ flowchart LR
 
 - Nowy moduł backendu `app/modules/google_contacts/` (db_models, oauth_provider, service, repositories, router, classification, crypto_utils).
 - Osobny redirect URI (`GOOGLE_CONTACTS_REDIRECT_URI`) na tym samym kliencie OAuth co logowanie (`GOOGLE_OAUTH_CLIENT_ID/SECRET`), incremental auth (`access_type=offline`, `prompt=consent`, `include_granted_scopes=true`).
-- Tokeny szyfrowane (Fernet, jak w module 2FA) w tabeli `google_contacts_connections` (migracja `066_google_contacts_connections.py`).
+- Tokeny szyfrowane (Fernet, jak w module 2FA) w tabeli `google_contacts_connections` (migracja `069_google_contacts_connections.py`, przenumerowana z `066` — kolizja numeracji z równolegle zmergowanym `066_drop_congregation_contact_persons.py`, zob. [2026-07-13--clergy-email-updates.md](2026-07-13--clergy-email-updates.md)).
 - Endpointy (admin/owner only): `POST /api/google-contacts/auth-url`, `POST /api/google-contacts/callback`, `GET/DELETE /api/google-contacts/connection`, `GET /api/google-contacts/contacts` (filtr „zbór”/„chwz” zastosowany po stronie backendu, People API nie wspiera takiego wyszukiwania natywnie).
 - Testy: `tests/unit/google_contacts/`, `tests/integration/google_contacts/`.
 - Frontend: `src/modules/admin/pages/AdminGoogleContactsPage.vue` (status połączenia, connect/disconnect, wczytanie i lista dopasowanych kontaktów) + `AdminGoogleContactsCallbackPage.vue` (obsługa powrotu z Google, state z `sessionStorage`), trasy `/admin/google-contacts` i `/admin/google-contacts/callback` (admin/owner only), kafelek na `AdminDashboardPage.vue`.

@@ -23,6 +23,8 @@ class AddressResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    last_updated_at: datetime | None = None
+    last_updated_label: str | None = None
 
 
 class AddressCreateRequest(BaseModel):
@@ -161,3 +163,55 @@ class ImportApplyResponse(BaseModel):
     created: int
     updated: int
     skipped: int
+
+
+# Clergy e-mail import review queue (docs/plans/2026-07-13--clergy-email-updates.md)
+
+EmailImportResolution = Literal["own_church", "matched_by_name", "unauthorized", "unknown_sender", "ambiguous"]
+EmailImportStatus = Literal["pending", "auto_applied", "approved", "rejected"]
+
+
+class EmailImportInboxItem(BaseModel):
+    """One polled e-mail awaiting (or past) admin review."""
+
+    message_id: str
+    created_at: datetime
+    raw_from: str
+    sender_label: str | None = None
+    resolution: EmailImportResolution
+    auth_spf: str | None = None
+    auth_dkim: str | None = None
+    auth_dmarc: str | None = None
+    verification_score: float | None = None
+    verification_reasoning: str | None = None
+    status: EmailImportStatus
+    # None when there's no single resolved congregation to review a diff
+    # against (resolution is "ambiguous" or "unknown_sender") - the e-mail
+    # is still listed for visibility, but can only be dismissed here, not
+    # approved. An admin who wants to act on it re-runs it through the
+    # pasted-text import screen instead.
+    proposal: ImportProposal | None = None
+
+
+class EmailImportInboxListResponse(BaseModel):
+    items: list[EmailImportInboxItem]
+
+
+class EmailImportApproveRequest(BaseModel):
+    fields: list[ImportApplyField]
+
+
+class ChangeLogEntry(BaseModel):
+    id: str
+    section: Literal["address", "contact"]
+    field: str
+    field_label: str
+    old_value: str | None = None
+    new_value: str | None = None
+    source: Literal["admin_manual", "import_paste", "email_auto", "email_reviewed"]
+    actor_label: str
+    created_at: datetime
+
+
+class ChangeLogResponse(BaseModel):
+    entries: list[ChangeLogEntry]
