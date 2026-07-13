@@ -5,8 +5,8 @@ from `oauth_connections` (login identity linking, no tokens). See
 docs/plans/2026-07-10--google-contacts-sync.md.
 
 Usage:
-    python migrations/066_google_contacts_connections.py upgrade
-    python migrations/066_google_contacts_connections.py downgrade
+    python migrations/069_google_contacts_connections.py upgrade
+    python migrations/069_google_contacts_connections.py downgrade
 """
 
 import asyncio
@@ -81,7 +81,7 @@ async def downgrade() -> None:
 
 async def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python migrations/066_google_contacts_connections.py [upgrade|downgrade]")
+        print("Usage: python migrations/069_google_contacts_connections.py [upgrade|downgrade]")
         sys.exit(1)
 
     command = sys.argv[1].lower()
