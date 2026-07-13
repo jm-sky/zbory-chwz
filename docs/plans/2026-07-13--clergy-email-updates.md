@@ -1,7 +1,33 @@
 # Aktualizacje danych zboru przez e-mail od duchownych — plan
 
-**Status:** `planned`
+**Status:** `in progress`
 **Created:** 2026-07-13
+
+## Status update (2026-07-13)
+
+Zaimplementowano fazy 1-3, każda zweryfikowana (black/mypy/pytest, migracja
+uruchomiona realnie na lokalnym Postgresie 16):
+
+- **Faza 1**: `EmailImportSettings`, migracja `068_email_import_tables.py`
+  (`email_import_messages`, `congregation_change_log`, `last_updated_*`).
+- **Faza 2**: `SenderResolver` (`app/modules/congregations/sender_resolver.py`)
+  — autoryzacja nadawcy po e-mailu przez hierarchię church/region/community,
+  8 testów jednostkowych. Przy okazji wydzielono `tenant_matching.py` ze
+  wspólną logiką fuzzy-matchu.
+- **Naprawiono po drodze**: kolizję numeracji migracji `066` (dwa niezależne
+  PR-y użyły tego samego numeru, blokując `db migrate` na 067+) —
+  przenumerowano `google_contacts_connections` na `069`.
+- **Faza 3**: `imap_client.py` (stdlib `imaplib`/`email`, parsowanie
+  SPF/DKIM/DMARC z `Authentication-Results`, ekstrakcja treści plain/html) +
+  `email_import_service.py` (`EmailImportService.poll_and_process`) + CLI
+  `python -m cli mail poll-inbox`. Kolejka jest zasilana (fetch → resolve →
+  ekstrakcja AI z podpowiedzią kontekstową dla nadawcy z jednym własnym
+  zborem → zapis do `email_import_messages` ze statusem `pending`) — **bez
+  auto-zapisu**, to dopiero Faza 4.
+
+Pozostało: Faza 4 (drugi call AI weryfikacyjny + brama auto-apply + zapis do
+`congregation_change_log`), Faza 5 (endpointy kolejki/historii), Fazy 6-7
+(frontend), Faza 8 (weryfikacja end-to-end z prawdziwym providerem/skrzynką).
 
 ## Cel
 
