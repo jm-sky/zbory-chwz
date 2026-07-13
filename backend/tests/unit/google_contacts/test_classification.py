@@ -30,6 +30,17 @@ CASE_INSENSITIVE_CONTACT = {
     "organizations": [{"name": "ZBÓR Poznań"}],
 }
 
+# Google sometimes parses a congregation's name into givenName/familyName
+# instead of leaving it as a plain organization.
+CHURCH_NAME_SPLIT_INTO_PARTS_CONTACT = {
+    "names": [{"displayName": "Zbór CHWZ Warszawa", "givenName": "Zbór", "familyName": "Warszawa"}],
+}
+
+CUSTOM_KEYWORD_CONTACT = {
+    "names": [{"displayName": "Jan Kowalski"}],
+    "biographies": [{"value": "Grupa modlitewna Ognisko"}],
+}
+
 
 def test_contact_matches_filter_by_organization() -> None:
     assert contact_matches_filter(CHURCH_CONTACT) is True
@@ -57,3 +68,16 @@ def test_classify_contact_with_name_is_person_even_with_organization() -> None:
 
 def test_classify_contact_with_no_name_and_no_organization_defaults_to_person() -> None:
     assert classify_contact({}) == "person"
+
+
+def test_classify_contact_with_keyword_in_name_is_church_even_with_given_and_family_name() -> None:
+    assert classify_contact(CHURCH_NAME_SPLIT_INTO_PARTS_CONTACT) == "church"
+
+
+def test_contact_matches_filter_with_custom_keywords() -> None:
+    assert contact_matches_filter(CUSTOM_KEYWORD_CONTACT, keywords=["ognisko"]) is True
+    assert contact_matches_filter(CUSTOM_KEYWORD_CONTACT, keywords=["zbór", "chwz"]) is False
+
+
+def test_classify_contact_with_custom_keywords() -> None:
+    assert classify_contact(CHURCH_NAME_SPLIT_INTO_PARTS_CONTACT, keywords=["ognisko"]) == "person"

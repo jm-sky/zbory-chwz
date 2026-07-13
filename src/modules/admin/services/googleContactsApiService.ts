@@ -33,8 +33,13 @@ class GoogleContactsApiService {
     await apiClient.delete('/google-contacts/connection')
   }
 
-  async listContacts(): Promise<IGoogleContactsListResponse> {
-    const response = await apiClient.get<IGoogleContactsListResponse>('/google-contacts/contacts')
+  async listContacts(keywords: string[]): Promise<IGoogleContactsListResponse> {
+    const searchParams = new URLSearchParams()
+    for (const keyword of keywords) searchParams.append('keywords', keyword)
+
+    const response = await apiClient.get<IGoogleContactsListResponse>(
+      `/google-contacts/contacts?${searchParams.toString()}`,
+    )
     return response.data
   }
 

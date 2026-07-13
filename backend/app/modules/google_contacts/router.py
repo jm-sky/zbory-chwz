@@ -8,10 +8,11 @@ decision #1 — only admin/owner can import Google Contacts into the database.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.modules.auth.decorators import rate_limit
 from app.modules.auth.dependencies import AdminOrOwnerUser
+from app.modules.google_contacts.classification import FILTER_KEYWORDS
 from app.modules.google_contacts.import_service import (
     GoogleContactsImportService,
     get_google_contacts_import_service,
@@ -108,13 +109,14 @@ async def disconnect(
     "/contacts",
     response_model=GoogleContactsListResponse,
     summary="Load and filter Google contacts",
-    description='Fetch the connected Google account\'s contacts and filter for "zbór"/"chwz" matches',
+    description="Fetch the connected Google account's contacts and filter by the given keywords",
 )
 async def list_contacts(
     current_user: AdminOrOwnerUser,
     service: Annotated[GoogleContactsService, Depends(get_google_contacts_service)],
+    keywords: Annotated[list[str], Query()] = list(FILTER_KEYWORDS),
 ) -> GoogleContactsListResponse:
-    suggestions, total_fetched = await service.load_filtered_contacts(current_user.id)
+    suggestions, total_fetched = await service.load_filtered_contacts(current_user.id, keywords)
     return GoogleContactsListResponse(
         contacts=suggestions,
         totalFetched=total_fetched,
