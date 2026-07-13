@@ -678,6 +678,30 @@ class AISettings(BaseSettings):
     )
 
 
+class EmailImportSettings(BaseSettings):
+    """Inbound e-mail import configuration (clergy self-service data updates).
+
+    A dedicated mailbox is polled over IMAP (see backend/cli/commands/mail.py);
+    messages are run through the existing AI extraction pipeline and either
+    auto-applied (high-trust, verified sender) or queued for admin review.
+    """
+
+    model_config = _base_config
+
+    enabled: bool = Field(default=False, validation_alias="EMAIL_IMPORT_ENABLED")
+    imap_host: str = Field(default="", validation_alias="EMAIL_IMPORT_IMAP_HOST")
+    imap_port: int = Field(default=993, validation_alias="EMAIL_IMPORT_IMAP_PORT")
+    imap_user: str = Field(default="", validation_alias="EMAIL_IMPORT_IMAP_USER")
+    imap_password: str = Field(default="", validation_alias="EMAIL_IMPORT_IMAP_PASSWORD")
+    imap_mailbox: str = Field(default="INBOX", validation_alias="EMAIL_IMPORT_IMAP_MAILBOX")
+    imap_use_ssl: bool = Field(default=True, validation_alias="EMAIL_IMPORT_IMAP_USE_SSL")
+    trust_auto_apply_threshold: float = Field(
+        default=0.9,
+        validation_alias="EMAIL_IMPORT_TRUST_THRESHOLD",
+        description="Minimum second-pass AI trust score (0-1) required to auto-apply a change without admin review",
+    )
+
+
 class WebAuthnSettings(BaseSettings):
     """WebAuthn configuration."""
 
@@ -725,6 +749,7 @@ class Settings(BaseSettings):
     redis: RedisSettings = Field(default_factory=RedisSettings)
     webauthn: WebAuthnSettings = Field(default_factory=WebAuthnSettings)
     ai: AISettings = Field(default_factory=AISettings)
+    email_import: EmailImportSettings = Field(default_factory=EmailImportSettings)
 
     # Legacy compatibility - still accessible at root level
     frontend_url: str = Field(

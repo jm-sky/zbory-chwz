@@ -8,7 +8,6 @@ admin review -> apply only the fields the admin explicitly accepted.
 import re
 import uuid
 
-from rapidfuzz import fuzz, process
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.ai.provider import OpenRouterProvider
@@ -35,12 +34,9 @@ from app.modules.congregations.schemas import (
     ImportFieldChange,
     ImportProposal,
 )
+from app.modules.congregations.tenant_matching import match_tenant_by_name
 from app.modules.tenants.db_models import TenantDB
 from app.modules.tenants.repositories import TenantRepository
-
-# Below this rapidfuzz score (0-100), a name is treated as having no match
-# rather than risking a wrong auto-match (see docs/issues/...--018--...).
-_MATCH_THRESHOLD = 80.0
 
 _FIELD_LABELS: dict[str, str] = {
     "street": "Ulica",
@@ -109,7 +105,7 @@ class CongregationImportService:
         tenants: list[TenantDB],
         name_slugs: dict[str, str],
     ) -> ImportProposal:
-        tenant_id, matched_name, confidence = self._match_tenant(entry.name, tenants, name_slugs)
+        tenant_id, matched_name, confidence = match_tenant_by_name(entry.name, tenants, name_slugs)
         match_type: str = "matched" if tenant_id else "new"
 
         current_address = await self._congregation_repo.get_address_by_tenant_id(tenant_id) if tenant_id else None
@@ -184,26 +180,6 @@ class CongregationImportService:
             contact_person_id=matched_assignment.id if matched_assignment else None,
             fields=fields,
         )
-
-    def _match_tenant(
-        self,
-        detected_name: str,
-        tenants: list[TenantDB],
-        name_slugs: dict[str, str],
-    ) -> tuple[str | None, str | None, float]:
-        if not name_slugs:
-            return None, None, 0.0
-
-        match = process.extractOne(slugify(detected_name), name_slugs, scorer=fuzz.WRatio)
-        if match is None:
-            return None, None, 0.0
-
-        _, score, matched_tenant_id = match
-        if score < _MATCH_THRESHOLD:
-            return None, None, score
-
-        matched_name = next(t.name for t in tenants if t.id == matched_tenant_id)
-        return matched_tenant_id, matched_name, score
 
     async def apply(self, request: ImportApplyRequest, *, owner_user_id: str) -> ImportApplyResponse:
         created = updated = skipped = 0

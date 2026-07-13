@@ -24,6 +24,11 @@ class CongregationAddressDB(Base):
     # ISO 3166-1 alpha-2; see app/modules/congregations/geo.py
     country: Mapped[str] = mapped_column(String(2), default=DEFAULT_COUNTRY, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
+    # Denormalized from congregation_change_log for a fast "last updated by"
+    # badge (see docs/plans/2026-07-13--clergy-email-updates.md) without
+    # joining the full history on every profile page load.
+    last_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_updated_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
