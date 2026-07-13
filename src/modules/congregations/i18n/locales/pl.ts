@@ -117,6 +117,8 @@ export const congregationsPl = {
         time: 'Godzina',
         timePlaceholder: 'np. 10:00',
         timeRequired: 'Godzina jest wymagana',
+        description: 'Opis',
+        descriptionPlaceholder: 'np. Modlitwa nocna',
       },
       contactPersons: {
         title: 'Osoby kontaktowe',

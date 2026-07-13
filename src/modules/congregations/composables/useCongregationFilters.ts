@@ -28,7 +28,7 @@ function searchableFields(congregation: ICongregationDetailed): Array<string | n
     contact.phone,
     contact.email,
   ])
-  const serviceTimes = (congregation.service_times ?? []).flatMap((time) => [time.day, time.time])
+  const serviceTimes = (congregation.service_times ?? []).flatMap((time) => [time.day, time.time, time.description])
 
   return [
     congregation.name,

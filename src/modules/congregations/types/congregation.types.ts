@@ -28,7 +28,7 @@ export interface ICongregationDetailed extends ICongregation {
   /** ISO 3166-1 alpha-2 country code, e.g. 'PL' */
   country?: string | null
   // Service times
-  service_times?: Array<{ day: string; time: string }>
+  service_times?: Array<{ day: string; time: string; description?: string | null }>
   // Contacts from public service assignments
   card_contacts?: ICardContact[]
   // Legacy single contact (first card_contacts entry)
@@ -65,7 +65,7 @@ export interface ICongregationDetail {
   /** ISO 3166-1 alpha-2 country code, e.g. 'PL' */
   country?: string | null
   // Full, unlimited service times
-  service_times: Array<{ day: string; time: string }>
+  service_times: Array<{ day: string; time: string; description?: string | null }>
   // Visible profile contacts, filtered by viewer's visibility level
   card_contacts: ICardContact[]
   // Hidden profile contacts; only present when canManage is true
@@ -106,6 +106,7 @@ export interface IServiceTime {
   tenant_id: string
   day: string
   time: string
+  description?: string | null
   order: number
   created_at: string
 }
@@ -137,12 +138,14 @@ export interface IAddressUpdateRequest {
 export interface IServiceTimeCreateRequest {
   day: string
   time: string
+  description?: string | null
   order?: number
 }
 
 export interface IServiceTimeUpdateRequest {
   day?: string
   time?: string
+  description?: string | null
   order?: number
 }
 

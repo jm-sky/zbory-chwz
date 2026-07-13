@@ -288,7 +288,7 @@ async def test_congregation_keeps_its_service_times_and_contacts(client) -> None
     church = items["ZBÓR WE WROCŁAWIU"]
 
     assert church["type"] == "church"
-    assert church["service_times"] == [{"day": "niedziela", "time": "10:00"}]
+    assert church["service_times"] == [{"day": "niedziela", "time": "10:00", "description": None}]
     assert church["card_contacts"][0]["name"] == "Jan Kowalski"
     assert church["contact_name"] == "Jan Kowalski"
     # E-mail defaults to authenticated-only visibility.

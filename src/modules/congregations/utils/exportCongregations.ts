@@ -125,7 +125,9 @@ function markdownSection(
 
   const serviceTimes = congregation.service_times ?? []
   if (serviceTimes.length > 0) {
-    const formatted = serviceTimes.map((time) => `${time.day} ${time.time}`).join(', ')
+    const formatted = serviceTimes
+      .map((time) => time.description ? `${time.day} ${time.time} - ${time.description}` : `${time.day} ${time.time}`)
+      .join(', ')
     lines.push(`- **${labels.serviceTimes}:** ${formatted}`)
   }
 

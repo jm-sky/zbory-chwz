@@ -48,5 +48,6 @@ class CongregationServiceTimeDB(Base):
     church_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("churches.id", ondelete="CASCADE"), nullable=True)
     day: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g., "niedziela", "środa"
     time: Mapped[str] = mapped_column(String(10), nullable=False)  # e.g., "11:00", "19:00"
+    description: Mapped[str | None] = mapped_column(String(256), nullable=True)  # e.g., "Modlitwa nocna"
     order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)

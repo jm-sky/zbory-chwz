@@ -94,14 +94,19 @@ watch(provinces, (available) => {
 })
 
 // Use refs for dynamic arrays since they're not part of the main form
-const serviceTimeFields = ref<Array<{ key: string; day: string; time: string; order: number }>>([])
+const serviceTimeFields = ref<Array<{ key: string; id?: string; day: string; time: string; description: string; order: number }>>([])
+// Ids of pre-existing service times removed by the user, applied as deletes on save
+const deletedServiceTimeIds = ref<string[]>([])
 
-function pushServiceTime(value: { day: string; time: string; order: number }) {
-  serviceTimeFields.value.push({ ...value, key: `st-${Date.now()}-${Math.random()}` })
+function pushServiceTime(value: { id?: string; day: string; time: string; description: string; order: number }) {
+  serviceTimeFields.value.push({ ...value, key: `st-${value.id ?? `${Date.now()}-${Math.random()}`}` })
 }
 
 function removeServiceTime(index: number) {
-  serviceTimeFields.value.splice(index, 1)
+  const [removed] = serviceTimeFields.value.splice(index, 1)
+  if (removed?.id) {
+    deletedServiceTimeIds.value.push(removed.id)
+  }
 }
 
 // Load congregation data
@@ -132,15 +137,15 @@ async function loadCongregation() {
     })
 
     // Set service times
-    const serviceTimesData = (congregationFull.value.service_times || []).map(st => ({
+    serviceTimeFields.value = (congregationFull.value.service_times || []).map(st => ({
+      key: `st-${st.id}`,
+      id: st.id,
       day: st.day,
       time: st.time,
+      description: st.description ?? '',
       order: st.order,
     }))
-    serviceTimeFields.value = serviceTimesData.map((st, idx) => ({
-      ...st,
-      key: `st-${idx}-${st.day}-${st.time}`,
-    }))
+    deletedServiceTimeIds.value = []
   } catch (error) {
     console.error('Failed to load congregation:', error)
     handleError(error, { fallbackMessage: t('congregations.edit.loadError', 'Nie udało się załadować danych zboru') })
@@ -198,23 +203,22 @@ const saveAddress = form.handleSubmit(async (values) => {
 
 async function saveServiceTimes() {
   try {
-    // Get current service times
-    const currentServiceTimes = congregationFull.value?.service_times || []
-
-    // For simplicity, delete all and recreate
-    for (const st of currentServiceTimes) {
-      await congregationApiService.deleteServiceTime(congregationId, st.id)
+    // Remove service times the user deleted from the form
+    for (const id of deletedServiceTimeIds.value) {
+      await congregationApiService.deleteServiceTime(congregationId, id)
     }
 
-    // Create new service times from refs
+    // Update existing service times, create newly added ones
     for (const st of serviceTimeFields.value) {
-      await congregationApiService.createServiceTime(congregationId, {
-        day: st.day,
-        time: st.time,
-        order: st.order,
-      })
+      const payload = { day: st.day, time: st.time, description: st.description || null, order: st.order }
+      if (st.id) {
+        await congregationApiService.updateServiceTime(congregationId, st.id, payload)
+      } else {
+        await congregationApiService.createServiceTime(congregationId, payload)
+      }
     }
 
+    deletedServiceTimeIds.value = []
     toast.success(t('congregations.edit.serviceTimes.saveSuccess', 'Godziny nabożeństw zostały zapisane'))
     await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadCongregation()
@@ -225,7 +229,7 @@ async function saveServiceTimes() {
 }
 
 function addServiceTime() {
-  pushServiceTime({ day: '', time: '', order: serviceTimeFields.value.length })
+  pushServiceTime({ day: '', time: '', description: '', order: serviceTimeFields.value.length })
 }
 
 function removeServiceTimeAt(index: number) {
@@ -529,25 +533,38 @@ onMounted(() => {
                 :key="field.key"
                 class="flex gap-4 items-start p-4 border rounded-lg"
               >
-                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>
-                      {{ t('congregations.edit.serviceTime.day', 'Dzień') }}
-                    </Label>
-                    <Input
-                      v-model="field.day"
-                      :placeholder="t('congregations.edit.serviceTime.dayPlaceholder', 'np. Niedziela')"
-                    />
+                <div class="flex-1 space-y-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label>
+                        {{ t('congregations.edit.serviceTime.day', 'Dzień') }}
+                      </Label>
+                      <Input
+                        v-model="field.day"
+                        :placeholder="t('congregations.edit.serviceTime.dayPlaceholder', 'np. Niedziela')"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>
+                        {{ t('congregations.edit.serviceTime.time', 'Godzina') }}
+                      </Label>
+                      <Input
+                        v-model="field.time"
+                        type="time"
+                        :placeholder="t('congregations.edit.serviceTime.timePlaceholder', 'np. 10:00')"
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <Label>
-                      {{ t('congregations.edit.serviceTime.time', 'Godzina') }}
+                      {{ t('congregations.edit.serviceTime.description', 'Opis') }}
                     </Label>
                     <Input
-                      v-model="field.time"
-                      type="time"
-                      :placeholder="t('congregations.edit.serviceTime.timePlaceholder', 'np. 10:00')"
+                      v-model="field.description"
+                      maxlength="256"
+                      :placeholder="t('congregations.edit.serviceTime.descriptionPlaceholder', 'np. Modlitwa nocna')"
                     />
                   </div>
                 </div>
@@ -555,7 +572,7 @@ onMounted(() => {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  class="shrink-0 mt-8"
+                  class="shrink-0 self-center"
                   @click="removeServiceTimeAt(index)"
                 >
                   <Trash2 class="size-4" />

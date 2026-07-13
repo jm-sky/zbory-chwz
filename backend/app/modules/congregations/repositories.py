@@ -119,6 +119,15 @@ class CongregationRepository:
             await self.db.commit()
 
     # Service times operations
+    async def get_service_time_by_id(self, tenant_id: str, service_time_id: str) -> CongregationServiceTimeDB | None:
+        """Get a single service time belonging to the given tenant."""
+        stmt = select(CongregationServiceTimeDB).where(
+            CongregationServiceTimeDB.id == service_time_id,
+            CongregationServiceTimeDB.tenant_id == tenant_id,
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_service_times_by_tenant_id(self, tenant_id: str) -> list[CongregationServiceTimeDB]:
         """Get all service times for a tenant."""
         stmt = select(CongregationServiceTimeDB).where(CongregationServiceTimeDB.tenant_id == tenant_id).order_by(CongregationServiceTimeDB.order, CongregationServiceTimeDB.created_at)
@@ -132,6 +141,7 @@ class CongregationRepository:
         day: str,
         time: str,
         order: int = 0,
+        description: str | None = None,
     ) -> CongregationServiceTimeDB:
         """Create a service time for a tenant."""
         service_time = CongregationServiceTimeDB(
@@ -139,6 +149,7 @@ class CongregationRepository:
             tenant_id=tenant_id,
             day=day,
             time=time,
+            description=description,
             order=order,
         )
         self.db.add(service_time)

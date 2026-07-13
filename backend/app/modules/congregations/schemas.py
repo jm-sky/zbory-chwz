@@ -56,6 +56,7 @@ class ServiceTimeResponse(BaseModel):
     tenant_id: str
     day: str
     time: str
+    description: str | None = None
     order: int
     created_at: datetime
 
@@ -63,12 +64,14 @@ class ServiceTimeResponse(BaseModel):
 class ServiceTimeCreateRequest(BaseModel):
     day: str = Field(min_length=1, max_length=50)
     time: str = Field(min_length=1, max_length=10)
+    description: str | None = Field(default=None, max_length=256)
     order: int = Field(default=0, ge=0)
 
 
 class ServiceTimeUpdateRequest(BaseModel):
     day: str | None = Field(default=None, min_length=1, max_length=50)
     time: str | None = Field(default=None, min_length=1, max_length=10)
+    description: str | None = Field(default=None, max_length=256)
     order: int | None = Field(default=None, ge=0)
 
 

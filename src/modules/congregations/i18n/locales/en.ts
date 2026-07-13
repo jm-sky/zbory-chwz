@@ -117,6 +117,8 @@ export const congregationsEn = {
         time: 'Time',
         timePlaceholder: 'e.g. 10:00',
         timeRequired: 'Time is required',
+        description: 'Description',
+        descriptionPlaceholder: 'e.g. Night prayer',
       },
       contactPersons: {
         title: 'Contact Persons',
