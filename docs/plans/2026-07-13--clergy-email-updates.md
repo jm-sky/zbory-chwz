@@ -25,9 +25,24 @@ uruchomiona realnie na lokalnym Postgresie 16):
   zborem → zapis do `email_import_messages` ze statusem `pending`) — **bez
   auto-zapisu**, to dopiero Faza 4.
 
-Pozostało: Faza 4 (drugi call AI weryfikacyjny + brama auto-apply + zapis do
-`congregation_change_log`), Faza 5 (endpointy kolejki/historii), Fazy 6-7
-(frontend), Faza 8 (weryfikacja end-to-end z prawdziwym providerem/skrzynką).
+- **Faza 4**: `OpenRouterProvider.verify_extraction` (osobny call AI: trust_score
+  + uzasadnienie, kontekst = tożsamość nadawcy + diff pól — nigdy nie wpływa
+  na wartości z ekstrakcji). Brama w `EmailImportService._resolve_and_maybe_apply`:
+  najpierw tanie sprawdzenia strukturalne (SPF/DKIM/DMARC pass, a przy zmianie
+  pól kontaktowych — czy dopasowany kontakt należy do samego nadawcy), dopiero
+  potem (jeśli przeszły) wywołanie AI i porównanie z progiem
+  `EMAIL_IMPORT_TRUST_THRESHOLD`. Zapis (`apply_fields`) następuje **przed**
+  zapisaniem wiersza w `email_import_messages`, żeby błąd w trakcie zapisu nie
+  zostawiał "widma" pomijanego przy dedupie. Każda auto-aplikowana zmiana ma
+  wpis w `congregation_change_log` (`source=email_auto`), `last_updated_*` na
+  adresie zboru i best-effort mail do admina (nowy szablon
+  `email_import_auto_applied.html`). Przy okazji: wydzielono `field_diff.py`
+  (współdzielone porównanie starych/nowych wartości) i upubliczniono
+  `CongregationImportService.apply_fields` — używane teraz przez dwa serwisy.
+  9 testów (auto-apply, niski trust_score, SPF fail, brak zmian).
+
+Pozostało: Faza 5 (endpointy kolejki/historii), Fazy 6-7 (frontend), Faza 8
+(weryfikacja end-to-end z prawdziwym providerem/skrzynką).
 
 ## Cel
 
