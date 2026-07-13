@@ -15,7 +15,7 @@ The CLI is organized into command groups:
 - shell: Interactive shell (future)
 """
 
-from .commands import db_app, tenants_app, test_app, users_app
+from .commands import db_app, mail_app, tenants_app, test_app, users_app
 from .main import app, main
 
 # Register command groups
@@ -23,5 +23,6 @@ app.add_typer(db_app, name="db")
 app.add_typer(users_app, name="users")
 app.add_typer(tenants_app, name="tenants")
 app.add_typer(test_app, name="test")
+app.add_typer(mail_app, name="mail")
 
 __all__ = ["app", "main"]

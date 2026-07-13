@@ -82,13 +82,23 @@ class OpenRouterProvider:
             base_url=base_url or settings.ai.openrouter_base_url,
         )
 
-    async def extract_congregations(self, raw_text: str) -> ExtractionResult:
-        """Extract structured congregation data from free-text notes."""
+    async def extract_congregations(self, raw_text: str, *, context_hint: str | None = None) -> ExtractionResult:
+        """Extract structured congregation data from free-text notes.
+
+        `context_hint` is prepended to the user message (not the system
+        prompt, so the base extraction behaviour stays unchanged for the
+        pasted-text import flow). Used by the clergy e-mail import to supply
+        the sender's own congregation name when the e-mail body itself never
+        states it — `name` is a required field in the schema below, so
+        without a hint an e-mail like "zmieńcie mój numer telefonu na..."
+        would extract nothing at all.
+        """
+        user_content = raw_text if not context_hint else f"{context_hint}\n\n---\n\n{raw_text}"
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=[
                 {"role": "system", "content": _EXTRACTION_SYSTEM_PROMPT},
-                {"role": "user", "content": raw_text},
+                {"role": "user", "content": user_content},
             ],
             response_format={
                 "type": "json_schema",
