@@ -1,6 +1,6 @@
 # Aktualizacje danych zboru przez e-mail od duchownych — plan
 
-**Status:** `in progress`
+**Status:** `verification needed`
 **Created:** 2026-07-13
 
 ## Status update (2026-07-13)
@@ -41,8 +41,24 @@ uruchomiona realnie na lokalnym Postgresie 16):
   `CongregationImportService.apply_fields` — używane teraz przez dwa serwisy.
   9 testów (auto-apply, niski trust_score, SPF fail, brak zmian).
 
-Pozostało: Faza 5 (endpointy kolejki/historii), Fazy 6-7 (frontend), Faza 8
-(weryfikacja end-to-end z prawdziwym providerem/skrzynką).
+- **Faza 5** (backend): `GET /admin/congregations/import/inbox`,
+  `POST .../inbox/{id}/approve` (reużywa `apply_fields`, loguje
+  `source=email_reviewed`), `POST .../inbox/{id}/reject`. Nowy
+  `GET /congregations/{tenant_id}/change-log` — dostęp: admin, klasyczny
+  członek tenanta LUB `AclService.has_pastoral_access` (pokrywa biskupa bez
+  bezpośredniego członkostwa). 9 nowych testów integracyjnych.
+- **Fazy 6-7** (frontend): `EmailImportInboxSection.vue` (nowa sekcja na
+  `AdminCongregationImportPage.vue` — kolejka z tym samym UI diffu co paste-import,
+  Zatwierdź/Odrzuć); `ChangeHistorySection.vue` (nowa sekcja na
+  `EditCongregationPage.vue`, cicho znika przy 403 zamiast pokazywać błąd) +
+  linijka „Ostatnia zmiana danych" nad formularzem (`last_updated_at/label`
+  dodane do `AddressResponse`). `pnpm type-check`/`lint`/`build-only`/`test:run`
+  (69) czyste.
+
+Pozostało: Faza 8 (weryfikacja end-to-end z prawdziwym providerem AI i
+prawdziwą skrzynką IMAP — nie do zrobienia w tym środowisku, brak
+zewnętrznego dostępu sieciowego do IMAP/OpenRouter z prawdziwymi
+danymi uwierzytelniającymi).
 
 ## Cel
 
