@@ -15,6 +15,7 @@ from app.modules.congregations.db_models import (
     CongregationAddressDB,
     CongregationServiceTimeDB,
 )
+from app.modules.congregations.email_import_db_models import CongregationChangeLogDB
 from app.modules.congregations.geo import DEFAULT_COUNTRY
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,11 @@ class CongregationRepository:
         existing.last_updated_at = datetime.now(UTC)
         existing.last_updated_label = label
         await self.db.commit()
+
+    async def get_change_log(self, tenant_id: str) -> list[CongregationChangeLogDB]:
+        stmt = select(CongregationChangeLogDB).where(CongregationChangeLogDB.tenant_id == tenant_id).order_by(CongregationChangeLogDB.created_at.desc())
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
 
     async def get_addresses_by_status(self, statuses: Sequence[str]) -> dict[str, CongregationAddressDB]:
         """Get addresses with any of the given statuses, keyed by tenant id."""

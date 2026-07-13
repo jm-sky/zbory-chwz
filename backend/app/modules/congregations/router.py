@@ -6,6 +6,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.modules.auth.dependencies import CurrentUser
+from app.modules.auth.models import User
+from app.modules.churches.acl_service import AclService, get_acl_service
+from app.modules.congregations.field_diff import FIELD_LABELS
 from app.modules.congregations.geo import is_valid_province
 from app.modules.congregations.repositories import (
     CongregationRepository,
@@ -15,6 +18,8 @@ from app.modules.congregations.schemas import (
     AddressCreateRequest,
     AddressResponse,
     AddressUpdateRequest,
+    ChangeLogEntry,
+    ChangeLogResponse,
     CongregationFullResponse,
     ServiceTimeCreateRequest,
     ServiceTimeResponse,
@@ -23,6 +28,30 @@ from app.modules.tenants.access import verify_tenant_access
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 
 router = APIRouter(prefix="/congregations", tags=["Congregations"])
+
+
+async def _verify_change_log_access(
+    tenant_id: str,
+    current_user: User,
+    tenant_repo: TenantRepository,
+    acl_service: AclService,
+) -> None:
+    """Admins, tenant members (the classic access route pastors already use
+    to manage their own congregation), and anyone with pastoral ACL access
+    to this church (covers regional/national bishops with no direct tenant
+    membership) can see the change history. Everyone else gets 403."""
+    try:
+        await verify_tenant_access(tenant_id, current_user, tenant_repo)
+        return
+    except HTTPException as exc:
+        if exc.status_code != status.HTTP_403_FORBIDDEN:
+            raise
+
+    # ChurchDB.id == tenant_id by construction (see churches/provisioning.py).
+    if await acl_service.has_pastoral_access(current_user.id, tenant_id):
+        return
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
 
 # Address endpoints
@@ -288,4 +317,38 @@ async def get_full_congregation(
             )
             for st in service_times
         ],
+    )
+
+
+@router.get(
+    "/{tenant_id}/change-log",
+    response_model=ChangeLogResponse,
+    summary="Change history for a congregation's address and contact data",
+    description="Visible to admins, tenant members, and anyone with pastoral ACL access to this church (e.g. a regional bishop).",
+)
+async def get_change_log(
+    tenant_id: str,
+    current_user: CurrentUser,
+    repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
+    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    acl_service: Annotated[AclService, Depends(get_acl_service)],
+) -> ChangeLogResponse:
+    await _verify_change_log_access(tenant_id, current_user, tenant_repo, acl_service)
+
+    entries = await repo.get_change_log(tenant_id)
+    return ChangeLogResponse(
+        entries=[
+            ChangeLogEntry(
+                id=entry.id,
+                section=entry.section,  # type: ignore[arg-type]
+                field=entry.field,
+                field_label=FIELD_LABELS.get(entry.field, entry.field),
+                old_value=entry.old_value,
+                new_value=entry.new_value,
+                source=entry.source,  # type: ignore[arg-type]
+                actor_label=entry.actor_label,
+                created_at=entry.created_at,
+            )
+            for entry in entries
+        ]
     )
