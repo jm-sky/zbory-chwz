@@ -62,7 +62,7 @@ class PublicCongregationResponse(BaseModel):
     province: str | None = None
     country: str | None = None
     # Service times (first few)
-    service_times: list[dict[str, str]] = []  # [{"day": "niedziela", "time": "11:00"}]
+    service_times: list[dict[str, str | None]] = []  # [{"day": "niedziela", "time": "11:00", "description": None}]
     # Contacts from public service assignments
     card_contacts: list[PublicCardContact] = []
     # Legacy single contact (first card_contacts entry)
@@ -98,7 +98,7 @@ class CongregationDetailResponse(BaseModel):
     province: str | None = None
     country: str | None = None
     # Full (unlimited) service times
-    service_times: list[dict[str, str]] = []
+    service_times: list[dict[str, str | None]] = []
     # Visible profile contacts; phone/email filtered by per-field visibility
     card_contacts: list[PublicCardContact] = []
     # Hidden profile contacts; only populated when canManage is true

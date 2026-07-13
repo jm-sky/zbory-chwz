@@ -33,7 +33,9 @@ function formatAddress(item: ICongregationDetail): string {
 }
 
 function formatServiceTimes(item: ICongregationDetail): string {
-  return item.service_times.map((serviceTime) => `${serviceTime.day} ${serviceTime.time}`).join(', ')
+  return item.service_times
+    .map((st) => st.description ? `${st.day} ${st.time} - ${st.description}` : `${st.day} ${st.time}`)
+    .join(', ')
 }
 </script>
 

@@ -124,7 +124,10 @@ async def list_congregations_detailed(
     congregations: list[PublicCongregationResponse] = []
     for tenant in published:
         address = addresses[tenant.id]
-        service_times = [{"day": st.day, "time": st.time} for st in service_times_by_tenant.get(tenant.id, [])[:MAX_PUBLIC_SERVICE_TIMES]]
+        service_times = [
+            {"day": st.day, "time": st.time, "description": st.description}
+            for st in service_times_by_tenant.get(tenant.id, [])[:MAX_PUBLIC_SERVICE_TIMES]
+        ]
 
         card_contacts = [
             PublicCardContact(
@@ -283,7 +286,10 @@ async def get_congregation_detail(
         postal_code=address.postal_code if address else None,
         province=address.province if address else None,
         country=address.country if address else None,
-        service_times=[{"day": service_time.day, "time": service_time.time} for service_time in service_times],
+        service_times=[
+            {"day": service_time.day, "time": service_time.time, "description": service_time.description}
+            for service_time in service_times
+        ],
         card_contacts=card_contacts,
         hidden_contacts=hidden_profile_contacts,
         branches=[CongregationBranchSummary(id=branch.id, name=branch.name) for branch in visible_branches],

@@ -132,6 +132,7 @@ class CongregationRepository:
         day: str,
         time: str,
         order: int = 0,
+        description: str | None = None,
     ) -> CongregationServiceTimeDB:
         """Create a service time for a tenant."""
         service_time = CongregationServiceTimeDB(
@@ -139,6 +140,7 @@ class CongregationRepository:
             tenant_id=tenant_id,
             day=day,
             time=time,
+            description=description,
             order=order,
         )
         self.db.add(service_time)

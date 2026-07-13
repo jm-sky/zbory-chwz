@@ -94,9 +94,9 @@ watch(provinces, (available) => {
 })
 
 // Use refs for dynamic arrays since they're not part of the main form
-const serviceTimeFields = ref<Array<{ key: string; day: string; time: string; order: number }>>([])
+const serviceTimeFields = ref<Array<{ key: string; day: string; time: string; description: string; order: number }>>([])
 
-function pushServiceTime(value: { day: string; time: string; order: number }) {
+function pushServiceTime(value: { day: string; time: string; description: string; order: number }) {
   serviceTimeFields.value.push({ ...value, key: `st-${Date.now()}-${Math.random()}` })
 }
 
@@ -135,6 +135,7 @@ async function loadCongregation() {
     const serviceTimesData = (congregationFull.value.service_times || []).map(st => ({
       day: st.day,
       time: st.time,
+      description: st.description ?? '',
       order: st.order,
     }))
     serviceTimeFields.value = serviceTimesData.map((st, idx) => ({
@@ -211,6 +212,7 @@ async function saveServiceTimes() {
       await congregationApiService.createServiceTime(congregationId, {
         day: st.day,
         time: st.time,
+        description: st.description || null,
         order: st.order,
       })
     }
@@ -225,7 +227,7 @@ async function saveServiceTimes() {
 }
 
 function addServiceTime() {
-  pushServiceTime({ day: '', time: '', order: serviceTimeFields.value.length })
+  pushServiceTime({ day: '', time: '', description: '', order: serviceTimeFields.value.length })
 }
 
 function removeServiceTimeAt(index: number) {
@@ -529,25 +531,38 @@ onMounted(() => {
                 :key="field.key"
                 class="flex gap-4 items-start p-4 border rounded-lg"
               >
-                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>
-                      {{ t('congregations.edit.serviceTime.day', 'Dzień') }}
-                    </Label>
-                    <Input
-                      v-model="field.day"
-                      :placeholder="t('congregations.edit.serviceTime.dayPlaceholder', 'np. Niedziela')"
-                    />
+                <div class="flex-1 space-y-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label>
+                        {{ t('congregations.edit.serviceTime.day', 'Dzień') }}
+                      </Label>
+                      <Input
+                        v-model="field.day"
+                        :placeholder="t('congregations.edit.serviceTime.dayPlaceholder', 'np. Niedziela')"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>
+                        {{ t('congregations.edit.serviceTime.time', 'Godzina') }}
+                      </Label>
+                      <Input
+                        v-model="field.time"
+                        type="time"
+                        :placeholder="t('congregations.edit.serviceTime.timePlaceholder', 'np. 10:00')"
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <Label>
-                      {{ t('congregations.edit.serviceTime.time', 'Godzina') }}
+                      {{ t('congregations.edit.serviceTime.description', 'Opis') }}
                     </Label>
                     <Input
-                      v-model="field.time"
-                      type="time"
-                      :placeholder="t('congregations.edit.serviceTime.timePlaceholder', 'np. 10:00')"
+                      v-model="field.description"
+                      maxlength="256"
+                      :placeholder="t('congregations.edit.serviceTime.descriptionPlaceholder', 'np. Modlitwa nocna')"
                     />
                   </div>
                 </div>
@@ -555,7 +570,7 @@ onMounted(() => {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  class="shrink-0 mt-8"
+                  class="shrink-0 self-center"
                   @click="removeServiceTimeAt(index)"
                 >
                   <Trash2 class="size-4" />

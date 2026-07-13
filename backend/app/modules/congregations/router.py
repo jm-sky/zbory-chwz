@@ -220,6 +220,7 @@ async def get_service_times(
             tenant_id=st.tenant_id,
             day=st.day,
             time=st.time,
+            description=st.description,
             order=st.order,
             created_at=st.created_at,
         )
@@ -246,6 +247,7 @@ async def create_service_time(
         tenant_id=tenant_id,
         day=payload.day,
         time=payload.time,
+        description=payload.description,
         order=payload.order,
     )
 
@@ -254,6 +256,7 @@ async def create_service_time(
         tenant_id=service_time.tenant_id,
         day=service_time.day,
         time=service_time.time,
+        description=service_time.description,
         order=service_time.order,
         created_at=service_time.created_at,
     )
@@ -320,6 +323,7 @@ async def get_full_congregation(
                 tenant_id=st.tenant_id,
                 day=st.day,
                 time=st.time,
+                description=st.description,
                 order=st.order,
                 created_at=st.created_at,
             )

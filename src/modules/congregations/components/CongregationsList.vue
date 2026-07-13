@@ -98,9 +98,11 @@ function formatAddress(congregation: ICongregationDetailed): string {
   return parts.join(', ') || ''
 }
 
-function formatServiceTimes(serviceTimes?: Array<{ day: string; time: string }>): string {
+function formatServiceTimes(serviceTimes?: Array<{ day: string; time: string; description?: string | null }>): string {
   if (!serviceTimes || serviceTimes.length === 0) return ''
-  return serviceTimes.map((st) => `${st.day} ${st.time}`).join(', ')
+  return serviceTimes
+    .map((st) => st.description ? `${st.day} ${st.time} - ${st.description}` : `${st.day} ${st.time}`)
+    .join(', ')
 }
 
 async function handleEdit(congregation: ICongregationDetailed) {
