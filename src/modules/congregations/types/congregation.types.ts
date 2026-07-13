@@ -145,6 +145,7 @@ export interface IServiceTimeCreateRequest {
 export interface IServiceTimeUpdateRequest {
   day?: string
   time?: string
+  description?: string | null
   order?: number
 }
 

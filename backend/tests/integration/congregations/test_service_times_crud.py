@@ -24,6 +24,7 @@ from main import app
 
 MEMBER_ID = "user-member"
 CHURCH_ID = "church-service-times"
+OTHER_CHURCH_ID = "church-service-times-other"
 
 
 def _api_user(user_id: str) -> User:
@@ -32,8 +33,9 @@ def _api_user(user_id: str) -> User:
 
 async def _seed(session: AsyncSession) -> None:
     now = datetime.now(UTC)
-    session.add(TenantDB(id=CHURCH_ID, name="Zbor Testowy", status="published", owner_id=MEMBER_ID, created_at=now))
-    session.add(TenantMembershipDB(tenant_id=CHURCH_ID, user_id=MEMBER_ID, role="member"))
+    for church_id in (CHURCH_ID, OTHER_CHURCH_ID):
+        session.add(TenantDB(id=church_id, name="Zbor Testowy", status="published", owner_id=MEMBER_ID, created_at=now))
+        session.add(TenantMembershipDB(tenant_id=church_id, user_id=MEMBER_ID, role="member"))
     await session.commit()
 
 
@@ -99,3 +101,102 @@ async def test_create_service_time_without_description_defaults_to_none(ctx) -> 
 
     assert response.status_code == 201
     assert response.json()["description"] is None
+
+
+@pytest.mark.asyncio
+async def test_update_service_time_changes_fields_and_round_trips(ctx) -> None:
+    client = ctx
+
+    created = await client.post(
+        f"/api/congregations/{CHURCH_ID}/service-times",
+        json={"day": "sobota", "time": "21:00", "description": "Modlitwa nocna", "order": 0},
+    )
+    service_time_id = created.json()["id"]
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_ID}/service-times/{service_time_id}",
+        json={"time": "22:00", "description": "Modlitwa poranna"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == service_time_id
+    assert body["day"] == "sobota"
+    assert body["time"] == "22:00"
+    assert body["description"] == "Modlitwa poranna"
+
+    listed = await client.get(f"/api/congregations/{CHURCH_ID}/service-times")
+    assert listed.json()[0]["time"] == "22:00"
+    assert listed.json()[0]["description"] == "Modlitwa poranna"
+
+
+@pytest.mark.asyncio
+async def test_update_service_time_partial_leaves_other_fields_unchanged(ctx) -> None:
+    client = ctx
+
+    created = await client.post(
+        f"/api/congregations/{CHURCH_ID}/service-times",
+        json={"day": "sobota", "time": "21:00", "description": "Modlitwa nocna", "order": 3},
+    )
+    service_time_id = created.json()["id"]
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_ID}/service-times/{service_time_id}",
+        json={"day": "niedziela"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["day"] == "niedziela"
+    assert body["time"] == "21:00"
+    assert body["description"] == "Modlitwa nocna"
+    assert body["order"] == 3
+
+
+@pytest.mark.asyncio
+async def test_update_service_time_can_explicitly_clear_description(ctx) -> None:
+    client = ctx
+
+    created = await client.post(
+        f"/api/congregations/{CHURCH_ID}/service-times",
+        json={"day": "sobota", "time": "21:00", "description": "Modlitwa nocna"},
+    )
+    service_time_id = created.json()["id"]
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_ID}/service-times/{service_time_id}",
+        json={"description": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["description"] is None
+
+
+@pytest.mark.asyncio
+async def test_update_service_time_404_for_unknown_id(ctx) -> None:
+    client = ctx
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_ID}/service-times/does-not-exist",
+        json={"day": "niedziela"},
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_service_time_404_for_wrong_tenant(ctx) -> None:
+    client = ctx
+
+    created = await client.post(
+        f"/api/congregations/{CHURCH_ID}/service-times",
+        json={"day": "sobota", "time": "21:00"},
+    )
+    service_time_id = created.json()["id"]
+
+    response = await client.patch(
+        f"/api/congregations/{OTHER_CHURCH_ID}/service-times/{service_time_id}",
+        json={"day": "niedziela"},
+    )
+
+    assert response.status_code == 404

@@ -71,6 +71,7 @@ class ServiceTimeCreateRequest(BaseModel):
 class ServiceTimeUpdateRequest(BaseModel):
     day: str | None = Field(default=None, min_length=1, max_length=50)
     time: str | None = Field(default=None, min_length=1, max_length=10)
+    description: str | None = Field(default=None, max_length=256)
     order: int | None = Field(default=None, ge=0)
 
 

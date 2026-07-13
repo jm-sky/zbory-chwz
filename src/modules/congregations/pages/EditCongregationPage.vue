@@ -94,14 +94,19 @@ watch(provinces, (available) => {
 })
 
 // Use refs for dynamic arrays since they're not part of the main form
-const serviceTimeFields = ref<Array<{ key: string; day: string; time: string; description: string; order: number }>>([])
+const serviceTimeFields = ref<Array<{ key: string; id?: string; day: string; time: string; description: string; order: number }>>([])
+// Ids of pre-existing service times removed by the user, applied as deletes on save
+const deletedServiceTimeIds = ref<string[]>([])
 
-function pushServiceTime(value: { day: string; time: string; description: string; order: number }) {
-  serviceTimeFields.value.push({ ...value, key: `st-${Date.now()}-${Math.random()}` })
+function pushServiceTime(value: { id?: string; day: string; time: string; description: string; order: number }) {
+  serviceTimeFields.value.push({ ...value, key: `st-${value.id ?? `${Date.now()}-${Math.random()}`}` })
 }
 
 function removeServiceTime(index: number) {
-  serviceTimeFields.value.splice(index, 1)
+  const [removed] = serviceTimeFields.value.splice(index, 1)
+  if (removed?.id) {
+    deletedServiceTimeIds.value.push(removed.id)
+  }
 }
 
 // Load congregation data
@@ -132,16 +137,15 @@ async function loadCongregation() {
     })
 
     // Set service times
-    const serviceTimesData = (congregationFull.value.service_times || []).map(st => ({
+    serviceTimeFields.value = (congregationFull.value.service_times || []).map(st => ({
+      key: `st-${st.id}`,
+      id: st.id,
       day: st.day,
       time: st.time,
       description: st.description ?? '',
       order: st.order,
     }))
-    serviceTimeFields.value = serviceTimesData.map((st, idx) => ({
-      ...st,
-      key: `st-${idx}-${st.day}-${st.time}`,
-    }))
+    deletedServiceTimeIds.value = []
   } catch (error) {
     console.error('Failed to load congregation:', error)
     handleError(error, { fallbackMessage: t('congregations.edit.loadError', 'Nie udało się załadować danych zboru') })
@@ -199,24 +203,22 @@ const saveAddress = form.handleSubmit(async (values) => {
 
 async function saveServiceTimes() {
   try {
-    // Get current service times
-    const currentServiceTimes = congregationFull.value?.service_times || []
-
-    // For simplicity, delete all and recreate
-    for (const st of currentServiceTimes) {
-      await congregationApiService.deleteServiceTime(congregationId, st.id)
+    // Remove service times the user deleted from the form
+    for (const id of deletedServiceTimeIds.value) {
+      await congregationApiService.deleteServiceTime(congregationId, id)
     }
 
-    // Create new service times from refs
+    // Update existing service times, create newly added ones
     for (const st of serviceTimeFields.value) {
-      await congregationApiService.createServiceTime(congregationId, {
-        day: st.day,
-        time: st.time,
-        description: st.description || null,
-        order: st.order,
-      })
+      const payload = { day: st.day, time: st.time, description: st.description || null, order: st.order }
+      if (st.id) {
+        await congregationApiService.updateServiceTime(congregationId, st.id, payload)
+      } else {
+        await congregationApiService.createServiceTime(congregationId, payload)
+      }
     }
 
+    deletedServiceTimeIds.value = []
     toast.success(t('congregations.edit.serviceTimes.saveSuccess', 'Godziny nabożeństw zostały zapisane'))
     await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadCongregation()

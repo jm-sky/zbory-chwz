@@ -23,6 +23,7 @@ from app.modules.congregations.schemas import (
     CongregationFullResponse,
     ServiceTimeCreateRequest,
     ServiceTimeResponse,
+    ServiceTimeUpdateRequest,
 )
 from app.modules.tenants.access import verify_tenant_access
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
@@ -250,6 +251,53 @@ async def create_service_time(
         description=payload.description,
         order=payload.order,
     )
+
+    return ServiceTimeResponse(
+        id=service_time.id,
+        tenant_id=service_time.tenant_id,
+        day=service_time.day,
+        time=service_time.time,
+        description=service_time.description,
+        order=service_time.order,
+        created_at=service_time.created_at,
+    )
+
+
+@router.patch("/{tenant_id}/service-times/{service_time_id}", response_model=ServiceTimeResponse)
+async def update_service_time(
+    tenant_id: str,
+    service_time_id: str,
+    payload: ServiceTimeUpdateRequest,
+    current_user: CurrentUser,
+    repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
+    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+) -> ServiceTimeResponse:
+    """Update a service time. Fields omitted from the request body are left
+    unchanged; a field explicitly included (even as null, for `description`)
+    is applied as given."""
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+
+    service_time = await repo.get_service_time_by_id(tenant_id, service_time_id)
+    if not service_time:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service time {service_time_id} not found for tenant {tenant_id}",
+        )
+
+    # day/time/order map to non-nullable columns, so only apply them when a
+    # real value is given. description is nullable, so it uses
+    # model_fields_set instead to allow explicitly clearing it via `null`.
+    if payload.day is not None:
+        service_time.day = payload.day
+    if payload.time is not None:
+        service_time.time = payload.time
+    if "description" in payload.model_fields_set:
+        service_time.description = payload.description
+    if payload.order is not None:
+        service_time.order = payload.order
+
+    await repo.db.commit()
+    await repo.db.refresh(service_time)
 
     return ServiceTimeResponse(
         id=service_time.id,
