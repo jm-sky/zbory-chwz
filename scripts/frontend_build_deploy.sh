@@ -22,7 +22,7 @@ echo -e "${GREEN}🔨 Starting frontend build and deploy...${NC}"
 # Step 1: Install frontend dependencies
 echo -e "${YELLOW}📦 Step 1: Installing frontend dependencies...${NC}"
 cd "$PROJECT_DIR"
-pnpm install --frozen-lockfile
+CI=true pnpm install --frozen-lockfile
 
 # Step 2: Build frontend
 echo -e "${YELLOW}🔨 Step 2: Building frontend...${NC}"
