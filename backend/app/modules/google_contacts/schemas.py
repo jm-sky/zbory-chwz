@@ -115,6 +115,24 @@ class GoogleContactPersonProposal(BaseModel):
     fields: list[GoogleContactFieldChange] = Field(default_factory=list)
 
 
+class GoogleContactChurchFieldDiffRequest(BaseModel):
+    """Recompute a church proposal's field diff against a manually chosen
+    target tenant (or `None` for "create new church")."""
+
+    tenantId: str | None = None
+    street: str | None = None
+    city: str | None = None
+    postalCode: str | None = None
+    province: str | None = None
+    country: str | None = None
+    phone: str | None = None
+    email: str | None = None
+
+
+class GoogleContactChurchFieldDiffResponse(BaseModel):
+    fields: list[GoogleContactFieldChange] = Field(default_factory=list)
+
+
 class GoogleContactsCandidateTenant(BaseModel):
     tenantId: str
     name: str

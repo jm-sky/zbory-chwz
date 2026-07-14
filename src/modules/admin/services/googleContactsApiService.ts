@@ -1,5 +1,7 @@
 import { apiClient } from '@/shared/services/apiClient'
 import type {
+  IGoogleContactChurchFieldDiffRequest,
+  IGoogleContactChurchFieldDiffResponse,
   IGoogleContactsAnalyzeRequest,
   IGoogleContactsAnalyzeResponse,
   IGoogleContactsApplyRequest,
@@ -50,6 +52,11 @@ class GoogleContactsApiService {
 
   async applyImport(request: IGoogleContactsApplyRequest): Promise<IGoogleContactsApplyResponse> {
     const response = await apiClient.post<IGoogleContactsApplyResponse>('/google-contacts/import/apply', request)
+    return response.data
+  }
+
+  async getChurchFieldDiff(request: IGoogleContactChurchFieldDiffRequest): Promise<IGoogleContactChurchFieldDiffResponse> {
+    const response = await apiClient.post<IGoogleContactChurchFieldDiffResponse>('/google-contacts/import/church-field-diff', request)
     return response.data
   }
 }
