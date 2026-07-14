@@ -18,6 +18,8 @@ from app.modules.google_contacts.import_service import (
     get_google_contacts_import_service,
 )
 from app.modules.google_contacts.schemas import (
+    GoogleContactChurchFieldDiffRequest,
+    GoogleContactChurchFieldDiffResponse,
     GoogleContactsAnalyzeRequest,
     GoogleContactsAnalyzeResponse,
     GoogleContactsApplyRequest,
@@ -136,6 +138,20 @@ async def analyze_import(
     import_service: Annotated[GoogleContactsImportService, Depends(get_google_contacts_import_service)],
 ) -> GoogleContactsAnalyzeResponse:
     return await import_service.analyze(request)
+
+
+@router.post(
+    "/import/church-field-diff",
+    response_model=GoogleContactChurchFieldDiffResponse,
+    summary="Recompute a church proposal's field diff against a manually chosen target",
+    description="Rebuild the old/new field diff for a church proposal when the admin manually picks a different target congregation than the auto-match",
+)
+async def church_field_diff(
+    request: GoogleContactChurchFieldDiffRequest,
+    current_user: AdminOrOwnerUser,
+    import_service: Annotated[GoogleContactsImportService, Depends(get_google_contacts_import_service)],
+) -> GoogleContactChurchFieldDiffResponse:
+    return await import_service.recompute_church_fields(request)
 
 
 @router.post(

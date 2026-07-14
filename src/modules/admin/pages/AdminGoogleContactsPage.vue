@@ -50,6 +50,16 @@ interface FieldState {
   apply: boolean
 }
 
+interface ChurchDetectedValues {
+  street: string | null
+  city: string | null
+  postalCode: string | null
+  province: string | null
+  country: string | null
+  phone: string | null
+  email: string | null
+}
+
 interface ChurchProposalState {
   resourceName: string
   matchType: TGoogleContactMatchType
@@ -59,6 +69,7 @@ interface ChurchProposalState {
   targetTenantId: string
   name: string
   fields: FieldState[]
+  detectedValues: ChurchDetectedValues
 }
 
 interface PersonProposalState {
@@ -227,7 +238,7 @@ async function loadContacts() {
     const response = await googleContactsApiService.listContacts(keywordsList.value)
     selectableContacts.value = response.contacts.map(contact => ({
       contact,
-      selected: true,
+      selected: false,
       type: contact.suggestedType,
     }))
     totalFetched.value = response.totalFetched
@@ -280,6 +291,15 @@ async function analyzeSelected() {
       targetTenantId: p.tenantId ?? CREATE_NEW_VALUE,
       name: p.name,
       fields: p.fields.map(toFieldState),
+      detectedValues: {
+        street: p.street,
+        city: p.city,
+        postalCode: p.postalCode,
+        province: p.province,
+        country: p.country,
+        phone: p.phone,
+        email: p.email,
+      },
     }))
 
     personProposals.value = response.personProposals.map(p => ({
@@ -302,6 +322,17 @@ async function analyzeSelected() {
     handleError(error, { fallbackMessage: t('admin.googleContacts.analyzeError', 'Nie udało się przeanalizować wybranych kontaktów') })
   } finally {
     isAnalyzing.value = false
+  }
+}
+
+async function onTargetTenantChange(proposal: ChurchProposalState, newTargetTenantId: string) {
+  proposal.targetTenantId = newTargetTenantId
+  const tenantId = newTargetTenantId === CREATE_NEW_VALUE ? null : newTargetTenantId
+  try {
+    const response = await googleContactsApiService.getChurchFieldDiff({ tenantId, ...proposal.detectedValues })
+    proposal.fields = response.fields.map(toFieldState)
+  } catch (error) {
+    handleError(error, { fallbackMessage: t('admin.googleContacts.diffRefreshError', 'Nie udało się odświeżyć różnic dla wybranego zboru') })
   }
 }
 
@@ -588,7 +619,10 @@ function goBack() {
           <CardContent v-if="!proposal.skip" class="space-y-4">
             <div class="space-y-2">
               <Label>{{ t('admin.googleContacts.target', 'Dopasowanie do zboru') }}</Label>
-              <Select v-model="proposal.targetTenantId">
+              <Select
+                :model-value="proposal.targetTenantId"
+                @update:model-value="value => onTargetTenantChange(proposal, value as string)"
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

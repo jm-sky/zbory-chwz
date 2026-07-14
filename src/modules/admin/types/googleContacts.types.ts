@@ -95,6 +95,21 @@ export interface IGoogleContactPersonProposal {
   fields: IGoogleContactFieldChange[]
 }
 
+export interface IGoogleContactChurchFieldDiffRequest {
+  tenantId: string | null
+  street: string | null
+  city: string | null
+  postalCode: string | null
+  province: string | null
+  country: string | null
+  phone: string | null
+  email: string | null
+}
+
+export interface IGoogleContactChurchFieldDiffResponse {
+  fields: IGoogleContactFieldChange[]
+}
+
 export interface IGoogleContactsCandidateTenant {
   tenantId: string
   name: string

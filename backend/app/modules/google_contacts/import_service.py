@@ -25,6 +25,8 @@ from app.modules.congregations.tenant_matching import match_slug, match_tenant_b
 from app.modules.google_contacts.repositories import GoogleContactsRepository
 from app.modules.google_contacts.schemas import (
     GoogleContactChurchApplyItem,
+    GoogleContactChurchFieldDiffRequest,
+    GoogleContactChurchFieldDiffResponse,
     GoogleContactChurchProposal,
     GoogleContactFieldChange,
     GoogleContactImportSelection,
@@ -161,6 +163,22 @@ class GoogleContactsImportService:
             email=new_values["email"],
             fields=fields,
         )
+
+    async def recompute_church_fields(self, request: GoogleContactChurchFieldDiffRequest) -> GoogleContactChurchFieldDiffResponse:
+        new_values: dict[str, str | None] = {
+            "street": request.street,
+            "city": request.city,
+            "postalCode": request.postalCode,
+            "province": request.province,
+            "country": request.country,
+            "phone": request.phone,
+            "email": request.email,
+        }
+        old_values = await self._church_old_values(request.tenantId)
+        labels = {key: _CONGREGATION_FIELD_LABELS[label_key] for key, (label_key, _group) in _CHURCH_FIELD_KEYS.items()}
+        groups = {key: group for key, (_label_key, group) in _CHURCH_FIELD_KEYS.items()}
+        fields = _build_field_changes(new_values, old_values, labels, groups, show_all=request.tenantId is None)
+        return GoogleContactChurchFieldDiffResponse(fields=fields)
 
     async def _church_old_values(self, tenant_id: str | None) -> dict[str, str | None]:
         if not tenant_id:
