@@ -5,9 +5,6 @@ import { toast } from 'vue-sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type {
   IEmailImportInboxItem,
@@ -15,6 +12,7 @@ import type {
   TImportFieldKey,
 } from '../types/congregationImport.types'
 import { congregationImportApiService } from '../services/congregationImportApiService'
+import ImportFieldDiffGroup from './ImportFieldDiffGroup.vue'
 
 interface FieldState {
   field: TImportFieldKey
@@ -58,10 +56,6 @@ function authBadgeVariant(verdict: string | null): 'success-outline' | 'destruct
   if (verdict === 'pass') return 'success-outline'
   if (!verdict) return 'outline'
   return 'destructive-outline'
-}
-
-function fieldsByGroup(state: ItemState, group: TImportFieldGroup): FieldState[] {
-  return state.fields.filter(field => field.group === group)
 }
 
 function formatCreatedAt(value: string): string {
@@ -187,41 +181,13 @@ defineExpose({ reload: load })
               {{ t('admin.emailImportInbox.noChanges', 'Brak wykrytych zmian pól') }}
             </p>
 
-            <div v-if="fieldsByGroup(state, 'address').length > 0" class="space-y-3">
-              <h4 class="text-sm font-semibold">
-                {{ t('admin.congregationImport.addressSection', 'Adres') }}
-              </h4>
-              <div v-for="field in fieldsByGroup(state, 'address')" :key="field.field" class="flex items-center gap-3">
-                <Checkbox v-model="field.apply" />
-                <div class="flex-1 space-y-1">
-                  <Label class="text-xs text-muted-foreground">{{ field.label }}</Label>
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span v-if="field.oldValue" class="text-sm text-muted-foreground line-through">
-                      {{ field.oldValue }}
-                    </span>
-                    <Input v-model="field.newValue" class="max-w-xs" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ImportFieldDiffGroup :fields="state.fields" group="address">
+              {{ t('admin.congregationImport.addressSection', 'Adres') }}
+            </ImportFieldDiffGroup>
 
-            <div v-if="fieldsByGroup(state, 'contact').length > 0" class="space-y-3">
-              <h4 class="text-sm font-semibold">
-                {{ t('admin.congregationImport.contactSection', 'Osoba kontaktowa') }}
-              </h4>
-              <div v-for="field in fieldsByGroup(state, 'contact')" :key="field.field" class="flex items-center gap-3">
-                <Checkbox v-model="field.apply" />
-                <div class="flex-1 space-y-1">
-                  <Label class="text-xs text-muted-foreground">{{ field.label }}</Label>
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span v-if="field.oldValue" class="text-sm text-muted-foreground line-through">
-                      {{ field.oldValue }}
-                    </span>
-                    <Input v-model="field.newValue" class="max-w-xs" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ImportFieldDiffGroup :fields="state.fields" group="contact">
+              {{ t('admin.congregationImport.contactSection', 'Osoba kontaktowa') }}
+            </ImportFieldDiffGroup>
 
             <Button :disabled="state.busy" @click="approve(state)">
               {{ state.busy

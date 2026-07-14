@@ -182,6 +182,101 @@ async def test_analyze_church_matched_vs_new(ctx) -> None:
 
 
 @pytest.mark.asyncio
+async def test_analyze_church_matches_preposition_variant(ctx) -> None:
+    """ "Zbór Warszawa" (phone contact style) should match "Zbór w Warszawie"
+    (app naming style) — the exact case the admin ran into manually."""
+    client, login, session_factory = ctx
+    await _seed_tenant(session_factory, name="Zbór w Warszawie")
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    response = await client.post(
+        "/api/google-contacts/import/analyze",
+        json={"items": [{"contact": _contact("people/c1", organization_name="Zbór Warszawa"), "type": "church"}]},
+    )
+
+    assert response.status_code == 200
+    proposal = response.json()["churchProposals"][0]
+    assert proposal["matchType"] == "matched"
+    assert proposal["matchedName"] == "Zbór w Warszawie"
+
+
+@pytest.mark.asyncio
+async def test_analyze_church_diff_shows_old_and_new_address(ctx) -> None:
+    client, login, session_factory = ctx
+    tenant_id = await _seed_tenant(session_factory, name="Zbór CHWZ Kraków")
+    async with session_factory() as session:
+        session.add(
+            CongregationAddressDB(
+                id=generate_id(),
+                tenant_id=tenant_id,
+                street="Stara 1",
+                city="Kraków",
+                postal_code="30-001",
+                country="Polska",
+                status="published",
+            )
+        )
+        await session.commit()
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    response = await client.post(
+        "/api/google-contacts/import/analyze",
+        json={
+            "items": [
+                {
+                    "contact": _contact("people/c1", organization_name="Zbór CHWZ Kraków", city="Kraków"),
+                    "type": "church",
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    proposal = response.json()["churchProposals"][0]
+    assert proposal["matchType"] == "matched"
+    fields_by_key = {f["field"]: f for f in proposal["fields"]}
+    # City is unchanged in both contacts, so it shouldn't show up as a diffed field.
+    assert "city" not in fields_by_key
+    assert "street" not in fields_by_key
+
+
+@pytest.mark.asyncio
+async def test_analyze_church_diff_flags_changed_field(ctx) -> None:
+    client, login, session_factory = ctx
+    tenant_id = await _seed_tenant(session_factory, name="Zbór CHWZ Gdańsk")
+    async with session_factory() as session:
+        session.add(
+            CongregationAddressDB(
+                id=generate_id(),
+                tenant_id=tenant_id,
+                city="Gdańsk stary",
+                country="Polska",
+                status="published",
+            )
+        )
+        await session.commit()
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    response = await client.post(
+        "/api/google-contacts/import/analyze",
+        json={
+            "items": [
+                {
+                    "contact": _contact("people/c1", organization_name="Zbór CHWZ Gdańsk", city="Gdańsk nowy"),
+                    "type": "church",
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    proposal = response.json()["churchProposals"][0]
+    fields_by_key = {f["field"]: f for f in proposal["fields"]}
+    assert fields_by_key["city"]["oldValue"] == "Gdańsk stary"
+    assert fields_by_key["city"]["newValue"] == "Gdańsk nowy"
+
+
+@pytest.mark.asyncio
 async def test_analyze_person_matches_by_email(ctx) -> None:
     client, login, session_factory = ctx
     person_id = await _seed_person(session_factory, email="jan@example.com")
@@ -380,6 +475,112 @@ async def test_apply_updates_matched_person(ctx) -> None:
         person = (await session.execute(select(PersonDB).where(PersonDB.id == person_id))).scalar_one()
         assert person.phone == "+48600000000"
         assert person.email == "old@example.com"
+
+
+@pytest.mark.asyncio
+async def test_apply_update_only_touches_provided_address_fields(ctx) -> None:
+    """Regression test: applying just a postal-code change must not wipe the
+    street/city that weren't part of this update's payload."""
+    client, login, session_factory = ctx
+    tenant_id = await _seed_tenant(session_factory, name="Zbór CHWZ Łódź")
+    async with session_factory() as session:
+        session.add(
+            CongregationAddressDB(
+                id=generate_id(),
+                tenant_id=tenant_id,
+                street="Piotrkowska 1",
+                city="Łódź",
+                postal_code="90-000",
+                country="Polska",
+                status="published",
+            )
+        )
+        await session.commit()
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    response = await client.post(
+        "/api/google-contacts/import/apply",
+        json={
+            "churchItems": [{"resourceName": "people/c1", "action": "update", "tenantId": tenant_id, "postalCode": "91-000"}],
+            "personItems": [],
+        },
+    )
+
+    assert response.status_code == 200, response.text
+
+    async with session_factory() as session:
+        from sqlalchemy import select
+
+        address = (await session.execute(select(CongregationAddressDB).where(CongregationAddressDB.tenant_id == tenant_id))).scalar_one()
+        assert address.postal_code == "91-000"
+        assert address.street == "Piotrkowska 1"
+        assert address.city == "Łódź"
+
+
+@pytest.mark.asyncio
+async def test_apply_links_new_person_to_newly_created_church(ctx) -> None:
+    """The admin picks "create new church" for one proposal and assigns a
+    new person to that same not-yet-existing church in one batch."""
+    client, login, session_factory = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    response = await client.post(
+        "/api/google-contacts/import/apply",
+        json={
+            "churchItems": [{"resourceName": "people/c1", "action": "create", "name": "Zbór CHWZ Poznań", "city": "Poznań"}],
+            "personItems": [
+                {
+                    "resourceName": "people/p1",
+                    "action": "create",
+                    "firstName": "Sergiej",
+                    "lastName": "Nowak",
+                    "assignToChurch": True,
+                    "newChurchResourceName": "people/c1",
+                    "customServiceName": "Starszy zboru",
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["churchesCreated"] == 1
+    assert body["personsCreated"] == 1
+
+    async with session_factory() as session:
+        from sqlalchemy import select
+
+        from app.modules.churches.db_models import ServiceAssignmentDB
+
+        tenant = (await session.execute(select(TenantDB).where(TenantDB.name == "Zbór CHWZ Poznań"))).scalar_one()
+        assignment = (await session.execute(select(ServiceAssignmentDB).where(ServiceAssignmentDB.scope_id == tenant.id))).scalar_one()
+        person = (await session.execute(select(PersonDB).where(PersonDB.id == assignment.person_id))).scalar_one()
+        assert person.first_name == "Sergiej"
+
+
+@pytest.mark.asyncio
+async def test_apply_new_church_resource_name_without_matching_church_fails(ctx) -> None:
+    client, login, _ = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    response = await client.post(
+        "/api/google-contacts/import/apply",
+        json={
+            "churchItems": [{"resourceName": "people/c1", "action": "skip"}],
+            "personItems": [
+                {
+                    "resourceName": "people/p1",
+                    "action": "create",
+                    "firstName": "Sergiej",
+                    "assignToChurch": True,
+                    "newChurchResourceName": "people/c1",
+                    "customServiceName": "Starszy zboru",
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio

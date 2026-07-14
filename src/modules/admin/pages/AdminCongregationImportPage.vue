@@ -29,6 +29,7 @@ import type {
   TImportFieldKey,
 } from '../types/congregationImport.types'
 import EmailImportInboxSection from '../components/EmailImportInboxSection.vue'
+import ImportFieldDiffGroup from '../components/ImportFieldDiffGroup.vue'
 import { AdminRouteNames } from '../routes'
 import { congregationImportApiService } from '../services/congregationImportApiService'
 
@@ -68,10 +69,6 @@ const candidates = ref<IImportCandidateTenant[]>([])
 const proposalStates = ref<ProposalState[]>([])
 
 const hasProposals = computed(() => proposalStates.value.length > 0)
-
-function fieldsByGroup(state: ProposalState, group: TImportFieldGroup): FieldState[] {
-  return state.fields.filter(field => field.group === group)
-}
 
 function matchLabel(state: ProposalState): string {
   if (state.matchType === 'matched') {
@@ -242,44 +239,16 @@ async function onInboxItemApplied() {
               {{ t('admin.congregationImport.noChanges', 'Brak zmian do zastosowania') }}
             </p>
 
-            <div v-if="fieldsByGroup(state, 'address').length > 0" class="space-y-3">
-              <h4 class="text-sm font-semibold">
-                {{ t('admin.congregationImport.addressSection', 'Adres') }}
-              </h4>
-              <div v-for="field in fieldsByGroup(state, 'address')" :key="field.field" class="flex items-center gap-3">
-                <Checkbox v-model="field.apply" />
-                <div class="flex-1 space-y-1">
-                  <Label class="text-xs text-muted-foreground">{{ field.label }}</Label>
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span v-if="field.oldValue" class="text-sm text-muted-foreground line-through">
-                      {{ field.oldValue }}
-                    </span>
-                    <Input v-model="field.newValue" class="max-w-xs" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ImportFieldDiffGroup :fields="state.fields" group="address">
+              {{ t('admin.congregationImport.addressSection', 'Adres') }}
+            </ImportFieldDiffGroup>
 
-            <div v-if="fieldsByGroup(state, 'contact').length > 0" class="space-y-3">
-              <h4 class="text-sm font-semibold">
-                {{ t('admin.congregationImport.contactSection', 'Osoba kontaktowa') }}
-                <span v-if="state.contactContext" class="font-normal text-muted-foreground">
-                  ({{ state.contactContext }})
-                </span>
-              </h4>
-              <div v-for="field in fieldsByGroup(state, 'contact')" :key="field.field" class="flex items-center gap-3">
-                <Checkbox v-model="field.apply" />
-                <div class="flex-1 space-y-1">
-                  <Label class="text-xs text-muted-foreground">{{ field.label }}</Label>
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span v-if="field.oldValue" class="text-sm text-muted-foreground line-through">
-                      {{ field.oldValue }}
-                    </span>
-                    <Input v-model="field.newValue" class="max-w-xs" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ImportFieldDiffGroup :fields="state.fields" group="contact">
+              {{ t('admin.congregationImport.contactSection', 'Osoba kontaktowa') }}
+              <span v-if="state.contactContext" class="font-normal text-muted-foreground">
+                ({{ state.contactContext }})
+              </span>
+            </ImportFieldDiffGroup>
           </CardContent>
         </Card>
 

@@ -69,6 +69,18 @@ class GoogleContactsAnalyzeRequest(BaseModel):
     items: list[GoogleContactImportSelection]
 
 
+class GoogleContactFieldChange(BaseModel):
+    """One field's old (current DB) vs. new (detected from Google) value, for
+    the admin review diff — mirrors congregations.schemas.ImportFieldChange
+    but keyed to this module's camelCase proposal field names."""
+
+    field: str
+    label: str
+    group: Literal["address", "contact"]
+    oldValue: str | None = None
+    newValue: str | None = None
+
+
 class GoogleContactChurchProposal(BaseModel):
     """Proposed church (tenant) match/create for one Google contact."""
 
@@ -85,6 +97,7 @@ class GoogleContactChurchProposal(BaseModel):
     country: str | None = None
     phone: str | None = None
     email: str | None = None
+    fields: list[GoogleContactFieldChange] = Field(default_factory=list)
 
 
 class GoogleContactPersonProposal(BaseModel):
@@ -99,6 +112,7 @@ class GoogleContactPersonProposal(BaseModel):
     lastName: str | None = None
     email: str | None = None
     phone: str | None = None
+    fields: list[GoogleContactFieldChange] = Field(default_factory=list)
 
 
 class GoogleContactsCandidateTenant(BaseModel):
@@ -150,6 +164,10 @@ class GoogleContactPersonApplyItem(BaseModel):
     phone: str | None = None
     assignToChurch: bool = False
     churchId: str | None = None
+    # Set instead of churchId when the admin assigned this person to a church
+    # that's *also* being created in this same batch (matches the church
+    # proposal's resourceName) — resolved to the real tenant id in apply().
+    newChurchResourceName: str | None = None
     serviceTypeId: str | None = None
     customServiceName: str | None = None
 
@@ -158,8 +176,8 @@ class GoogleContactPersonApplyItem(BaseModel):
         if self.action == "update" and not self.personId:
             raise ValueError("personId is required when action is 'update'")
         if self.action != "skip" and self.assignToChurch:
-            if not self.churchId:
-                raise ValueError("churchId is required when assignToChurch is true")
+            if not self.churchId and not self.newChurchResourceName:
+                raise ValueError("churchId or newChurchResourceName is required when assignToChurch is true")
             if not self.serviceTypeId and not self.customServiceName:
                 raise ValueError("serviceTypeId or customServiceName is required when assignToChurch is true")
         return self
