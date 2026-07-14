@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { Church, Clock, Edit, EyeOff, Mail, MapPin, MoreHorizontal, Phone, Plus, Search, Trash2, User } from 'lucide-vue-next'
+import { Church, Plus, Search } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import CommonPageHeader from '@/components/layout/CommonPageHeader.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import {
   Dialog,
@@ -16,13 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -31,12 +23,14 @@ import { useHandleError } from '@/shared/composables/useHandleError'
 import type { ICongregationDetailed } from '../types/congregation.types'
 import { useCongregationFilters } from '../composables/useCongregationFilters'
 import { useCongregationFiltersUrl } from '../composables/useCongregationFiltersUrl'
+import { useCongregationListViewMode } from '../composables/useCongregationListViewMode'
 import { useCongregations } from '../composables/useCongregations'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
-import { contactsOf } from '../utils/exportCongregations'
 import CongregationExportMenu from './CongregationExportMenu.vue'
 import CongregationFilters from './CongregationFilters.vue'
+import CongregationListCard from './CongregationListCard.vue'
+import CongregationListRow from './CongregationListRow.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -59,6 +53,7 @@ function resetCreateForm() {
 
 const congregationFilters = useCongregationFilters(congregations)
 useCongregationFiltersUrl(congregationFilters)
+const { viewMode } = useCongregationListViewMode()
 
 const {
   search,
@@ -85,24 +80,6 @@ function canManageCongregation(congregation: ICongregationDetailed): boolean {
   }
   // Tenant user (has role for this congregation)
   return !!congregation.role
-}
-
-function formatAddress(congregation: ICongregationDetailed): string {
-  const parts: string[] = []
-  if (congregation.street) parts.push(congregation.street)
-  if (congregation.postal_code && congregation.city) {
-    parts.push(`${congregation.postal_code} ${congregation.city}`)
-  } else if (congregation.city) {
-    parts.push(congregation.city)
-  }
-  return parts.join(', ') || ''
-}
-
-function formatServiceTimes(serviceTimes?: Array<{ day: string; time: string; description?: string | null }>): string {
-  if (!serviceTimes || serviceTimes.length === 0) return ''
-  return serviceTimes
-    .map((st) => st.description ? `${st.day} ${st.time} - ${st.description}` : `${st.day} ${st.time}`)
-    .join(', ')
 }
 
 async function handleEdit(congregation: ICongregationDetailed) {
@@ -252,6 +229,7 @@ async function handleDelete(congregation: ICongregationDetailed) {
           v-model:country="country"
           v-model:province="province"
           v-model:hide-branches="hideBranches"
+          v-model:view-mode="viewMode"
           :available-countries="availableCountries"
           :available-provinces="availableProvinces"
           :has-branches="hasBranches"
@@ -266,7 +244,7 @@ async function handleDelete(congregation: ICongregationDetailed) {
         <div
           v-for="i in 5"
           :key="i"
-          class="h-32 animate-pulse rounded-lg bg-muted"
+          :class="viewMode === 'grid' ? 'h-32 animate-pulse rounded-lg bg-muted' : 'h-16 animate-pulse rounded-lg bg-muted'"
         />
       </div>
 
@@ -287,166 +265,34 @@ async function handleDelete(congregation: ICongregationDetailed) {
         <p>{{ t('congregations.list.noResults', 'Brak wyników dla podanej frazy') }}</p>
       </div>
 
-      <!-- Congregations List -->
-      <div v-else class="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
-        <div
+      <!-- Congregations Grid -->
+      <div v-else-if="viewMode === 'grid'" class="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
+        <CongregationListCard
           v-for="congregation in filteredCongregations"
           :key="congregation.id"
-          :class="[
-            'group rounded-lg border p-6 transition-all hover:shadow-md',
-            congregation.type !== 'branch' ? 'cursor-pointer' : '',
-            congregation.status === 'draft'
-              ? 'border-dashed bg-muted/20 border-muted-foreground/30 opacity-75 hover:border-muted-foreground/50'
-              : congregation.status === 'published_unverified'
-                ? 'bg-muted/30 border-muted-foreground/20 hover:border-muted-foreground/40 opacity-90'
-                : 'bg-card hover:border-primary/50'
-          ]"
-          @click="handleOpen(congregation)"
-        >
-          <!-- Header -->
-          <div class="mb-4 flex items-start gap-4">
-            <div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-              <Church class="size-6 text-primary" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
-                <h3
-                  :class="[
-                    'text-lg font-semibold leading-tight',
-                    congregation.status === 'draft' || congregation.status === 'published_unverified'
-                      ? 'text-muted-foreground'
-                      : 'text-foreground'
-                  ]"
-                >
-                  {{ congregation.name }}
-                </h3>
-                <Badge v-if="congregation.type === 'branch'" variant="secondary">
-                  {{ t('congregations.list.branch') }}
-                </Badge>
-                <Badge
-                  v-if="congregation.status === 'draft'"
-                  variant="outline"
-                  class="border-dashed text-muted-foreground border-muted-foreground/50"
-                >
-                  {{ t('congregations.status.draft', 'Szkic') }}
-                </Badge>
-                <Badge
-                  v-else-if="congregation.status === 'published_unverified'"
-                  variant="outline"
-                  class="opacity-60 text-muted-foreground border-muted-foreground/50"
-                >
-                  {{ t('congregations.status.unverified', 'Draft') }}
-                </Badge>
-              </div>
-              <p
-                v-if="congregation.type === 'branch' && congregation.parent_name"
-                class="mt-1 text-sm text-muted-foreground"
-              >
-                {{ t('congregations.list.branchOf', { name: congregation.parent_name }) }}
-              </p>
-              <p
-                v-if="congregation.description"
-                :class="[
-                  'mt-1 text-sm line-clamp-2',
-                  congregation.status === 'published_unverified' ? 'text-muted-foreground/70' : 'text-muted-foreground'
-                ]"
-              >
-                {{ congregation.description }}
-              </p>
-            </div>
-            <!-- Actions Dropdown -->
-            <DropdownMenu v-if="canManageCongregation(congregation)">
-              <DropdownMenuTrigger as-child>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="shrink-0"
-                  @click.stop
-                >
-                  <MoreHorizontal class="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" @click.stop>
-                <DropdownMenuItem @click="handleEdit(congregation)">
-                  <Edit class="size-4" />
-                  <span>{{ t('common.edit', 'Edytuj') }}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  v-if="congregation.status === 'published' || congregation.status === 'published_unverified'"
-                  @click="handleUnpublish(congregation)"
-                >
-                  <EyeOff class="size-4" />
-                  <span>{{ t('congregations.list.unpublish', 'Cofnij publikację') }}</span>
-                </DropdownMenuItem>
-                <template v-if="canCreateOrDelete()">
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    class="text-destructive focus:text-destructive"
-                    @click="handleDelete(congregation)"
-                  >
-                    <Trash2 class="size-4" />
-                    <span>{{ t('common.delete', 'Usuń') }}</span>
-                  </DropdownMenuItem>
-                </template>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          :congregation="congregation"
+          :can-manage="canManageCongregation(congregation)"
+          :can-delete="canCreateOrDelete()"
+          @open="handleOpen(congregation)"
+          @edit="handleEdit(congregation)"
+          @unpublish="handleUnpublish(congregation)"
+          @delete="handleDelete(congregation)"
+        />
+      </div>
 
-          <!-- Details Grid -->
-          <div class="space-y-3">
-            <!-- Address -->
-            <div v-if="formatAddress(congregation)" class="flex items-start gap-2 text-sm">
-              <MapPin class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <span class="text-muted-foreground">{{ formatAddress(congregation) }}</span>
-            </div>
-
-            <!-- Service Times -->
-            <div v-if="formatServiceTimes(congregation.service_times)" class="flex items-start gap-2 text-sm">
-              <Clock class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <span class="text-muted-foreground">{{ formatServiceTimes(congregation.service_times) }}</span>
-            </div>
-
-            <!-- Card contacts -->
-            <div
-              v-for="(contact, contactIndex) in contactsOf(congregation)"
-              :key="`${congregation.id}-contact-${contactIndex}`"
-              class="space-y-1.5"
-            >
-              <div class="flex items-start gap-2 text-sm">
-                <User class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                <div class="min-w-0 flex-1">
-                  <span class="font-medium text-foreground">{{ contact.name }}</span>
-                  <span v-if="contact.title" class="text-muted-foreground">
-                    {{ ` - ${contact.title}` }}
-                  </span>
-                </div>
-              </div>
-              <div
-                v-if="contact.phone || contact.email"
-                class="ml-6 space-y-1.5 text-sm"
-              >
-                <a
-                  v-if="contact.phone"
-                  :href="`tel:${contact.phone}`"
-                  class="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-                  @click.stop
-                >
-                  <Phone class="size-3.5" />
-                  <span>{{ contact.phone }}</span>
-                </a>
-                <a
-                  v-if="contact.email"
-                  :href="`mailto:${contact.email}`"
-                  class="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-                  @click.stop
-                >
-                  <Mail class="size-3.5" />
-                  <span class="break-all">{{ contact.email }}</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Congregations List -->
+      <div v-else class="divide-y rounded-lg border">
+        <CongregationListRow
+          v-for="congregation in filteredCongregations"
+          :key="congregation.id"
+          :congregation="congregation"
+          :can-manage="canManageCongregation(congregation)"
+          :can-delete="canCreateOrDelete()"
+          @open="handleOpen(congregation)"
+          @edit="handleEdit(congregation)"
+          @unpublish="handleUnpublish(congregation)"
+          @delete="handleDelete(congregation)"
+        />
       </div>
     </div>
   </div>

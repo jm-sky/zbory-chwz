@@ -13,8 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import type { CongregationListViewMode } from '../types/congregationListView.types'
 import { ANY_VALUE } from '../composables/useCongregationFilters'
 import { countryLabel, provinceLabel } from '../utils/geo'
+import CongregationViewModeToggle from './CongregationViewModeToggle.vue'
 
 const { locale, t } = useI18n()
 
@@ -30,6 +32,7 @@ const search = defineModel<string>('search', { required: true })
 const country = defineModel<string>('country', { required: true })
 const province = defineModel<string>('province', { required: true })
 const hideBranches = defineModel<boolean>('hideBranches', { required: true })
+const viewMode = defineModel<CongregationListViewMode>('viewMode', { required: true })
 
 const emit = defineEmits<{ reset: [] }>()
 
@@ -141,15 +144,18 @@ function toggleAdvancedFilters(): void {
       </div>
       <span v-else />
 
-      <Button
-        v-if="isFiltered"
-        variant="ghost"
-        size="sm"
-        @click="emit('reset')"
-      >
-        <X class="size-4" />
-        {{ t('congregations.filters.reset') }}
-      </Button>
+      <div class="flex items-center gap-2">
+        <CongregationViewModeToggle v-model:view-mode="viewMode" />
+        <Button
+          v-if="isFiltered"
+          variant="ghost"
+          size="sm"
+          @click="emit('reset')"
+        >
+          <X class="size-4" />
+          {{ t('congregations.filters.reset') }}
+        </Button>
+      </div>
     </div>
 
     <p class="text-sm text-muted-foreground">

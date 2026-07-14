@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import PersonSuggestionsList from '@/shared/components/PersonSuggestionsList.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import { personSearchService } from '@/shared/services/personSearchService'
+import { formatPhoneNumber } from '@/shared/utils/formatPhone'
 import type { IPersonBrowse } from '../types/directory.types'
 import { directoryApiService } from '../services/directoryApiService'
 import type { IPersonSummary } from '@/shared/types/person.type'
@@ -203,7 +204,7 @@ onMounted(load)
             {{ personLabel(person) }}
           </p>
           <p class="text-sm text-muted-foreground">
-            {{ [person.email, person.phone].filter(Boolean).join(' · ') || '—' }}
+            {{ [person.email, formatPhoneNumber(person.phone)].filter(Boolean).join(' · ') || '—' }}
           </p>
           <div v-if="person.affiliations.length > 0" class="flex flex-wrap gap-1">
             <Badge v-for="(affiliation, i) in person.affiliations" :key="i" variant="secondary">

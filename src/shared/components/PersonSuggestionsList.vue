@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { IPersonSummary } from '../types/person.type'
+import { formatPhoneNumber } from '../utils/formatPhone'
 
 defineProps<{
   suggestions: IPersonSummary[]
@@ -11,11 +12,11 @@ const emit = defineEmits<{
 
 function personLabel(person: IPersonSummary): string {
   const name = [person.firstName, person.lastName].filter(Boolean).join(' ')
-  return name || person.email || person.phone || '—'
+  return name || person.email || formatPhoneNumber(person.phone) || '—'
 }
 
 function personDetail(person: IPersonSummary): string {
-  return [person.email, person.phone].filter(Boolean).join(' · ')
+  return [person.email, formatPhoneNumber(person.phone)].filter(Boolean).join(' · ')
 }
 </script>
 
