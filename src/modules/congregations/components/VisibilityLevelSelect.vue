@@ -15,9 +15,10 @@ import {
 
 const modelValue = defineModel<VisibilityLevel>({ required: true })
 
-const { label, disabled = false } = defineProps<{
+const { label, disabled = false, levels = VISIBILITY_LEVELS } = defineProps<{
   label: string
   disabled?: boolean
+  levels?: VisibilityLevel[]
 }>()
 
 const { t } = useI18n()
@@ -39,7 +40,7 @@ function visibilityLabel(level: VisibilityLevel): string {
       </SelectTrigger>
       <SelectContent class="z-[100]">
         <SelectItem
-          v-for="level in VISIBILITY_LEVELS"
+          v-for="level in levels"
           :key="level"
           :value="level"
         >

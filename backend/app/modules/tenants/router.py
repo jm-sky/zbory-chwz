@@ -2,8 +2,9 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from app.modules.auth.decorators import rate_limit
 from app.modules.auth.dependencies import CurrentUser, OptionalCurrentUser
 from app.modules.churches.acl_service import AclService, get_acl_service
 from app.modules.churches.repositories import ChurchRepository, get_church_repository
@@ -12,6 +13,8 @@ from app.modules.congregations.repositories import (
     CongregationRepository,
     get_congregation_repository,
 )
+from app.modules.sharing.service import ShareLinkService, get_share_link_service
+from app.modules.tenants.db_models import TenantDB
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 from app.modules.tenants.schemas import (
     CongregationBranchSummary,
@@ -27,9 +30,72 @@ from app.modules.tenants.schemas import (
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
 # Public congregations router (for listing published congregations)
 public_congregations_router = APIRouter(prefix="/congregations", tags=["Congregations"])
+# Anonymous share-link resolution (no auth, no tenant membership)
+public_share_router = APIRouter(prefix="/share", tags=["Sharing"])
 
 PUBLIC_ADDRESS_STATUSES = ("published", "published_unverified")
 MAX_PUBLIC_SERVICE_TIMES = 3
+
+
+async def _build_congregation_detail(
+    tenant: TenantDB,
+    *,
+    is_authenticated: bool,
+    has_pastoral_access: bool,
+    is_member: bool,
+    membership_role: str | None,
+    congregation_repo: CongregationRepository,
+    church_repo: ChurchRepository,
+) -> CongregationDetailResponse:
+    """Build the filtered congregation detail shared by the authenticated/public
+    detail endpoint and the anonymous share-link viewer."""
+    address = await congregation_repo.get_address_by_tenant_id(tenant.id)
+    status_value = address.status if address else (tenant.status or "draft")
+    if status_value not in PUBLIC_ADDRESS_STATUSES and not is_member:
+        raise HTTPException(status_code=404, detail=f"Congregation {tenant.id} not found")
+
+    service_times = await congregation_repo.get_service_times_by_tenant_id(tenant.id)
+
+    assignments = await church_repo.list_service_assignments("church", tenant.id)
+    visible_contacts, hidden_contacts = church_repo.profile_contacts_for_viewer(
+        assignments,
+        is_authenticated=is_authenticated,
+        has_pastoral_access=has_pastoral_access,
+        can_manage=is_member,
+    )
+    card_contacts = [PublicCardContact(**contact) for contact in visible_contacts]
+    hidden_profile_contacts = [PublicCardContact(**contact) for contact in hidden_contacts] if is_member else []
+
+    branches = await church_repo.list_branches(tenant.id)
+    visible_branches = [
+        branch
+        for branch in branches
+        if (is_member and branch.visibility != "hidden")
+        or VisibilityService.can_view(
+            branch.visibility,
+            is_authenticated=is_authenticated,
+            has_pastoral_access=has_pastoral_access,
+        )
+    ]
+
+    return CongregationDetailResponse(
+        id=tenant.id,
+        name=tenant.name,
+        description=tenant.description,
+        status=status_value,
+        createdAt=tenant.created_at,
+        city=address.city if address else None,
+        street=address.street if address else None,
+        postal_code=address.postal_code if address else None,
+        province=address.province if address else None,
+        country=address.country if address else None,
+        service_times=[{"day": service_time.day, "time": service_time.time, "description": service_time.description} for service_time in service_times],
+        card_contacts=card_contacts,
+        hidden_contacts=hidden_profile_contacts,
+        branches=[CongregationBranchSummary(id=branch.id, name=branch.name) for branch in visible_branches],
+        role=membership_role,
+        canManage=is_member,
+    )
 
 
 @router.get("", response_model=TenantListResponse)
@@ -124,10 +190,7 @@ async def list_congregations_detailed(
     congregations: list[PublicCongregationResponse] = []
     for tenant in published:
         address = addresses[tenant.id]
-        service_times = [
-            {"day": st.day, "time": st.time, "description": st.description}
-            for st in service_times_by_tenant.get(tenant.id, [])[:MAX_PUBLIC_SERVICE_TIMES]
-        ]
+        service_times = [{"day": st.day, "time": st.time, "description": st.description} for st in service_times_by_tenant.get(tenant.id, [])[:MAX_PUBLIC_SERVICE_TIMES]]
 
         card_contacts = [
             PublicCardContact(
@@ -246,53 +309,49 @@ async def get_congregation_detail(
 
     has_pastoral_access = await acl_service.has_pastoral_access(current_user.id, tenant_id) if current_user is not None else False
 
-    address = await congregation_repo.get_address_by_tenant_id(tenant_id)
-    status_value = address.status if address else (tenant.status or "draft")
-    if status_value not in PUBLIC_ADDRESS_STATUSES and not is_member:
-        raise HTTPException(status_code=404, detail=f"Congregation {tenant_id} not found")
-
-    service_times = await congregation_repo.get_service_times_by_tenant_id(tenant_id)
-
-    assignments = await church_repo.list_service_assignments("church", tenant_id)
-    visible_contacts, hidden_contacts = church_repo.profile_contacts_for_viewer(
-        assignments,
+    return await _build_congregation_detail(
+        tenant,
         is_authenticated=is_authenticated,
         has_pastoral_access=has_pastoral_access,
-        can_manage=is_member,
+        is_member=is_member,
+        membership_role=membership_role,
+        congregation_repo=congregation_repo,
+        church_repo=church_repo,
     )
-    card_contacts = [PublicCardContact(**contact) for contact in visible_contacts]
-    hidden_profile_contacts = [PublicCardContact(**contact) for contact in hidden_contacts] if is_member else []
 
-    branches = await church_repo.list_branches(tenant_id)
-    visible_branches = [
-        branch
-        for branch in branches
-        if (is_member and branch.visibility != "hidden")
-        or VisibilityService.can_view(
-            branch.visibility,
-            is_authenticated=is_authenticated,
-            has_pastoral_access=has_pastoral_access,
-        )
-    ]
 
-    return CongregationDetailResponse(
-        id=tenant.id,
-        name=tenant.name,
-        description=tenant.description,
-        status=status_value,
-        createdAt=tenant.created_at,
-        city=address.city if address else None,
-        street=address.street if address else None,
-        postal_code=address.postal_code if address else None,
-        province=address.province if address else None,
-        country=address.country if address else None,
-        service_times=[
-            {"day": service_time.day, "time": service_time.time, "description": service_time.description}
-            for service_time in service_times
-        ],
-        card_contacts=card_contacts,
-        hidden_contacts=hidden_profile_contacts,
-        branches=[CongregationBranchSummary(id=branch.id, name=branch.name) for branch in visible_branches],
-        role=membership_role,
-        canManage=is_member,
+@public_share_router.get("/{token}", response_model=CongregationDetailResponse)
+@rate_limit("30/minute")
+async def get_shared_congregation(
+    request: Request,
+    token: str,
+    repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    congregation_repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
+    church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
+    share_link_service: Annotated[ShareLinkService, Depends(get_share_link_service)],
+) -> CongregationDetailResponse:
+    """Resolve an anonymous share link to a congregation's filtered detail view.
+
+    The granted visibility level (public/authenticated) is the ceiling for what
+    the anonymous visitor sees; they never get pastoral access or canManage,
+    regardless of who created the link.
+    """
+    share_link, _reason = await share_link_service.resolve_token(token)
+    if share_link is None:
+        # Collapsed reason (not_found/expired/revoked) on purpose: distinguishing
+        # them helps an attacker probe tokens more than it helps a real visitor.
+        raise HTTPException(status_code=404, detail="This link is no longer valid")
+
+    tenant = await repo.get_tenant(share_link.tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="This link is no longer valid")
+
+    return await _build_congregation_detail(
+        tenant,
+        is_authenticated=share_link.visibility_level == "authenticated",
+        has_pastoral_access=False,
+        is_member=False,
+        membership_role=None,
+        congregation_repo=congregation_repo,
+        church_repo=church_repo,
     )

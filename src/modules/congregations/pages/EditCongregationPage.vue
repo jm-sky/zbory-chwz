@@ -26,6 +26,7 @@ import type { ICongregationFull } from '../types/congregation.types'
 import ChangeHistorySection from '../components/ChangeHistorySection.vue'
 import ChurchBranchesSection from '../components/ChurchBranchesSection.vue'
 import ChurchPeopleSection from '../components/ChurchPeopleSection.vue'
+import ShareLinksSection from '../components/ShareLinksSection.vue'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
 import {
@@ -590,6 +591,7 @@ onMounted(() => {
 
         <ChurchPeopleSection :church-id="congregationId" />
         <ChurchBranchesSection :church-id="congregationId" />
+        <ShareLinksSection :tenant-id="congregationId" />
         <ChangeHistorySection :tenant-id="congregationId" />
       </div>
     </div>

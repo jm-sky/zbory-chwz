@@ -28,6 +28,7 @@ import PersonLinkedBadge from '@/shared/components/PersonLinkedBadge.vue'
 import PersonSuggestionsList from '@/shared/components/PersonSuggestionsList.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import { usePersonAutocomplete } from '@/shared/composables/usePersonAutocomplete'
+import { formatPhoneNumber } from '@/shared/utils/formatPhone'
 import type { IServiceAssignment, IServiceType } from '../types/church.types'
 import { churchApiService } from '../services/churchApiService'
 import {
@@ -401,7 +402,7 @@ onMounted(load)
                 {{ t('congregations.people.phone', 'Telefon') }}
               </Label>
               <ContactFieldWithVisibility
-                :model-value="item.person.phone"
+                :model-value="formatPhoneNumber(item.person.phone)"
                 :visibility="item.phoneVisibility as VisibilityLevel"
                 readonly
                 :disabled="savingId === item.id"

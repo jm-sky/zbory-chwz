@@ -6,12 +6,15 @@ export const CongregationRoutePaths = {
   detailById: (id: string) => `/congregations/${id}`,
   edit: import.meta.env.VITE_CONGREGATIONS_EDIT_PATH ?? '/congregations/:id/edit',
   editById: (id: string) => `/congregations/${id}/edit`,
+  shared: '/share/:token',
+  sharedByToken: (token: string) => `/share/${token}`,
 } as const
 
 export const CongregationRouteNames = {
   list: 'congregations',
   detail: 'congregationDetail',
   edit: 'congregationEdit',
+  shared: 'sharedCongregation',
 } as const
 
 export const congregationRoutes: RouteRecordRaw[] = [
@@ -32,5 +35,11 @@ export const congregationRoutes: RouteRecordRaw[] = [
     name: CongregationRouteNames.detail,
     component: () => import('@/modules/congregations/pages/CongregationDetailPage.vue'),
     meta: { title: 'congregations.detail.title' },
+  },
+  {
+    path: CongregationRoutePaths.shared,
+    name: CongregationRouteNames.shared,
+    component: () => import('@/modules/congregations/pages/SharedCongregationPage.vue'),
+    meta: { layout: 'public', title: 'congregations.sharedView.title' },
   },
 ]
