@@ -18,15 +18,18 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type {
   IGoogleContactChurchApplyItem,
+  IGoogleContactFieldChange,
   IGoogleContactPersonApplyItem,
   IGoogleContactSuggestion,
   TGoogleContactMatchType,
   TGoogleContactType,
 } from '../types/googleContacts.types'
+import ImportFieldDiffGroup from '../components/ImportFieldDiffGroup.vue'
 import { AdminRouteNames } from '../routes'
 import { googleContactsApiService } from '../services/googleContactsApiService'
 
 const CREATE_NEW_VALUE = '__create_new__'
+const NEW_CHURCH_PREFIX = 'new:'
 const GOOGLE_CONTACTS_OAUTH_STATE_KEY = 'google_contacts_oauth_state'
 const DEFAULT_KEYWORDS = 'zbór, chwz'
 
@@ -38,6 +41,15 @@ interface SelectableContact {
 
 type TMatchLocation = 'name' | 'description'
 
+interface FieldState {
+  field: string
+  label: string
+  group: string
+  oldValue: string | null
+  newValue: string
+  apply: boolean
+}
+
 interface ChurchProposalState {
   resourceName: string
   matchType: TGoogleContactMatchType
@@ -46,13 +58,7 @@ interface ChurchProposalState {
   skip: boolean
   targetTenantId: string
   name: string
-  street: string
-  city: string
-  postalCode: string
-  province: string
-  country: string
-  phone: string
-  email: string
+  fields: FieldState[]
 }
 
 interface PersonProposalState {
@@ -63,14 +69,27 @@ interface PersonProposalState {
   matchedBy: 'email' | 'phone' | null
   forceCreateNew: boolean
   skip: boolean
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
+  fields: FieldState[]
   assignToChurch: boolean
   churchId: string
   serviceTypeId: string
   customServiceName: string
+}
+
+function toFieldState(field: IGoogleContactFieldChange): FieldState {
+  return {
+    field: field.field,
+    label: field.label,
+    group: field.group,
+    oldValue: field.oldValue,
+    newValue: field.newValue ?? '',
+    apply: field.newValue !== null && field.newValue !== field.oldValue,
+  }
+}
+
+function fieldValue(fields: FieldState[], key: string): string | undefined {
+  const field = fields.find(f => f.field === key)
+  return field?.apply ? (field.newValue || undefined) : undefined
 }
 
 const { t } = useI18n()
@@ -148,6 +167,18 @@ const personProposals = ref<PersonProposalState[]>([])
 const candidateTenants = ref<{ tenantId: string, name: string }[]>([])
 const serviceTypes = ref<{ id: string, name: string }[]>([])
 const hasProposals = computed(() => churchProposals.value.length > 0 || personProposals.value.length > 0)
+const contactsSectionExpanded = ref<boolean>(true)
+
+const churchAssignmentOptions = computed<{ value: string, label: string }[]>(() => {
+  const newChurches = churchProposals.value
+    .filter(p => !p.skip && p.targetTenantId === CREATE_NEW_VALUE)
+    .map(p => ({
+      value: `${NEW_CHURCH_PREFIX}${p.resourceName}`,
+      label: `${t('admin.googleContacts.newChurchOption', 'Nowy zbór')}: ${p.name}`,
+    }))
+  const existingChurches = candidateTenants.value.map(tenant => ({ value: tenant.tenantId, label: tenant.name }))
+  return [...newChurches, ...existingChurches]
+})
 
 async function connect() {
   isConnecting.value = true
@@ -170,6 +201,7 @@ function resetLoadedState() {
   searchQuery.value = ''
   matchInName.value = true
   matchInDescription.value = true
+  contactsSectionExpanded.value = true
 }
 
 const disconnectMutation = useMutation({
@@ -205,6 +237,7 @@ async function loadContacts() {
     matchInDescription.value = true
     churchProposals.value = []
     personProposals.value = []
+    contactsSectionExpanded.value = true
     if (response.matchedCount === 0) {
       toast.info(t('admin.googleContacts.noneFound', 'Nie znaleziono kontaktów pasujących do podanych słów kluczowych'))
     }
@@ -217,6 +250,12 @@ async function loadContacts() {
 
 function contactLabel(contact: IGoogleContactSuggestion): string {
   return contact.displayName ?? contact.organizationName ?? contact.resourceName
+}
+
+function personName(proposal: PersonProposalState): string {
+  const firstName = proposal.fields.find(f => f.field === 'firstName')?.newValue ?? ''
+  const lastName = proposal.fields.find(f => f.field === 'lastName')?.newValue ?? ''
+  return `${firstName} ${lastName}`.trim() || proposal.matchedName || proposal.resourceName
 }
 
 async function analyzeSelected() {
@@ -240,13 +279,7 @@ async function analyzeSelected() {
       skip: false,
       targetTenantId: p.tenantId ?? CREATE_NEW_VALUE,
       name: p.name,
-      street: p.street ?? '',
-      city: p.city ?? '',
-      postalCode: p.postalCode ?? '',
-      province: p.province ?? '',
-      country: p.country ?? '',
-      phone: p.phone ?? '',
-      email: p.email ?? '',
+      fields: p.fields.map(toFieldState),
     }))
 
     personProposals.value = response.personProposals.map(p => ({
@@ -257,15 +290,14 @@ async function analyzeSelected() {
       matchedBy: p.matchedBy,
       forceCreateNew: false,
       skip: false,
-      firstName: p.firstName ?? '',
-      lastName: p.lastName ?? '',
-      email: p.email ?? '',
-      phone: p.phone ?? '',
+      fields: p.fields.map(toFieldState),
       assignToChurch: false,
       churchId: '',
       serviceTypeId: '',
       customServiceName: '',
     }))
+
+    if (hasProposals.value) contactsSectionExpanded.value = false
   } catch (error) {
     handleError(error, { fallbackMessage: t('admin.googleContacts.analyzeError', 'Nie udało się przeanalizować wybranych kontaktów') })
   } finally {
@@ -284,13 +316,13 @@ function buildChurchApplyItems(): IGoogleContactChurchApplyItem[] {
       action,
       tenantId: action === 'update' ? p.targetTenantId : undefined,
       name: p.name || undefined,
-      street: p.street || undefined,
-      city: p.city || undefined,
-      postalCode: p.postalCode || undefined,
-      province: p.province || undefined,
-      country: p.country || undefined,
-      phone: p.phone || undefined,
-      email: p.email || undefined,
+      street: fieldValue(p.fields, 'street'),
+      city: fieldValue(p.fields, 'city'),
+      postalCode: fieldValue(p.fields, 'postalCode'),
+      province: fieldValue(p.fields, 'province'),
+      country: fieldValue(p.fields, 'country'),
+      phone: fieldValue(p.fields, 'phone'),
+      email: fieldValue(p.fields, 'email'),
     }
   })
 }
@@ -301,16 +333,18 @@ function buildPersonApplyItems(): IGoogleContactPersonApplyItem[] {
       return { resourceName: p.resourceName, action: 'skip', assignToChurch: false }
     }
     const usePersonId = p.personId && !p.forceCreateNew
+    const isNewChurch = p.churchId.startsWith(NEW_CHURCH_PREFIX)
     return {
       resourceName: p.resourceName,
       action: usePersonId ? 'update' : 'create',
       personId: usePersonId ? p.personId : undefined,
-      firstName: p.firstName || undefined,
-      lastName: p.lastName || undefined,
-      email: p.email || undefined,
-      phone: p.phone || undefined,
+      firstName: fieldValue(p.fields, 'firstName'),
+      lastName: fieldValue(p.fields, 'lastName'),
+      email: fieldValue(p.fields, 'email'),
+      phone: fieldValue(p.fields, 'phone'),
       assignToChurch: p.assignToChurch,
-      churchId: p.assignToChurch ? p.churchId : undefined,
+      churchId: p.assignToChurch && !isNewChurch ? p.churchId : undefined,
+      newChurchResourceName: p.assignToChurch && isNewChurch ? p.churchId.slice(NEW_CHURCH_PREFIX.length) : undefined,
       serviceTypeId: p.assignToChurch ? (p.serviceTypeId || undefined) : undefined,
       customServiceName: p.assignToChurch ? (p.customServiceName || undefined) : undefined,
     }
@@ -405,111 +439,133 @@ function goBack() {
             {{ t('admin.googleContacts.contactsTitle', 'Kontakty pasujące do słów kluczowych') }}
           </CardTitle>
         </CardHeader>
-        <CardContent class="space-y-4">
-          <div class="space-y-1">
-            <Label for="google-contacts-keywords">
-              {{ t('admin.googleContacts.keywordsLabel', 'Słowa kluczowe (oddzielone przecinkami)') }}
-            </Label>
-            <Input
-              id="google-contacts-keywords"
-              v-model="keywordsInput"
-              :placeholder="DEFAULT_KEYWORDS"
-            />
-          </div>
-
-          <div class="flex flex-wrap items-center gap-3">
-            <Button :disabled="isLoadingContacts || keywordsList.length === 0" @click="loadContacts">
-              <RefreshCw class="size-4" />
-              {{ isLoadingContacts
-                ? t('admin.googleContacts.loadingContacts', 'Wczytywanie...')
-                : t('admin.googleContacts.loadContacts', 'Wczytaj kontakty') }}
-            </Button>
-            <span v-if="hasLoadedContacts" class="text-sm text-muted-foreground">
-              {{ t('admin.googleContacts.matched', 'Dopasowano') }} {{ selectableContacts.length }} / {{ totalFetched }}
+        <CardContent
+          class="space-y-4"
+          :class="{ 'opacity-60 transition-opacity': !contactsSectionExpanded && hasProposals }"
+        >
+          <div v-if="!contactsSectionExpanded && hasProposals" class="flex flex-wrap items-center justify-between gap-3">
+            <span class="text-sm text-muted-foreground">
+              {{ t('admin.googleContacts.selectionSummary', 'Wybrano do analizy') }}: {{ selectedCount }} / {{ selectableContacts.length }}
             </span>
+            <Button variant="outline" size="sm" @click="contactsSectionExpanded = true">
+              {{ t('admin.googleContacts.editSelection', 'Pokaż / edytuj wybór') }}
+            </Button>
           </div>
 
-          <p v-if="hasLoadedContacts && selectableContacts.length === 0" class="text-sm text-muted-foreground">
-            {{ t('admin.googleContacts.empty', 'Brak kontaktów pasujących do podanych słów kluczowych') }}
-          </p>
-
-          <div v-if="selectableContacts.length > 0" class="space-y-3">
-            <div class="flex flex-wrap items-center gap-3">
-              <SearchInput
-                v-model="searchQuery"
-                class="max-w-xs"
-                :placeholder="t('admin.googleContacts.searchPlaceholder', 'Szukaj w wczytanych kontaktach...')"
+          <template v-else>
+            <div class="space-y-1">
+              <Label for="google-contacts-keywords">
+                {{ t('admin.googleContacts.keywordsLabel', 'Słowa kluczowe (oddzielone przecinkami)') }}
+              </Label>
+              <Input
+                id="google-contacts-keywords"
+                v-model="keywordsInput"
+                :placeholder="DEFAULT_KEYWORDS"
               />
-              <label class="flex items-center gap-2 text-sm">
-                <Checkbox v-model="matchInName" />
-                {{ t('admin.googleContacts.filterInName', 'W nazwie') }}
-              </label>
-              <label class="flex items-center gap-2 text-sm">
-                <Checkbox v-model="matchInDescription" />
-                {{ t('admin.googleContacts.filterInDescription', 'W opisie') }}
-              </label>
-              <span class="text-sm text-muted-foreground">
-                {{ t('admin.googleContacts.visibleCount', 'Widoczne') }} {{ filteredContacts.length }} / {{ selectableContacts.length }}
-              </span>
             </div>
 
-            <label class="flex items-center gap-2 text-sm">
-              <Checkbox :model-value="visibleSelectionState" @update:model-value="toggleVisibleSelection" />
-              {{ t('admin.googleContacts.selectVisible', 'Zaznacz/odznacz widoczne') }}
-            </label>
+            <div class="flex flex-wrap items-center gap-3">
+              <Button :disabled="isLoadingContacts || keywordsList.length === 0" @click="loadContacts">
+                <RefreshCw class="size-4" />
+                {{ isLoadingContacts
+                  ? t('admin.googleContacts.loadingContacts', 'Wczytywanie...')
+                  : t('admin.googleContacts.loadContacts', 'Wczytaj kontakty') }}
+              </Button>
+              <span v-if="hasLoadedContacts" class="text-sm text-muted-foreground">
+                {{ t('admin.googleContacts.matched', 'Dopasowano') }} {{ selectableContacts.length }} / {{ totalFetched }}
+              </span>
+              <Button
+                v-if="hasProposals"
+                variant="ghost"
+                size="sm"
+                @click="contactsSectionExpanded = false"
+              >
+                {{ t('admin.googleContacts.collapseSelection', 'Zwiń') }}
+              </Button>
+            </div>
 
-            <p v-if="filteredContacts.length === 0" class="text-sm text-muted-foreground">
-              {{ t('admin.googleContacts.noVisibleContacts', 'Brak kontaktów pasujących do wyszukiwania/filtrów') }}
+            <p v-if="hasLoadedContacts && selectableContacts.length === 0" class="text-sm text-muted-foreground">
+              {{ t('admin.googleContacts.empty', 'Brak kontaktów pasujących do podanych słów kluczowych') }}
             </p>
 
-            <Card v-for="item in filteredContacts" :key="item.contact.resourceName" class="p-4">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                  <Checkbox v-model="item.selected" class="mt-1" />
-                  <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                      <span class="font-medium">{{ contactLabel(item.contact) }}</span>
-                    </div>
-                    <p v-if="item.contact.organizationName && item.contact.displayName" class="text-sm text-muted-foreground">
-                      {{ item.contact.organizationName }}
-                    </p>
-                    <p v-if="item.contact.notes" class="text-sm text-muted-foreground">
-                      {{ item.contact.notes }}
-                    </p>
-                    <div class="flex flex-col gap-1 text-sm text-muted-foreground">
-                      <span v-for="email in item.contact.emailAddresses" :key="email" class="flex items-center gap-1">
-                        <Mail class="size-3.5" />{{ email }}
-                      </span>
-                      <span v-for="phone in item.contact.phoneNumbers" :key="phone" class="flex items-center gap-1">
-                        <Phone class="size-3.5" />{{ phone }}
-                      </span>
+            <div v-if="selectableContacts.length > 0" class="space-y-3">
+              <div class="flex flex-wrap items-center gap-3">
+                <SearchInput
+                  v-model="searchQuery"
+                  class="max-w-xs"
+                  :placeholder="t('admin.googleContacts.searchPlaceholder', 'Szukaj w wczytanych kontaktach...')"
+                />
+                <label class="flex items-center gap-2 text-sm">
+                  <Checkbox v-model="matchInName" />
+                  {{ t('admin.googleContacts.filterInName', 'W nazwie') }}
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                  <Checkbox v-model="matchInDescription" />
+                  {{ t('admin.googleContacts.filterInDescription', 'W opisie') }}
+                </label>
+                <span class="text-sm text-muted-foreground">
+                  {{ t('admin.googleContacts.visibleCount', 'Widoczne') }} {{ filteredContacts.length }} / {{ selectableContacts.length }}
+                </span>
+              </div>
+
+              <label class="flex items-center gap-2 text-sm">
+                <Checkbox :model-value="visibleSelectionState" @update:model-value="toggleVisibleSelection" />
+                {{ t('admin.googleContacts.selectVisible', 'Zaznacz/odznacz widoczne') }}
+              </label>
+
+              <p v-if="filteredContacts.length === 0" class="text-sm text-muted-foreground">
+                {{ t('admin.googleContacts.noVisibleContacts', 'Brak kontaktów pasujących do wyszukiwania/filtrów') }}
+              </p>
+
+              <Card v-for="item in filteredContacts" :key="item.contact.resourceName" class="p-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div class="flex items-start gap-3">
+                    <Checkbox v-model="item.selected" class="mt-1" />
+                    <div class="space-y-1">
+                      <div class="flex items-center gap-2">
+                        <span class="font-medium">{{ contactLabel(item.contact) }}</span>
+                      </div>
+                      <p v-if="item.contact.organizationName && item.contact.displayName" class="text-sm text-muted-foreground">
+                        {{ item.contact.organizationName }}
+                      </p>
+                      <p v-if="item.contact.notes" class="text-sm text-muted-foreground">
+                        {{ item.contact.notes }}
+                      </p>
+                      <div class="flex flex-col gap-1 text-sm text-muted-foreground">
+                        <span v-for="email in item.contact.emailAddresses" :key="email" class="flex items-center gap-1">
+                          <Mail class="size-3.5" />{{ email }}
+                        </span>
+                        <span v-for="phone in item.contact.phoneNumbers" :key="phone" class="flex items-center gap-1">
+                          <Phone class="size-3.5" />{{ phone }}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  <Select v-model="item.type">
+                    <SelectTrigger class="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="church">
+                        {{ t('admin.googleContacts.typeChurch', 'Zbór') }}
+                      </SelectItem>
+                      <SelectItem value="person">
+                        {{ t('admin.googleContacts.typePerson', 'Osoba') }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select v-model="item.type">
-                  <SelectTrigger class="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="church">
-                      {{ t('admin.googleContacts.typeChurch', 'Zbór') }}
-                    </SelectItem>
-                    <SelectItem value="person">
-                      {{ t('admin.googleContacts.typePerson', 'Osoba') }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </Card>
+              </Card>
 
-            <Button :disabled="selectedCount === 0 || isAnalyzing" @click="analyzeSelected">
-              <Sparkles class="size-4" />
-              {{ isAnalyzing
-                ? t('admin.googleContacts.analyzing', 'Analizowanie...')
-                : t('admin.googleContacts.analyzeSelected', 'Analizuj wybrane') }}
-              ({{ selectedCount }})
-            </Button>
-          </div>
+              <Button :disabled="selectedCount === 0 || isAnalyzing" @click="analyzeSelected">
+                <Sparkles class="size-4" />
+                {{ isAnalyzing
+                  ? t('admin.googleContacts.analyzing', 'Analizowanie...')
+                  : t('admin.googleContacts.analyzeSelected', 'Analizuj wybrane') }}
+                ({{ selectedCount }})
+              </Button>
+            </div>
+          </template>
         </CardContent>
       </Card>
 
@@ -546,32 +602,23 @@ function goBack() {
                 </SelectContent>
               </Select>
             </div>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.name', 'Nazwa') }}</Label>
-                <Input v-model="proposal.name" />
-              </div>
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.street', 'Ulica') }}</Label>
-                <Input v-model="proposal.street" />
-              </div>
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.city', 'Miasto') }}</Label>
-                <Input v-model="proposal.city" />
-              </div>
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.postalCode', 'Kod pocztowy') }}</Label>
-                <Input v-model="proposal.postalCode" />
-              </div>
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.phone', 'Telefon') }}</Label>
-                <Input v-model="proposal.phone" />
-              </div>
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.email', 'E-mail') }}</Label>
-                <Input v-model="proposal.email" />
-              </div>
+            <div class="space-y-1">
+              <Label>{{ t('admin.googleContacts.name', 'Nazwa') }}</Label>
+              <Input v-model="proposal.name" />
             </div>
+
+            <p v-if="proposal.fields.length === 0" class="text-sm text-muted-foreground">
+              {{ t('admin.googleContacts.noChanges', 'Brak zmian do zastosowania') }}
+            </p>
+
+            <ImportFieldDiffGroup :fields="proposal.fields" group="address">
+              {{ t('admin.congregationImport.addressSection', 'Adres') }}
+            </ImportFieldDiffGroup>
+
+            <ImportFieldDiffGroup :fields="proposal.fields" group="contact">
+              {{ t('admin.googleContacts.contactSection', 'Kontakt') }}
+            </ImportFieldDiffGroup>
+
             <p class="text-xs text-muted-foreground">
               {{ t('admin.googleContacts.addressHint', 'Adres zostanie zapisany tylko jeśli podano miasto.') }}
             </p>
@@ -581,7 +628,7 @@ function goBack() {
         <Card v-for="proposal in personProposals" :key="proposal.resourceName">
           <CardHeader class="flex flex-row items-start justify-between gap-4 space-y-0">
             <div class="space-y-1">
-              <CardTitle>{{ proposal.firstName }} {{ proposal.lastName }}</CardTitle>
+              <CardTitle>{{ personName(proposal) }}</CardTitle>
               <Badge :variant="proposal.matchType === 'matched' ? 'success-outline' : 'primary-outline'">
                 {{ proposal.matchType === 'matched'
                   ? `${t('admin.googleContacts.matchedPersonLabel', 'Dopasowano po')} ${proposal.matchedBy === 'email' ? t('admin.googleContacts.byEmail', 'e-mailu') : t('admin.googleContacts.byPhone', 'telefonie')}: ${proposal.matchedName}`
@@ -598,24 +645,10 @@ function goBack() {
               <Checkbox v-model="proposal.forceCreateNew" />
               {{ t('admin.googleContacts.forceCreateNew', 'To inna osoba — utwórz nową zamiast aktualizować dopasowaną') }}
             </label>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.firstName', 'Imię') }}</Label>
-                <Input v-model="proposal.firstName" />
-              </div>
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.lastName', 'Nazwisko') }}</Label>
-                <Input v-model="proposal.lastName" />
-              </div>
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.email', 'E-mail') }}</Label>
-                <Input v-model="proposal.email" />
-              </div>
-              <div class="space-y-1">
-                <Label>{{ t('admin.googleContacts.phone', 'Telefon') }}</Label>
-                <Input v-model="proposal.phone" />
-              </div>
-            </div>
+
+            <ImportFieldDiffGroup :fields="proposal.fields" group="contact">
+              {{ t('admin.googleContacts.contactSection', 'Kontakt') }}
+            </ImportFieldDiffGroup>
 
             <label class="flex items-center gap-2 text-sm">
               <Checkbox v-model="proposal.assignToChurch" />
@@ -629,8 +662,8 @@ function goBack() {
                     <SelectValue :placeholder="t('admin.googleContacts.selectChurch', 'Wybierz zbór')" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem v-for="tenant in candidateTenants" :key="tenant.tenantId" :value="tenant.tenantId">
-                      {{ tenant.name }}
+                    <SelectItem v-for="option in churchAssignmentOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
                     </SelectItem>
                   </SelectContent>
                 </Select>

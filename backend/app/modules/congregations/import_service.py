@@ -22,7 +22,6 @@ from app.modules.churches.contact_sync import (
 from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.churches.repositories import ChurchRepository
 from app.modules.churches.schemas import ServiceAssignmentCreateRequest, ServiceAssignmentUpdateRequest
-from app.modules.churches.slug_utils import slugify
 from app.modules.congregations.field_diff import ADDRESS_FIELDS as _ADDRESS_FIELDS
 from app.modules.congregations.field_diff import CONTACT_FIELDS as _CONTACT_FIELDS
 from app.modules.congregations.field_diff import FIELD_GROUPS as _FIELD_GROUPS
@@ -39,7 +38,7 @@ from app.modules.congregations.schemas import (
     ImportFieldChange,
     ImportProposal,
 )
-from app.modules.congregations.tenant_matching import match_tenant_by_name
+from app.modules.congregations.tenant_matching import match_slug, match_tenant_by_name
 from app.modules.tenants.db_models import TenantDB
 from app.modules.tenants.repositories import TenantRepository
 
@@ -59,7 +58,7 @@ class CongregationImportService:
 
         tenants = await self._tenant_repo.list_all()
         candidates = [ImportCandidateTenant(tenant_id=t.id, name=t.name) for t in tenants]
-        name_slugs = {t.id: slugify(t.name) for t in tenants}
+        name_slugs = {t.id: match_slug(t.name) for t in tenants}
 
         proposals = [await self._build_proposal(entry, tenants, name_slugs) for entry in extraction.congregations]
 

@@ -55,6 +55,16 @@ export interface IGoogleContactsAnalyzeRequest {
 
 export type TGoogleContactMatchType = 'matched' | 'new'
 
+export type TGoogleContactFieldGroup = 'address' | 'contact'
+
+export interface IGoogleContactFieldChange {
+  field: string
+  label: string
+  group: TGoogleContactFieldGroup
+  oldValue: string | null
+  newValue: string | null
+}
+
 export interface IGoogleContactChurchProposal {
   resourceName: string
   matchType: TGoogleContactMatchType
@@ -69,6 +79,7 @@ export interface IGoogleContactChurchProposal {
   country: string | null
   phone: string | null
   email: string | null
+  fields: IGoogleContactFieldChange[]
 }
 
 export interface IGoogleContactPersonProposal {
@@ -81,6 +92,7 @@ export interface IGoogleContactPersonProposal {
   lastName: string | null
   email: string | null
   phone: string | null
+  fields: IGoogleContactFieldChange[]
 }
 
 export interface IGoogleContactsCandidateTenant {
@@ -126,6 +138,9 @@ export interface IGoogleContactPersonApplyItem {
   phone?: string | null
   assignToChurch: boolean
   churchId?: string | null
+  // Set instead of churchId when assigning to a church that's also being
+  // created in this same batch — matches that church proposal's resourceName.
+  newChurchResourceName?: string | null
   serviceTypeId?: string | null
   customServiceName?: string | null
 }

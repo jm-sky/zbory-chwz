@@ -22,13 +22,13 @@ from app.modules.ai.provider import OpenRouterProvider
 from app.modules.ai.schemas import ExtractionResult
 from app.modules.churches.db_models import PersonDB
 from app.modules.churches.repositories import ChurchRepository
-from app.modules.churches.slug_utils import slugify
 from app.modules.congregations.email_import_db_models import CongregationChangeLogDB, EmailImportMessageDB
 from app.modules.congregations.field_diff import FIELD_GROUPS, FIELD_LABELS, FieldDiff, build_field_diff
 from app.modules.congregations.imap_client import ImapClient, InboundEmail
 from app.modules.congregations.import_service import CongregationImportService
 from app.modules.congregations.repositories import CongregationRepository
 from app.modules.congregations.sender_resolver import SenderResolution, SenderResolver
+from app.modules.congregations.tenant_matching import match_slug
 from app.modules.tenants.db_models import TenantDB
 from app.modules.tenants.repositories import TenantRepository
 
@@ -65,7 +65,7 @@ class EmailImportService:
             emails = await asyncio.to_thread(client.fetch_unseen)
 
             tenants = await self._tenant_repo.list_all()
-            name_slugs = {t.id: slugify(t.name) for t in tenants}
+            name_slugs = {t.id: match_slug(t.name) for t in tenants}
             tenant_names = {t.id: t.name for t in tenants}
 
             result = PollResult(fetched=len(emails))
