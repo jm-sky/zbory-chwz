@@ -112,6 +112,14 @@ export const pwaPlugin = VitePWA({
         },
       },
       {
+        // Endpoints that return congregation contact-person PII (name, phone,
+        // address) — must never be written to Cache Storage. Workbox matches
+        // runtimeCaching rules in array order and stops at the first match,
+        // so this has to come before the generic api-cache rule below.
+        urlPattern: /^https:\/\/api\.[^/]+\/(api\/)?(congregations\/[^/]+\/detailed|people-directory|churches\/persons)/i,
+        handler: 'NetworkOnly',
+      },
+      {
         urlPattern: /^https:\/\/api\./i,
         handler: 'NetworkFirst',
         options: {

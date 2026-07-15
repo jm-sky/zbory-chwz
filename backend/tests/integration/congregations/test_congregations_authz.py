@@ -315,7 +315,10 @@ async def test_pastor_without_create_account_does_not_require_email(ctx) -> None
 
     assert response.status_code == 201
     async with session_factory() as session:
-        person = await session.scalar(select(PersonDB).where(PersonDB.first_name == "Jan"))
+        # first_name is encrypted at rest (non-deterministic ciphertext), so
+        # an equality filter can't run in SQL — decrypt-then-filter instead.
+        persons = (await session.scalars(select(PersonDB))).all()
+        person = next((p for p in persons if p.first_name == "Jan"), None)
         assert person is not None
         assert person.email is None
         assert person.user_id is None

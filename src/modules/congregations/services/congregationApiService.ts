@@ -1,5 +1,6 @@
 import { isAxiosError } from 'axios'
 import { apiClient } from '@/shared/services/apiClient'
+import { logSafeError } from '@/shared/utils/logSafeError'
 import type {
   CongregationStatus,
   IAddress,
@@ -84,7 +85,7 @@ class CongregationApiService {
         }))
       } catch {
         // If both fail, return empty array
-        console.warn('Failed to fetch congregations:', error)
+        logSafeError('Failed to fetch congregations:', error)
         return []
       }
     }
@@ -100,7 +101,7 @@ class CongregationApiService {
       )
       return response.data.congregations
     } catch (error) {
-      console.warn('Failed to fetch detailed congregations:', error)
+      logSafeError('Failed to fetch detailed congregations:', error)
       // Fallback to basic list
       return this.getCongregations()
     }

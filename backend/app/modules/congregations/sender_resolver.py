@@ -18,9 +18,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.crypto.encrypted_types import hmac_email
 from app.modules.churches.db_models import ChurchDB, PersonDB, ServiceAssignmentDB
 from app.modules.congregations.tenant_matching import match_tenant_by_name
 from app.modules.tenants.db_models import TenantDB
@@ -95,11 +96,11 @@ class SenderResolver:
         return church_assignments[0].scope_id
 
     async def _find_person(self, email: str) -> PersonDB | None:
-        # PersonDB.email is stored as entered (not normalized on write, see
-        # churches.repositories), so compare case-insensitively rather than
-        # risk missing a match on casing alone.
-        normalized = email.strip().lower()
-        result = await self.db.execute(select(PersonDB).where(func.lower(PersonDB.email) == normalized))
+        # PersonDB.email is encrypted at rest (EncryptedString), so an exact
+        # match has to go through the HMAC blind index rather than comparing
+        # (or lower()-ing) the column directly — see
+        # app/common/crypto/encrypted_types.hmac_email.
+        result = await self.db.execute(select(PersonDB).where(PersonDB.email_bidx == hmac_email(email)))
         return result.scalars().first()
 
     async def _assignments_for_person(self, person_id: str) -> list[ServiceAssignmentDB]:

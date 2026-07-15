@@ -10,9 +10,11 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.common.crypto.encrypted_types import EncryptedString, hmac_email, hmac_phone_digits
 from app.core.database import Base
 from app.modules.churches.visibility import (
     DEFAULT_EMAIL_VISIBILITY,
@@ -70,10 +72,18 @@ class PersonDB(Base):
     __tablename__ = "persons"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    first_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    last_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    first_name: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    last_name: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    email: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    # HMAC-SHA256 blind index of the normalized e-mail, for exact-match lookup
+    # (e.g. sender_resolver._find_person) without decrypting every row — see
+    # app/common/crypto/encrypted_types.hmac_email.
+    email_bidx: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    phone: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    # Same purpose as email_bidx, digits-only normalized — used by
+    # find_person_by_email_or_phone's exact-match phone lookup (Google
+    # Contacts import matching).
+    phone_bidx: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
@@ -84,6 +94,24 @@ class PersonDB(Base):
     )
 
     assignments: Mapped[list["ServiceAssignmentDB"]] = relationship(back_populates="person")
+
+
+@event.listens_for(PersonDB.email, "set")
+def _sync_person_email_bidx(target: PersonDB, value: str | None, oldvalue: object, initiator: object) -> None:
+    """Keep email_bidx in lockstep with email on every assignment.
+
+    Fires on constructor kwargs and plain `person.email = ...` writes (there
+    are many call sites across churches/directory/google_contacts/congregations
+    repositories) but not on ORM load from the database, so this can't drift
+    out of sync with the encrypted column without also touching every write
+    site individually.
+    """
+    target.email_bidx = hmac_email(value)
+
+
+@event.listens_for(PersonDB.phone, "set")
+def _sync_person_phone_bidx(target: PersonDB, value: str | None, oldvalue: object, initiator: object) -> None:
+    target.phone_bidx = hmac_phone_digits(value)
 
 
 class ServiceTypeDB(Base):

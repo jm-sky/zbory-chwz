@@ -196,12 +196,13 @@ export default {
     },
     dataStorage: {
       title: 'Przechowywanie danych',
-      description: 'Wszystkie dane są przechowywane bezpiecznie na naszych serwerach w szyfrowanych bazach danych. Wykorzystujemy standardowe praktyki bezpieczeństwa, w tym hashowanie haseł, szyfrowanie połączeń (HTTPS) oraz regularne kopie zapasowe danych.',
+      description: 'Dane kontaktowe zborów (imiona i nazwiska, telefony, adresy e-mail osób kontaktowych) oraz adresy zborów są szyfrowane w naszej bazie danych. Wykorzystujemy również standardowe praktyki bezpieczeństwa: hashowanie haseł, szyfrowanie połączeń (HTTPS) oraz regularne kopie zapasowe danych.',
     },
     dataAccess: {
       title: 'Dostęp do danych',
       description: 'Twoje dane są dostępne tylko dla Ciebie i są chronione hasłem. Nasi administratorzy mają dostęp techniczny do danych wyłącznie w celach utrzymania i poprawy usługi, zgodnie z najlepszymi praktykami bezpieczeństwa.',
       thirdParties: 'Nie udostępniamy Twoich danych osobowych osobom trzecim, z wyjątkiem przypadków wymaganych przez prawo lub z Twoją wyraźną zgodą.',
+      aiProcessing: 'Wyjątkiem jest funkcja automatycznego importu aktualizacji danych zboru z maili od duchownych: ograniczony zakres treści takiego maila jest przesyłany do zewnętrznego dostawcy AI wyłącznie w celu wyodrębnienia i wstępnej weryfikacji proponowanych zmian. Nie przesyłamy przy tym imienia rozpoznanego nadawcy ani poprzednich (sprzed zmiany) wartości danych kontaktowych.',
     },
     oauth: {
       title: 'Uwierzytelnianie OAuth',

@@ -1,18 +1,17 @@
 """Repository layer for church hierarchy."""
 
 import logging
-import re
 import secrets
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy import ColumnElement, and_, delete, func, or_, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.sql.functions import Function
 
+from app.common.crypto.encrypted_types import hmac_email, hmac_phone_digits
 from app.common.id_utils import generate_id
 from app.core.database import get_db
 from app.modules.auth.auth_utils import get_password_hash
@@ -32,6 +31,7 @@ from app.modules.churches.db_models import (
     ServiceAssignmentDB,
     ServiceTypeDB,
 )
+from app.modules.churches.person_search import SEARCH_CANDIDATE_CAP, person_matches_query
 from app.modules.churches.schemas import (
     BranchCreateRequest,
     BranchUpdateRequest,
@@ -118,36 +118,46 @@ class ChurchRepository:
         await self.db.commit()
         return True
 
-    async def search_persons(self, query: str, limit: int = 20) -> list[PersonDB]:
+    async def search_persons(
+        self,
+        query: str,
+        allowed_church_ids: set[str] | None = None,
+        limit: int = 20,
+    ) -> list[PersonDB]:
+        """Search persons by name/phone/email, scoped to allowed churches.
+
+        ``allowed_church_ids=None`` means unrestricted (admin/owner) — same
+        convention as DirectoryRepository.get_allowed_church_ids. Any other
+        caller (e.g. the /churches/persons/search autocomplete) must resolve
+        and pass the caller's actual scope; otherwise this would leak contact
+        data across tenants.
+
+        first_name/last_name/email/phone are encrypted at rest, so matching
+        happens in Python (person_matches_query) against a candidate set
+        scoped in SQL by ACL only — see person_search.py for why.
+        """
         trimmed = query.strip()
-        pattern = f"%{trimmed}%"
-        conditions: list[ColumnElement[bool]] = [
-            PersonDB.first_name.ilike(pattern),
-            PersonDB.last_name.ilike(pattern),
-            PersonDB.email.ilike(pattern),
-            PersonDB.phone.ilike(pattern),
-        ]
+        if not trimmed:
+            return []
 
-        # Phone numbers are stored/typed with varying spacing ("+48 600 000 000"
-        # vs "600000000") — compare digits only so formatting doesn't matter.
-        phone_digits = re.sub(r"\D", "", trimmed)
-        if phone_digits:
-            normalized_phone: Function[str] = func.replace(PersonDB.phone, " ", "")
-            for char in ("-", "(", ")", "+"):
-                normalized_phone = func.replace(normalized_phone, char, "")
-            conditions.append(normalized_phone.ilike(f"%{phone_digits}%"))
-
-        # "Jan Kowalski" should match a person even though first/last name are
-        # separate columns — try both word orders.
-        words = trimmed.split()
-        if len(words) == 2:
-            word_a, word_b = (f"%{w}%" for w in words)
-            conditions.append(and_(PersonDB.first_name.ilike(word_a), PersonDB.last_name.ilike(word_b)))
-            conditions.append(and_(PersonDB.first_name.ilike(word_b), PersonDB.last_name.ilike(word_a)))
-
-        stmt = select(PersonDB).where(or_(*conditions)).limit(limit)
+        stmt = select(PersonDB)
+        if allowed_church_ids is not None:
+            stmt = stmt.where(
+                PersonDB.id.in_(
+                    select(ServiceAssignmentDB.person_id).where(
+                        ServiceAssignmentDB.scope_type == "church",
+                        ServiceAssignmentDB.scope_id.in_(allowed_church_ids),
+                    )
+                )
+            )
+        stmt = stmt.limit(SEARCH_CANDIDATE_CAP)
         result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+        candidates = result.scalars().all()
+        if len(candidates) == SEARCH_CANDIDATE_CAP:
+            logger.warning("search_persons: candidate set hit the %d-row safety cap; results may be incomplete for this scope", SEARCH_CANDIDATE_CAP)
+
+        matches = [p for p in candidates if person_matches_query(first_name=p.first_name, last_name=p.last_name, email=p.email, phone=p.phone, query=trimmed)]
+        return matches[:limit]
 
     async def get_person(self, person_id: str) -> PersonDB | None:
         result = await self.db.execute(select(PersonDB).where(PersonDB.id == person_id))
@@ -178,19 +188,19 @@ class ChurchRepository:
         import), as opposed to `search_persons`'s broad autocomplete matching.
 
         Returns (person, matched_by) for the first exact hit, preferring email.
+        email/phone are encrypted at rest, so exact matches go through the
+        HMAC blind indices (email_bidx/phone_bidx) rather than comparing the
+        columns directly — see app/common/crypto/encrypted_types.
         """
         if email:
-            result = await self.db.execute(select(PersonDB).where(func.lower(PersonDB.email) == email.lower().strip()))
+            result = await self.db.execute(select(PersonDB).where(PersonDB.email_bidx == hmac_email(email)))
             person = result.scalars().first()
             if person:
                 return person, "email"
 
-        phone_digits = re.sub(r"\D", "", phone) if phone else ""
-        if phone_digits:
-            normalized_phone: Function[str] = func.replace(PersonDB.phone, " ", "")
-            for char in ("-", "(", ")", "+"):
-                normalized_phone = func.replace(normalized_phone, char, "")
-            result = await self.db.execute(select(PersonDB).where(normalized_phone == phone_digits))
+        phone_bidx = hmac_phone_digits(phone)
+        if phone_bidx:
+            result = await self.db.execute(select(PersonDB).where(PersonDB.phone_bidx == phone_bidx))
             person = result.scalars().first()
             if person:
                 return person, "phone"

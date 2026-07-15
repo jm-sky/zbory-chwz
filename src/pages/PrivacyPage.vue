@@ -43,7 +43,7 @@ const { t } = useI18n()
             {{ t('privacy.dataStorage.title', 'Przechowywanie danych') }}
           </h2>
           <p class="text-muted-foreground">
-            {{ t('privacy.dataStorage.description', 'Wszystkie dane są przechowywane bezpiecznie na naszych serwerach w szyfrowanych bazach danych. Wykorzystujemy standardowe praktyki bezpieczeństwa, w tym hashowanie haseł, szyfrowanie połączeń (HTTPS) oraz regularne kopie zapasowe danych.') }}
+            {{ t('privacy.dataStorage.description', 'Dane kontaktowe zborów (imiona i nazwiska, telefony, adresy e-mail osób kontaktowych) oraz adresy zborów są szyfrowane w naszej bazie danych. Wykorzystujemy również standardowe praktyki bezpieczeństwa: hashowanie haseł, szyfrowanie połączeń (HTTPS) oraz regularne kopie zapasowe danych.') }}
           </p>
         </section>
 
@@ -57,6 +57,9 @@ const { t } = useI18n()
             </p>
             <p>
               {{ t('privacy.dataAccess.thirdParties', 'Nie udostępniamy Twoich danych osobowych osobom trzecim, z wyjątkiem przypadków wymaganych przez prawo lub z Twoją wyraźną zgodą.') }}
+            </p>
+            <p>
+              {{ t('privacy.dataAccess.aiProcessing', 'Wyjątkiem jest funkcja automatycznego importu aktualizacji danych zboru z maili od duchownych: ograniczony zakres treści takiego maila jest przesyłany do zewnętrznego dostawcy AI wyłącznie w celu wyodrębnienia i wstępnej weryfikacji proponowanych zmian. Nie przesyłamy przy tym imienia rozpoznanego nadawcy ani poprzednich (sprzed zmiany) wartości danych kontaktowych.') }}
             </p>
           </div>
         </section>

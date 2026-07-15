@@ -196,12 +196,13 @@ export default {
     },
     dataStorage: {
       title: 'Data Storage',
-      description: 'All data is stored securely on our servers in encrypted databases. We use standard security practices, including password hashing, connection encryption (HTTPS), and regular data backups.',
+      description: 'Congregation contact data (contact persons\' names, phone numbers, e-mail addresses) and congregation addresses are encrypted in our database. We also use standard security practices: password hashing, connection encryption (HTTPS), and regular data backups.',
     },
     dataAccess: {
       title: 'Data Access',
       description: 'Your data is accessible only to you and is password-protected. Our administrators have technical access to data solely for maintenance and service improvement purposes, in accordance with security best practices.',
       thirdParties: 'We do not share your personal data with third parties, except as required by law or with your explicit consent.',
+      aiProcessing: 'The one exception is our automatic import of congregation data updates from clergy e-mails: a limited portion of such an e-mail is sent to an external AI provider solely to extract and pre-verify the proposed changes. We do not send the recognized sender\'s name or the previous (pre-change) values of contact data as part of this.',
     },
     oauth: {
       title: 'OAuth Authentication',

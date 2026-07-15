@@ -2,8 +2,9 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
+from app.modules.auth.decorators import rate_limit
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.churches.db_models import ServiceAssignmentDB
 from app.modules.churches.repositories import ChurchRepository, get_church_repository
@@ -20,6 +21,7 @@ from app.modules.churches.schemas import (
     ServiceAssignmentUpdateRequest,
     ServiceTypeResponse,
 )
+from app.modules.directory.repositories import DirectoryRepository, get_directory_repository
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 
 router = APIRouter(prefix="/churches", tags=["Churches"])
@@ -64,13 +66,22 @@ async def list_regions(
 
 
 @router.get("/persons/search", response_model=PersonSearchResponse)
+@rate_limit("30/minute")
 async def search_persons(
+    request: Request,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
+    directory_repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
     q: str = Query(min_length=1),
 ) -> PersonSearchResponse:
-    _ = current_user
-    persons = await repo.search_persons(q)
+    """Search persons, scoped to churches the caller has ACL access to.
+
+    Admins/owners get an unrestricted search (allowed_church_ids=None); everyone
+    else is limited to their church/region/community scope, same as
+    /people-directory/persons.
+    """
+    allowed_church_ids = await directory_repo.get_allowed_church_ids(current_user)
+    persons = await repo.search_persons(q, allowed_church_ids)
     return PersonSearchResponse(persons=[PersonResponse.model_validate(p) for p in persons])
 
 

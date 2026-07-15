@@ -12,18 +12,21 @@ import asyncio
 import logging
 from dataclasses import dataclass
 
+from rapidfuzz import fuzz
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.id_utils import generate_id
+from app.common.pii import mask_email
 from app.core.config import get_settings
 from app.core.email.service import get_email_service
 from app.modules.ai.provider import OpenRouterProvider
 from app.modules.ai.schemas import ExtractionResult
+from app.modules.churches.contact_sync import assignment_title
 from app.modules.churches.db_models import PersonDB
 from app.modules.churches.repositories import ChurchRepository
 from app.modules.congregations.email_import_db_models import CongregationChangeLogDB, EmailImportMessageDB
-from app.modules.congregations.field_diff import FIELD_GROUPS, FIELD_LABELS, FieldDiff, build_field_diff
+from app.modules.congregations.field_diff import FIELD_GROUPS, FIELD_LABELS, FieldDiff, build_field_diff, new_value_format_plausible
 from app.modules.congregations.imap_client import ImapClient, InboundEmail
 from app.modules.congregations.import_service import CongregationImportService
 from app.modules.congregations.repositories import CongregationRepository
@@ -33,6 +36,12 @@ from app.modules.tenants.db_models import TenantDB
 from app.modules.tenants.repositories import TenantRepository
 
 logger = logging.getLogger(__name__)
+
+# Below this rapidfuzz partial_ratio (0-100), the sender's known name is
+# treated as absent from the e-mail body — used as a local stand-in for what
+# the AI verification prompt used to judge itself from the sender's name
+# (now withheld from the prompt, see _resolve_and_maybe_apply).
+SIGNATURE_MATCH_THRESHOLD = 80.0
 
 
 @dataclass
@@ -45,6 +54,16 @@ class PollResult:
 def _person_label(person: PersonDB) -> str:
     name = " ".join(part for part in (person.first_name, person.last_name) if part).strip()
     return name or person.email or "Nieznany nadawca"
+
+
+def _signature_mentions_sender(raw_text: str, sender_name: str) -> bool:
+    """Local stand-in for the "does the signature/tone match the recognized
+    sender" judgment the AI prompt used to make from the sender's name — now
+    computed here instead, so that name never has to leave the server (see
+    _resolve_and_maybe_apply)."""
+    if not sender_name.strip():
+        return False
+    return fuzz.partial_ratio(sender_name.lower(), raw_text.lower()) >= SIGNATURE_MATCH_THRESHOLD
 
 
 class EmailImportService:
@@ -79,7 +98,7 @@ class EmailImportService:
                     await self._process_one(inbound, tenants, name_slugs, tenant_names)
                     result.processed += 1
                 except Exception:
-                    logger.exception("Failed processing inbound e-mail from %s; leaving unseen for retry", inbound.from_address)
+                    logger.exception("Failed processing inbound e-mail from %s; leaving unseen for retry", mask_email(inbound.from_address))
                     continue
 
                 await asyncio.to_thread(client.mark_seen, inbound.imap_uid)
@@ -179,8 +198,30 @@ class EmailImportService:
 
         if structurally_eligible:
             provider = OpenRouterProvider()
-            sender_context = f"{_person_label(final.person)}, zbór: {church_name}"
-            diff_summary = "\n".join(f"- {FIELD_LABELS[key]}: {diff.old_values[key] or '(brak)'} -> {diff.new_values[key]}" for key in changed)
+
+            # sender_context deliberately omits the sender's name: it's PII
+            # resolved from the database (the sender is identified by e-mail
+            # header, not by a name necessarily present in the message body),
+            # so it would be new exposure to the external AI provider beyond
+            # what's already in raw_text. The identity-plausibility judgment
+            # the name used to support is covered locally instead (see
+            # _signature_mentions_sender).
+            sender_role = (assignment_title(diff.matched_assignment) if diff.matched_assignment else None) or "brak przypisanej funkcji"
+            signature_note = "podpis/treść maila wygląda na zgodny ze znanym nadawcą" if _signature_mentions_sender(inbound.text_body, _person_label(final.person)) else "nie wykryto w treści maila wyraźnego podpisu pasującego do znanego nadawcy"
+            sender_context = f"Rola: {sender_role}, zbór: {church_name}. Sygnał lokalny: {signature_note}."
+
+            # diff_summary keeps the *new* values (they're already present in
+            # raw_text below, which the AI extracted them from — redacting
+            # them here would cost detection quality for no privacy benefit)
+            # but replaces the *old* value with a presence/absence marker:
+            # unlike the new values, the old value is genuinely new PII from
+            # the database that isn't otherwise in this request.
+            diff_summary = "\n".join(
+                f"- {FIELD_LABELS[key]}: {'miało wcześniej wartość' if diff.old_values[key] else 'było puste'} -> "
+                f"nowa wartość: {diff.new_values[key]} [format: {'poprawny' if new_value_format_plausible(key, diff.new_values[key]) else 'budzi wątpliwości'}]"
+                for key in changed
+            )
+
             verification = await provider.verify_extraction(inbound.text_body, sender_context, diff_summary)
             verification_score = verification.trust_score
             verification_reasoning = verification.reasoning

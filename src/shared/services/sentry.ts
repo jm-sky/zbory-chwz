@@ -23,8 +23,8 @@ export function initSentry(app: App, router: Router): void {
     integrations: [
       Sentry.browserTracingIntegration({ router }),
       Sentry.replayIntegration({
-        maskAllText: false,
-        blockAllMedia: false,
+        maskAllText: true,
+        blockAllMedia: true,
       }),
     ],
     // Performance Monitoring
@@ -57,9 +57,12 @@ export function initSentry(app: App, router: Router): void {
  * Set user context for Sentry error tracking
  * Call this when a user logs in to associate errors with their account
  *
+ * Deliberately excludes email/name — Sentry is a third-party service and
+ * session replays/error reports should not carry PII about who is logged in.
+ *
  * @param user - User information to set in Sentry context
  */
-export function setSentryUser(user: { id: string; email?: string; username?: string } | null): void {
+export function setSentryUser(user: { id: string } | null): void {
   if (!config.sentry.enabled) {
     return
   }
@@ -67,8 +70,6 @@ export function setSentryUser(user: { id: string; email?: string; username?: str
   if (user) {
     Sentry.setUser({
       id: user.id,
-      email: user.email,
-      username: user.username,
     })
   } else {
     Sentry.setUser(null)

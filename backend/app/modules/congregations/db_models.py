@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.common.crypto.encrypted_types import EncryptedString
 from app.core.database import Base
 from app.modules.congregations.geo import DEFAULT_COUNTRY
 
@@ -17,10 +18,10 @@ class CongregationAddressDB(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     church_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("churches.id", ondelete="CASCADE"), nullable=True)
-    street: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    city: Mapped[str] = mapped_column(String(255), nullable=False)
-    postal_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    province: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    street: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    city: Mapped[str] = mapped_column(EncryptedString, nullable=False)
+    postal_code: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    province: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
     # ISO 3166-1 alpha-2; see app/modules/congregations/geo.py
     country: Mapped[str] = mapped_column(String(2), default=DEFAULT_COUNTRY, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
