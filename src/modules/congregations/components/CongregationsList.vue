@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useHandleError } from '@/shared/composables/useHandleError'
+import { logSafeError } from '@/shared/utils/logSafeError'
 import type { ICongregationDetailed } from '../types/congregation.types'
 import { useCongregationFilters } from '../composables/useCongregationFilters'
 import { useCongregationFiltersUrl } from '../composables/useCongregationFiltersUrl'
@@ -102,7 +103,7 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
     // Invalidate and refetch congregations
     await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
-    console.error('Failed to unpublish congregation:', error)
+    logSafeError('Failed to unpublish congregation:', error)
     handleError(error, { fallbackMessage: t('congregations.list.unpublishError', 'Nie udało się cofnąć publikacji zboru') })
   }
 }
@@ -128,7 +129,7 @@ async function handleCreate() {
     // address — send the admin straight to the edit page to fill it in.
     router.push(CongregationRoutePaths.editById(created.id))
   } catch (error) {
-    console.error('Failed to create congregation:', error)
+    logSafeError('Failed to create congregation:', error)
     handleError(error, { fallbackMessage: t('congregations.list.createError', 'Nie udało się utworzyć zboru') })
   } finally {
     creating.value = false
@@ -145,7 +146,7 @@ async function handleDelete(congregation: ICongregationDetailed) {
     toast.success(t('congregations.list.deleteSuccess', 'Zbór został usunięty'))
     await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
-    console.error('Failed to delete congregation:', error)
+    logSafeError('Failed to delete congregation:', error)
     handleError(error, { fallbackMessage: t('congregations.list.deleteError', 'Nie udało się usunąć zboru') })
   }
 }

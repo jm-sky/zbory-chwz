@@ -42,6 +42,24 @@ FIELD_GROUPS: dict[str, str] = {
 # so a phone number without a country code is assumed to be a Polish one.
 _DEFAULT_PHONE_COUNTRY_CODE = "48"
 
+_EMAIL_FORMAT_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def new_value_format_plausible(field_key: str, value: str | None) -> bool:
+    """Cheap structural check on a proposed new value, used as a signal for
+    the AI trust-verification prompt (see email_import_service.py) instead of
+    re-sending the value a second time for the model to eyeball — obviously
+    malformed data (not a phone/email shape at all) is a spam/junk tell the
+    model doesn't need the raw value to catch."""
+    if value is None:
+        return True
+    if field_key == "contact_phone":
+        normalized = normalize_phone(value)
+        return normalized is not None and len(re.sub(r"\D", "", normalized)) >= 7
+    if field_key == "contact_email":
+        return bool(_EMAIL_FORMAT_RE.match(value.strip()))
+    return True
+
 
 def normalize_phone(value: str | None) -> str | None:
     """Strip formatting and apply the default country code, so e.g. '668-292-049'

@@ -17,14 +17,19 @@ logger = logging.getLogger(__name__)
 
 _VERIFICATION_SYSTEM_PROMPT = (
     "Oceniasz wiarygodność aktualizacji danych zboru przesłanej e-mailem od duchownego "
-    "(pastora, biskupa lub diakona). Dostajesz: tożsamość rozpoznanego nadawcy (imię, rola, "
-    "zbór, do którego ma dostęp), listę proponowanych zmian pól (stara -> nowa wartość) oraz "
-    "oryginalną treść maila. Oceń w skali 0-1 (trust_score), jak bardzo ta zmiana jest spójna "
-    "i wiarygodna: czy podpis/ton/treść maila pasuje do rozpoznanego nadawcy, czy zmiany są "
-    "sensowne (nie wyglądają na spam, żart, pomyłkę czy próbę wprowadzenia fałszywych danych), "
-    "i czy treść maila faktycznie uzasadnia każdą z wyekstrahowanych zmian. Niska treść maila "
-    "niezwiązana z podanymi zmianami, sprzeczności, albo brak jasnego uzasadnienia zmiany "
-    "powinny obniżać trust_score. Zwróć trust_score oraz krótkie uzasadnienie po polsku."
+    "(pastora, biskupa lub diakona). Dla ochrony prywatności NIE dostajesz imienia nadawcy "
+    "ani poprzednich wartości pól — zamiast tego dostajesz: rolę rozpoznanego nadawcy i zbór, "
+    "do którego ma dostęp; lokalny sygnał, czy podpis/treść maila wygląda na zgodny ze znanym "
+    "nadawcą (obliczony poza tym promptem); listę proponowanych zmian pól z nową wartością, "
+    "informacją czy pole miało wcześniej jakąkolwiek wartość (bez podawania jaką) oraz lokalnym "
+    "sygnałem, czy nowa wartość ma poprawny format; a także oryginalną treść maila. Oceń w skali "
+    "0-1 (trust_score), jak bardzo ta zmiana jest spójna i wiarygodna: czy lokalny sygnał podpisu "
+    "jest pozytywny, czy zmiany są sensowne (nie wyglądają na spam, żart, pomyłkę czy próbę "
+    "wprowadzenia fałszywych danych — zwróć szczególną uwagę na pola oznaczone jako mające "
+    "wątpliwy format), i czy treść maila faktycznie uzasadnia każdą z wyekstrahowanych zmian. "
+    "Treść maila niezwiązana z podanymi zmianami, sprzeczności, brak podpisu pasującego do "
+    "znanego nadawcy, albo brak jasnego uzasadnienia zmiany powinny obniżać trust_score. Zwróć "
+    "trust_score oraz krótkie uzasadnienie po polsku."
 )
 
 _VERIFICATION_JSON_SCHEMA = {
@@ -142,12 +147,19 @@ class OpenRouterProvider:
         """Second-pass trust assessment for a clergy e-mail update (see VerificationResult).
 
         Deliberately a separate call from extract_congregations rather than
-        one combined prompt: this one gets the sender's resolved identity and
-        the field diff as additional context the extraction call never sees,
-        and a low-trust result here must never silently affect the extracted
+        one combined prompt: this one gets the sender's role/church and the
+        field diff as additional context the extraction call never sees, and
+        a low-trust result here must never silently affect the extracted
         values themselves.
+
+        `sender_context`/`diff_summary` are built by
+        email_import_service._resolve_and_maybe_apply to deliberately exclude
+        the sender's name and the fields' previous values — see the comments
+        there for why (both are PII pulled from the database rather than
+        already present in `raw_text`, unlike everything else this call
+        sends).
         """
-        user_content = f"Rozpoznany nadawca: {sender_context}\n\nProponowane zmiany:\n{diff_summary}\n\nOryginalna treść maila:\n---\n{raw_text}\n---"
+        user_content = f"Kontekst nadawcy: {sender_context}\n\nProponowane zmiany:\n{diff_summary}\n\nOryginalna treść maila:\n---\n{raw_text}\n---"
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=[

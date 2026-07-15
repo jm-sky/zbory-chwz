@@ -22,6 +22,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
+import { logSafeError } from '@/shared/utils/logSafeError'
 import type { ICongregationFull } from '../types/congregation.types'
 import ChangeHistorySection from '../components/ChangeHistorySection.vue'
 import ChurchBranchesSection from '../components/ChurchBranchesSection.vue'
@@ -148,7 +149,7 @@ async function loadCongregation() {
     }))
     deletedServiceTimeIds.value = []
   } catch (error) {
-    console.error('Failed to load congregation:', error)
+    logSafeError('Failed to load congregation:', error)
     handleError(error, { fallbackMessage: t('congregations.edit.loadError', 'Nie udało się załadować danych zboru') })
     router.push(CongregationRoutePaths.list)
   } finally {
@@ -167,7 +168,7 @@ const saveBasicInfo = form.handleSubmit(async (values) => {
     toast.success(t('congregations.edit.basicInfo.saveSuccess', 'Podstawowe informacje zostały zapisane'))
     await queryClient.invalidateQueries({ queryKey: ['congregations'] })
   } catch (error) {
-    console.error('Failed to save basic info:', error)
+    logSafeError('Failed to save basic info:', error)
     handleError(error, { setErrors: form.setErrors, fallbackMessage: t('congregations.edit.basicInfo.saveError', 'Nie udało się zapisać podstawowych informacji') })
   }
 })
@@ -197,7 +198,7 @@ const saveAddress = form.handleSubmit(async (values) => {
     await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadCongregation()
   } catch (error) {
-    console.error('Failed to save address:', error)
+    logSafeError('Failed to save address:', error)
     handleError(error, { setErrors: form.setErrors, fallbackMessage: t('congregations.edit.address.saveError', 'Nie udało się zapisać adresu') })
   }
 })
@@ -224,7 +225,7 @@ async function saveServiceTimes() {
     await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadCongregation()
   } catch (error) {
-    console.error('Failed to save service times:', error)
+    logSafeError('Failed to save service times:', error)
     handleError(error, { fallbackMessage: t('congregations.edit.serviceTimes.saveError', 'Nie udało się zapisać godzin nabożeństw') })
   }
 }

@@ -11,6 +11,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import selectinload
 
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-characters-long-for-testing")
@@ -317,14 +318,19 @@ async def test_analyze_matches_correct_contact_among_several(ctx) -> None:
     proposal = response.json()["proposals"][0]
 
     async with session_factory() as session:
+        # PersonDB.first_name is encrypted at rest (non-deterministic
+        # ciphertext), so an equality filter can't run in SQL — scope by the
+        # non-PII columns only, then decrypt-and-filter in Python.
         result = await session.execute(
-            select(ServiceAssignmentDB).where(
+            select(ServiceAssignmentDB)
+            .where(
                 ServiceAssignmentDB.scope_type == "church",
                 ServiceAssignmentDB.scope_id == EXISTING_TENANT_ID,
-                ServiceAssignmentDB.person.has(PersonDB.first_name == "Jan"),
             )
+            .options(selectinload(ServiceAssignmentDB.person))
         )
-        jan_assignment = result.scalar_one()
+        assignments = result.scalars().all()
+        jan_assignment = next(a for a in assignments if a.person and a.person.first_name == "Jan")
 
     # Jan Madeyski already exists with the exact same data, so this is a
     # 100% match and no fields should be proposed as changed - and it must

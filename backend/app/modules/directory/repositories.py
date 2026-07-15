@@ -3,6 +3,8 @@
 See docs/plans/2026-07-09--mailing-lists.md.
 """
 
+import logging
+
 from fastapi import Depends
 from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,8 +19,11 @@ from app.modules.churches.db_models import (
     ServiceAssignmentDB,
     ServiceTypeDB,
 )
+from app.modules.churches.person_search import SEARCH_CANDIDATE_CAP, person_matches_query
 from app.modules.directory.schemas import PersonUpdateRequest
 from app.modules.groups.db_models import PeopleGroupDB, PeopleGroupMembershipDB
+
+logger = logging.getLogger(__name__)
 
 # (kind, label, context) — context is the church name for a service affiliation, None for a group.
 Affiliation = tuple[str, str, str | None]
@@ -91,7 +96,12 @@ class DirectoryRepository:
         service_type_ids: list[str],
         group_ids: list[str],
     ) -> list[PersonDB]:
-        stmt = select(PersonDB).where(PersonDB.email.isnot(None), PersonDB.email != "")
+        # email is encrypted at rest, so a blank string no longer compares
+        # equal to "" in SQL (ciphertext of "" isn't the literal empty
+        # string) — writers normalize blank e-mails to None (see the
+        # migration and PersonDB write sites), so isnot(None) alone is
+        # sufficient here.
+        stmt = select(PersonDB).where(PersonDB.email.isnot(None))
 
         if allowed_church_ids is not None:
             scoped_subq = select(ServiceAssignmentDB.person_id).where(
@@ -115,13 +125,22 @@ class DirectoryRepository:
             )
             stmt = stmt.where(PersonDB.id.in_(membership_subq))
 
-        stmt = stmt.order_by(PersonDB.first_name, PersonDB.last_name)
+        # first_name/last_name are encrypted at rest — sorting ciphertext in
+        # SQL would produce a meaningless order, so sort in Python instead.
         result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+        persons = list(result.scalars().all())
+        persons.sort(key=lambda p: ((p.first_name or "").lower(), (p.last_name or "").lower()))
+        return persons
 
     # -- Person browser -----------------------------------------------------
 
     async def list_persons(self, allowed_church_ids: set[str] | None, *, query: str | None = None) -> list[PersonDB]:
+        """List/search persons, scoped to allowed churches.
+
+        first_name/last_name/email/phone are encrypted at rest, so matching
+        and sorting happen in Python against a decrypted candidate set scoped
+        in SQL by ACL only — see churches/person_search.py for why.
+        """
         stmt = select(PersonDB)
         if allowed_church_ids is not None:
             stmt = stmt.where(
@@ -132,19 +151,18 @@ class DirectoryRepository:
                     )
                 )
             )
-        if query:
-            pattern = f"%{query.strip()}%"
-            stmt = stmt.where(
-                or_(
-                    PersonDB.first_name.ilike(pattern),
-                    PersonDB.last_name.ilike(pattern),
-                    PersonDB.email.ilike(pattern),
-                    PersonDB.phone.ilike(pattern),
-                )
-            )
-        stmt = stmt.order_by(PersonDB.first_name, PersonDB.last_name).limit(200)
+        stmt = stmt.limit(SEARCH_CANDIDATE_CAP)
         result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+        candidates = list(result.scalars().all())
+        if len(candidates) == SEARCH_CANDIDATE_CAP:
+            logger.warning("list_persons: candidate set hit the %d-row safety cap; results may be incomplete for this scope", SEARCH_CANDIDATE_CAP)
+
+        trimmed = query.strip() if query else ""
+        if trimmed:
+            candidates = [p for p in candidates if person_matches_query(first_name=p.first_name, last_name=p.last_name, email=p.email, phone=p.phone, query=trimmed)]
+
+        candidates.sort(key=lambda p: ((p.first_name or "").lower(), (p.last_name or "").lower()))
+        return candidates[:200]
 
     async def get_person(self, person_id: str) -> PersonDB | None:
         result = await self.db.execute(select(PersonDB).where(PersonDB.id == person_id))

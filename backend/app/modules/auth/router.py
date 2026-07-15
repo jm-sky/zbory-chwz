@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.pii import mask_email
 from app.core.database import get_db
 from app.core.email.i18n import determine_email_locale, get_translations
 
@@ -149,7 +150,7 @@ async def login(credentials: UserLogin, auth_service: AuthServiceDep, request: R
     """
     try:
         # Debug: Log what type of auth service we're using
-        logger.info(f"Login attempt for {credentials.email}, auth_service type: {type(auth_service).__name__}")
+        logger.info(f"Login attempt for {mask_email(credentials.email)}, auth_service type: {type(auth_service).__name__}")
 
         result = await auth_service.login_user(email=credentials.email, password=credentials.password)
 
@@ -573,13 +574,12 @@ async def oauth_callback(
         # Get user info from provider
         logger.info(f"OAuth callback: Fetching user info from {provider}")
         user_info = await oauth_service.get_user_info(provider, token_response.accessToken)
-        logger.info(f"OAuth callback: User info received - email: {user_info.email}, provider_id: {user_info.providerId}")
+        logger.info(f"OAuth callback: User info received - email: {mask_email(user_info.email)}, provider_id: {user_info.providerId}")
 
         # Login or register user via OAuth
         logger.info("OAuth callback: Calling auth_service.login_with_oauth")
         # Convert Pydantic model to dict for compatibility
         user_info_dict = user_info.model_dump()
-        logger.debug(f"OAuth callback: user_info_dict = {user_info_dict}")
         result = await auth_service.login_with_oauth(provider, user_info_dict)
         logger.info("OAuth callback: login_with_oauth completed successfully")
         return result

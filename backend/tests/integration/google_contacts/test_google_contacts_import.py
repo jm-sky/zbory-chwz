@@ -402,7 +402,12 @@ async def test_apply_creates_standalone_person_without_assignment(ctx) -> None:
     async with session_factory() as session:
         from sqlalchemy import select
 
-        person = (await session.execute(select(PersonDB).where(PersonDB.email == "ewa@example.com"))).scalar_one()
+        from app.common.crypto.encrypted_types import hmac_email
+
+        # email is encrypted at rest (non-deterministic ciphertext), so an
+        # equality filter can't run in SQL — look up via the blind index
+        # instead, same as the app's own exact-match lookups do.
+        person = (await session.execute(select(PersonDB).where(PersonDB.email_bidx == hmac_email("ewa@example.com")))).scalar_one()
         assert person.first_name == "Ewa"
 
 

@@ -55,11 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Set Sentry user context for error tracking
     if (newUser) {
-      setSentryUser({
-        id: newUser.id,
-        email: newUser.email,
-        username: newUser.name,
-      })
+      setSentryUser({ id: newUser.id })
     } else {
       setSentryUser(null)
     }
