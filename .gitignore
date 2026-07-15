@@ -37,4 +37,6 @@ coverage
 # Vitest
 __screenshots__/
 .env
+AGENTS.local.md
+backend/backups/
 test-results/
