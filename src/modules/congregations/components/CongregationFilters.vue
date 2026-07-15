@@ -135,14 +135,18 @@ function toggleAdvancedFilters(): void {
       </div>
     </div>
 
-    <div class="flex items-end justify-between gap-3">
-      <div v-if="hasBranches" class="flex items-center gap-2">
-        <Checkbox id="congregations-hide-branches" v-model="hideBranches" />
-        <Label for="congregations-hide-branches" class="cursor-pointer font-normal">
-          {{ t('congregations.filters.hideBranches') }}
-        </Label>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-3">
+        <div v-if="hasBranches" class="flex items-center gap-2">
+          <Checkbox id="congregations-hide-branches" v-model="hideBranches" />
+          <Label for="congregations-hide-branches" class="cursor-pointer font-normal">
+            {{ t('congregations.filters.hideBranches') }}
+          </Label>
+        </div>
+        <span class="text-sm text-muted-foreground">
+          {{ t('congregations.filters.resultCount', { count: resultCount }, resultCount) }}
+        </span>
       </div>
-      <span v-else />
 
       <div class="flex items-center gap-2">
         <CongregationViewModeToggle v-model:view-mode="viewMode" />
@@ -157,9 +161,5 @@ function toggleAdvancedFilters(): void {
         </Button>
       </div>
     </div>
-
-    <p class="text-sm text-muted-foreground">
-      {{ t('congregations.filters.resultCount', { count: resultCount }, resultCount) }}
-    </p>
   </div>
 </template>

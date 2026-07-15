@@ -36,7 +36,7 @@ const firstContact = computed(() => contactsOf(congregation)[0])
 <template>
   <div
     :class="[
-      'group flex flex-col gap-3 p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center',
+      'group flex items-start gap-3 p-4 transition-colors hover:bg-muted/50 sm:items-center',
       congregation.type !== 'branch' ? 'cursor-pointer' : '',
       congregation.status === 'draft'
         ? 'bg-muted/20 opacity-75'
@@ -97,7 +97,7 @@ const firstContact = computed(() => contactsOf(congregation)[0])
         <Button
           variant="ghost"
           size="icon"
-          class="shrink-0 self-end sm:self-auto"
+          class="shrink-0"
           @click.stop
         >
           <MoreHorizontal class="size-4" />
