@@ -17,6 +17,7 @@ from app.modules.google_contacts.router import router as google_contacts_router
 from app.modules.groups.router import router as groups_router
 from app.modules.logs.router import router as logs_router
 from app.modules.settings.router import router as settings_router
+from app.modules.sharing.router import global_router as global_share_links_router
 from app.modules.sharing.router import router as sharing_router
 from app.modules.stats.router import router as stats_router
 from app.modules.tenants.router import (
@@ -57,6 +58,7 @@ api_router.include_router(public_share_router)  # Anonymous share-link resolutio
 api_router.include_router(congregations_router)  # Authenticated congregation management (addresses, service times, contact persons)
 api_router.include_router(congregations_import_router)  # Admin-only: AI-assisted address/contact import from pasted text
 api_router.include_router(sharing_router)  # Congregation share-link management (create/list/revoke)
+api_router.include_router(global_share_links_router)  # All-congregations share-link management (admin/owner only)
 api_router.include_router(churches_router)
 api_router.include_router(groups_router)
 api_router.include_router(directory_router)

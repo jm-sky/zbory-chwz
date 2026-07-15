@@ -45,6 +45,8 @@ export const congregationsPl = {
     },
     share: {
       title: 'Udostępnianie przez link',
+      globalTitle: 'Udostępnij wszystkie zbory',
+      globalDescription: 'Każdy z tym linkiem może przeglądać wszystkie opublikowane zbory, bez logowania.',
       create: 'Utwórz link',
       createTitle: 'Utwórz link do udostępnienia',
       createError: 'Nie udało się utworzyć linku',
@@ -65,6 +67,7 @@ export const congregationsPl = {
     },
     sharedView: {
       title: 'Udostępniony zbór',
+      allTitle: 'Zbory',
       invalidTitle: 'Link nieprawidłowy',
       invalid: 'Ten link jest nieprawidłowy, wygasł lub został odwołany.',
       poweredBy: 'Udostępniono przez',

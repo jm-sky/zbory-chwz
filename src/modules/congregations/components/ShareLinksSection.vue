@@ -27,7 +27,7 @@ import type { ShareableVisibilityLevel, ShareLinkExpiryDays } from '../types/sha
 import { useCreateShareLink, useRevokeShareLink, useShareLinks } from '../composables/useShareLinks'
 import VisibilityLevelSelect from './VisibilityLevelSelect.vue'
 
-const { tenantId } = defineProps<{ tenantId: string }>()
+const { tenantId = null } = defineProps<{ tenantId?: string | null }>()
 
 const { t } = useI18n()
 const { handleError } = useHandleError()
@@ -98,9 +98,14 @@ const visibilityLabel = computed(() => (level: ShareableVisibilityLevel) =>
 <template>
   <div class="space-y-4 rounded-lg border p-4">
     <div class="flex items-center justify-between gap-3">
-      <h3 class="text-lg font-semibold">
-        {{ t('congregations.share.title') }}
-      </h3>
+      <div>
+        <h3 class="text-lg font-semibold">
+          {{ tenantId ? t('congregations.share.title') : t('congregations.share.globalTitle') }}
+        </h3>
+        <p v-if="!tenantId" class="text-sm text-muted-foreground">
+          {{ t('congregations.share.globalDescription') }}
+        </p>
+      </div>
       <Button size="sm" @click="openCreateDialog">
         <Link2 class="size-4" />
         {{ t('congregations.share.create') }}

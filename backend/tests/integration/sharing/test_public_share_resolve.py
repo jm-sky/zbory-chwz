@@ -39,6 +39,7 @@ PUBLIC_TOKEN = secrets.token_urlsafe(32)
 AUTHENTICATED_TOKEN = secrets.token_urlsafe(32)
 EXPIRED_TOKEN = secrets.token_urlsafe(32)
 REVOKED_TOKEN = secrets.token_urlsafe(32)
+ALL_CONGREGATIONS_TOKEN = secrets.token_urlsafe(32)
 
 
 async def _seed(session: AsyncSession) -> None:
@@ -128,6 +129,14 @@ async def _seed(session: AsyncSession) -> None:
                 expires_at=now + timedelta(days=7),
                 revoked_at=now,
             ),
+            ShareLinkDB(
+                id=generate_id(),
+                token=ALL_CONGREGATIONS_TOKEN,
+                tenant_id=None,
+                created_by_user_id=OWNER_ID,
+                visibility_level="public",
+                expires_at=now + timedelta(days=7),
+            ),
         ]
     )
 
@@ -171,7 +180,9 @@ async def test_public_level_link_hides_authenticated_only_fields(ctx) -> None:
     response = await client.get(f"/api/share/{PUBLIC_TOKEN}")
 
     assert response.status_code == 200
-    data = response.json()
+    body = response.json()
+    assert body["kind"] == "congregation"
+    data = body["congregation"]
     assert data["name"] == "Zbor Testowy"
     contact = next(c for c in data["card_contacts"] if c["name"] == "Anna Nowak")
     assert contact["phone"] == "+48222222222"
@@ -189,10 +200,24 @@ async def test_authenticated_level_link_reveals_authenticated_fields(ctx) -> Non
     response = await client.get(f"/api/share/{AUTHENTICATED_TOKEN}")
 
     assert response.status_code == 200
-    data = response.json()
+    data = response.json()["congregation"]
     contact = next(c for c in data["card_contacts"] if c["name"] == "Anna Nowak")
     assert contact["email"] == "anna@example.com"
     assert data["canManage"] is False
+
+
+@pytest.mark.asyncio
+async def test_all_congregations_link_resolves_to_published_list(ctx) -> None:
+    client, _ = ctx
+
+    response = await client.get(f"/api/share/{ALL_CONGREGATIONS_TOKEN}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["kind"] == "congregations"
+    assert body["congregation"] is None
+    ids = [congregation["id"] for congregation in body["congregations"]]
+    assert TENANT_ID in ids
 
 
 @pytest.mark.asyncio

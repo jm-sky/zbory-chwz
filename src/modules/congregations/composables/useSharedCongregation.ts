@@ -1,16 +1,17 @@
 import { useQuery } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
-import type { ICongregationDetail } from '../types/congregation.types'
+import type { IShareResolveResponse } from '../types/shareLink.types'
 import { shareLinkApiService } from '../services/shareLinkApiService'
 
 /**
- * Fetches the read-only congregation view behind a share link token.
- * Never retries: an invalid/expired/revoked token will not become valid on retry.
+ * Resolves a share link token to either a single congregation or an
+ * all-congregations list. Never retries: an invalid/expired/revoked token
+ * will not become valid on retry.
  */
 export function useSharedCongregation(token: MaybeRefOrGetter<string>) {
-  return useQuery<ICongregationDetail>({
+  return useQuery<IShareResolveResponse>({
     queryKey: computed(() => ['share', toValue(token)]),
-    queryFn: () => shareLinkApiService.getSharedCongregation(toValue(token)),
+    queryFn: () => shareLinkApiService.resolve(toValue(token)),
     enabled: computed(() => !!toValue(token)),
     retry: false,
   })

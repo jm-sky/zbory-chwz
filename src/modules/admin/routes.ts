@@ -7,6 +7,7 @@ export const AdminRoutePaths = {
   congregationImport: '/admin/congregations/import',
   googleContacts: '/admin/google-contacts',
   googleContactsCallback: '/admin/google-contacts/callback',
+  shareLinks: '/admin/share-links',
 }
 
 export const AdminRouteNames = {
@@ -16,6 +17,7 @@ export const AdminRouteNames = {
   congregationImport: 'admin-congregation-import',
   googleContacts: 'admin-google-contacts',
   googleContactsCallback: 'admin-google-contacts-callback',
+  shareLinks: 'admin-share-links',
 }
 
 export const adminRoutes: RouteRecordRaw[] = [
@@ -54,5 +56,11 @@ export const adminRoutes: RouteRecordRaw[] = [
     name: AdminRouteNames.googleContactsCallback,
     component: () => import('@/modules/admin/pages/AdminGoogleContactsCallbackPage.vue'),
     meta: { layout: 'authenticated', requiresAuth: true, requiresAdmin: true, title: 'admin.googleContacts.title' },
+  },
+  {
+    path: AdminRoutePaths.shareLinks,
+    name: AdminRouteNames.shareLinks,
+    component: () => import('@/modules/admin/pages/AdminShareLinksPage.vue'),
+    meta: { layout: 'authenticated', requiresAuth: true, requiresAdmin: true, title: 'admin.shareLinks.title' },
   },
 ]

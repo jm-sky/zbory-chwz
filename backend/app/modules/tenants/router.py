@@ -22,6 +22,7 @@ from app.modules.tenants.schemas import (
     PublicCardContact,
     PublicCongregationListResponse,
     PublicCongregationResponse,
+    ShareResolveResponse,
     TenantCreateRequest,
     TenantListResponse,
     TenantResponse,
@@ -161,22 +162,15 @@ async def list_congregations(
     return TenantListResponse(tenants=congregations)
 
 
-@public_congregations_router.get("/detailed", response_model=PublicCongregationListResponse)
-async def list_congregations_detailed(
-    repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
-    congregation_repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
-    church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    current_user: OptionalCurrentUser,
-) -> PublicCongregationListResponse:
-    """Public endpoint to list published congregations with detailed info (address, service times, contact).
-
-    Returns congregations with status 'published' or 'published_unverified', each
-    followed by its publicly visible branches (placówki). Uses address.status for
-    filtering (address status takes precedence over tenant status).
-
-    A congregation's church row shares its id with the tenant (see
-    `churches.provisioning`), so tenant ids double as church ids here.
-    """
+async def _build_published_congregations(
+    repo: TenantRepository,
+    congregation_repo: CongregationRepository,
+    church_repo: ChurchRepository,
+    *,
+    is_authenticated: bool,
+) -> list[PublicCongregationResponse]:
+    """Build the published-congregations-with-branches list shared by the public
+    detailed listing and the anonymous all-congregations share-link viewer."""
     all_tenants = await repo.list_all()
     addresses = await congregation_repo.get_addresses_by_status(PUBLIC_ADDRESS_STATUSES)
 
@@ -196,7 +190,7 @@ async def list_congregations_detailed(
             PublicCardContact(
                 **church_repo.to_public_card_contact(
                     assignment,
-                    is_authenticated=False,
+                    is_authenticated=is_authenticated,
                     has_pastoral_access=False,
                 )
             )
@@ -244,6 +238,27 @@ async def list_congregations_detailed(
                 )
             )
 
+    return congregations
+
+
+@public_congregations_router.get("/detailed", response_model=PublicCongregationListResponse)
+async def list_congregations_detailed(
+    repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    congregation_repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
+    church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
+    current_user: OptionalCurrentUser,
+) -> PublicCongregationListResponse:
+    """Public endpoint to list published congregations with detailed info (address, service times, contact).
+
+    Returns congregations with status 'published' or 'published_unverified', each
+    followed by its publicly visible branches (placówki). Uses address.status for
+    filtering (address status takes precedence over tenant status).
+
+    A congregation's church row shares its id with the tenant (see
+    `churches.provisioning`), so tenant ids double as church ids here.
+    """
+    congregations = await _build_published_congregations(repo, congregation_repo, church_repo, is_authenticated=False)
+    all_tenants = await repo.list_all()
     published_ids = {congregation.id for congregation in congregations}
 
     if current_user is not None:
@@ -320,7 +335,7 @@ async def get_congregation_detail(
     )
 
 
-@public_share_router.get("/{token}", response_model=CongregationDetailResponse)
+@public_share_router.get("/{token}", response_model=ShareResolveResponse)
 @rate_limit("30/minute")
 async def get_shared_congregation(
     request: Request,
@@ -329,8 +344,12 @@ async def get_shared_congregation(
     congregation_repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
     share_link_service: Annotated[ShareLinkService, Depends(get_share_link_service)],
-) -> CongregationDetailResponse:
-    """Resolve an anonymous share link to a congregation's filtered detail view.
+) -> ShareResolveResponse:
+    """Resolve an anonymous share link.
+
+    A tenant-scoped link resolves to that congregation's filtered detail view.
+    An all-congregations link (created by an admin/owner, no single tenant)
+    resolves to the same published-congregations list as the public directory.
 
     The granted visibility level (public/authenticated) is the ceiling for what
     the anonymous visitor sees; they never get pastoral access or canManage,
@@ -342,16 +361,23 @@ async def get_shared_congregation(
         # them helps an attacker probe tokens more than it helps a real visitor.
         raise HTTPException(status_code=404, detail="This link is no longer valid")
 
+    is_authenticated = share_link.visibility_level == "authenticated"
+
+    if share_link.tenant_id is None:
+        congregations = await _build_published_congregations(repo, congregation_repo, church_repo, is_authenticated=is_authenticated)
+        return ShareResolveResponse(kind="congregations", congregations=congregations)
+
     tenant = await repo.get_tenant(share_link.tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="This link is no longer valid")
 
-    return await _build_congregation_detail(
+    congregation = await _build_congregation_detail(
         tenant,
-        is_authenticated=share_link.visibility_level == "authenticated",
+        is_authenticated=is_authenticated,
         has_pastoral_access=False,
         is_member=False,
         membership_role=None,
         congregation_repo=congregation_repo,
         church_repo=church_repo,
     )
+    return ShareResolveResponse(kind="congregation", congregation=congregation)

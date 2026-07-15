@@ -39,6 +39,10 @@ export const adminEn = {
         button: 'Manage Congregations',
       },
     },
+    shareLinks: {
+      title: 'Share Links',
+      subtitle: 'Create links that give access to every published congregation without an account',
+    },
     users: {
       title: 'Users Management',
       subtitle: 'Manage user accounts and permissions',
