@@ -92,12 +92,12 @@ async def test_member_can_create_share_link(ctx) -> None:
 
     response = await client.post(
         f"/api/congregations/{TENANT_ID}/share-links",
-        json={"visibility_level": "public", "expires_in_days": 7, "label": "For a friend"},
+        json={"visibility_level": "authenticated", "expires_in_days": 7, "label": "For a friend"},
     )
 
     assert response.status_code == 201
     data = response.json()
-    assert data["visibility_level"] == "public"
+    assert data["visibility_level"] == "authenticated"
     assert data["label"] == "For a friend"
     assert len(data["token"]) >= 32
     assert data["revoked_at"] is None
@@ -110,7 +110,7 @@ async def test_outsider_cannot_create_share_link(ctx) -> None:
 
     response = await client.post(
         f"/api/congregations/{TENANT_ID}/share-links",
-        json={"visibility_level": "public", "expires_in_days": 7, "label": None},
+        json={"visibility_level": "authenticated", "expires_in_days": 7, "label": None},
     )
 
     assert response.status_code == 403
@@ -144,13 +144,28 @@ async def test_bogus_visibility_level_is_rejected(ctx) -> None:
 
 
 @pytest.mark.asyncio
+async def test_public_visibility_level_is_rejected_on_create(ctx) -> None:
+    """The "public" level grants nothing beyond the congregation's already-public page,
+    so it can't be chosen when creating a new link (existing "public" links still resolve)."""
+    client, login = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.post(
+        f"/api/congregations/{TENANT_ID}/share-links",
+        json={"visibility_level": "public", "expires_in_days": 7, "label": None},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_invalid_expiry_preset_is_rejected(ctx) -> None:
     client, login = ctx
     login(_api_user(MEMBER_ID))
 
     response = await client.post(
         f"/api/congregations/{TENANT_ID}/share-links",
-        json={"visibility_level": "public", "expires_in_days": 90, "label": None},
+        json={"visibility_level": "authenticated", "expires_in_days": 90, "label": None},
     )
 
     assert response.status_code == 422
@@ -195,12 +210,12 @@ async def test_admin_can_create_global_share_link(ctx) -> None:
 
     response = await client.post(
         "/api/share-links",
-        json={"visibility_level": "public", "expires_in_days": 7, "label": "All congregations"},
+        json={"visibility_level": "authenticated", "expires_in_days": 7, "label": "All congregations"},
     )
 
     assert response.status_code == 201
     data = response.json()
-    assert data["visibility_level"] == "public"
+    assert data["visibility_level"] == "authenticated"
     assert data["label"] == "All congregations"
 
 
@@ -211,7 +226,7 @@ async def test_non_admin_cannot_create_global_share_link(ctx) -> None:
 
     response = await client.post(
         "/api/share-links",
-        json={"visibility_level": "public", "expires_in_days": 7, "label": None},
+        json={"visibility_level": "authenticated", "expires_in_days": 7, "label": None},
     )
 
     assert response.status_code == 403

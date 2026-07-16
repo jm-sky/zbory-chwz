@@ -8,7 +8,7 @@ from fastapi import Depends
 
 from app.modules.sharing.db_models import ShareLinkDB
 from app.modules.sharing.repositories import ShareLinkRepository, get_share_link_repository
-from app.modules.sharing.schemas import ShareableVisibilityLevel, ShareLinkExpiryDays
+from app.modules.sharing.schemas import ShareLinkCreateVisibilityLevel, ShareLinkExpiryDays
 
 ResolveFailureReason = Literal["not_found", "expired", "revoked"]
 
@@ -24,7 +24,7 @@ class ShareLinkService:
         *,
         tenant_id: str | None,
         created_by_user_id: str,
-        visibility_level: ShareableVisibilityLevel,
+        visibility_level: ShareLinkCreateVisibilityLevel,
         expires_in_days: ShareLinkExpiryDays,
         label: str | None,
     ) -> ShareLinkDB:
