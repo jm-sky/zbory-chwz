@@ -6,11 +6,15 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 ShareableVisibilityLevel = Literal["public", "authenticated", "pastors"]
+# "public" is deliberately excluded here: it grants no more than the congregation's
+# already-public page, so a share link at that level would be pointless to create.
+# Existing "public" links (created before this restriction) still resolve normally.
+ShareLinkCreateVisibilityLevel = Literal["authenticated", "pastors"]
 ShareLinkExpiryDays = Literal[3, 7, 14, 30]
 
 
 class ShareLinkCreateRequest(BaseModel):
-    visibility_level: ShareableVisibilityLevel
+    visibility_level: ShareLinkCreateVisibilityLevel
     expires_in_days: ShareLinkExpiryDays
     label: str | None = Field(default=None, max_length=255)
 

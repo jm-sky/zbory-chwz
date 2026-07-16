@@ -41,7 +41,7 @@ const EXPIRY_OPTIONS: ShareLinkExpiryDays[] = [3, 7, 14, 30]
 
 const createDialogOpen = ref(false)
 const form = ref<{ visibilityLevel: ShareableVisibilityLevel; expiresInDays: string; label: string }>({
-  visibilityLevel: 'public',
+  visibilityLevel: 'authenticated',
   expiresInDays: '7',
   label: '',
 })
@@ -52,7 +52,7 @@ function shareUrl(token: string): string {
 }
 
 function openCreateDialog(): void {
-  form.value = { visibilityLevel: 'public', expiresInDays: '7', label: '' }
+  form.value = { visibilityLevel: 'authenticated', expiresInDays: '7', label: '' }
   createdLink.value = null
   createDialogOpen.value = true
 }
@@ -180,7 +180,7 @@ const visibilityLabel = computed(() => (level: ShareableVisibilityLevel) =>
           <VisibilityLevelSelect
             v-model="form.visibilityLevel"
             :label="t('congregations.share.visibilityLevel')"
-            :levels="['public', 'authenticated', 'pastors']"
+            :levels="['authenticated', 'pastors']"
           />
           <p class="text-xs text-muted-foreground">
             {{ t('congregations.share.readOnlyNote') }}
