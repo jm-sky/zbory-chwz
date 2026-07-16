@@ -37,8 +37,8 @@ class EmailService:
             loader=FileSystemLoader(str(self.templates_dir)),
             autoescape=select_autoescape(["html", "xml"]),
         )
-        # Primary color from frontend: oklch(0.646 0.222 41.116) converted to hex for email compatibility
-        self.primary_color = "#D97757"
+        # Primary color from frontend: oklch(0.63 0.22 245) - blue-500, matches --primary in src/css/style.css
+        self.primary_color = "#3b82f6"
 
     def _render_translation(self, translations: dict[str, object], key: str, context: dict[str, object]) -> str:
         """Render a translation string with context variables.
@@ -63,11 +63,16 @@ class EmailService:
         if not isinstance(value, str):
             return key  # Value is not a string, return key
 
-        # Render with Jinja2 to support variables in translations
+        # Render with Jinja2 to support variables in translations. autoescape=True so
+        # variables interpolated here (e.g. {{ email }}) are escaped, and Markup(...) so
+        # the literal HTML tags in the translation string (e.g. <strong>) aren't
+        # re-escaped when this return value is inserted into the outer, autoescaping
+        # template via translate().
         from jinja2 import Template
+        from markupsafe import Markup
 
-        template = Template(value)
-        return template.render(**context)
+        template = Template(value, autoescape=True)
+        return Markup(template.render(**context))
 
     async def send_email(
         self,
