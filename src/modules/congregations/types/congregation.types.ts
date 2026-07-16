@@ -27,6 +27,8 @@ export interface ICongregationDetailed extends ICongregation {
   province?: string | null
   /** ISO 3166-1 alpha-2 country code, e.g. 'PL' */
   country?: string | null
+  latitude?: number | null
+  longitude?: number | null
   // Service times
   service_times?: Array<{ day: string; time: string; description?: string | null }>
   // Contacts from public service assignments
@@ -64,6 +66,8 @@ export interface ICongregationDetail {
   province?: string | null
   /** ISO 3166-1 alpha-2 country code, e.g. 'PL' */
   country?: string | null
+  latitude?: number | null
+  longitude?: number | null
   // Full, unlimited service times
   service_times: Array<{ day: string; time: string; description?: string | null }>
   // Visible profile contacts, filtered by viewer's visibility level
@@ -86,6 +90,8 @@ export interface ICongregationDetailedListResponse {
   congregations: ICongregationDetailed[]
 }
 
+export type GeocodeStatus = 'pending' | 'manual'
+
 export interface IAddress {
   id: string
   tenant_id: string
@@ -94,6 +100,9 @@ export interface IAddress {
   postal_code?: string | null
   province?: string | null
   country: string
+  latitude?: number | null
+  longitude?: number | null
+  geocode_status?: GeocodeStatus
   status: string
   created_at: string
   updated_at: string
@@ -123,6 +132,8 @@ export interface IAddressCreateRequest {
   postal_code?: string | null
   province?: string | null
   country?: string
+  latitude?: number | null
+  longitude?: number | null
   status?: string
 }
 
@@ -132,7 +143,24 @@ export interface IAddressUpdateRequest {
   postal_code?: string | null
   province?: string | null
   country?: string | null
+  latitude?: number | null
+  longitude?: number | null
   status?: string | null
+}
+
+export interface IGeocodeRequest {
+  street?: string | null
+  city: string
+  postal_code?: string | null
+  province?: string | null
+  country?: string
+}
+
+export interface IGeocodeResponse {
+  latitude?: number | null
+  longitude?: number | null
+  display_name?: string | null
+  confidence: 'exact' | 'approximate' | 'not_found'
 }
 
 export interface IServiceTimeCreateRequest {

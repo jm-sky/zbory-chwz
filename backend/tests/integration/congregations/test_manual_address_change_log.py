@@ -142,6 +142,47 @@ async def test_update_address_logs_only_changed_fields(ctx) -> None:
 
 
 @pytest.mark.asyncio
+async def test_update_address_with_coordinates_marks_manual_and_logs_them(ctx) -> None:
+    client, login, session_factory = ctx
+    login(_api_user(OWNER_ID))
+
+    now = datetime.now(UTC)
+    async with session_factory() as session:
+        session.add(
+            CongregationAddressDB(
+                id=generate_id(),
+                tenant_id=TENANT_ID,
+                street="Stara 1",
+                city="Poznań",
+                country="PL",
+                status="draft",
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        await session.commit()
+
+    response = await client.patch(
+        f"/api/congregations/{TENANT_ID}/address",
+        json={"latitude": 52.4064, "longitude": 16.9252},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["latitude"] == pytest.approx(52.4064)
+    assert body["longitude"] == pytest.approx(16.9252)
+    assert body["geocode_status"] == "manual"
+
+    async with session_factory() as session:
+        result = await session.execute(select(CongregationChangeLogDB).where(CongregationChangeLogDB.tenant_id == TENANT_ID))
+        entries = {entry.field: entry for entry in result.scalars().all()}
+
+    assert entries["latitude"].old_value is None
+    assert entries["latitude"].new_value == "52.4064"
+    assert entries["longitude"].new_value == "16.9252"
+
+
+@pytest.mark.asyncio
 async def test_update_address_no_changes_logs_nothing(ctx) -> None:
     client, login, session_factory = ctx
     login(_api_user(OWNER_ID))

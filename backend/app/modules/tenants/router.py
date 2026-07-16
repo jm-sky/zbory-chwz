@@ -9,6 +9,7 @@ from app.modules.auth.dependencies import CurrentUser, OptionalCurrentUser
 from app.modules.churches.acl_service import AclService, get_acl_service
 from app.modules.churches.repositories import ChurchRepository, get_church_repository
 from app.modules.churches.visibility import VisibilityService
+from app.modules.congregations.db_models import decode_coordinate
 from app.modules.congregations.repositories import (
     CongregationRepository,
     get_congregation_repository,
@@ -90,6 +91,8 @@ async def _build_congregation_detail(
         postal_code=address.postal_code if address else None,
         province=address.province if address else None,
         country=address.country if address else None,
+        latitude=decode_coordinate(address.latitude) if address else None,
+        longitude=decode_coordinate(address.longitude) if address else None,
         service_times=[{"day": service_time.day, "time": service_time.time, "description": service_time.description} for service_time in service_times],
         card_contacts=card_contacts,
         hidden_contacts=hidden_profile_contacts,
@@ -212,6 +215,8 @@ async def _build_published_congregations(
                 postal_code=address.postal_code,
                 province=address.province,
                 country=address.country,
+                latitude=decode_coordinate(address.latitude),
+                longitude=decode_coordinate(address.longitude),
                 service_times=service_times,
                 card_contacts=card_contacts,
                 contact_name=primary_contact.name if primary_contact else None,
@@ -236,6 +241,8 @@ async def _build_published_congregations(
                     city=address.city,
                     province=address.province,
                     country=address.country,
+                    latitude=decode_coordinate(address.latitude),
+                    longitude=decode_coordinate(address.longitude),
                 )
             )
 
@@ -285,6 +292,8 @@ async def list_congregations_detailed(
                         postal_code=address.postal_code if address else None,
                         province=address.province if address else None,
                         country=address.country if address else None,
+                        latitude=decode_coordinate(address.latitude) if address else None,
+                        longitude=decode_coordinate(address.longitude) if address else None,
                     )
                 )
 

@@ -1,22 +1,33 @@
 import { ANY_VALUE } from '../composables/useCongregationFilters'
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 
-export const CONGREGATION_FILTER_QUERY_KEYS = ['q', 'country', 'province', 'hideBranches'] as const
+export const CONGREGATION_FILTER_QUERY_KEYS = ['q', 'country', 'province', 'hideBranches', 'maxDistanceKm', 'sortByDistance'] as const
 
 export interface ICongregationFilterQueryState {
   search: string
   country: string
   province: string
   hideBranches: boolean
+  /** Radius filter in km; not persisted alongside a user location, since raw
+   * GPS coordinates are session-local and shouldn't leak into a shared URL. */
+  maxDistanceKm: number | null
+  sortByDistance: boolean
 }
 
 function queryString(value: LocationQuery[string] | LocationQueryRaw[string]): string | undefined {
   return typeof value === 'string' ? value : undefined
 }
 
-function parseHideBranches(value: LocationQuery[string] | LocationQueryRaw[string]): boolean {
+function parseBoolean(value: LocationQuery[string] | LocationQueryRaw[string]): boolean {
   const raw = queryString(value)
   return raw === '1' || raw === 'true'
+}
+
+function parseMaxDistanceKm(value: LocationQuery[string] | LocationQueryRaw[string]): number | null {
+  const raw = queryString(value)
+  if (!raw) return null
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
 }
 
 export function parseCongregationFilterQuery(query: LocationQuery | LocationQueryRaw): ICongregationFilterQueryState {
@@ -28,7 +39,9 @@ export function parseCongregationFilterQuery(query: LocationQuery | LocationQuer
     search,
     country: countryRaw && countryRaw.length > 0 ? countryRaw : ANY_VALUE,
     province: provinceRaw && provinceRaw.length > 0 ? provinceRaw : ANY_VALUE,
-    hideBranches: parseHideBranches(query.hideBranches),
+    hideBranches: parseBoolean(query.hideBranches),
+    maxDistanceKm: parseMaxDistanceKm(query.maxDistanceKm),
+    sortByDistance: parseBoolean(query.sortByDistance),
   }
 }
 
@@ -49,6 +62,14 @@ export function buildCongregationFilterQuery(state: ICongregationFilterQueryStat
 
   if (state.hideBranches) {
     query.hideBranches = '1'
+  }
+
+  if (state.maxDistanceKm != null) {
+    query.maxDistanceKm = String(state.maxDistanceKm)
+  }
+
+  if (state.sortByDistance) {
+    query.sortByDistance = '1'
   }
 
   return query

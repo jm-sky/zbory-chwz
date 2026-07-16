@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronUp, X } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
+import { ChevronDown, ChevronUp, LocateFixed, X } from 'lucide-vue-next'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -13,19 +13,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useGeolocation } from '@/shared/composables/useGeolocation'
 import type { CongregationListViewMode } from '../types/congregationListView.types'
+import type { ILatLng } from '../utils/distance'
 import { ANY_VALUE } from '../composables/useCongregationFilters'
 import { countryLabel, provinceLabel } from '../utils/geo'
 import CongregationViewModeToggle from './CongregationViewModeToggle.vue'
 
+const DISTANCE_OPTIONS_KM = [5, 10, 25, 50, 100]
+const ANY_DISTANCE = 'any'
+
 const { locale, t } = useI18n()
 
-const { availableCountries, availableProvinces, hasBranches, isFiltered, resultCount } = defineProps<{
+const { availableCountries, availableProvinces, hasBranches, isFiltered, resultCount, missingCoordinatesCount = 0 } = defineProps<{
   availableCountries: string[]
   availableProvinces: string[]
   hasBranches: boolean
   isFiltered: boolean
   resultCount: number
+  missingCoordinatesCount?: number
 }>()
 
 const search = defineModel<string>('search', { required: true })
@@ -33,10 +39,43 @@ const country = defineModel<string>('country', { required: true })
 const province = defineModel<string>('province', { required: true })
 const hideBranches = defineModel<boolean>('hideBranches', { required: true })
 const viewMode = defineModel<CongregationListViewMode>('viewMode', { required: true })
+const maxDistanceKm = defineModel<number | null>('maxDistanceKm', { required: true })
+const sortByDistance = defineModel<boolean>('sortByDistance', { required: true })
+const userLocation = defineModel<ILatLng | null>('userLocation', { required: true })
 
 const emit = defineEmits<{ reset: [] }>()
 
 const showAdvancedFilters = ref(false)
+const locating = ref(false)
+
+const { coordinates, error: geoError, isSupported: geoSupported, locate } = useGeolocation()
+
+watch(coordinates, (value) => {
+  if (value) {
+    userLocation.value = value
+    locating.value = false
+  }
+})
+
+watch(geoError, (value) => {
+  if (value) locating.value = false
+})
+
+function useMyLocation(): void {
+  locating.value = true
+  locate()
+}
+
+function clearMyLocation(): void {
+  userLocation.value = null
+  maxDistanceKm.value = null
+  sortByDistance.value = false
+}
+
+const maxDistanceModel = computed<string>({
+  get: () => maxDistanceKm.value == null ? ANY_DISTANCE : String(maxDistanceKm.value),
+  set: (value) => { maxDistanceKm.value = value === ANY_DISTANCE ? null : Number(value) },
+})
 
 const countryItems = computed<Array<{ value: string; label: string }>>(() =>
   availableCountries.map((code) => ({ value: code, label: countryLabel(code, locale.value) })),
@@ -133,6 +172,60 @@ function toggleAdvancedFilters(): void {
           </SelectContent>
         </Select>
       </div>
+    </div>
+
+    <div v-show="showAdvancedFilters" class="flex flex-wrap items-center gap-3 border-t pt-3">
+      <Button
+        v-if="!userLocation"
+        variant="outline"
+        size="sm"
+        :disabled="!geoSupported || locating"
+        @click="useMyLocation"
+      >
+        <LocateFixed class="size-4" />
+        {{ locating ? t('congregations.filters.locating') : t('congregations.filters.myLocation') }}
+      </Button>
+
+      <template v-else>
+        <div class="flex items-center gap-2">
+          <Label class="text-sm text-muted-foreground">
+            {{ t('congregations.filters.maxDistance') }}
+          </Label>
+          <Select v-model="maxDistanceModel">
+            <SelectTrigger class="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem :value="ANY_DISTANCE">
+                {{ t('congregations.filters.anyDistance') }}
+              </SelectItem>
+              <SelectItem v-for="km in DISTANCE_OPTIONS_KM" :key="km" :value="String(km)">
+                {{ t('congregations.filters.distanceKm', { km }) }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <Checkbox id="congregations-sort-by-distance" v-model="sortByDistance" />
+          <Label for="congregations-sort-by-distance" class="cursor-pointer font-normal">
+            {{ t('congregations.filters.sortByDistance') }}
+          </Label>
+        </div>
+
+        <Button variant="ghost" size="sm" @click="clearMyLocation">
+          <X class="size-4" />
+          {{ t('congregations.filters.clearLocation') }}
+        </Button>
+      </template>
+
+      <span v-if="geoError" class="text-sm text-destructive">
+        {{ t('congregations.filters.locationError') }}
+      </span>
+
+      <span v-if="missingCoordinatesCount > 0" class="text-xs text-muted-foreground">
+        {{ t('congregations.filters.missingCoordinates', { count: missingCoordinatesCount }, missingCoordinatesCount) }}
+      </span>
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3">

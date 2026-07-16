@@ -702,6 +702,27 @@ class EmailImportSettings(BaseSettings):
     )
 
 
+class NominatimSettings(BaseSettings):
+    """Nominatim (OpenStreetMap) geocoding configuration.
+
+    Used to turn a congregation's street/city/postal_code into lat/lng for
+    map display. Nominatim's public instance requires a descriptive
+    User-Agent identifying the application (its usage policy forbids the
+    default HTTP client UA) and enforces a max 1 request/second - see
+    app/modules/congregations/geocoding.py for the throttling that respects it.
+    """
+
+    model_config = _base_config
+
+    enabled: bool = Field(default=True, validation_alias="NOMINATIM_ENABLED")
+    base_url: str = Field(default="https://nominatim.openstreetmap.org", validation_alias="NOMINATIM_BASE_URL")
+    user_agent: str = Field(
+        default="ZboryCHWZ/1.0 (+https://chwz.waw.pl)",
+        validation_alias="NOMINATIM_USER_AGENT",
+        description="Sent as the User-Agent header, per Nominatim's usage policy",
+    )
+
+
 class WebAuthnSettings(BaseSettings):
     """WebAuthn configuration."""
 
@@ -750,6 +771,7 @@ class Settings(BaseSettings):
     webauthn: WebAuthnSettings = Field(default_factory=WebAuthnSettings)
     ai: AISettings = Field(default_factory=AISettings)
     email_import: EmailImportSettings = Field(default_factory=EmailImportSettings)
+    nominatim: NominatimSettings = Field(default_factory=NominatimSettings)
 
     # Legacy compatibility - still accessible at root level
     frontend_url: str = Field(

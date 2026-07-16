@@ -12,6 +12,8 @@ import type {
   ICongregationDetailed,
   ICongregationDetailedListResponse,
   ICongregationFull,
+  IGeocodeRequest,
+  IGeocodeResponse,
   IServiceTime,
   IServiceTimeCreateRequest,
   IServiceTimeUpdateRequest,
@@ -231,6 +233,16 @@ class CongregationApiService {
    */
   async updateAddress(tenantId: string, data: IAddressUpdateRequest): Promise<IAddress> {
     const response = await apiClient.patch<IAddress>(`/congregations/${tenantId}/address`, data)
+    return response.data
+  }
+
+  /**
+   * Preview coordinates for an address without saving them. The caller still
+   * has to save the resulting latitude/longitude via createOrUpdateAddress
+   * or updateAddress - this endpoint never touches the database.
+   */
+  async geocodeAddress(tenantId: string, data: IGeocodeRequest): Promise<IGeocodeResponse> {
+    const response = await apiClient.post<IGeocodeResponse>(`/congregations/${tenantId}/address/geocode`, data)
     return response.data
   }
 

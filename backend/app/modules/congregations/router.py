@@ -3,14 +3,16 @@
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from app.core.limiter import rate_limit
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.auth.models import User
 from app.modules.churches.acl_service import AclService, get_acl_service
-from app.modules.congregations.db_models import CongregationAddressDB
-from app.modules.congregations.field_diff import ADDRESS_FIELDS, FIELD_LABELS
+from app.modules.congregations.db_models import CongregationAddressDB, decode_coordinate
+from app.modules.congregations.field_diff import ADDRESS_FIELDS, FIELD_LABELS, MANUAL_ONLY_FIELD_LABELS
 from app.modules.congregations.geo import is_valid_province
+from app.modules.congregations.geocoding import geocode_address
 from app.modules.congregations.repositories import (
     CongregationRepository,
     get_congregation_repository,
@@ -22,6 +24,8 @@ from app.modules.congregations.schemas import (
     ChangeLogEntry,
     ChangeLogResponse,
     CongregationFullResponse,
+    GeocodeRequest,
+    GeocodeResponse,
     ServiceTimeCreateRequest,
     ServiceTimeResponse,
     ServiceTimeUpdateRequest,
@@ -106,6 +110,9 @@ async def get_address(
         postal_code=address.postal_code,
         province=address.province,
         country=address.country,
+        latitude=decode_coordinate(address.latitude),
+        longitude=decode_coordinate(address.longitude),
+        geocode_status=address.geocode_status,
         status=address.status,
         created_at=address.created_at,
         updated_at=address.updated_at,
@@ -138,6 +145,8 @@ async def create_address(
         postal_code=payload.postal_code,
         province=payload.province,
         country=payload.country,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
         status=payload.status,
     )
 
@@ -151,6 +160,9 @@ async def create_address(
         postal_code=address.postal_code,
         province=address.province,
         country=address.country,
+        latitude=decode_coordinate(address.latitude),
+        longitude=decode_coordinate(address.longitude),
+        geocode_status=address.geocode_status,
         status=address.status,
         created_at=address.created_at,
         updated_at=address.updated_at,
@@ -190,6 +202,12 @@ async def update_address(
         address.province = payload.province
     if payload.country is not None:
         address.country = payload.country
+    if payload.latitude is not None:
+        address.latitude = str(payload.latitude)
+        address.geocode_status = "manual"
+    if payload.longitude is not None:
+        address.longitude = str(payload.longitude)
+        address.geocode_status = "manual"
     if payload.status is not None:
         address.status = payload.status
 
@@ -215,11 +233,49 @@ async def update_address(
         postal_code=address.postal_code,
         province=address.province,
         country=address.country,
+        latitude=decode_coordinate(address.latitude),
+        longitude=decode_coordinate(address.longitude),
+        geocode_status=address.geocode_status,
         status=address.status,
         created_at=address.created_at,
         updated_at=address.updated_at,
         last_updated_at=address.last_updated_at,
         last_updated_label=address.last_updated_label,
+    )
+
+
+@router.post("/{tenant_id}/address/geocode", response_model=GeocodeResponse)
+@rate_limit("10/minute")
+async def geocode_congregation_address(
+    tenant_id: str,
+    payload: GeocodeRequest,
+    current_user: CurrentUser,
+    request: Request,
+    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+) -> GeocodeResponse:
+    """Preview coordinates for an address without saving them.
+
+    Does not write to the database - the admin still confirms via the usual
+    POST/PATCH .../address call (with the resulting latitude/longitude in the
+    payload), so nothing is persisted just from looking up a suggestion.
+    """
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+
+    result = await geocode_address(
+        street=payload.street,
+        city=payload.city,
+        postal_code=payload.postal_code,
+        province=payload.province,
+        country=payload.country,
+    )
+    if result is None:
+        return GeocodeResponse(confidence="not_found")
+
+    return GeocodeResponse(
+        latitude=result.latitude,
+        longitude=result.longitude,
+        display_name=result.display_name,
+        confidence=result.confidence,  # type: ignore[arg-type]
     )
 
 
@@ -389,6 +445,9 @@ async def get_full_congregation(
                 postal_code=address.postal_code,
                 province=address.province,
                 country=address.country,
+                latitude=decode_coordinate(address.latitude),
+                longitude=decode_coordinate(address.longitude),
+                geocode_status=address.geocode_status,
                 status=address.status,
                 created_at=address.created_at,
                 updated_at=address.updated_at,
@@ -435,7 +494,7 @@ async def get_change_log(
                 id=entry.id,
                 section=entry.section,  # type: ignore[arg-type]
                 field=entry.field,
-                field_label=FIELD_LABELS.get(entry.field, entry.field),
+                field_label=FIELD_LABELS.get(entry.field) or MANUAL_ONLY_FIELD_LABELS.get(entry.field, entry.field),
                 old_value=entry.old_value,
                 new_value=entry.new_value,
                 source=entry.source,  # type: ignore[arg-type]

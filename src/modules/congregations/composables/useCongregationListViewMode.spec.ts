@@ -28,4 +28,10 @@ describe('useCongregationListViewMode', () => {
     const { viewMode } = useCongregationListViewMode()
     expect(viewMode.value).toBe('grid')
   })
+
+  it('should read a previously stored map mode', () => {
+    localStorage.setItem('congregations-list-view-mode', 'map')
+    const { viewMode } = useCongregationListViewMode()
+    expect(viewMode.value).toBe('map')
+  })
 })

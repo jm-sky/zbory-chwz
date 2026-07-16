@@ -43,9 +43,21 @@ class CongregationRepository:
         postal_code: str | None = None,
         province: str | None = None,
         country: str = DEFAULT_COUNTRY,
+        latitude: float | None = None,
+        longitude: float | None = None,
         status: str = "draft",
     ) -> CongregationAddressDB:
-        """Create or update address for a tenant."""
+        """Create or update address for a tenant.
+
+        latitude/longitude given here are treated as human-approved (typed in
+        manually, dragged on the map, or accepted from a geocode preview in
+        the edit form) and marked geocode_status="manual"; omitting them
+        leaves geocode_status="pending" (no coordinates yet).
+        """
+        encoded_lat = str(latitude) if latitude is not None else None
+        encoded_lng = str(longitude) if longitude is not None else None
+        geocode_status = "manual" if latitude is not None or longitude is not None else "pending"
+
         existing = await self.get_address_by_tenant_id(tenant_id)
         if existing:
             existing.street = street
@@ -53,6 +65,9 @@ class CongregationRepository:
             existing.postal_code = postal_code
             existing.province = province
             existing.country = country
+            existing.latitude = encoded_lat
+            existing.longitude = encoded_lng
+            existing.geocode_status = geocode_status
             existing.status = status
             existing.updated_at = datetime.now(UTC)
             await self.db.commit()
@@ -67,6 +82,9 @@ class CongregationRepository:
             postal_code=postal_code,
             province=province,
             country=country,
+            latitude=encoded_lat,
+            longitude=encoded_lng,
+            geocode_status=geocode_status,
             status=status,
         )
         self.db.add(address)

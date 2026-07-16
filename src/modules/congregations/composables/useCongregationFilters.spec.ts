@@ -18,11 +18,15 @@ const wroclaw = congregation({
   name: 'ZBÓR WE WROCŁAWIU',
   city: 'Wrocław',
   province: 'dolnoslaskie',
+  latitude: 51.1079,
+  longitude: 17.0385,
 })
 const warszawa = congregation({
   name: 'ZBÓR W WARSZAWIE',
   city: 'Warszawa',
   province: 'mazowieckie',
+  latitude: 52.2297,
+  longitude: 21.0122,
 })
 const marktredwitz = congregation({
   name: 'ZBÓR W MARKTREDWITZ',
@@ -126,5 +130,76 @@ describe('useCongregationFilters', () => {
   it('reports whether any branch exists, to hide a useless toggle', () => {
     expect(useCongregationFilters(ref(all)).hasBranches.value).toBe(true)
     expect(useCongregationFilters(ref([wroclaw])).hasBranches.value).toBe(false)
+  })
+
+  describe('distance filtering and sorting', () => {
+    it('is a no-op until a user location is set', () => {
+      const filters = useCongregationFilters(ref(all))
+      filters.maxDistanceKm.value = 10
+      filters.sortByDistance.value = true
+      expect(filters.filtered.value).toHaveLength(4)
+      expect(filters.isFiltered.value).toBe(false)
+    })
+
+    it('annotates items with distanceKm once a location is set', () => {
+      const filters = useCongregationFilters(ref(all))
+      filters.userLocation.value = { lat: 51.1079, lng: 17.0385 } // Wrocław itself
+
+      const wroclawResult = filters.filtered.value.find((c) => c.name === 'ZBÓR WE WROCŁAWIU')
+      expect(wroclawResult?.distanceKm).toBeCloseTo(0, 3)
+
+      const warszawaResult = filters.filtered.value.find((c) => c.name === 'ZBÓR W WARSZAWIE')
+      expect(warszawaResult?.distanceKm).toBeGreaterThan(300)
+    })
+
+    it('filters out congregations beyond maxDistanceKm', () => {
+      const filters = useCongregationFilters(ref(all))
+      filters.userLocation.value = { lat: 51.1079, lng: 17.0385 }
+      filters.maxDistanceKm.value = 50
+
+      const names = filters.filtered.value.map((c) => c.name)
+      expect(names).toContain('ZBÓR WE WROCŁAWIU')
+      expect(names).not.toContain('ZBÓR W WARSZAWIE')
+    })
+
+    it('excludes congregations without coordinates once a radius filter is active, and counts them', () => {
+      const filters = useCongregationFilters(ref(all))
+      filters.userLocation.value = { lat: 51.1079, lng: 17.0385 }
+      filters.maxDistanceKm.value = 1000
+
+      const names = filters.filtered.value.map((c) => c.name)
+      expect(names).not.toContain('ZBÓR W MARKTREDWITZ')
+      expect(names).not.toContain('Placówka Psie Pole')
+      expect(filters.missingCoordinatesCount.value).toBe(2)
+    })
+
+    it('sorts by distance ascending when requested', () => {
+      const filters = useCongregationFilters(ref(all))
+      filters.userLocation.value = { lat: 51.1079, lng: 17.0385 }
+      filters.sortByDistance.value = true
+
+      const withCoords = filters.filtered.value.filter((c) => c.distanceKm != null)
+      expect(withCoords.map((c) => c.name)).toEqual(['ZBÓR WE WROCŁAWIU', 'ZBÓR W WARSZAWIE'])
+    })
+
+    it('marks isFiltered once a radius filter is active with a location', () => {
+      const filters = useCongregationFilters(ref(all))
+      filters.userLocation.value = { lat: 51.1079, lng: 17.0385 }
+      filters.maxDistanceKm.value = 50
+      expect(filters.isFiltered.value).toBe(true)
+    })
+
+    it('reset clears the radius filter and sort, but keeps the user location', () => {
+      const filters = useCongregationFilters(ref(all))
+      filters.userLocation.value = { lat: 51.1079, lng: 17.0385 }
+      filters.maxDistanceKm.value = 50
+      filters.sortByDistance.value = true
+
+      filters.reset()
+
+      expect(filters.maxDistanceKm.value).toBeNull()
+      expect(filters.sortByDistance.value).toBe(false)
+      expect(filters.userLocation.value).not.toBeNull()
+    })
   })
 })
