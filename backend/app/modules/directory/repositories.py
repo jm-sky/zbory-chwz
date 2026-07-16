@@ -9,6 +9,7 @@ from fastapi import Depends
 from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.id_utils import generate_id
 from app.core.database import get_db
 from app.modules.auth.models import User
 from app.modules.churches.acl_models import UserRoleAssignmentDB
@@ -20,6 +21,7 @@ from app.modules.churches.db_models import (
     ServiceTypeDB,
 )
 from app.modules.churches.person_search import SEARCH_CANDIDATE_CAP, person_matches_query
+from app.modules.directory.db_models import PersonChangeLogDB
 from app.modules.directory.schemas import PersonUpdateRequest
 from app.modules.groups.db_models import PeopleGroupDB, PeopleGroupMembershipDB
 
@@ -226,10 +228,25 @@ class DirectoryRepository:
 
         return affiliations
 
-    async def update_person(self, person_id: str, payload: PersonUpdateRequest) -> PersonDB | None:
+    async def update_person(
+        self,
+        person_id: str,
+        payload: PersonUpdateRequest,
+        *,
+        actor_label: str,
+        actor_user_id: str,
+    ) -> PersonDB | None:
         person = await self.get_person(person_id)
         if not person:
             return None
+
+        before = {
+            "firstName": person.first_name,
+            "lastName": person.last_name,
+            "email": person.email,
+            "phone": person.phone,
+        }
+
         if payload.firstName is not None:
             person.first_name = payload.firstName
         if payload.lastName is not None:
@@ -240,7 +257,36 @@ class DirectoryRepository:
             person.phone = payload.phone
         await self.db.commit()
         await self.db.refresh(person)
+
+        after = {
+            "firstName": person.first_name,
+            "lastName": person.last_name,
+            "email": person.email,
+            "phone": person.phone,
+        }
+        changes = {field: (before[field], after[field]) for field in before if before[field] != after[field]}
+        if changes:
+            for field, (old_value, new_value) in changes.items():
+                self.db.add(
+                    PersonChangeLogDB(
+                        id=generate_id(),
+                        person_id=person_id,
+                        field=field,
+                        old_value=old_value,
+                        new_value=new_value,
+                        source="admin_manual",
+                        actor_label=actor_label,
+                        actor_user_id=actor_user_id,
+                    )
+                )
+            await self.db.commit()
+
         return person
+
+    async def get_change_log(self, person_id: str) -> list[PersonChangeLogDB]:
+        stmt = select(PersonChangeLogDB).where(PersonChangeLogDB.person_id == person_id).order_by(PersonChangeLogDB.created_at.desc())
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
 
     async def merge_persons(self, keep_id: str, merge_id: str) -> PersonDB | None:
         keep_person = await self.get_person(keep_id)

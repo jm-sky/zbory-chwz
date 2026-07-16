@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.auth.models import User
 from app.modules.churches.acl_service import AclService, get_acl_service
-from app.modules.congregations.field_diff import FIELD_LABELS
+from app.modules.congregations.db_models import CongregationAddressDB
+from app.modules.congregations.field_diff import ADDRESS_FIELDS, FIELD_LABELS
 from app.modules.congregations.geo import is_valid_province
 from app.modules.congregations.repositories import (
     CongregationRepository,
@@ -53,6 +54,30 @@ async def _verify_change_log_access(
         return
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+
+def _address_snapshot(address: CongregationAddressDB | None) -> dict[str, str | None]:
+    if address is None:
+        return dict.fromkeys(ADDRESS_FIELDS)
+    return {field: getattr(address, field) for field in ADDRESS_FIELDS}
+
+
+async def _log_address_changes(
+    repo: CongregationRepository,
+    tenant_id: str,
+    current_user: User,
+    before: dict[str, str | None],
+    after: dict[str, str | None],
+) -> None:
+    changes = {field: (before[field], after[field]) for field in ADDRESS_FIELDS if before[field] != after[field]}
+    await repo.log_changes(
+        tenant_id,
+        section="address",
+        changes=changes,
+        source="admin_manual",
+        actor_label=current_user.name,
+        actor_user_id=current_user.id,
+    )
 
 
 # Address endpoints
@@ -104,6 +129,8 @@ async def create_address(
     """Create or update address for a congregation."""
     await verify_tenant_access(tenant_id, current_user, tenant_repo)
 
+    before = _address_snapshot(await repo.get_address_by_tenant_id(tenant_id))
+
     address = await repo.create_or_update_address(
         tenant_id=tenant_id,
         street=payload.street,
@@ -113,6 +140,8 @@ async def create_address(
         country=payload.country,
         status=payload.status,
     )
+
+    await _log_address_changes(repo, tenant_id, current_user, before, _address_snapshot(address))
 
     return AddressResponse(
         id=address.id,
@@ -148,6 +177,8 @@ async def update_address(
             detail=f"Address not found for tenant {tenant_id}",
         )
 
+    before = _address_snapshot(address)
+
     # Update fields
     if payload.street is not None:
         address.street = payload.street
@@ -173,6 +204,8 @@ async def update_address(
 
     await repo.db.commit()
     await repo.db.refresh(address)
+
+    await _log_address_changes(repo, tenant_id, current_user, before, _address_snapshot(address))
 
     return AddressResponse(
         id=address.id,

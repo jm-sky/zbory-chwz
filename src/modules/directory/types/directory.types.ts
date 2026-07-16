@@ -48,3 +48,18 @@ export interface IPersonMergeRequest {
   keepPersonId: string
   mergePersonId: string
 }
+
+export interface IPersonChangeLogEntry {
+  id: string
+  field: 'firstName' | 'lastName' | 'email' | 'phone'
+  field_label: string
+  old_value: string | null
+  new_value: string | null
+  source: 'admin_manual'
+  actor_label: string
+  created_at: string
+}
+
+export interface IPersonChangeLogResponse {
+  entries: IPersonChangeLogEntry[]
+}

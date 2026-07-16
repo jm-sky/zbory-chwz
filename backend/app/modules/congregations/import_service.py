@@ -122,7 +122,7 @@ class CongregationImportService:
             fields=fields,
         )
 
-    async def apply(self, request: ImportApplyRequest, *, owner_user_id: str) -> ImportApplyResponse:
+    async def apply(self, request: ImportApplyRequest, *, owner_user_id: str, actor_name: str) -> ImportApplyResponse:
         created = updated = skipped = 0
 
         for item in request.items:
@@ -149,9 +149,58 @@ class CongregationImportService:
                 tenant_id = item.tenant_id
                 updated += 1
 
+            before_address, before_contact = await self._capture_before(tenant_id, values, item.contact_person_id)
             await self.apply_fields(tenant_id, values, item.contact_person_id)
+            await self._log_manual_changes(tenant_id, values, before_address, before_contact, actor_name, owner_user_id)
 
         return ImportApplyResponse(created=created, updated=updated, skipped=skipped)
+
+    async def _capture_before(
+        self,
+        tenant_id: str,
+        values: dict[str, str | None],
+        contact_person_id: str | None,
+    ) -> tuple[dict[str, str | None], dict[str, str | None]]:
+        """Snapshot current address/contact field values before apply_fields overwrites them, for change-log diffing."""
+        existing_address = await self._congregation_repo.get_address_by_tenant_id(tenant_id)
+        before_address = {field: (getattr(existing_address, field) if existing_address else None) for field in _ADDRESS_FIELDS}
+
+        assignments = await self._church_repo.list_service_assignments("church", tenant_id)
+        target = next((a for a in assignments if a.id == contact_person_id), None) if contact_person_id else match_contact_assignment(values.get("contact_name"), assignments)
+        current_contact = assignment_contact_snapshot(target) if target else None
+        before_contact: dict[str, str | None] = {field: (current_contact.get(field) if current_contact else None) for field in _CONTACT_FIELDS}
+        before_contact["contact_phone"] = _normalize_phone(before_contact["contact_phone"])
+
+        return before_address, before_contact
+
+    async def _log_manual_changes(
+        self,
+        tenant_id: str,
+        values: dict[str, str | None],
+        before_address: dict[str, str | None],
+        before_contact: dict[str, str | None],
+        actor_name: str,
+        actor_user_id: str,
+    ) -> None:
+        address_changes = {field: (before_address[field], values[field]) for field in _ADDRESS_FIELDS if field in values and values[field] != before_address[field]}
+        contact_changes = {field: (before_contact[field], values[field]) for field in _CONTACT_FIELDS if field in values and values[field] != before_contact[field]}
+
+        await self._congregation_repo.log_changes(
+            tenant_id,
+            section="address",
+            changes=address_changes,
+            source="import_paste",
+            actor_label=actor_name,
+            actor_user_id=actor_user_id,
+        )
+        await self._congregation_repo.log_changes(
+            tenant_id,
+            section="contact",
+            changes=contact_changes,
+            source="import_paste",
+            actor_label=actor_name,
+            actor_user_id=actor_user_id,
+        )
 
     async def apply_fields(self, tenant_id: str, values: dict[str, str | None], contact_person_id: str | None) -> None:
         if _ADDRESS_FIELDS & values.keys():

@@ -58,7 +58,7 @@ async def apply_import(
     service: Annotated[CongregationImportService, Depends(get_import_service)],
 ) -> ImportApplyResponse:
     try:
-        return await service.apply(payload, owner_user_id=current_user.id)
+        return await service.apply(payload, owner_user_id=current_user.id, actor_name=current_user.name)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 

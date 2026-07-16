@@ -22,6 +22,7 @@ from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
 from app.modules.churches.db_models import ChurchDB, PersonDB, ServiceAssignmentDB, ServiceTypeDB
 from app.modules.congregations.db_models import CongregationAddressDB
+from app.modules.congregations.email_import_db_models import CongregationChangeLogDB
 from app.modules.tenants.db_models import TenantDB
 from main import app
 
@@ -143,6 +144,47 @@ async def test_apply_updates_existing_congregation_address(ctx) -> None:
         assert address.street == "Nowa 5"
         # apply: False fields must be left untouched
         assert address.postal_code == "00-001"
+
+
+@pytest.mark.asyncio
+async def test_apply_logs_change_history(ctx) -> None:
+    """Pasted-text import applies were the one manual-edit path that never
+    wrote a congregation_change_log row (only the clergy e-mail pipeline
+    did) - this locks in that CongregationImportService.apply() now logs
+    with source=import_paste."""
+    client, login, session_factory = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    response = await client.post(
+        "/api/admin/congregations/import/apply",
+        json={
+            "items": [
+                {
+                    "action": "update",
+                    "tenant_id": EXISTING_TENANT_ID,
+                    "fields": [
+                        {"field": "street", "value": "Nowa 5", "apply": True},
+                        {"field": "postal_code", "value": "00-999", "apply": False},
+                    ],
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+
+    async with session_factory() as session:
+        result = await session.execute(select(CongregationChangeLogDB).where(CongregationChangeLogDB.tenant_id == EXISTING_TENANT_ID))
+        entries = list(result.scalars().all())
+
+    assert len(entries) == 1
+    assert entries[0].field == "street"
+    assert entries[0].section == "address"
+    assert entries[0].old_value == "Stara 1"
+    assert entries[0].new_value == "Nowa 5"
+    assert entries[0].source == "import_paste"
+    assert entries[0].actor_label == ADMIN_ID
+    assert entries[0].actor_user_id == ADMIN_ID
 
 
 @pytest.mark.asyncio

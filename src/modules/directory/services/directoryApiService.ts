@@ -1,9 +1,11 @@
+import { isAxiosError } from 'axios'
 import { apiClient } from '@/shared/services/apiClient'
 import type {
   IDirectoryExportParams,
   IDirectoryFilters,
   IDirectoryPerson,
   IPersonBrowse,
+  IPersonChangeLogResponse,
   IPersonMergeRequest,
   IPersonUpdateRequest,
 } from '../types/directory.types'
@@ -55,6 +57,25 @@ class DirectoryApiService {
       payload,
     )
     return data
+  }
+
+  /**
+   * Change history for a person's directory record. Returns null when the
+   * current user has no ACL access to the people directory - the caller
+   * should simply hide the section, not show an error.
+   */
+  async getChangeLog(personId: string): Promise<IPersonChangeLogResponse | null> {
+    try {
+      const { data } = await apiClient.get<IPersonChangeLogResponse>(
+        `/people-directory/persons/${personId}/change-log`,
+      )
+      return data
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 403) {
+        return null
+      }
+      throw error
+    }
   }
 }
 
