@@ -287,7 +287,7 @@ async def forgot_password(
         locale=locale,
         translations=translations,
     )
-    return MessageResponse(message="If the email exists, a password reset link has been sent")
+    return MessageResponse(message=translations["password_reset"]["request_success"])
 
 
 @router.post(
@@ -453,7 +453,7 @@ async def resend_email_verification(
         locale=locale,
         translations=translations,
     )
-    return MessageResponse(message="If the email exists, a new verification link has been sent.")
+    return MessageResponse(message=translations["email_verification"]["resend_success"])
 
 
 @router.delete(
