@@ -168,6 +168,7 @@ async def _build_published_congregations(
     church_repo: ChurchRepository,
     *,
     is_authenticated: bool,
+    has_pastoral_access: bool = False,
 ) -> list[PublicCongregationResponse]:
     """Build the published-congregations-with-branches list shared by the public
     detailed listing and the anonymous all-congregations share-link viewer."""
@@ -191,7 +192,7 @@ async def _build_published_congregations(
                 **church_repo.to_public_card_contact(
                     assignment,
                     is_authenticated=is_authenticated,
-                    has_pastoral_access=False,
+                    has_pastoral_access=has_pastoral_access,
                 )
             )
             for assignment in assignments_by_church.get(tenant.id, [])
@@ -351,9 +352,10 @@ async def get_shared_congregation(
     An all-congregations link (created by an admin/owner, no single tenant)
     resolves to the same published-congregations list as the public directory.
 
-    The granted visibility level (public/authenticated) is the ceiling for what
-    the anonymous visitor sees; they never get pastoral access or canManage,
-    regardless of who created the link.
+    The granted visibility level (public/authenticated/pastors) is the read-only
+    ceiling for what the anonymous visitor sees: it only widens which contact
+    fields are revealed. They never get membership or canManage, regardless of
+    who created the link or which level was granted.
     """
     share_link, _reason = await share_link_service.resolve_token(token)
     if share_link is None:
@@ -361,10 +363,17 @@ async def get_shared_congregation(
         # them helps an attacker probe tokens more than it helps a real visitor.
         raise HTTPException(status_code=404, detail="This link is no longer valid")
 
-    is_authenticated = share_link.visibility_level == "authenticated"
+    is_authenticated = share_link.visibility_level in ("authenticated", "pastors")
+    has_pastoral_access = share_link.visibility_level == "pastors"
 
     if share_link.tenant_id is None:
-        congregations = await _build_published_congregations(repo, congregation_repo, church_repo, is_authenticated=is_authenticated)
+        congregations = await _build_published_congregations(
+            repo,
+            congregation_repo,
+            church_repo,
+            is_authenticated=is_authenticated,
+            has_pastoral_access=has_pastoral_access,
+        )
         return ShareResolveResponse(kind="congregations", congregations=congregations)
 
     tenant = await repo.get_tenant(share_link.tenant_id)
@@ -374,7 +383,7 @@ async def get_shared_congregation(
     congregation = await _build_congregation_detail(
         tenant,
         is_authenticated=is_authenticated,
-        has_pastoral_access=False,
+        has_pastoral_access=has_pastoral_access,
         is_member=False,
         membership_role=None,
         congregation_repo=congregation_repo,

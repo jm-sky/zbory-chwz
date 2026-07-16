@@ -180,8 +180,11 @@ const visibilityLabel = computed(() => (level: ShareableVisibilityLevel) =>
           <VisibilityLevelSelect
             v-model="form.visibilityLevel"
             :label="t('congregations.share.visibilityLevel')"
-            :levels="['public', 'authenticated']"
+            :levels="['public', 'authenticated', 'pastors']"
           />
+          <p class="text-xs text-muted-foreground">
+            {{ t('congregations.share.readOnlyNote') }}
+          </p>
 
           <div class="space-y-1">
             <Label>{{ t('congregations.share.expiresIn') }}</Label>

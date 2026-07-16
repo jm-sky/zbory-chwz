@@ -46,7 +46,8 @@ export const congregationsPl = {
     share: {
       title: 'Udostępnianie przez link',
       globalTitle: 'Udostępnij wszystkie zbory',
-      globalDescription: 'Każdy z tym linkiem może przeglądać wszystkie opublikowane zbory, bez logowania.',
+      globalDescription: 'Każdy z tym linkiem może przeglądać wszystkie opublikowane zbory, bez logowania. Poziom dostępu poniżej decyduje, ile danych kontaktowych zostanie ujawnionych.',
+      readOnlyNote: 'Link zawsze daje wyłącznie dostęp do odczytu na wybranym poziomie — nigdy prawa do edycji ani członkostwa.',
       create: 'Utwórz link',
       createTitle: 'Utwórz link do udostępnienia',
       createError: 'Nie udało się utworzyć linku',

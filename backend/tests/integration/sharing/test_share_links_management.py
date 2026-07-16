@@ -117,13 +117,27 @@ async def test_outsider_cannot_create_share_link(ctx) -> None:
 
 
 @pytest.mark.asyncio
-async def test_pastors_visibility_level_is_rejected(ctx) -> None:
+async def test_pastors_visibility_level_is_accepted(ctx) -> None:
     client, login = ctx
     login(_api_user(MEMBER_ID))
 
     response = await client.post(
         f"/api/congregations/{TENANT_ID}/share-links",
         json={"visibility_level": "pastors", "expires_in_days": 7, "label": None},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["visibility_level"] == "pastors"
+
+
+@pytest.mark.asyncio
+async def test_bogus_visibility_level_is_rejected(ctx) -> None:
+    client, login = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.post(
+        f"/api/congregations/{TENANT_ID}/share-links",
+        json={"visibility_level": "bishop", "expires_in_days": 7, "label": None},
     )
 
     assert response.status_code == 422

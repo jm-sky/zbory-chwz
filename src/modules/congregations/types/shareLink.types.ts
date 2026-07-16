@@ -1,6 +1,6 @@
 import type { ICongregationDetail, ICongregationDetailed } from './congregation.types'
 
-export type ShareableVisibilityLevel = 'public' | 'authenticated'
+export type ShareableVisibilityLevel = 'public' | 'authenticated' | 'pastors'
 export type ShareLinkExpiryDays = 3 | 7 | 14 | 30
 
 export interface IShareLink {

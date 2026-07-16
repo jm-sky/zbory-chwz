@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-ShareableVisibilityLevel = Literal["public", "authenticated"]
+ShareableVisibilityLevel = Literal["public", "authenticated", "pastors"]
 ShareLinkExpiryDays = Literal[3, 7, 14, 30]
 
 

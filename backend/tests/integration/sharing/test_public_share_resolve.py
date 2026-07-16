@@ -37,6 +37,7 @@ OWNER_ID = "user-owner"
 
 PUBLIC_TOKEN = secrets.token_urlsafe(32)
 AUTHENTICATED_TOKEN = secrets.token_urlsafe(32)
+PASTORS_TOKEN = secrets.token_urlsafe(32)
 EXPIRED_TOKEN = secrets.token_urlsafe(32)
 REVOKED_TOKEN = secrets.token_urlsafe(32)
 ALL_CONGREGATIONS_TOKEN = secrets.token_urlsafe(32)
@@ -94,6 +95,30 @@ async def _seed(session: AsyncSession) -> None:
         )
     )
 
+    bishop_person = PersonDB(
+        id=generate_id(),
+        first_name="Piotr",
+        last_name="Biskup",
+        phone="+48333333333",
+        email="piotr@example.com",
+    )
+    session.add(bishop_person)
+    await session.flush()
+
+    session.add(
+        ServiceAssignmentDB(
+            id=generate_id(),
+            person_id=bishop_person.id,
+            service_type_id=diacon_type_id,
+            scope_type="church",
+            scope_id=TENANT_ID,
+            profile_visibility="pastors",
+            phone_visibility="pastors",
+            email_visibility="pastors",
+            created_at=now,
+        )
+    )
+
     session.add_all(
         [
             ShareLinkDB(
@@ -110,6 +135,14 @@ async def _seed(session: AsyncSession) -> None:
                 tenant_id=TENANT_ID,
                 created_by_user_id=OWNER_ID,
                 visibility_level="authenticated",
+                expires_at=now + timedelta(days=7),
+            ),
+            ShareLinkDB(
+                id=generate_id(),
+                token=PASTORS_TOKEN,
+                tenant_id=TENANT_ID,
+                created_by_user_id=OWNER_ID,
+                visibility_level="pastors",
                 expires_at=now + timedelta(days=7),
             ),
             ShareLinkDB(
@@ -204,6 +237,25 @@ async def test_authenticated_level_link_reveals_authenticated_fields(ctx) -> Non
     contact = next(c for c in data["card_contacts"] if c["name"] == "Anna Nowak")
     assert contact["email"] == "anna@example.com"
     assert data["canManage"] is False
+    # profile_visibility="pastors" -> hidden at the authenticated grant level
+    assert all(c["name"] != "Piotr Biskup" for c in data["card_contacts"])
+
+
+@pytest.mark.asyncio
+async def test_pastors_level_link_reveals_pastors_only_contact(ctx) -> None:
+    client, _ = ctx
+
+    response = await client.get(f"/api/share/{PASTORS_TOKEN}")
+
+    assert response.status_code == 200
+    data = response.json()["congregation"]
+    contact = next(c for c in data["card_contacts"] if c["name"] == "Piotr Biskup")
+    assert contact["phone"] == "+48333333333"
+    assert contact["email"] == "piotr@example.com"
+    # Still strictly read-only: no membership or manage rights granted.
+    assert data["canManage"] is False
+    assert data["role"] is None
+    assert data.get("hidden_contacts", []) == []
 
 
 @pytest.mark.asyncio

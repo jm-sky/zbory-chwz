@@ -12,7 +12,7 @@ class ShareLinkDB(Base):
     __tablename__ = "congregation_share_links"
     __table_args__ = (
         CheckConstraint(
-            "visibility_level IN ('public', 'authenticated')",
+            "visibility_level IN ('public', 'authenticated', 'pastors')",
             name="ck_congregation_share_links_visibility_level",
         ),
         Index("ix_congregation_share_links_tenant_active", "tenant_id", "revoked_at"),

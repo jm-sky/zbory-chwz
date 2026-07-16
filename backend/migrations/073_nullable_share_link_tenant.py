@@ -1,7 +1,13 @@
-"""Migration: Allow congregation share links without a tenant (all-congregations links).
+"""Migration: Allow congregation share links without a tenant (all-congregations
+links), and add the 'pastors' visibility level to share links.
 
 A NULL tenant_id marks a link created by an admin/owner that resolves to every
 published congregation they can see, instead of a single congregation.
+
+The 'pastors' visibility level grants a share-link visitor the same read-only
+ceiling as a real pastor/bishop viewer: it reveals contact fields marked
+visibility='pastors' (e.g. a bishop's personal number), on top of what
+'authenticated' already reveals. It never grants membership or edit rights.
 
 Usage:
     python migrations/073_nullable_share_link_tenant.py upgrade
@@ -32,6 +38,15 @@ async def upgrade() -> None:
                 ON congregation_share_links (created_by_user_id, revoked_at)
                 WHERE tenant_id IS NULL
                 """))
+        await conn.execute(text("""
+                ALTER TABLE congregation_share_links
+                DROP CONSTRAINT IF EXISTS ck_congregation_share_links_visibility_level
+                """))
+        await conn.execute(text("""
+                ALTER TABLE congregation_share_links
+                ADD CONSTRAINT ck_congregation_share_links_visibility_level
+                CHECK (visibility_level IN ('public', 'authenticated', 'pastors'))
+                """))
 
     print("Migration 073 upgrade complete.")
 
@@ -41,10 +56,19 @@ async def downgrade() -> None:
 
     async with engine.begin() as conn:
         await conn.execute(text("DROP INDEX IF EXISTS ix_congregation_share_links_creator_active"))
-        await conn.execute(text("DELETE FROM congregation_share_links WHERE tenant_id IS NULL"))
+        await conn.execute(text("DELETE FROM congregation_share_links WHERE tenant_id IS NULL OR visibility_level = 'pastors'"))
         await conn.execute(text("""
                 ALTER TABLE congregation_share_links
                 ALTER COLUMN tenant_id SET NOT NULL
+                """))
+        await conn.execute(text("""
+                ALTER TABLE congregation_share_links
+                DROP CONSTRAINT IF EXISTS ck_congregation_share_links_visibility_level
+                """))
+        await conn.execute(text("""
+                ALTER TABLE congregation_share_links
+                ADD CONSTRAINT ck_congregation_share_links_visibility_level
+                CHECK (visibility_level IN ('public', 'authenticated'))
                 """))
 
     print("Migration 073 downgrade complete.")
