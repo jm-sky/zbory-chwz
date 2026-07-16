@@ -39,6 +39,10 @@ export const adminPl = {
         button: 'Zarządzaj Zborami',
       },
     },
+    shareLinks: {
+      title: 'Linki udostępniania',
+      subtitle: 'Twórz linki dające dostęp do wszystkich opublikowanych zborów bez logowania',
+    },
     users: {
       title: 'Zarządzanie Użytkownikami',
       subtitle: 'Zarządzaj kontami użytkowników i uprawnieniami',

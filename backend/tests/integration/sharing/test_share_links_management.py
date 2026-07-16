@@ -117,13 +117,27 @@ async def test_outsider_cannot_create_share_link(ctx) -> None:
 
 
 @pytest.mark.asyncio
-async def test_pastors_visibility_level_is_rejected(ctx) -> None:
+async def test_pastors_visibility_level_is_accepted(ctx) -> None:
     client, login = ctx
     login(_api_user(MEMBER_ID))
 
     response = await client.post(
         f"/api/congregations/{TENANT_ID}/share-links",
         json={"visibility_level": "pastors", "expires_in_days": 7, "label": None},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["visibility_level"] == "pastors"
+
+
+@pytest.mark.asyncio
+async def test_bogus_visibility_level_is_rejected(ctx) -> None:
+    client, login = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.post(
+        f"/api/congregations/{TENANT_ID}/share-links",
+        json={"visibility_level": "bishop", "expires_in_days": 7, "label": None},
     )
 
     assert response.status_code == 422
@@ -172,3 +186,62 @@ async def test_revoking_unknown_link_returns_404(ctx) -> None:
     response = await client.delete(f"/api/congregations/{TENANT_ID}/share-links/{generate_id()}")
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_admin_can_create_global_share_link(ctx) -> None:
+    client, login = ctx
+    login(_api_user(MEMBER_ID, is_admin=True))
+
+    response = await client.post(
+        "/api/share-links",
+        json={"visibility_level": "public", "expires_in_days": 7, "label": "All congregations"},
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["visibility_level"] == "public"
+    assert data["label"] == "All congregations"
+
+
+@pytest.mark.asyncio
+async def test_non_admin_cannot_create_global_share_link(ctx) -> None:
+    client, login = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.post(
+        "/api/share-links",
+        json={"visibility_level": "public", "expires_in_days": 7, "label": None},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_global_share_links_list_and_revoke_are_scoped_to_creator(ctx) -> None:
+    client, login = ctx
+    login(_api_user(MEMBER_ID, is_admin=True))
+
+    create_response = await client.post(
+        "/api/share-links",
+        json={"visibility_level": "authenticated", "expires_in_days": 3, "label": None},
+    )
+    link_id = create_response.json()["id"]
+
+    list_response = await client.get("/api/share-links")
+    assert list_response.status_code == 200
+    assert [link["id"] for link in list_response.json()["links"]] == [link_id]
+
+    login(_api_user(OUTSIDER_ID, is_admin=True))
+    other_admin_list = await client.get("/api/share-links")
+    assert other_admin_list.json()["links"] == []
+
+    revoke_response = await client.delete(f"/api/share-links/{link_id}")
+    assert revoke_response.status_code == 404
+
+    login(_api_user(MEMBER_ID, is_admin=True))
+    revoke_response = await client.delete(f"/api/share-links/{link_id}")
+    assert revoke_response.status_code == 204
+
+    list_after_revoke = await client.get("/api/share-links")
+    assert list_after_revoke.json()["links"] == []

@@ -2,22 +2,35 @@
 import { Church } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import LogoText from '@/components/ui/LogoText.vue'
 import PublicLayout from '@/layouts/PublicLayout.vue'
 import CongregationDetailContent from '../components/CongregationDetailContent.vue'
+import CongregationListCard from '../components/CongregationListCard.vue'
 import { useSharedCongregation } from '../composables/useSharedCongregation'
+import { CongregationRoutePaths } from '../routes'
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 
 const token = computed<string>(() => route.params.token as string)
-const { data: congregation, isLoading, isError } = useSharedCongregation(token)
+const { data: result, isLoading, isError } = useSharedCongregation(token)
+
+const congregation = computed(() => (result.value?.kind === 'congregation' ? result.value.congregation : null))
+const congregations = computed(() => (result.value?.kind === 'congregations' ? result.value.congregations : null))
+
+function openCongregation(id: string): void {
+  router.push(CongregationRoutePaths.detailById(id))
+}
 </script>
 
 <template>
   <PublicLayout>
-    <div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+    <div
+      class="mx-auto px-4 py-6 sm:px-6 sm:py-8"
+      :class="congregations ? 'max-w-5xl' : 'max-w-3xl'"
+    >
       <div v-if="isLoading" class="space-y-6">
         <div class="h-32 animate-pulse rounded-lg bg-muted" />
       </div>
@@ -46,6 +59,28 @@ const { data: congregation, isLoading, isError } = useSharedCongregation(token)
         </div>
 
         <CongregationDetailContent :congregation="congregation" />
+
+        <p class="flex items-center gap-1 text-xs text-muted-foreground">
+          {{ t('congregations.sharedView.poweredBy') }}
+          <LogoText class="text-xs" />
+        </p>
+      </div>
+
+      <div v-else-if="congregations" class="space-y-6">
+        <h1 class="text-2xl font-semibold text-foreground">
+          {{ t('congregations.sharedView.allTitle') }}
+        </h1>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <CongregationListCard
+            v-for="item in congregations"
+            :key="item.id"
+            :congregation="item"
+            :can-manage="false"
+            :can-delete="false"
+            @open="openCongregation(item.id)"
+          />
+        </div>
 
         <p class="flex items-center gap-1 text-xs text-muted-foreground">
           {{ t('congregations.sharedView.poweredBy') }}

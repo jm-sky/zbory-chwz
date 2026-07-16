@@ -111,6 +111,14 @@ class CongregationDetailResponse(BaseModel):
     canManage: bool = False
 
 
+class ShareResolveResponse(BaseModel):
+    """Resolution of a share token: either one congregation or a browsable list of them."""
+
+    kind: Literal["congregation", "congregations"]
+    congregation: CongregationDetailResponse | None = None
+    congregations: list[PublicCongregationResponse] | None = None
+
+
 class TenantMembershipResponse(BaseModel):
     tenant_id: str
     user_id: str

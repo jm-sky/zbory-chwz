@@ -22,7 +22,7 @@ class ShareLinkService:
     async def create_share_link(
         self,
         *,
-        tenant_id: str,
+        tenant_id: str | None,
         created_by_user_id: str,
         visibility_level: ShareableVisibilityLevel,
         expires_in_days: ShareLinkExpiryDays,

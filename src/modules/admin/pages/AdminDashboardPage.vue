@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Contact, Shield } from 'lucide-vue-next'
+import { Contact, Link2, Shield } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
@@ -116,6 +116,24 @@ if (!canAccessAdminPanel.value) {
             <RouterLink :to="AdminRoutePaths.googleContacts">
               <Button class="w-full">
                 {{ t('admin.googleContacts.title', 'Google Contacts') }}
+              </Button>
+            </RouterLink>
+          </div>
+        </Card>
+        <Card class="p-6">
+          <div class="flex flex-col gap-4 flex-1">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold flex items-center gap-2">
+                <Link2 class="size-5 text-primary" />
+                {{ t('admin.shareLinks.title', 'Linki udostępniania') }}
+              </h3>
+              <p class="text-sm text-muted-foreground">
+                {{ t('admin.shareLinks.subtitle', 'Twórz linki dające dostęp do wszystkich opublikowanych zborów bez logowania') }}
+              </p>
+            </div>
+            <RouterLink :to="AdminRoutePaths.shareLinks">
+              <Button class="w-full">
+                {{ t('admin.shareLinks.title', 'Linki udostępniania') }}
               </Button>
             </RouterLink>
           </div>

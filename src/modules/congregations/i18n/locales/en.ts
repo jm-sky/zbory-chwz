@@ -45,6 +45,9 @@ export const congregationsEn = {
     },
     share: {
       title: 'Share by link',
+      globalTitle: 'Share all congregations',
+      globalDescription: 'Anyone with this link can browse every published congregation without an account. The access level below controls how much contact detail is revealed.',
+      readOnlyNote: 'The link only ever grants read-only viewing at the chosen level — never editing rights or membership.',
       create: 'Create link',
       createTitle: 'Create a share link',
       createError: 'Failed to create link',
@@ -65,6 +68,7 @@ export const congregationsEn = {
     },
     sharedView: {
       title: 'Shared congregation',
+      allTitle: 'Congregations',
       invalidTitle: 'Invalid link',
       invalid: 'This link is invalid, expired, or has been revoked.',
       poweredBy: 'Shared via',
