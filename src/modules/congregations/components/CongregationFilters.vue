@@ -183,13 +183,13 @@ function toggleAdvancedFilters(): void {
         @click="useMyLocation"
       >
         <LocateFixed class="size-4" />
-        {{ locating ? t('congregations.list.filters.locating') : t('congregations.list.filters.myLocation') }}
+        {{ locating ? t('congregations.filters.locating') : t('congregations.filters.myLocation') }}
       </Button>
 
       <template v-else>
         <div class="flex items-center gap-2">
           <Label class="text-sm text-muted-foreground">
-            {{ t('congregations.list.filters.maxDistance') }}
+            {{ t('congregations.filters.maxDistance') }}
           </Label>
           <Select v-model="maxDistanceModel">
             <SelectTrigger class="w-32">
@@ -197,10 +197,10 @@ function toggleAdvancedFilters(): void {
             </SelectTrigger>
             <SelectContent>
               <SelectItem :value="ANY_DISTANCE">
-                {{ t('congregations.list.filters.anyDistance') }}
+                {{ t('congregations.filters.anyDistance') }}
               </SelectItem>
               <SelectItem v-for="km in DISTANCE_OPTIONS_KM" :key="km" :value="String(km)">
-                {{ t('congregations.list.filters.distanceKm', { km }) }}
+                {{ t('congregations.filters.distanceKm', { km }) }}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -209,22 +209,22 @@ function toggleAdvancedFilters(): void {
         <div class="flex items-center gap-2">
           <Checkbox id="congregations-sort-by-distance" v-model="sortByDistance" />
           <Label for="congregations-sort-by-distance" class="cursor-pointer font-normal">
-            {{ t('congregations.list.filters.sortByDistance') }}
+            {{ t('congregations.filters.sortByDistance') }}
           </Label>
         </div>
 
         <Button variant="ghost" size="sm" @click="clearMyLocation">
           <X class="size-4" />
-          {{ t('congregations.list.filters.clearLocation') }}
+          {{ t('congregations.filters.clearLocation') }}
         </Button>
       </template>
 
       <span v-if="geoError" class="text-sm text-destructive">
-        {{ t('congregations.list.filters.locationError') }}
+        {{ t('congregations.filters.locationError') }}
       </span>
 
       <span v-if="missingCoordinatesCount > 0" class="text-xs text-muted-foreground">
-        {{ t('congregations.list.filters.missingCoordinates', { count: missingCoordinatesCount }, missingCoordinatesCount) }}
+        {{ t('congregations.filters.missingCoordinates', { count: missingCoordinatesCount }, missingCoordinatesCount) }}
       </span>
     </div>
 

@@ -44,7 +44,7 @@ const markers = computed<IMapMarker[]>(() => {
 
   return [
     ...congregationMarkers,
-    { id: USER_MARKER_ID, lat: userLocation.lat, lng: userLocation.lng, variant: 'user', tooltipHtml: t('congregations.list.filters.myLocation') },
+    { id: USER_MARKER_ID, lat: userLocation.lat, lng: userLocation.lng, variant: 'user', tooltipHtml: t('congregations.filters.myLocation') },
   ]
 })
 
