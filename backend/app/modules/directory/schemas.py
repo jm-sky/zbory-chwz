@@ -1,5 +1,8 @@
 """Pydantic schemas for the people directory (email export + person browser) module."""
 
+from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -58,3 +61,28 @@ class PersonUpdateRequest(BaseModel):
 class PersonMergeRequest(BaseModel):
     keepPersonId: str
     mergePersonId: str
+
+
+PersonChangeLogField = Literal["firstName", "lastName", "email", "phone"]
+
+PERSON_FIELD_LABELS: dict[str, str] = {
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "email": "E-mail",
+    "phone": "Telefon",
+}
+
+
+class PersonChangeLogEntry(BaseModel):
+    id: str
+    field: PersonChangeLogField
+    field_label: str
+    old_value: str | None
+    new_value: str | None
+    source: Literal["admin_manual"]
+    actor_label: str
+    created_at: datetime
+
+
+class PersonChangeLogResponse(BaseModel):
+    entries: list[PersonChangeLogEntry]

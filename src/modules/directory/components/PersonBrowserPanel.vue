@@ -20,6 +20,7 @@ import { personSearchService } from '@/shared/services/personSearchService'
 import { formatPhoneNumber } from '@/shared/utils/formatPhone'
 import type { IPersonBrowse } from '../types/directory.types'
 import { directoryApiService } from '../services/directoryApiService'
+import PersonChangeHistorySection from './PersonChangeHistorySection.vue'
 import type { IPersonSummary } from '@/shared/types/person.type'
 
 const { t } = useI18n()
@@ -280,6 +281,13 @@ onMounted(load)
             {{ t('directory.persons.mergeButton', 'Scal') }}
           </Button>
         </div>
+
+        <PersonChangeHistorySection
+          v-if="editingPerson"
+          :key="editingPerson.id"
+          :person-id="editingPerson.id"
+          class="border-t pt-4"
+        />
       </DialogContent>
     </Dialog>
   </div>

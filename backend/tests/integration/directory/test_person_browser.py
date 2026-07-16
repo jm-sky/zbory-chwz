@@ -393,3 +393,68 @@ async def test_outsider_denied(ctx) -> None:
     response = await client.get("/api/people-directory/persons")
 
     assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_person_logs_change_history(ctx) -> None:
+    client, ids, login = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    await client.patch(
+        f"/api/people-directory/persons/{ids['person_a1']}",
+        json={"phone": "+48111222333"},
+    )
+
+    response = await client.get(f"/api/people-directory/persons/{ids['person_a1']}/change-log")
+
+    assert response.status_code == 200
+    entries = response.json()["entries"]
+    assert len(entries) == 1
+    assert entries[0]["field"] == "phone"
+    assert entries[0]["field_label"] == "Telefon"
+    assert entries[0]["old_value"] is None
+    assert entries[0]["new_value"] == "+48111222333"
+    assert entries[0]["source"] == "admin_manual"
+    assert entries[0]["actor_label"] == ADMIN_ID
+
+
+@pytest.mark.asyncio
+async def test_update_person_unchanged_field_logs_nothing(ctx) -> None:
+    client, ids, login = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    await client.patch(
+        f"/api/people-directory/persons/{ids['person_a1']}",
+        json={"firstName": "Jan"},  # same value already on the record
+    )
+
+    response = await client.get(f"/api/people-directory/persons/{ids['person_a1']}/change-log")
+
+    assert response.status_code == 200
+    assert response.json()["entries"] == []
+
+
+@pytest.mark.asyncio
+async def test_pastor_cannot_view_change_log_outside_scope(ctx) -> None:
+    client, ids, login = ctx
+    login(_api_user(PASTOR_A1_ID))
+
+    response = await client.get(f"/api/people-directory/persons/{ids['person_b1_other']}/change-log")
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_pastor_can_view_change_log_in_scope(ctx) -> None:
+    client, ids, login = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+    await client.patch(
+        f"/api/people-directory/persons/{ids['person_a1']}",
+        json={"phone": "+48111222333"},
+    )
+
+    login(_api_user(PASTOR_A1_ID))
+    response = await client.get(f"/api/people-directory/persons/{ids['person_a1']}/change-log")
+
+    assert response.status_code == 200
+    assert len(response.json()["entries"]) == 1

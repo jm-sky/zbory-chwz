@@ -8,6 +8,7 @@ import Badge from '@/components/ui/badge/Badge.vue'
 import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import { getErrorStatus } from '@/shared/utils/errorGuards'
+import ChangeHistorySection from '../components/ChangeHistorySection.vue'
 import CongregationDetailContent from '../components/CongregationDetailContent.vue'
 import { useCongregationDetail } from '../composables/useCongregationDetail'
 import { CongregationRoutePaths } from '../routes'
@@ -82,6 +83,11 @@ const notFound = computed<boolean>(() => getErrorStatus(error.value) === 404)
       </CommonPageHeader>
 
       <CongregationDetailContent :congregation="congregation" />
+
+      <ChangeHistorySection
+        v-if="congregation.canManage"
+        :tenant-id="congregation.id"
+      />
     </div>
   </MainLayout>
 </template>

@@ -13,12 +13,15 @@ from app.modules.directory.repositories import (
     get_directory_repository,
 )
 from app.modules.directory.schemas import (
+    PERSON_FIELD_LABELS,
     DirectoryExportResponse,
     DirectoryFiltersResponse,
     DirectoryOption,
     DirectoryPersonResponse,
     PersonAffiliationResponse,
     PersonBrowseResponse,
+    PersonChangeLogEntry,
+    PersonChangeLogResponse,
     PersonListResponse,
     PersonMergeRequest,
     PersonUpdateRequest,
@@ -135,12 +138,44 @@ async def update_person(
     allowed = await _require_access(current_user, repo)
     await _get_person_in_scope(person_id, allowed, repo)
 
-    person = await repo.update_person(person_id, payload)
+    person = await repo.update_person(person_id, payload, actor_label=current_user.name, actor_user_id=current_user.id)
     if not person:
         raise HTTPException(status_code=404, detail="Person not found")
 
     affiliations = await repo.get_affiliations([person_id])
     return _person_response(person, affiliations.get(person_id, []))
+
+
+@router.get(
+    "/persons/{person_id}/change-log",
+    response_model=PersonChangeLogResponse,
+    summary="Change history for a person's directory record",
+    description="Visible to anyone with ACL access to the people directory (same access as browsing/editing persons).",
+)
+async def get_person_change_log(
+    person_id: str,
+    current_user: CurrentUser,
+    repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
+) -> PersonChangeLogResponse:
+    allowed = await _require_access(current_user, repo)
+    await _get_person_in_scope(person_id, allowed, repo)
+
+    entries = await repo.get_change_log(person_id)
+    return PersonChangeLogResponse(
+        entries=[
+            PersonChangeLogEntry(
+                id=entry.id,
+                field=entry.field,  # type: ignore[arg-type]
+                field_label=PERSON_FIELD_LABELS.get(entry.field, entry.field),
+                old_value=entry.old_value,
+                new_value=entry.new_value,
+                source=entry.source,  # type: ignore[arg-type]
+                actor_label=entry.actor_label,
+                created_at=entry.created_at,
+            )
+            for entry in entries
+        ]
+    )
 
 
 @router.post("/persons/merge", response_model=PersonBrowseResponse)

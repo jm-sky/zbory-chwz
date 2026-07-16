@@ -94,6 +94,37 @@ class CongregationRepository:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
+    async def log_changes(
+        self,
+        tenant_id: str,
+        *,
+        section: str,
+        changes: dict[str, tuple[str | None, str | None]],
+        source: str,
+        actor_label: str,
+        actor_user_id: str | None = None,
+        actor_person_id: str | None = None,
+    ) -> None:
+        """Append one change-log row per changed field. No-op (no commit) if `changes` is empty."""
+        if not changes:
+            return
+        for field, (old_value, new_value) in changes.items():
+            self.db.add(
+                CongregationChangeLogDB(
+                    id=generate_id(),
+                    tenant_id=tenant_id,
+                    section=section,
+                    field=field,
+                    old_value=old_value,
+                    new_value=new_value,
+                    source=source,
+                    actor_label=actor_label,
+                    actor_user_id=actor_user_id,
+                    actor_person_id=actor_person_id,
+                )
+            )
+        await self.db.commit()
+
     async def get_addresses_by_status(self, statuses: Sequence[str]) -> dict[str, CongregationAddressDB]:
         """Get addresses with any of the given statuses, keyed by tenant id."""
         stmt = select(CongregationAddressDB).where(CongregationAddressDB.status.in_(statuses))
