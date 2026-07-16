@@ -103,6 +103,11 @@ async def _seed(session: AsyncSession) -> None:
                 province=province,
                 country=country,
                 status=status,
+                # Only Wrocław has coordinates, so tests can assert both the
+                # "present and exposed" and "absent" shapes.
+                latitude="51.1079" if church_id == WROCLAW else None,
+                longitude="17.0385" if church_id == WROCLAW else None,
+                geocode_status="manual" if church_id == WROCLAW else "pending",
                 created_at=now,
                 updated_at=now,
             )
@@ -257,6 +262,17 @@ async def test_unpublished_address_is_excluded(client) -> None:
 
 
 @pytest.mark.asyncio
+async def test_exposes_coordinates_for_published_congregation(client) -> None:
+    items = await _detailed(client)
+
+    assert items["ZBÓR WE WROCŁAWIU"]["latitude"] == pytest.approx(51.1079)
+    assert items["ZBÓR WE WROCŁAWIU"]["longitude"] == pytest.approx(17.0385)
+    # Marktredwitz was seeded without coordinates.
+    assert items["ZBÓR W MARKTREDWITZ"]["latitude"] is None
+    assert items["ZBÓR W MARKTREDWITZ"]["longitude"] is None
+
+
+@pytest.mark.asyncio
 async def test_public_branch_is_listed_under_its_congregation(client) -> None:
     items = await _detailed(client)
     branch = items["Placówka Psie Pole"]
@@ -268,6 +284,8 @@ async def test_public_branch_is_listed_under_its_congregation(client) -> None:
     # the country/province filters keep it next to its parent.
     assert branch["country"] == "PL"
     assert branch["province"] == "dolnoslaskie"
+    assert branch["latitude"] == pytest.approx(51.1079)
+    assert branch["longitude"] == pytest.approx(17.0385)
 
 
 @pytest.mark.asyncio

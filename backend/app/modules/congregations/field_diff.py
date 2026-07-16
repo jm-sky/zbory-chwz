@@ -30,7 +30,17 @@ FIELD_LABELS: dict[str, str] = {
     "contact_email": "E-mail",
 }
 
-ADDRESS_FIELDS = {"street", "city", "postal_code", "province", "country"}
+# Labels for address fields the AI import/paste flow never extracts or diffs
+# (so they must stay out of FIELD_LABELS - import_service.py iterates ALL of
+# FIELD_LABELS' keys for a brand-new congregation and indexes matching
+# new_values/old_values dicts, which only ever cover the fields above).
+# Used only by the manual admin-edit change log (router.py get_change_log).
+MANUAL_ONLY_FIELD_LABELS: dict[str, str] = {
+    "latitude": "Szerokość geogr.",
+    "longitude": "Długość geogr.",
+}
+
+ADDRESS_FIELDS = {"street", "city", "postal_code", "province", "country", "latitude", "longitude"}
 CONTACT_FIELDS = {"contact_name", "contact_title", "contact_phone", "contact_email"}
 
 FIELD_GROUPS: dict[str, str] = {
@@ -84,8 +94,13 @@ class FieldDiff:
     matched_assignment: ServiceAssignmentDB | None = None
 
     def changed_keys(self) -> list[str]:
-        """Fields the AI extracted a non-null value for that actually differs from the current one."""
-        return [key for key in FIELD_LABELS if self.new_values[key] is not None and self.new_values[key] != self.old_values[key]]
+        """Fields the AI extracted a non-null value for that actually differs from the current one.
+
+        Iterates new_values' own keys (not FIELD_LABELS) so FIELD_LABELS can carry
+        labels for fields this diff never populates (e.g. latitude/longitude, which
+        the AI import flow doesn't extract) without a KeyError here.
+        """
+        return [key for key in self.new_values if self.new_values[key] is not None and self.new_values[key] != self.old_values[key]]
 
 
 async def build_field_diff(

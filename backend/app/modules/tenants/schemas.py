@@ -61,6 +61,8 @@ class PublicCongregationResponse(BaseModel):
     postal_code: str | None = None
     province: str | None = None
     country: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     # Service times (first few)
     service_times: list[dict[str, str | None]] = []  # [{"day": "niedziela", "time": "11:00", "description": None}]
     # Contacts from public service assignments
@@ -97,6 +99,8 @@ class CongregationDetailResponse(BaseModel):
     postal_code: str | None = None
     province: str | None = None
     country: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     # Full (unlimited) service times
     service_times: list[dict[str, str | None]] = []
     # Visible profile contacts; phone/email filtered by per-field visibility

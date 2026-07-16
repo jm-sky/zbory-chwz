@@ -20,6 +20,9 @@ class AddressResponse(BaseModel):
     postal_code: str | None = None
     province: str | None = None
     country: str
+    latitude: float | None = None
+    longitude: float | None = None
+    geocode_status: str = "pending"
     status: str
     created_at: datetime
     updated_at: datetime
@@ -33,6 +36,8 @@ class AddressCreateRequest(BaseModel):
     postal_code: str | None = Field(default=None, max_length=20)
     province: str | None = Field(default=None, max_length=100)
     country: str = Field(default=DEFAULT_COUNTRY, pattern=COUNTRY_CODE_PATTERN)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     status: str = Field(default="draft", max_length=32)
 
     @model_validator(mode="after")
@@ -48,7 +53,28 @@ class AddressUpdateRequest(BaseModel):
     postal_code: str | None = Field(default=None, max_length=20)
     province: str | None = Field(default=None, max_length=100)
     country: str | None = Field(default=None, pattern=COUNTRY_CODE_PATTERN)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     status: str | None = Field(default=None, max_length=32)
+
+
+class GeocodeRequest(BaseModel):
+    """Address fields to geocode. Mirrors AddressCreateRequest's address
+    fields (minus status) so the edit form can preview a geocode result
+    before an address row exists yet."""
+
+    street: str | None = Field(default=None, max_length=255)
+    city: str = Field(min_length=1, max_length=255)
+    postal_code: str | None = Field(default=None, max_length=20)
+    province: str | None = Field(default=None, max_length=100)
+    country: str = Field(default=DEFAULT_COUNTRY, pattern=COUNTRY_CODE_PATTERN)
+
+
+class GeocodeResponse(BaseModel):
+    latitude: float | None = None
+    longitude: float | None = None
+    display_name: str | None = None
+    confidence: Literal["exact", "approximate", "not_found"]
 
 
 class ServiceTimeResponse(BaseModel):

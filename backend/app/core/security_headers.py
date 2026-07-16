@@ -82,7 +82,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Control information sent in Referer header
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
-        # Permissions Policy - disable sensitive features
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        # Permissions Policy - disable sensitive features, except geolocation for
+        # this origin (used by the "find congregations near me" map feature)
+        response.headers["Permissions-Policy"] = "geolocation=(self), microphone=(), camera=()"
 
         return response
