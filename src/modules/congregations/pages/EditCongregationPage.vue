@@ -27,6 +27,7 @@ import type { ICongregationFull } from '../types/congregation.types'
 import ChangeHistorySection from '../components/ChangeHistorySection.vue'
 import ChurchBranchesSection from '../components/ChurchBranchesSection.vue'
 import ChurchPeopleSection from '../components/ChurchPeopleSection.vue'
+import AddressMapPicker from '../components/map/AddressMapPicker.vue'
 import ShareLinksSection from '../components/ShareLinksSection.vue'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
@@ -59,6 +60,8 @@ const formSchema = z.object({
   postal_code: z.string().nullable().optional(),
   province: z.string().nullable().optional(),
   country: z.string().default(DEFAULT_COUNTRY_CODE),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
   address_status: z.enum(['draft', 'published', 'published_unverified']).optional(),
 })
 
@@ -74,9 +77,58 @@ const form = useForm({
     postal_code: null,
     province: null,
     country: DEFAULT_COUNTRY_CODE,
+    latitude: null,
+    longitude: null,
     address_status: 'draft' as const,
   },
 })
+
+const latitudeModel = computed<number | null>({
+  get: () => form.values.latitude ?? null,
+  set: value => form.setFieldValue('latitude', value),
+})
+const longitudeModel = computed<number | null>({
+  get: () => form.values.longitude ?? null,
+  set: value => form.setFieldValue('longitude', value),
+})
+
+// The shadcn Input component's modelValue doesn't accept null, so the manual
+// coordinate inputs go through a small null<->undefined adapter.
+const latitudeInputModel = computed<number | undefined>({
+  get: () => latitudeModel.value ?? undefined,
+  set: value => (latitudeModel.value = value ?? null),
+})
+const longitudeInputModel = computed<number | undefined>({
+  get: () => longitudeModel.value ?? undefined,
+  set: value => (longitudeModel.value = value ?? null),
+})
+
+const geocoding = ref(false)
+
+async function geocodeAddress(): Promise<void> {
+  geocoding.value = true
+  try {
+    const result = await congregationApiService.geocodeAddress(congregationId, {
+      street: form.values.street,
+      city: form.values.city ?? '',
+      postal_code: form.values.postal_code,
+      province: form.values.province,
+      country: form.values.country,
+    })
+    if (result.confidence === 'not_found' || result.latitude == null || result.longitude == null) {
+      toast.error(t('congregations.edit.address.geocodeNotFound'))
+      return
+    }
+    form.setFieldValue('latitude', result.latitude)
+    form.setFieldValue('longitude', result.longitude)
+    toast.success(t('congregations.edit.address.geocodeSuccess'))
+  } catch (error) {
+    logSafeError('Failed to geocode address:', error)
+    handleError(error, { fallbackMessage: t('congregations.edit.address.geocodeError') })
+  } finally {
+    geocoding.value = false
+  }
+}
 
 const countries = computed<Array<{ code: string; label: string }>>(() =>
   countryOptions(locale.value),
@@ -135,6 +187,8 @@ async function loadCongregation() {
       postal_code: congregationFull.value.address?.postal_code ?? null,
       province: congregationFull.value.address?.province ?? null,
       country: congregationFull.value.address?.country ?? DEFAULT_COUNTRY_CODE,
+      latitude: congregationFull.value.address?.latitude ?? null,
+      longitude: congregationFull.value.address?.longitude ?? null,
       address_status: (congregationFull.value.address?.status as 'draft' | 'published' | 'published_unverified') ?? 'draft',
     })
 
@@ -182,6 +236,8 @@ const saveAddress = form.handleSubmit(async (values) => {
         postal_code: values.postal_code,
         province: values.province,
         country: values.country,
+        latitude: values.latitude,
+        longitude: values.longitude,
         status: values.address_status,
       })
     } else {
@@ -191,6 +247,8 @@ const saveAddress = form.handleSubmit(async (values) => {
         postal_code: values.postal_code,
         province: values.province,
         country: values.country,
+        latitude: values.latitude,
+        longitude: values.longitude,
         status: values.address_status,
       })
     }
@@ -470,6 +528,46 @@ onMounted(() => {
                   <FormMessage />
                 </FormItem>
               </FormField>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <Label>
+                  {{ t('congregations.edit.address.location') }}
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  :disabled="!form.values.city || geocoding"
+                  @click="geocodeAddress"
+                >
+                  {{ geocoding ? t('congregations.edit.address.geocoding') : t('congregations.edit.address.geocodeButton') }}
+                </Button>
+              </div>
+              <AddressMapPicker v-model:latitude="latitudeModel" v-model:longitude="longitudeModel" />
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>{{ t('congregations.edit.address.latitude') }}</Label>
+                  <Input
+                    v-model.number="latitudeInputModel"
+                    type="number"
+                    step="any"
+                    min="-90"
+                    max="90"
+                  />
+                </div>
+                <div>
+                  <Label>{{ t('congregations.edit.address.longitude') }}</Label>
+                  <Input
+                    v-model.number="longitudeInputModel"
+                    type="number"
+                    step="any"
+                    min="-180"
+                    max="180"
+                  />
+                </div>
+              </div>
             </div>
 
             <FormField v-slot="{ componentField }" name="address_status">

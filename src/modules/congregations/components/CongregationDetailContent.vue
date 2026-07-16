@@ -5,6 +5,7 @@ import Badge from '@/components/ui/badge/Badge.vue'
 import { formatPhoneNumber } from '@/shared/utils/formatPhone'
 import type { ICongregationDetail } from '../types/congregation.types'
 import { formatAddress, formatServiceTimes } from '../utils/congregationDisplay'
+import CongregationMap from './map/CongregationMap.vue'
 
 const { congregation } = defineProps<{
   congregation: ICongregationDetail
@@ -26,6 +27,7 @@ const { t } = useI18n()
       <p class="mt-1 pl-8 text-foreground">
         {{ formatAddress(congregation) }}
       </p>
+      <CongregationMap :congregation class="mt-3 pl-8" />
     </div>
 
     <!-- Service Times -->

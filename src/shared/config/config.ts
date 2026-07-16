@@ -79,6 +79,12 @@ export const config = {
     // Maximum file size for administrators (50 MB)
     maxFileSizeAdmin: import.meta.env.VITE_MAX_FILE_SIZE_ADMIN ? parseInt(import.meta.env.VITE_MAX_FILE_SIZE_ADMIN) : 50 * 1024 * 1024,
   },
+  maps: {
+    tileProviderKey: import.meta.env.VITE_MAPTILER_API_KEY ?? '',
+    enabled: !!import.meta.env.VITE_MAPTILER_API_KEY,
+    tileUrl: (key: string) => `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${key}`,
+    attribution: '© <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+  },
   sentry: {
     dsn: import.meta.env.VITE_SENTRY_DSN ?? '',
     enabled: !!import.meta.env.VITE_SENTRY_DSN,
