@@ -44,6 +44,7 @@ export const congregationsEn = {
       hiddenContacts: 'Hidden (visible to editors only)',
       branches: 'Branches',
       back: 'Back to congregations list',
+      map: 'Map',
       openInGoogleMaps: 'Open in Google Maps',
     },
     map: {
@@ -128,6 +129,7 @@ export const congregationsEn = {
       subtitle: 'Manage congregation information',
       loadError: 'Failed to load congregation data',
       nameRequired: 'Name is required',
+      lastUpdatedBy: 'Last updated',
       basicInfo: {
         title: 'Basic Information',
         name: 'Name',
@@ -252,6 +254,17 @@ export const congregationsEn = {
         regional_bishop: 'Regional bishop',
       },
       noServiceTypes: 'No service types in database. Run: python -m cli db churches-backfill',
+    },
+    changeHistory: {
+      title: 'Change history',
+      empty: 'No changes recorded',
+      loadError: 'Failed to load change history',
+      source: {
+        admin_manual: 'Manual edit',
+        import_paste: 'Text import',
+        email_auto: 'E-mail (automatic)',
+        email_reviewed: 'E-mail (manually approved)',
+      },
     },
   },
 }

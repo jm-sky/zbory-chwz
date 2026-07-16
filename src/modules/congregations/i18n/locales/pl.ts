@@ -44,6 +44,7 @@ export const congregationsPl = {
       hiddenContacts: 'Ukryte (widoczne tylko dla edytorów)',
       branches: 'Placówki',
       back: 'Wróć do listy zborów',
+      map: 'Mapa',
       openInGoogleMaps: 'Otwórz w Google Maps',
     },
     map: {
@@ -128,6 +129,7 @@ export const congregationsPl = {
       subtitle: 'Zarządzaj informacjami o zborze',
       loadError: 'Nie udało się załadować danych zboru',
       nameRequired: 'Nazwa jest wymagana',
+      lastUpdatedBy: 'Ostatnia zmiana danych',
       basicInfo: {
         title: 'Podstawowe informacje',
         name: 'Nazwa',
@@ -252,6 +254,17 @@ export const congregationsPl = {
         regional_bishop: 'Biskup regionalny',
       },
       noServiceTypes: 'Brak typów służb w bazie. Uruchom: python -m cli db churches-backfill',
+    },
+    changeHistory: {
+      title: 'Historia zmian',
+      empty: 'Brak zarejestrowanych zmian',
+      loadError: 'Nie udało się pobrać historii zmian',
+      source: {
+        admin_manual: 'Edycja ręczna',
+        import_paste: 'Import z tekstu',
+        email_auto: 'E-mail (automatycznie)',
+        email_reviewed: 'E-mail (zatwierdzone ręcznie)',
+      },
     },
   },
 }

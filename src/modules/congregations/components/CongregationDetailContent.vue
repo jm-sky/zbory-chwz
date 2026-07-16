@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Clock, Mail, MapPin, Phone, User } from 'lucide-vue-next'
+import { Clock, Mail, Map, MapPin, Phone, User } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import Badge from '@/components/ui/badge/Badge.vue'
 import { formatPhoneNumber } from '@/shared/utils/formatPhone'
@@ -27,7 +27,6 @@ const { t } = useI18n()
       <p class="mt-1 pl-8 text-foreground">
         {{ formatAddress(congregation) }}
       </p>
-      <CongregationMap :congregation class="mt-3 pl-8" />
     </div>
 
     <!-- Service Times -->
@@ -142,6 +141,19 @@ const { t } = useI18n()
         <Badge v-for="branch in congregation.branches" :key="branch.id" variant="secondary">
           {{ branch.name }}
         </Badge>
+      </div>
+    </div>
+
+    <!-- Location map (kept last, so only change history can appear below it) -->
+    <div v-if="congregation.latitude != null && congregation.longitude != null">
+      <div class="flex items-center gap-3">
+        <Map class="size-5 shrink-0 text-muted-foreground" />
+        <h3 class="text-sm font-medium text-muted-foreground">
+          {{ t('congregations.detail.map') }}
+        </h3>
+      </div>
+      <div class="mt-2 pl-8">
+        <CongregationMap :congregation />
       </div>
     </div>
   </div>
