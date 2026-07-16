@@ -18,7 +18,8 @@
     "verify_button": "Zweryfikuj adres email",
     "copy_link": "Jeśli przycisk nie działa, skopiuj i wklej ten link do przeglądarki:",
     "expires": "Ten link jest ważny przez następne {{ expires_hours }} godzin(y).",
-    "ignore": "Jeśli nie utworzyłeś konta, możesz zignorować ten email."
+    "ignore": "Jeśli nie utworzyłeś konta, możesz zignorować ten email.",
+    "resend_success": "Jeśli podany adres e-mail istnieje w naszej bazie, wysłaliśmy na niego nowy link weryfikacyjny"
   },
   "password_reset": {
     "title": "Reset hasła - {{ app_name }}",
@@ -33,7 +34,8 @@
     "expires_in": "Ten link wygaśnie za {{ expires_hours }} godzin(y)",
     "didnt_request": "Jeśli nie prosiłeś o reset hasła, zignoruj ten email",
     "unchanged": "Twoje hasło pozostanie niezmienione, jeśli nie klikniesz linku",
-    "concerns": "Jeśli masz obawy dotyczące bezpieczeństwa swojego konta, skontaktuj się natychmiast z pomocą techniczną."
+    "concerns": "Jeśli masz obawy dotyczące bezpieczeństwa swojego konta, skontaktuj się natychmiast z pomocą techniczną.",
+    "request_success": "Jeśli podany adres e-mail istnieje w naszej bazie, wysłaliśmy na niego link do resetowania hasła"
   },
   "password_changed": {
     "title": "Hasło zmienione - {{ app_name }}",
