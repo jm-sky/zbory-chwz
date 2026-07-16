@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LayoutGrid, List } from 'lucide-vue-next'
+import { LayoutGrid, List, Map } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { ButtonGroup } from '@/components/ui/button-group'
 import Button from '@/components/ui/button/Button.vue'
@@ -31,6 +31,16 @@ const viewMode = defineModel<CongregationListViewMode>('viewMode', { required: t
     >
       <List class="size-4" />
       <span class="hidden sm:inline">{{ t('congregations.list.view.list') }}</span>
+    </Button>
+    <Button
+      variant="outline"
+      size="sm"
+      :aria-pressed="viewMode === 'map'"
+      :class="viewMode === 'map' ? 'bg-accent text-accent-foreground' : ''"
+      @click="viewMode = 'map'"
+    >
+      <Map class="size-4" />
+      <span class="hidden sm:inline">{{ t('congregations.list.view.map') }}</span>
     </Button>
   </ButtonGroup>
 </template>

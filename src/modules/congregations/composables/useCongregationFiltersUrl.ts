@@ -29,6 +29,12 @@ export function useCongregationFiltersUrl(filters: ICongregationFilters): void {
     if (filters.hideBranches.value !== parsed.hideBranches) {
       filters.hideBranches.value = parsed.hideBranches
     }
+    if (filters.maxDistanceKm.value !== parsed.maxDistanceKm) {
+      filters.maxDistanceKm.value = parsed.maxDistanceKm
+    }
+    if (filters.sortByDistance.value !== parsed.sortByDistance) {
+      filters.sortByDistance.value = parsed.sortByDistance
+    }
   }
 
   function syncFromUrl(): void {
@@ -49,6 +55,8 @@ export function useCongregationFiltersUrl(filters: ICongregationFilters): void {
       country: filters.country.value,
       province: filters.province.value,
       hideBranches: filters.hideBranches.value,
+      maxDistanceKm: filters.maxDistanceKm.value,
+      sortByDistance: filters.sortByDistance.value,
     })
 
     if (areCongregationFilterQueriesEqual(route.query, nextQuery)) return
@@ -65,7 +73,14 @@ export function useCongregationFiltersUrl(filters: ICongregationFilters): void {
   })
 
   const stateWatchStop = watch(
-    [debouncedSearch, () => filters.country.value, () => filters.province.value, () => filters.hideBranches.value],
+    [
+      debouncedSearch,
+      () => filters.country.value,
+      () => filters.province.value,
+      () => filters.hideBranches.value,
+      () => filters.maxDistanceKm.value,
+      () => filters.sortByDistance.value,
+    ],
     () => {
       syncToUrl()
     },

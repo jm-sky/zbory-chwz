@@ -32,6 +32,7 @@ import CongregationExportMenu from './CongregationExportMenu.vue'
 import CongregationFilters from './CongregationFilters.vue'
 import CongregationListCard from './CongregationListCard.vue'
 import CongregationListRow from './CongregationListRow.vue'
+import CongregationsMapView from './map/CongregationsMapView.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -61,11 +62,15 @@ const {
   country,
   province,
   hideBranches,
+  userLocation,
+  maxDistanceKm,
+  sortByDistance,
   availableCountries,
   availableProvinces,
   hasBranches,
   isFiltered,
   filtered: filteredCongregations,
+  missingCoordinatesCount,
   reset,
 } = congregationFilters
 
@@ -90,6 +95,11 @@ async function handleEdit(congregation: ICongregationDetailed) {
 function handleOpen(congregation: ICongregationDetailed) {
   if (congregation.type === 'branch') return
   router.push(CongregationRoutePaths.detailById(congregation.id))
+}
+
+function handleMapMarkerOpen(id: string): void {
+  const congregation = filteredCongregations.value.find(c => c.id === id)
+  if (congregation) handleOpen(congregation)
 }
 
 async function handleUnpublish(congregation: ICongregationDetailed) {
@@ -231,11 +241,15 @@ async function handleDelete(congregation: ICongregationDetailed) {
           v-model:province="province"
           v-model:hide-branches="hideBranches"
           v-model:view-mode="viewMode"
+          v-model:max-distance-km="maxDistanceKm"
+          v-model:sort-by-distance="sortByDistance"
+          v-model:user-location="userLocation"
           :available-countries="availableCountries"
           :available-provinces="availableProvinces"
           :has-branches="hasBranches"
           :is-filtered="isFiltered"
           :result-count="filteredCongregations.length"
+          :missing-coordinates-count="missingCoordinatesCount"
           @reset="reset"
         />
       </template>
@@ -265,6 +279,14 @@ async function handleDelete(congregation: ICongregationDetailed) {
         <Search class="mx-auto mb-2 size-8 opacity-50" />
         <p>{{ t('congregations.list.noResults', 'Brak wyników dla podanej frazy') }}</p>
       </div>
+
+      <!-- Congregations Map -->
+      <CongregationsMapView
+        v-else-if="viewMode === 'map'"
+        :congregations="filteredCongregations"
+        :user-location="userLocation"
+        @open="handleMapMarkerOpen"
+      />
 
       <!-- Congregations Grid -->
       <div v-else-if="viewMode === 'grid'" class="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">

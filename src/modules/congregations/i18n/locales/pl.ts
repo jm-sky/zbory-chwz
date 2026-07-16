@@ -26,7 +26,9 @@ export const congregationsPl = {
       view: {
         grid: 'Siatka',
         list: 'Lista',
+        map: 'Mapa',
         toggleLabel: 'Tryb wyświetlania',
+        mapMissingCoordinates: 'Zbory bez współrzędnych nie są pokazane | 1 zbór bez współrzędnych nie jest pokazany | {count} zbory bez współrzędnych nie są pokazane | {count} zborów bez współrzędnych nie jest pokazanych',
       },
     },
     detail: {
@@ -88,6 +90,15 @@ export const congregationsPl = {
       more: 'Więcej',
       less: 'Mniej',
       resultCount: 'Brak zborów | 1 zbór | {count} zbory | {count} zborów',
+      myLocation: 'Użyj mojej lokalizacji',
+      locating: 'Ustalanie lokalizacji...',
+      locationError: 'Nie udało się ustalić lokalizacji',
+      clearLocation: 'Wyczyść lokalizację',
+      maxDistance: 'Promień',
+      anyDistance: 'Dowolny',
+      distanceKm: '{km} km',
+      sortByDistance: 'Sortuj wg odległości',
+      missingCoordinates: 'Pominięto zbory bez współrzędnych | Pominięto 1 zbór (brak współrzędnych) | Pominięto {count} zbory (brak współrzędnych) | Pominięto {count} zborów (brak współrzędnych)',
     },
     export: {
       button: 'Eksport',

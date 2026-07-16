@@ -26,7 +26,9 @@ export const congregationsEn = {
       view: {
         grid: 'Grid',
         list: 'List',
+        map: 'Map',
         toggleLabel: 'Display mode',
+        mapMissingCoordinates: 'No congregations without coordinates | 1 congregation without coordinates is not shown | {count} congregations without coordinates are not shown',
       },
     },
     detail: {
@@ -88,6 +90,15 @@ export const congregationsEn = {
       more: 'More',
       less: 'Less',
       resultCount: 'No congregations | 1 congregation | {count} congregations',
+      myLocation: 'Use my location',
+      locating: 'Locating...',
+      locationError: 'Failed to determine your location',
+      clearLocation: 'Clear location',
+      maxDistance: 'Radius',
+      anyDistance: 'Any',
+      distanceKm: '{km} km',
+      sortByDistance: 'Sort by distance',
+      missingCoordinates: 'No congregations skipped | 1 congregation skipped (no coordinates) | {count} congregations skipped (no coordinates)',
     },
     export: {
       button: 'Export',

@@ -1,1 +1,1 @@
-export type CongregationListViewMode = 'list' | 'grid'
+export type CongregationListViewMode = 'list' | 'grid' | 'map'

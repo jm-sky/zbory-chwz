@@ -8,7 +8,10 @@ export interface IMapMarker {
   id: string
   lat: number
   lng: number
+  /** Shown on click; use for a single-marker map where clicking has no other effect. */
   popupHtml?: string
+  /** Shown on hover, without intercepting the click (e.g. so marker-click can navigate). */
+  tooltipHtml?: string
   variant?: 'default' | 'user'
   draggable?: boolean
 }
@@ -56,6 +59,7 @@ function renderMarkers(): void {
     }).addTo(mapRef.value)
 
     if (markerData.popupHtml) marker.bindPopup(markerData.popupHtml)
+    if (markerData.tooltipHtml) marker.bindTooltip(markerData.tooltipHtml, { direction: 'top', offset: [0, -8] })
 
     marker.on('click', () => emit('marker-click', { id: markerData.id }))
     marker.on('dragend', () => {

@@ -13,6 +13,8 @@ describe('congregationFilterQuery', () => {
       country: ANY_VALUE,
       province: ANY_VALUE,
       hideBranches: false,
+      maxDistanceKm: null,
+      sortByDistance: false,
     })
   })
 
@@ -22,16 +24,26 @@ describe('congregationFilterQuery', () => {
       country: 'PL',
       province: 'dolnoslaskie',
       hideBranches: '1',
+      maxDistanceKm: '25',
+      sortByDistance: '1',
     })).toEqual({
       search: 'wroclaw',
       country: 'PL',
       province: 'dolnoslaskie',
       hideBranches: true,
+      maxDistanceKm: 25,
+      sortByDistance: true,
     })
   })
 
   it('parses hideBranches=true', () => {
     expect(parseCongregationFilterQuery({ hideBranches: 'true' }).hideBranches).toBe(true)
+  })
+
+  it('ignores a non-numeric or non-positive maxDistanceKm', () => {
+    expect(parseCongregationFilterQuery({ maxDistanceKm: 'abc' }).maxDistanceKm).toBeNull()
+    expect(parseCongregationFilterQuery({ maxDistanceKm: '-5' }).maxDistanceKm).toBeNull()
+    expect(parseCongregationFilterQuery({ maxDistanceKm: '0' }).maxDistanceKm).toBeNull()
   })
 
   it('build omits default values', () => {
@@ -40,6 +52,8 @@ describe('congregationFilterQuery', () => {
       country: ANY_VALUE,
       province: ANY_VALUE,
       hideBranches: false,
+      maxDistanceKm: null,
+      sortByDistance: false,
     })).toEqual({})
   })
 
@@ -49,11 +63,15 @@ describe('congregationFilterQuery', () => {
       country: 'PL',
       province: 'mazowieckie',
       hideBranches: true,
+      maxDistanceKm: 10,
+      sortByDistance: true,
     })).toEqual({
       q: 'warszawa',
       country: 'PL',
       province: 'mazowieckie',
       hideBranches: '1',
+      maxDistanceKm: '10',
+      sortByDistance: '1',
     })
   })
 
@@ -63,6 +81,8 @@ describe('congregationFilterQuery', () => {
       country: 'DE',
       province: 'bayern',
       hideBranches: '1',
+      maxDistanceKm: '50',
+      sortByDistance: '1',
     }
     const parsed = parseCongregationFilterQuery(initial)
     const built = buildCongregationFilterQuery(parsed)
