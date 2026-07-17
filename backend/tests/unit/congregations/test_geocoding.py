@@ -60,6 +60,33 @@ async def test_geocode_address_returns_exact_match_with_street(monkeypatch) -> N
 
 
 @pytest.mark.asyncio
+async def test_geocode_address_strips_polish_street_prefix(monkeypatch) -> None:
+    """Nominatim returns no results for "ul. Marszałkowska 1, Warszawa" but
+    does match "Marszałkowska 1, Warszawa" - the "ul." prefix must be
+    stripped before querying."""
+    captured_params: dict = {}
+
+    class _FakeAsyncClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def get(self, url, params=None, headers=None, timeout=None):
+            captured_params.update(params or {})
+            return _FakeResponse([{"lat": "52.2141815", "lon": "21.0210292", "display_name": "Marszałkowska 1, Warszawa"}])
+
+    monkeypatch.setattr(geocoding.httpx, "AsyncClient", _FakeAsyncClient)
+
+    result = await geocoding.geocode_address(street="ul. Marszałkowska 1", city="Warszawa", postal_code="00-590", province="mazowieckie", country="PL")
+
+    assert result is not None
+    assert "ul." not in captured_params["q"]
+    assert captured_params["q"].startswith("Marszałkowska 1")
+
+
+@pytest.mark.asyncio
 async def test_geocode_address_without_street_is_approximate(monkeypatch) -> None:
     monkeypatch.setattr(geocoding.httpx, "AsyncClient", _fake_client([{"lat": "50.0", "lon": "20.0", "display_name": "Some City"}]))
 

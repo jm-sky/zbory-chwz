@@ -15,6 +15,7 @@ should move to Redis (already a dependency, see app.core.config.RedisSettings).
 
 import asyncio
 import logging
+import re
 import time
 from dataclasses import dataclass
 
@@ -27,6 +28,16 @@ logger = logging.getLogger(__name__)
 _MIN_REQUEST_INTERVAL_SECONDS = 1.1
 _lock = asyncio.Lock()
 _last_request_at = 0.0
+
+# Nominatim's matching is brittle against Polish street-type abbreviations:
+# "ul. Marszałkowska 1, Warszawa" returns zero results even though the
+# unprefixed "Marszałkowska 1, Warszawa" matches immediately, since OSM
+# street names/tags don't carry the "ul."/"al."/"pl."/"os." abbreviation.
+_STREET_PREFIX_RE = re.compile(r"^(ul|al|pl|os)\.?\s+", re.IGNORECASE)
+
+
+def _normalize_street(street: str) -> str:
+    return _STREET_PREFIX_RE.sub("", street.strip())
 
 
 @dataclass
@@ -50,7 +61,8 @@ async def _throttle() -> None:
 
 
 def _build_query(street: str | None, city: str, postal_code: str | None, province: str | None) -> str:
-    parts = [part for part in [street, postal_code, city, province] if part]
+    normalized_street = _normalize_street(street) if street else street
+    parts = [part for part in [normalized_street, postal_code, city, province] if part]
     return ", ".join(parts)
 
 
