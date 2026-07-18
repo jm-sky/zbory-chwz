@@ -175,7 +175,7 @@ async function load() {
       churchApiService.listServiceTypes(),
       churchApiService.listServiceAssignments(churchId),
     ])
-    serviceTypes.value = types.filter(st => st.scopeType === 'church')
+    serviceTypes.value = types
     assignments.value = list
   } catch (error) {
     handleError(error)
