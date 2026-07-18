@@ -26,6 +26,18 @@ class TenantResponse(BaseModel):
     role: str
     createdAt: datetime
     deletedAt: datetime | None = None
+    # Profile completeness inputs; only populated by the admin tenant listing.
+    street: str | None = None
+    postal_code: str | None = None
+    province: str | None = None
+    city: str | None = None
+    country: str | None = None
+    website: str | None = None
+    email: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    service_times_count: int = 0
+    card_contacts_count: int = 0
 
 
 class TenantListResponse(BaseModel):

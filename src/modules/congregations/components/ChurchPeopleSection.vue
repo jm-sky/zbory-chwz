@@ -45,6 +45,8 @@ import VisibilityLevelSelect from './VisibilityLevelSelect.vue'
 
 const { churchId } = defineProps<{ churchId: string }>()
 
+const emit = defineEmits<{ (e: 'update:count', count: number): void }>()
+
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { handleError } = useHandleError()
@@ -54,6 +56,8 @@ const assignments = ref<IServiceAssignment[]>([])
 const serviceTypes = ref<IServiceType[]>([])
 const loading = ref(true)
 const savingId = ref<string | null>(null)
+
+watch(assignments, () => emit('update:count', assignments.value.length), { deep: true, immediate: true })
 
 const useCustomService = ref(false)
 const createAccount = ref(false)

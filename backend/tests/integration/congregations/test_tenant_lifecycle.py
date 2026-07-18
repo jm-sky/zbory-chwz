@@ -177,3 +177,45 @@ async def test_restore_brings_the_congregation_back(client) -> None:
 
     listing = await c.get("/api/admin/tenants")
     assert any(t["id"] == tenant_id for t in listing.json()["tenants"])
+
+
+@pytest.mark.asyncio
+async def test_admin_tenants_listing_includes_completeness_inputs(client) -> None:
+    """The admin tenant listing must carry enough data (address, service times,
+    contact count) for the frontend to compute a profile completeness score."""
+    c, _ = client
+
+    bare_id = await _create_tenant(c, name="Zbór bez danych")
+
+    filled_id = await _create_tenant(c, name="Zbór wypełniony")
+    address_response = await c.post(
+        f"/api/congregations/{filled_id}/address",
+        json={"street": "ul. Kwiatowa 1", "city": "Warszawa", "postal_code": "00-001"},
+    )
+    assert address_response.status_code == 201, address_response.text
+
+    service_time_response = await c.post(
+        f"/api/congregations/{filled_id}/service-times",
+        json={"day": "niedziela", "time": "10:00"},
+    )
+    assert service_time_response.status_code == 201, service_time_response.text
+
+    assignment_response = await c.post(
+        f"/api/churches/{filled_id}/service-assignments",
+        json={"firstName": "Jan", "lastName": "Kowalski", "customServiceName": "Pastor"},
+    )
+    assert assignment_response.status_code == 201, assignment_response.text
+
+    listing = await c.get("/api/admin/tenants")
+    tenants_by_id = {t["id"]: t for t in listing.json()["tenants"]}
+
+    bare = tenants_by_id[bare_id]
+    assert bare["street"] is None
+    assert bare["service_times_count"] == 0
+    assert bare["card_contacts_count"] == 0
+
+    filled = tenants_by_id[filled_id]
+    assert filled["street"] == "ul. Kwiatowa 1"
+    assert filled["city"] == "Warszawa"
+    assert filled["service_times_count"] == 1
+    assert filled["card_contacts_count"] == 1

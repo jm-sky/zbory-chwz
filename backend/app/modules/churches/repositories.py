@@ -568,6 +568,24 @@ class ChurchRepository:
             grouped[assignment.scope_id].append(assignment)
         return grouped
 
+    async def count_service_assignments_for_churches(self, church_ids: Sequence[str]) -> dict[str, int]:
+        """Count all service assignments (contact persons) per church, regardless of visibility."""
+        if not church_ids:
+            return {}
+        stmt = (
+            select(ServiceAssignmentDB.scope_id, func.count(ServiceAssignmentDB.id))
+            .where(
+                ServiceAssignmentDB.scope_type == "church",
+                ServiceAssignmentDB.scope_id.in_(church_ids),
+            )
+            .group_by(ServiceAssignmentDB.scope_id)
+        )
+        result = await self.db.execute(stmt)
+        counts: dict[str, int] = {}
+        for scope_id, count in result.all():
+            counts[scope_id] = count
+        return counts
+
     async def list_public_branches_for_churches(self, church_ids: Sequence[str]) -> dict[str, list[BranchDB]]:
         """Publicly visible branches for many churches at once, keyed by church id."""
         if not church_ids:

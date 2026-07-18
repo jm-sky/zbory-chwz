@@ -35,6 +35,8 @@ import {
 } from '@/components/ui/select'
 import TableEmptyDecorated from '@/components/ui/table/TableEmptyDecorated.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import CongregationCompletenessIndicator from '@/modules/congregations/components/CongregationCompletenessIndicator.vue'
+import { calculateCongregationCompleteness } from '@/modules/congregations/utils/congregationCompleteness'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { IAdminUser } from '../types/admin.types'
 import type { IAddress, IAdminTenant, IAdminTenantMembership } from '../types/tenant.types'
@@ -50,6 +52,7 @@ const tenants = ref<IAdminTenant[]>([])
 const loading = ref(false)
 const showDeleted = ref<boolean>(false)
 const statusFilter = ref<string>('all')
+const completenessFilter = ref<'all' | 'low' | 'medium' | 'high'>('all')
 const createDialogOpen = ref(false)
 const editDialogOpen = ref(false)
 const membershipsDialogOpen = ref(false)
@@ -377,6 +380,27 @@ const availableUsers = computed(() => {
   return allUsers.value.filter(user => !memberUserIds.has(user.id))
 })
 
+function completenessFor(tenant: IAdminTenant) {
+  return calculateCongregationCompleteness({
+    description: tenant.description,
+    street: tenant.street,
+    postal_code: tenant.postal_code,
+    province: tenant.province,
+    website: tenant.website,
+    email: tenant.email,
+    latitude: tenant.latitude,
+    longitude: tenant.longitude,
+    service_times_count: tenant.service_times_count,
+    card_contacts_count: tenant.card_contacts_count,
+  })
+}
+
+function completenessTier(score: number): 'low' | 'medium' | 'high' {
+  if (score < 40) return 'low'
+  if (score < 75) return 'medium'
+  return 'high'
+}
+
 // Columns
 const columns = computed<ColumnDef<IAdminTenant>[]>(() => [
   {
@@ -395,6 +419,12 @@ const columns = computed<ColumnDef<IAdminTenant>[]>(() => [
     id: 'status',
     accessorKey: 'status',
     header: () => t('admin.congregations.columns.status', 'Status'),
+    enableSorting: true,
+  },
+  {
+    id: 'completeness',
+    accessorFn: row => completenessFor(row).score,
+    header: () => t('congregations.completeness.title', 'Profile completeness'),
     enableSorting: true,
   },
   {
@@ -422,11 +452,11 @@ const globalFilterFn = (row: IAdminTenant, filterValue: string) => {
   )
 }
 
-// Status filter (applied client-side, on top of the full tenant list)
+// Status and completeness filters (applied client-side, on top of the full tenant list)
 const filteredTenants = computed(() =>
-  statusFilter.value === 'all'
-    ? tenants.value
-    : tenants.value.filter(t => t.status === statusFilter.value),
+  tenants.value
+    .filter(t => statusFilter.value === 'all' || t.status === statusFilter.value)
+    .filter(t => completenessFilter.value === 'all' || completenessTier(completenessFor(t).score) === completenessFilter.value),
 )
 
 onMounted(() => {
@@ -828,6 +858,26 @@ onMounted(() => {
               </SelectItem>
             </SelectContent>
           </Select>
+
+          <Select v-model="completenessFilter">
+            <SelectTrigger class="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                {{ t('congregations.completeness.filterAll') }}
+              </SelectItem>
+              <SelectItem value="low">
+                {{ t('congregations.completeness.filterLow') }}
+              </SelectItem>
+              <SelectItem value="medium">
+                {{ t('congregations.completeness.filterMedium') }}
+              </SelectItem>
+              <SelectItem value="high">
+                {{ t('congregations.completeness.filterHigh') }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </template>
 
         <template #name="{ row }">
@@ -863,6 +913,10 @@ onMounted(() => {
           <Badge v-else variant="secondary">
             {{ t('admin.congregations.statusDraft', 'Draft') }}
           </Badge>
+        </template>
+
+        <template #completeness="{ row }">
+          <CongregationCompletenessIndicator compact :score="completenessFor(row.original).score" :missing-fields="completenessFor(row.original).missingFields" />
         </template>
 
         <template #createdAt="{ row }">

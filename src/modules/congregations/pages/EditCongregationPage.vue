@@ -27,10 +27,12 @@ import type { ICongregationFull } from '../types/congregation.types'
 import ChangeHistorySection from '../components/ChangeHistorySection.vue'
 import ChurchBranchesSection from '../components/ChurchBranchesSection.vue'
 import ChurchPeopleSection from '../components/ChurchPeopleSection.vue'
+import CongregationCompletenessIndicator from '../components/CongregationCompletenessIndicator.vue'
 import AddressMapPicker from '../components/map/AddressMapPicker.vue'
 import ShareLinksSection from '../components/ShareLinksSection.vue'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
+import { calculateCongregationCompleteness } from '../utils/congregationCompleteness'
 import {
   countryOptions,
   DEFAULT_COUNTRY_CODE,
@@ -168,6 +170,23 @@ function removeServiceTime(index: number) {
     deletedServiceTimeIds.value.push(removed.id)
   }
 }
+
+// Live profile completeness preview, recalculated from the current (unsaved) form state.
+const contactsCount = ref(0)
+const completeness = computed(() =>
+  calculateCongregationCompleteness({
+    description: form.values.description,
+    street: form.values.street,
+    postal_code: form.values.postal_code,
+    province: form.values.province,
+    website: form.values.website,
+    email: form.values.email,
+    latitude: form.values.latitude,
+    longitude: form.values.longitude,
+    service_times_count: serviceTimeFields.value.length,
+    card_contacts_count: contactsCount.value,
+  }),
+)
 
 // Load congregation data
 async function loadCongregation() {
@@ -353,6 +372,10 @@ onMounted(() => {
           · {{ new Date(congregationFull.address.last_updated_at).toLocaleString() }}
         </span>
       </p>
+
+      <div class="max-w-4xl mx-auto">
+        <CongregationCompletenessIndicator :score="completeness.score" :missing-fields="completeness.missingFields" />
+      </div>
 
       <div class="max-w-4xl mx-auto space-y-6">
         <!-- Basic Info Section -->
@@ -750,7 +773,7 @@ onMounted(() => {
           </div>
         </form>
 
-        <ChurchPeopleSection :church-id="congregationId" />
+        <ChurchPeopleSection :church-id="congregationId" @update:count="contactsCount = $event" />
         <ChurchBranchesSection :church-id="congregationId" />
         <ShareLinksSection :tenant-id="congregationId" />
         <ChangeHistorySection :tenant-id="congregationId" />

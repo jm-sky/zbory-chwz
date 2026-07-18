@@ -158,6 +158,14 @@ class CongregationRepository:
         result = await self.db.execute(stmt)
         return {address.tenant_id: address for address in result.scalars()}
 
+    async def get_addresses_for_tenants(self, tenant_ids: Sequence[str]) -> dict[str, CongregationAddressDB]:
+        """Get addresses for many tenants at once, keyed by tenant id, regardless of status."""
+        if not tenant_ids:
+            return {}
+        stmt = select(CongregationAddressDB).where(CongregationAddressDB.tenant_id.in_(tenant_ids))
+        result = await self.db.execute(stmt)
+        return {address.tenant_id: address for address in result.scalars()}
+
     async def get_service_times_for_tenants(self, tenant_ids: Sequence[str]) -> dict[str, list[CongregationServiceTimeDB]]:
         """Get service times for many tenants at once, keyed by tenant id."""
         if not tenant_ids:

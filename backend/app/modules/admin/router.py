@@ -114,6 +114,12 @@ async def delete_user(
 
 
 # Tenants/Congregations endpoints
+from app.modules.churches.repositories import ChurchRepository, get_church_repository
+from app.modules.congregations.db_models import decode_coordinate
+from app.modules.congregations.repositories import (
+    CongregationRepository,
+    get_congregation_repository,
+)
 from app.modules.tenants.db_models import TenantMembershipDB
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 from app.modules.tenants.schemas import (
@@ -137,12 +143,23 @@ from app.modules.users.repositories import UserRepository
 async def get_all_tenants(
     _: AdminOrOwnerUser,
     repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    congregation_repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
+    church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
     include_deleted: bool = Query(default=False, description="Include soft-deleted congregations"),
 ) -> TenantListResponse:
-    """Get all tenants (admin only)."""
+    """Get all tenants (admin only), enriched with the data needed to compute
+    profile completeness (address, service times, contact persons)."""
     tenants = await repo.list_all(include_deleted=include_deleted)
-    return TenantListResponse(
-        tenants=[
+    tenant_ids = [tenant.id for tenant in tenants]
+
+    addresses = await congregation_repo.get_addresses_for_tenants(tenant_ids)
+    service_times_by_tenant = await congregation_repo.get_service_times_for_tenants(tenant_ids)
+    contacts_count_by_tenant = await church_repo.count_service_assignments_for_churches(tenant_ids)
+
+    responses = []
+    for tenant in tenants:
+        address = addresses.get(tenant.id)
+        responses.append(
             TenantResponse(
                 id=tenant.id,
                 name=tenant.name,
@@ -151,10 +168,21 @@ async def get_all_tenants(
                 role="",  # Admin view doesn't include role
                 createdAt=tenant.created_at,
                 deletedAt=tenant.deleted_at,
+                street=address.street if address else None,
+                postal_code=address.postal_code if address else None,
+                province=address.province if address else None,
+                city=address.city if address else None,
+                country=address.country if address else None,
+                website=address.website if address else None,
+                email=address.email if address else None,
+                latitude=decode_coordinate(address.latitude) if address else None,
+                longitude=decode_coordinate(address.longitude) if address else None,
+                service_times_count=len(service_times_by_tenant.get(tenant.id, [])),
+                card_contacts_count=contacts_count_by_tenant.get(tenant.id, 0),
             )
-            for tenant in tenants
-        ]
-    )
+        )
+
+    return TenantListResponse(tenants=responses)
 
 
 @router.post(
