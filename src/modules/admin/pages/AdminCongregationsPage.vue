@@ -49,6 +49,7 @@ const queryClient = useQueryClient()
 const tenants = ref<IAdminTenant[]>([])
 const loading = ref(false)
 const showDeleted = ref<boolean>(false)
+const statusFilter = ref<string>('all')
 const createDialogOpen = ref(false)
 const editDialogOpen = ref(false)
 const membershipsDialogOpen = ref(false)
@@ -421,6 +422,13 @@ const globalFilterFn = (row: IAdminTenant, filterValue: string) => {
   )
 }
 
+// Status filter (applied client-side, on top of the full tenant list)
+const filteredTenants = computed(() =>
+  statusFilter.value === 'all'
+    ? tenants.value
+    : tenants.value.filter(t => t.status === statusFilter.value),
+)
+
 onMounted(() => {
   loadTenants()
 })
@@ -789,7 +797,7 @@ onMounted(() => {
       <DataTable
         :loading="loading"
         :columns="columns"
-        :data="tenants"
+        :data="filteredTenants"
         :search-placeholder="t('admin.congregations.search', 'Search congregations...')"
         :global-filter-fn="globalFilterFn"
         :enable-sorting="true"
@@ -797,6 +805,31 @@ onMounted(() => {
         :enable-pagination="true"
         :initial-page-size="20"
       >
+        <template #toolbar-filters>
+          <Select v-model="statusFilter">
+            <SelectTrigger class="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                {{ t('admin.congregations.allStatuses', 'All statuses') }}
+              </SelectItem>
+              <SelectItem value="draft">
+                {{ t('admin.congregations.statusDraft', 'Draft') }}
+              </SelectItem>
+              <SelectItem value="published">
+                {{ t('admin.congregations.statusPublished', 'Published') }}
+              </SelectItem>
+              <SelectItem value="published_unverified">
+                {{ t('admin.congregations.statusPublishedUnverified', 'Published (Unverified)') }}
+              </SelectItem>
+              <SelectItem value="need_verification">
+                {{ t('admin.congregations.statusNeedVerification', 'Needs verification') }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </template>
+
         <template #name="{ row }">
           <div class="flex items-center gap-2">
             <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
@@ -823,6 +856,9 @@ onMounted(() => {
           </Badge>
           <Badge v-else-if="row.original.status === 'published_unverified'" variant="outline" class="opacity-60">
             {{ t('admin.congregations.statusPublishedUnverified', 'Published (Unverified)') }}
+          </Badge>
+          <Badge v-else-if="row.original.status === 'need_verification'" variant="outline">
+            {{ t('admin.congregations.statusNeedVerification', 'Needs verification') }}
           </Badge>
           <Badge v-else variant="secondary">
             {{ t('admin.congregations.statusDraft', 'Draft') }}
