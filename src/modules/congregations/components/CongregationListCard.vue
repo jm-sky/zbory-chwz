@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Church, Clock, Edit, EyeOff, Mail, MapPin, MoreHorizontal, Phone, Trash2, User } from 'lucide-vue-next'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -12,15 +13,18 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { formatPhoneNumber } from '@/shared/utils/formatPhone'
 import type { ICongregationDetailed } from '../types/congregation.types'
+import { calculateCongregationCompleteness } from '../utils/congregationCompleteness'
 import { formatAddress, formatServiceTimes } from '../utils/congregationDisplay'
 import { contactsOf } from '../utils/exportCongregations'
+import CongregationCompletenessIndicator from './CongregationCompletenessIndicator.vue'
 
 const { t } = useI18n()
 
-const { congregation, canManage, canDelete } = defineProps<{
+const { congregation, canManage, canDelete, showCompleteness = false } = defineProps<{
   congregation: ICongregationDetailed
   canManage: boolean
   canDelete: boolean
+  showCompleteness?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -29,6 +33,21 @@ const emit = defineEmits<{
   unpublish: []
   delete: []
 }>()
+
+const completeness = computed(() =>
+  calculateCongregationCompleteness({
+    description: congregation.description,
+    street: congregation.street,
+    postal_code: congregation.postal_code,
+    province: congregation.province,
+    website: congregation.website,
+    email: congregation.email,
+    latitude: congregation.latitude,
+    longitude: congregation.longitude,
+    service_times_count: congregation.service_times?.length,
+    card_contacts_count: congregation.card_contacts?.length,
+  }),
+)
 </script>
 
 <template>
@@ -78,6 +97,13 @@ const emit = defineEmits<{
           >
             {{ t('congregations.status.unverified', 'Draft') }}
           </Badge>
+          <CongregationCompletenessIndicator
+            v-if="showCompleteness && congregation.type !== 'branch'"
+            compact
+            :score="completeness.score"
+            :missing-fields="completeness.missingFields"
+            @click.stop
+          />
         </div>
         <p
           v-if="congregation.type === 'branch' && congregation.parent_name"

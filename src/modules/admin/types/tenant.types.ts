@@ -10,6 +10,18 @@ export interface IAdminTenant {
   createdAt: string
   /** Set when the congregation is soft-deleted; it can be restored. */
   deletedAt?: string | null
+  // Profile completeness inputs (see congregations/utils/congregationCompleteness.ts)
+  street?: string | null
+  postal_code?: string | null
+  province?: string | null
+  city?: string | null
+  country?: string | null
+  website?: string | null
+  email?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  service_times_count?: number
+  card_contacts_count?: number
 }
 
 export interface IAdminTenantMembership {
