@@ -41,6 +41,7 @@ import {
   type VisibilityLevel,
 } from '../types/visibility.types'
 import ContactFieldWithVisibility from './ContactFieldWithVisibility.vue'
+import VisibilityLevelIconSelect from './VisibilityLevelIconSelect.vue'
 import VisibilityLevelSelect from './VisibilityLevelSelect.vue'
 
 const { churchId } = defineProps<{ churchId: string }>()
@@ -293,7 +294,7 @@ async function removeAssignment(assignmentId: string) {
 
 async function updateAssignmentVisibility(
   assignment: IServiceAssignment,
-  field: 'phoneVisibility' | 'emailVisibility',
+  field: 'phoneVisibility' | 'emailVisibility' | 'profileVisibility',
   level: VisibilityLevel,
 ) {
   savingId.value = assignment.id
@@ -392,9 +393,16 @@ onMounted(load)
       >
         <div class="min-w-0 flex-1 space-y-2">
           <div>
-            <p class="font-medium">
-              {{ personLabel(item) }}
-            </p>
+            <div class="flex items-center gap-2">
+              <p class="font-medium">
+                {{ personLabel(item) }}
+              </p>
+              <VisibilityLevelIconSelect
+                :model-value="item.profileVisibility as VisibilityLevel"
+                :disabled="savingId === item.id"
+                @update:model-value="updateAssignmentVisibility(item, 'profileVisibility', $event)"
+              />
+            </div>
             <p class="text-sm text-muted-foreground">
               {{ serviceLabel(item) }}
               <span v-if="item.description"> · {{ item.description }}</span>

@@ -15,7 +15,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <Button variant="outline" size="sm" @click="emit('create', filterState.search)">
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    @click="emit('create', filterState.search)"
+  >
     <PlusIcon class="size-4" />
     {{ createLabel }}
   </Button>

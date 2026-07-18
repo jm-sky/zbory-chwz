@@ -9,6 +9,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import Button from '@/components/ui/button/Button.vue'
+import ComboBox from '@/components/ui/combo-box/ComboBox.vue'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,7 +30,9 @@ import ChurchBranchesSection from '../components/ChurchBranchesSection.vue'
 import ChurchPeopleSection from '../components/ChurchPeopleSection.vue'
 import CongregationCompletenessIndicator from '../components/CongregationCompletenessIndicator.vue'
 import AddressMapPicker from '../components/map/AddressMapPicker.vue'
+import ServiceTimeQuickAddWidget from '../components/ServiceTimeQuickAddWidget.vue'
 import ShareLinksSection from '../components/ShareLinksSection.vue'
+import { getWeekdayOrder, WEEKDAY_KEYS } from '../constants/weekdays'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
 import { calculateCongregationCompleteness } from '../utils/congregationCompleteness'
@@ -160,6 +163,13 @@ const serviceTimeFields = ref<Array<{ key: string; id?: string; day: string; tim
 // Ids of pre-existing service times removed by the user, applied as deletes on save
 const deletedServiceTimeIds = ref<string[]>([])
 
+const weekdayOptions = computed(() =>
+  WEEKDAY_KEYS.map((key) => {
+    const label = t(`congregations.edit.weekdays.${key}`)
+    return { value: label, label }
+  }),
+)
+
 function pushServiceTime(value: { id?: string; day: string; time: string; description: string; order: number }) {
   serviceTimeFields.value.push({ ...value, key: `st-${value.id ?? `${Date.now()}-${Math.random()}`}` })
 }
@@ -187,6 +197,27 @@ const completeness = computed(() =>
     card_contacts_count: contactsCount.value,
   }),
 )
+
+/** Sorts service times by weekday (Sunday first) then time; unrecognized day values sort last. */
+function sortServiceTimeFields() {
+  serviceTimeFields.value = serviceTimeFields.value
+    .map((field, originalIndex) => ({ field, originalIndex }))
+    .sort((a, b) => {
+      const dayDiff = getWeekdayOrder(a.field.day) - getWeekdayOrder(b.field.day)
+      if (dayDiff !== 0) return dayDiff
+      const timeDiff = a.field.time.localeCompare(b.field.time)
+      if (timeDiff !== 0) return timeDiff
+      return a.originalIndex - b.originalIndex
+    })
+    .map(({ field }, order) => ({ ...field, order }))
+}
+
+function addServiceTimesFromQuickAdd(entries: Array<{ day: string; time: string }>) {
+  for (const entry of entries) {
+    pushServiceTime({ day: entry.day, time: entry.time, description: '', order: serviceTimeFields.value.length })
+  }
+  sortServiceTimeFields()
+}
 
 // Load congregation data
 async function loadCongregation() {
@@ -294,6 +325,8 @@ const saveAddress = form.handleSubmit(async (values) => {
 
 async function saveServiceTimes() {
   try {
+    sortServiceTimeFields()
+
     // Remove service times the user deleted from the form
     for (const id of deletedServiceTimeIds.value) {
       await congregationApiService.deleteServiceTime(congregationId, id)
@@ -708,6 +741,8 @@ onMounted(() => {
               </Button>
             </div>
 
+            <ServiceTimeQuickAddWidget @add="addServiceTimesFromQuickAdd" />
+
             <div v-if="serviceTimeFields.length === 0" class="text-sm text-muted-foreground py-4">
               {{ t('congregations.edit.serviceTimes.empty', 'Brak godzin nabożeństw. Kliknij "Dodaj" aby dodać nową.') }}
             </div>
@@ -724,9 +759,15 @@ onMounted(() => {
                       <Label>
                         {{ t('congregations.edit.serviceTime.day', 'Dzień') }}
                       </Label>
-                      <Input
-                        v-model="field.day"
+                      <ComboBox
+                        v-model:value="field.day"
+                        :options="weekdayOptions"
+                        creatable
+                        clearable
+                        class="w-full"
                         :placeholder="t('congregations.edit.serviceTime.dayPlaceholder', 'np. Niedziela')"
+                        :create-label="t('common.add', 'Dodaj')"
+                        @update:value="sortServiceTimeFields"
                       />
                     </div>
 
@@ -738,6 +779,7 @@ onMounted(() => {
                         v-model="field.time"
                         type="time"
                         :placeholder="t('congregations.edit.serviceTime.timePlaceholder', 'np. 10:00')"
+                        @change="sortServiceTimeFields"
                       />
                     </div>
                   </div>

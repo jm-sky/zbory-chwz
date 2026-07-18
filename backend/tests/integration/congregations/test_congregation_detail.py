@@ -457,6 +457,50 @@ async def test_member_with_can_manage_sees_pastors_only_email_on_visible_profile
 
 
 @pytest.mark.asyncio
+async def test_anonymous_does_not_see_visibility_levels(ctx) -> None:
+    client, login = ctx
+    login(None)
+
+    response = await client.get(f"/api/congregations/{PUBLISHED_ID}/detail")
+
+    assert response.status_code == 200
+    data = response.json()
+    anna = next(c for c in data["card_contacts"] if c["name"] == "Anna Nowak")
+    assert anna["profile_visibility"] is None
+    assert anna["phone_visibility"] is None
+    assert anna["email_visibility"] is None
+
+
+@pytest.mark.asyncio
+async def test_manager_sees_visibility_levels_on_visible_and_hidden_contacts(
+    ctx,
+) -> None:
+    client, login = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.get(f"/api/congregations/{PUBLISHED_ID}/detail")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["canManage"] is True
+
+    anna = next(c for c in data["card_contacts"] if c["name"] == "Anna Nowak")
+    assert anna["profile_visibility"] == "public"
+    assert anna["phone_visibility"] == "public"
+    assert anna["email_visibility"] == "authenticated"
+
+    tomasz = next(c for c in data["card_contacts"] if c["name"] == "Tomasz Smykowski")
+    assert tomasz["profile_visibility"] == "public"
+    assert tomasz["phone_visibility"] == "public"
+    assert tomasz["email_visibility"] == "pastors"
+
+    hidden = next(c for c in data["hidden_contacts"] if c["name"] == "Hidden Person")
+    assert hidden["profile_visibility"] == "hidden"
+    assert hidden["phone_visibility"] == "public"
+    assert hidden["email_visibility"] == "public"
+
+
+@pytest.mark.asyncio
 async def test_member_gets_role_and_can_manage(ctx) -> None:
     client, login = ctx
     login(_api_user(MEMBER_ID))
