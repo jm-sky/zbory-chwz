@@ -120,6 +120,9 @@ class WebAuthnService:
         # Generate registration options and challenge
         options_json, challenge = create_registration_options(user_id, user_email, user_name)
 
+        # options_to_json returns a JSON string; API schema expects a dict
+        options = json.loads(options_json)
+
         # Create registration token
         registration_token = _create_passkey_registration_token(user_id, challenge)
 
@@ -127,7 +130,7 @@ class WebAuthnService:
         expires_at = datetime.now(UTC) + timedelta(minutes=10)
 
         return {
-            "options": options_json,
+            "options": options,
             "registrationToken": registration_token,
             "expiresAt": expires_at,
         }
@@ -163,11 +166,9 @@ class WebAuthnService:
 
         # Get origin from settings if not provided
         if not origin:
-            origin = getattr(
-                getattr(settings, "two_factor", object()),
-                "webauthn_origin",
-                "http://localhost:3000",
-            )
+            from .webauthn_utils import _get_origin
+
+            origin = _get_origin()
 
         # Verify WebAuthn credential
         verified_data = verify_registration(
@@ -265,13 +266,9 @@ class WebAuthnService:
             logger.warning("Challenge store not available - challenge NOT stored server-side (INSECURE)")
 
         # Create authentication options
-        # Get domain from frontend URL or default to localhost
-        frontend_url = settings.frontend_url
-        # Extract domain from URL (e.g., "http://localhost:3000" -> "localhost")
-        from urllib.parse import urlparse
+        from .webauthn_utils import _get_rp_id
 
-        parsed = urlparse(frontend_url)
-        rp_id = parsed.hostname or "localhost"
+        rp_id = _get_rp_id()
 
         options = {
             "challenge": challenge,

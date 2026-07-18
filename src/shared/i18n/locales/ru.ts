@@ -49,6 +49,7 @@ export default {
     pagination: {
       totalRows: 'Всего {total} строк(и)',
       rowsPerPage: 'Строк на страницу',
+      rowsPerPageValue: 'Строк на страницу: {count}',
       page: 'Страница',
       of: 'из',
       goToFirstPage: 'Перейти на первую страницу',

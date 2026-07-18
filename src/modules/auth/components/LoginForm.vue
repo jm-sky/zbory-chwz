@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
+import Alert from '@/components/ui/alert/Alert.vue'
+import AlertDescription from '@/components/ui/alert/AlertDescription.vue'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input, PasswordInput } from '@/components/ui/input'
@@ -17,6 +20,7 @@ import { PublicRoutePaths } from '@/router/publicRoutes'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import { useRecaptcha } from '@/shared/composables/useRecaptcha'
 import { config } from '@/shared/config/config'
+import { isUnauthorizedFormError } from '@/shared/utils/typeGuards'
 import type { IAuthService } from '@/modules/auth/types/auth.type'
 import type { LoginCredentials } from '@/modules/auth/types/user.type'
 
@@ -36,6 +40,8 @@ const { login, isLoggingIn } = useAuth(authService)
 const { getToken } = useRecaptcha()
 const { handleUnauthorizedFormError } = useHandleError()
 
+const formError = ref<string | null>(null)
+
 const { handleSubmit, setErrors } = useForm({
   validationSchema: toTypedSchema(loginSchema),
   initialValues: {
@@ -45,6 +51,7 @@ const { handleSubmit, setErrors } = useForm({
 })
 
 const onSubmit = handleSubmit(async (values: LoginCredentials) => {
+  formError.value = null
   try {
     // Get reCAPTCHA token before login
     const recaptchaToken = await getToken('login')
@@ -76,6 +83,10 @@ const onSubmit = handleSubmit(async (values: LoginCredentials) => {
     const redirectTo = typeof route.query.redirectTo === 'string' ? route.query.redirectTo : undefined
     await router.push(redirectTo ?? PublicRoutePaths.landing)
   } catch (err: unknown) {
+    if (isUnauthorizedFormError(err)) {
+      formError.value = t('auth.invalid_credentials')
+      return
+    }
     console.error('Login error:', err)
     handleUnauthorizedFormError(err, setErrors)
   }
@@ -107,6 +118,10 @@ const onSubmit = handleSubmit(async (values: LoginCredentials) => {
         <FormMessage />
       </FormItem>
     </FormField>
+
+    <Alert v-if="formError" variant="destructive" role="alert">
+      <AlertDescription>{{ formError }}</AlertDescription>
+    </Alert>
 
     <Button type="submit" class="w-full" :loading="isLoggingIn">
       {{ t('auth.form.submit_login') }}

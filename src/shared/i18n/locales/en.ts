@@ -49,6 +49,7 @@ export default {
     pagination: {
       totalRows: '{total} row(s) total',
       rowsPerPage: 'Rows per page',
+      rowsPerPageValue: 'Rows per page: {count}',
       page: 'Page',
       of: 'of',
       goToFirstPage: 'Go to first page',

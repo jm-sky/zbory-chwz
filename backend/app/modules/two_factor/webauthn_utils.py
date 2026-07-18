@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlparse
 
 from webauthn import (
     generate_registration_options,
@@ -18,19 +19,55 @@ from webauthn.helpers import (
 from app.core.config import settings
 
 
+def _frontend_hostname() -> str:
+    """Hostname derived from FRONTEND_URL."""
+    return urlparse(settings.frontend_url).hostname or "localhost"
+
+
 def _get_rp_id() -> str:
-    """Get WebAuthn Relying Party ID from settings."""
-    return getattr(getattr(settings, "two_factor", object()), "webauthn_rp_id", "localhost")
+    """Get WebAuthn Relying Party ID from settings.
+
+    When WEBAUTHN_RP_ID is still ``localhost`` but the app is served on a real
+    domain (FRONTEND_URL), use that domain so browser ceremonies succeed.
+    """
+    configured = settings.webauthn.rp_id
+    frontend_host = _frontend_hostname()
+    if configured in ("localhost", "127.0.0.1") and frontend_host not in (
+        "localhost",
+        "127.0.0.1",
+    ):
+        return frontend_host
+    return configured or frontend_host
 
 
 def _get_rp_name() -> str:
     """Get WebAuthn Relying Party name from settings."""
-    return getattr(getattr(settings, "two_factor", object()), "webauthn_rp_name", "FastAPI App")
+    return settings.webauthn.rp_name
+
+
+def _get_origin() -> str:
+    """Expected WebAuthn origin (frontend URL).
+
+    When WEBAUTHN_ORIGIN is still a localhost URL but FRONTEND_URL is a real
+    domain, use FRONTEND_URL so verification matches the browser origin.
+    """
+    configured = settings.webauthn.origin
+    frontend = settings.frontend_url
+    if not configured:
+        return frontend
+    configured_host = urlparse(configured).hostname or ""
+    frontend_host = _frontend_hostname()
+    if configured_host in ("localhost", "127.0.0.1") and frontend_host not in (
+        "localhost",
+        "127.0.0.1",
+    ):
+        return frontend
+    return configured
 
 
 def _get_timeout() -> int:
-    """Get WebAuthn timeout from settings."""
-    return getattr(getattr(settings, "two_factor", object()), "webauthn_timeout", 60000)
+    """Get WebAuthn timeout in milliseconds."""
+    return 60000
 
 
 def create_registration_options(user_id: str, user_email: str, user_name: str) -> tuple[str, str]:

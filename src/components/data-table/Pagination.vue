@@ -62,7 +62,11 @@ const setPageSize = (size: number) => {
         </p>
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
-            <Button variant="outline" class="h-8 w-[70px]">
+            <Button
+              variant="outline"
+              class="h-8 w-[70px]"
+              :aria-label="t('common.pagination.rowsPerPageValue', { count: pageSize })"
+            >
               {{ pageSize }}
             </Button>
           </DropdownMenuTrigger>
