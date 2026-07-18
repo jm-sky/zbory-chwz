@@ -22,14 +22,27 @@ describe('calculateCongregationCompleteness', () => {
       postal_code: '00-001',
       province: 'mazowieckie',
       website: 'https://example.com',
-      email: 'kontakt@example.com',
       latitude: 52.23,
       longitude: 21.01,
       service_times_count: 2,
       card_contacts_count: 1,
+      has_contact_email: true,
+      has_contact_phone: true,
     })
     expect(result.score).toBe(100)
     expect(result.missingFields).toEqual([])
+  })
+
+  it('scores card_contacts, contact_email and contact_phone independently', () => {
+    const result = calculateCongregationCompleteness({
+      card_contacts_count: 1,
+      has_contact_email: false,
+      has_contact_phone: true,
+    })
+    expect(result.missingFields).not.toContain('card_contacts')
+    expect(result.missingFields).toContain('contact_email')
+    expect(result.missingFields).not.toContain('contact_phone')
+    expect(result.score).toBe(COMPLETENESS_WEIGHTS.card_contacts + COMPLETENESS_WEIGHTS.contact_phone)
   })
 
   it('sums only the weights of present fields', () => {

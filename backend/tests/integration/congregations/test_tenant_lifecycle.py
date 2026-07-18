@@ -202,7 +202,13 @@ async def test_admin_tenants_listing_includes_completeness_inputs(client) -> Non
 
     assignment_response = await c.post(
         f"/api/churches/{filled_id}/service-assignments",
-        json={"firstName": "Jan", "lastName": "Kowalski", "customServiceName": "Pastor"},
+        json={
+            "firstName": "Jan",
+            "lastName": "Kowalski",
+            "customServiceName": "Pastor",
+            "email": "jan.kowalski@example.com",
+            "phone": "600100200",
+        },
     )
     assert assignment_response.status_code == 201, assignment_response.text
 
@@ -213,9 +219,13 @@ async def test_admin_tenants_listing_includes_completeness_inputs(client) -> Non
     assert bare["street"] is None
     assert bare["service_times_count"] == 0
     assert bare["card_contacts_count"] == 0
+    assert bare["has_contact_email"] is False
+    assert bare["has_contact_phone"] is False
 
     filled = tenants_by_id[filled_id]
     assert filled["street"] == "ul. Kwiatowa 1"
     assert filled["city"] == "Warszawa"
     assert filled["service_times_count"] == 1
     assert filled["card_contacts_count"] == 1
+    assert filled["has_contact_email"] is True
+    assert filled["has_contact_phone"] is True

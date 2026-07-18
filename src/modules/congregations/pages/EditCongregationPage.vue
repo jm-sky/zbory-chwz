@@ -50,6 +50,11 @@ const { handleError } = useHandleError()
 const queryClient = useQueryClient()
 
 const congregationId = route.params.id as string
+const backTarget = computed<string>(() =>
+  route.query.from === 'detail'
+    ? CongregationRoutePaths.detailById(congregationId)
+    : CongregationRoutePaths.list,
+)
 const loading = ref(true)
 const congregationFull = ref<ICongregationFull | null>(null)
 
@@ -183,6 +188,8 @@ function removeServiceTime(index: number) {
 
 // Live profile completeness preview, recalculated from the current (unsaved) form state.
 const contactsCount = ref(0)
+const contactsHaveEmail = ref(false)
+const contactsHavePhone = ref(false)
 const completeness = computed(() =>
   calculateCongregationCompleteness({
     description: form.values.description,
@@ -190,11 +197,12 @@ const completeness = computed(() =>
     postal_code: form.values.postal_code,
     province: form.values.province,
     website: form.values.website,
-    email: form.values.email,
     latitude: form.values.latitude,
     longitude: form.values.longitude,
     service_times_count: serviceTimeFields.value.length,
     card_contacts_count: contactsCount.value,
+    has_contact_email: contactsHaveEmail.value,
+    has_contact_phone: contactsHavePhone.value,
   }),
 )
 
@@ -264,7 +272,7 @@ async function loadCongregation() {
   } catch (error) {
     logSafeError('Failed to load congregation:', error)
     handleError(error, { fallbackMessage: t('congregations.edit.loadError', 'Nie udało się załadować danych zboru') })
-    router.push(CongregationRoutePaths.list)
+    router.push(backTarget.value)
   } finally {
     loading.value = false
   }
@@ -380,7 +388,7 @@ onMounted(() => {
             variant="ghost"
             size="icon"
             :aria-label="t('common.back', 'Wstecz')"
-            @click="router.push(CongregationRoutePaths.list)"
+            @click="router.push(backTarget)"
           >
             <ArrowLeft class="size-4" />
           </Button>
@@ -815,7 +823,11 @@ onMounted(() => {
           </div>
         </form>
 
-        <ChurchPeopleSection :church-id="congregationId" @update:count="contactsCount = $event" />
+        <ChurchPeopleSection
+          :church-id="congregationId"
+          @update:count="contactsCount = $event"
+          @update:contact-info="contactsHaveEmail = $event.hasEmail; contactsHavePhone = $event.hasPhone"
+        />
         <ChurchBranchesSection :church-id="congregationId" />
         <ShareLinksSection :tenant-id="congregationId" />
         <ChangeHistorySection :tenant-id="congregationId" />

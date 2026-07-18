@@ -46,7 +46,10 @@ import VisibilityLevelSelect from './VisibilityLevelSelect.vue'
 
 const { churchId } = defineProps<{ churchId: string }>()
 
-const emit = defineEmits<{ (e: 'update:count', count: number): void }>()
+const emit = defineEmits<{
+  (e: 'update:count', count: number): void
+  (e: 'update:contactInfo', info: { hasEmail: boolean, hasPhone: boolean }): void
+}>()
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -58,7 +61,13 @@ const serviceTypes = ref<IServiceType[]>([])
 const loading = ref(true)
 const savingId = ref<string | null>(null)
 
-watch(assignments, () => emit('update:count', assignments.value.length), { deep: true, immediate: true })
+watch(assignments, () => {
+  emit('update:count', assignments.value.length)
+  emit('update:contactInfo', {
+    hasEmail: assignments.value.some(a => !!a.person?.email),
+    hasPhone: assignments.value.some(a => !!a.person?.phone),
+  })
+}, { deep: true, immediate: true })
 
 const useCustomService = ref(false)
 const createAccount = ref(false)
@@ -393,8 +402,8 @@ onMounted(load)
       >
         <div class="min-w-0 flex-1 space-y-2">
           <div>
-            <div class="flex items-center gap-2">
-              <p class="font-medium">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="min-w-0 truncate font-medium">
                 {{ personLabel(item) }}
               </p>
               <VisibilityLevelIconSelect

@@ -22,6 +22,8 @@ export interface IAdminTenant {
   longitude?: number | null
   service_times_count?: number
   card_contacts_count?: number
+  has_contact_email?: boolean
+  has_contact_phone?: boolean
 }
 
 export interface IAdminTenantMembership {
