@@ -1,6 +1,7 @@
 /**
  * Congregation (Zbór) types
  */
+import type { VisibilityLevel } from './visibility.types'
 
 export type CongregationStatus = 'draft' | 'published' | 'published_unverified' | 'need_verification'
 
@@ -49,6 +50,10 @@ export interface ICardContact {
   phone?: string | null
   email?: string | null
   description?: string | null
+  // Visibility levels for this contact's fields; only present for viewers who can manage the congregation.
+  profile_visibility?: VisibilityLevel | null
+  phone_visibility?: VisibilityLevel | null
+  email_visibility?: VisibilityLevel | null
 }
 
 export interface ICongregationBranchSummary {

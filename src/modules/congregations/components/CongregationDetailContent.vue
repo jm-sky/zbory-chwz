@@ -7,6 +7,7 @@ import { formatPhoneNumber } from '@/shared/utils/formatPhone'
 import type { ICongregationDetail } from '../types/congregation.types'
 import { formatAddress, formatServiceTimes } from '../utils/congregationDisplay'
 import CongregationMap from './map/CongregationMap.vue'
+import VisibilityBadge from './VisibilityBadge.vue'
 
 const { congregation } = defineProps<{
   congregation: ICongregationDetail
@@ -94,11 +95,12 @@ const { t } = useI18n()
           :key="`contact-${contactIndex}`"
           class="space-y-1"
         >
-          <div>
+          <div class="flex flex-wrap items-center gap-2">
             <span class="font-medium text-foreground">{{ contact.name }}</span>
             <span v-if="contact.title" class="text-muted-foreground">
               {{ ` - ${contact.title}` }}
             </span>
+            <VisibilityBadge v-if="congregation.canManage && contact.profile_visibility" :level="contact.profile_visibility" />
           </div>
           <p v-if="contact.description" class="text-sm text-muted-foreground">
             {{ contact.description }}
@@ -111,6 +113,7 @@ const { t } = useI18n()
             >
               <Phone class="size-3.5" />
               <span>{{ formatPhoneNumber(contact.phone) }}</span>
+              <VisibilityBadge v-if="congregation.canManage && contact.phone_visibility" compact :level="contact.phone_visibility" />
             </a>
             <a
               v-if="contact.email"
@@ -119,6 +122,7 @@ const { t } = useI18n()
             >
               <Mail class="size-3.5" />
               <span class="break-all">{{ contact.email }}</span>
+              <VisibilityBadge v-if="congregation.canManage && contact.email_visibility" compact :level="contact.email_visibility" />
             </a>
           </div>
         </div>
@@ -139,11 +143,12 @@ const { t } = useI18n()
           :key="`hidden-contact-${contactIndex}`"
           class="space-y-1"
         >
-          <div>
+          <div class="flex flex-wrap items-center gap-2">
             <span class="font-medium text-foreground">{{ contact.name }}</span>
             <span v-if="contact.title" class="text-muted-foreground">
               {{ ` - ${contact.title}` }}
             </span>
+            <VisibilityBadge v-if="contact.profile_visibility" :level="contact.profile_visibility" />
           </div>
           <p v-if="contact.description" class="text-sm text-muted-foreground">
             {{ contact.description }}
@@ -156,6 +161,7 @@ const { t } = useI18n()
             >
               <Phone class="size-3.5" />
               <span>{{ formatPhoneNumber(contact.phone) }}</span>
+              <VisibilityBadge v-if="contact.phone_visibility" compact :level="contact.phone_visibility" />
             </a>
             <a
               v-if="contact.email"
@@ -164,6 +170,7 @@ const { t } = useI18n()
             >
               <Mail class="size-3.5" />
               <span class="break-all">{{ contact.email }}</span>
+              <VisibilityBadge v-if="contact.email_visibility" compact :level="contact.email_visibility" />
             </a>
           </div>
         </div>

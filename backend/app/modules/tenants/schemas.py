@@ -40,6 +40,10 @@ class PublicCardContact(BaseModel):
     phone: str | None = None
     email: str | None = None
     description: str | None = None
+    # Visibility levels for this contact's fields; only populated for viewers who can manage the congregation.
+    profile_visibility: str | None = None
+    phone_visibility: str | None = None
+    email_visibility: str | None = None
 
 
 class PublicCongregationResponse(BaseModel):

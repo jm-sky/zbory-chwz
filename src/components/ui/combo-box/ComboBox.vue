@@ -70,6 +70,7 @@ function onItemSelect(option: ComboBoxOption) {
     <div class="relative">
       <PopoverTrigger as-child>
         <Button
+          type="button"
           variant="outline"
           role="combobox"
           :aria-expanded="open"

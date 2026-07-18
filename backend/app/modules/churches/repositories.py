@@ -607,6 +607,9 @@ class ChurchRepository:
                 "phone": person.phone,
                 "email": person.email,
                 "description": assignment.description,
+                "profile_visibility": assignment.profile_visibility,
+                "phone_visibility": assignment.phone_visibility,
+                "email_visibility": assignment.email_visibility,
             }
 
         contact_fields = self.filter_assignment_contact(
