@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import {
   VISIBILITY_LEVELS,
@@ -32,25 +31,19 @@ function visibilityLabel(level: VisibilityLevel): string {
 
 <template>
   <Select v-model="visibility" :disabled="disabled">
-    <Tooltip>
-      <TooltipTrigger as-child>
-        <SelectTrigger
-          :class="cn('size-9 shrink-0 justify-center gap-0 px-0 [&>span[aria-hidden=true]]:hidden', triggerClass)"
-          :aria-label="visibilityLabel(visibility)"
-        >
-          <component
-            :is="getVisibilityIcon(visibility)"
-            class="size-4 shrink-0 pointer-events-none"
-          />
-          <SelectValue class="sr-only">
-            {{ visibilityLabel(visibility) }}
-          </SelectValue>
-        </SelectTrigger>
-      </TooltipTrigger>
-      <TooltipContent>
+    <SelectTrigger
+      :class="cn('size-9 shrink-0 justify-center gap-0 px-0 [&>span[aria-hidden=true]]:hidden', triggerClass)"
+      :aria-label="visibilityLabel(visibility)"
+      :title="visibilityLabel(visibility)"
+    >
+      <component
+        :is="getVisibilityIcon(visibility)"
+        class="size-4 shrink-0 pointer-events-none"
+      />
+      <SelectValue class="sr-only">
         {{ visibilityLabel(visibility) }}
-      </TooltipContent>
-    </Tooltip>
+      </SelectValue>
+    </SelectTrigger>
     <SelectContent class="z-[100]">
       <SelectItem
         v-for="level in VISIBILITY_LEVELS"
