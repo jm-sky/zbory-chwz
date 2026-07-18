@@ -86,10 +86,18 @@ Narzędzie do budowania listy adresów e-mail (filtr: region + rola/służba + g
 
 ### Synchronizacja z Google Contacts
 
-🔄 **Status:** Planowane
+🚧 **Status:** W trakcie (import zaimplementowany)
 
 **Opis:**
 Import zborów i osób z Google Contacts do bazy (admin/owner, filtr tekstowy „zbór”/„chwz”, ekran mapowania) oraz eksport pojedynczego kontaktu (osoby lub zboru) z aplikacji do własnej książki Google Contacts (dowolny zalogowany użytkownik).
+
+**Zrealizowane (2026-07-11–14):**
+- Połączenie readonly z Google Contacts + UI admina (status, filtrowana lista)
+- Ekran mapowania i import do DB
+- UX importu: wyszukiwanie/filtry, tolerancyjne dopasowanie, dife, linkowanie nowych zborów
+
+**Pozostało:**
+- Eksport pojedynczego kontaktu (osoby lub zboru) do własnej książki Google Contacts
 
 **Szczegóły:**
 - Issue: [#038](issues/2026-07-10--038--google-contacts-sync.md)
@@ -115,4 +123,4 @@ Pełna platforma zarządzania zborami CHWZ: hierarchia organizacyjna (wspólnota
 
 ---
 
-**Ostatnia aktualizacja:** 2026-07-11
+**Ostatnia aktualizacja:** 2026-07-18 (wydanie v1.0.0)
