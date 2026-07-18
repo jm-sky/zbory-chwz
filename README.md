@@ -93,11 +93,14 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-### Docker (Full Stack)
+### Docker (Backend stack)
+Z katalogu głównego repo:
+
 ```bash
-cd backend
-docker compose -f docker-compose.dev.yml up
+docker compose up -d
 ```
+
+`compose.yaml` includuje `docker-compose.dev.yml` i ładuje `backend/.env` do interpolacji.
 
 **UWAGA:** W development używaj `docker compose` (V2), nie `docker-compose` (V1 - deprecated).
 
@@ -144,7 +147,9 @@ zbory-chwz/
 │   │   │   └── ...
 │   │   └── main.py           # FastAPI app entry
 │   └── migrations/           # Migracje bazy danych
-└── docker-compose.yml        # Konfiguracja Docker
+├── compose.yaml              # Compose entry (include + backend/.env)
+├── docker-compose.dev.yml    # Dev stack
+├── docker-compose.prod.yml   # Prod stack
 ```
 
 ## Architektura

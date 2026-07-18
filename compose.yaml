@@ -1,0 +1,7 @@
+# Canonical Compose entrypoint (preferred filename).
+# Loads backend/.env for ${VAR} interpolation in the included file,
+# without replacing root .env / COMPOSE_* self-config.
+include:
+  - path: docker-compose.dev.yml
+    env_file:
+      - backend/.env

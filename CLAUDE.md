@@ -42,19 +42,18 @@ This project uses **pnpm** (version 10.18.3+). Always use `pnpm` instead of `npm
 - If the current working directory starts with `_`, do not execute any `docker` or `docker compose` commands
 
 **Docker Compose Project Naming:**
-- Each project uses `COMPOSE_PROJECT_NAME` in `.env` to ensure unique resource names
-- zbory-chwz: `COMPOSE_PROJECT_NAME=zbory-chwz`
-- gear-stack: `COMPOSE_PROJECT_NAME=gear-stack`
-- This prevents conflicts when running multiple projects on the same VPS
+- Project name is set via top-level `name: zbory-chwz` in `docker-compose.dev.yml`
+- Repo root `compose.yaml` includes the dev file and loads `backend/.env` for interpolation
+- Run Compose from the **repo root** (not `backend/`)
 
 ```bash
-docker compose -f backend/docker-compose.dev.yml up    # Start backend in development mode
-docker compose -f backend/docker-compose.dev.yml down  # Stop backend
+docker compose up -d    # Start backend (compose.yaml → docker-compose.dev.yml)
+docker compose down     # Stop backend
 ```
 
 **Important:**
 - Use `docker compose` (Docker Compose V2 syntax), NOT `docker-compose` (deprecated V1 syntax)
-- In development, the backend typically runs in a Docker container via `docker-compose.dev.yml`. This ensures consistent environment and dependencies. The backend is accessible at `http://localhost:8000` (or the port specified in `VITE_API_PROXY_URL`).
+- In development, the backend typically runs in a Docker container via root `compose.yaml` / `docker-compose.dev.yml`. This ensures consistent environment and dependencies. The backend is accessible at `http://localhost:8000` (or the port specified in `VITE_API_PROXY_URL`).
 - **Auto-reload is enabled** - FastAPI uses WatchFiles to automatically reload when Python files change. No need to restart the container after code changes during development.
 - Only restart the container when changing environment variables (`.env`) or dependencies (`requirements.txt`).
 

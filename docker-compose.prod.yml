@@ -1,3 +1,5 @@
+name: zbory-chwz
+
 services:
   # PostgreSQL Database
   db:
@@ -60,9 +62,9 @@ services:
   # Application
   app:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    image: backend:latest
+    image: zbory-chwz-backend:latest
     container_name: zbory-chwz-app
     restart: unless-stopped
     depends_on:
@@ -71,45 +73,17 @@ services:
       redis:
         condition: service_healthy
     env_file:
-      - .env
+      # Secrets and app config live here. Do not re-list them under environment:
+      # with ${VAR} — empty host interpolation would override env_file values.
+      - ./backend/.env
     environment:
+      # Docker-network overrides only (compose interpolation uses root .env + defaults)
       - ENVIRONMENT=${ENVIRONMENT:-development}
-      - PROJECT_NAME=${PROJECT_NAME:-backend}
+      - PROJECT_NAME=${PROJECT_NAME:-zbory-chwz}
       - APP_PORT=${APP_PORT:-8000}
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-backend}:${POSTGRES_PASSWORD:-zbory-chwz-db-secret}@db:5432/${POSTGRES_DB:-backend}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-zbory-chwz-redis-secret}@redis:6379/0
-      - SECRET_KEY=${SECRET_KEY}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000"]}
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
-      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
-      - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI}
-      - FACEBOOK_OAUTH_CLIENT_ID=${FACEBOOK_OAUTH_CLIENT_ID}
-      - FACEBOOK_OAUTH_CLIENT_SECRET=${FACEBOOK_OAUTH_CLIENT_SECRET}
-      - FACEBOOK_OAUTH_REDIRECT_URI=${FACEBOOK_OAUTH_REDIRECT_URI}
-      - RECAPTCHA_ENABLED=${RECAPTCHA_ENABLED}
-      - RECAPTCHA_SITE_KEY=${RECAPTCHA_SITE_KEY}
-      - RECAPTCHA_SECRET_KEY=${RECAPTCHA_SECRET_KEY}
-      - RECAPTCHA_MIN_SCORE=${RECAPTCHA_MIN_SCORE}
-      - STORAGE_BASE_URL=${STORAGE_BASE_URL:-}
-      # S3 Storage Configuration
-      - STORAGE_TYPE=${STORAGE_TYPE:-local}
-      - STORAGE_S3_BUCKET=${STORAGE_S3_BUCKET:-}
-      - STORAGE_S3_ACCESS_KEY=${STORAGE_S3_ACCESS_KEY:-}
-      - STORAGE_S3_SECRET_KEY=${STORAGE_S3_SECRET_KEY:-}
-      - STORAGE_S3_REGION=${STORAGE_S3_REGION:-us-east-1}
-      - STORAGE_S3_ENDPOINT_URL=${STORAGE_S3_ENDPOINT_URL:-}
-      - STORAGE_S3_PUBLIC_ENDPOINT_URL=${STORAGE_S3_PUBLIC_ENDPOINT_URL:-}
-      # Stripe Billing Configuration
-      - STRIPE_ENABLED=${STRIPE_ENABLED:-false}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-      - STRIPE_PRO_MONTHLY_PRICE_ID=${STRIPE_PRO_MONTHLY_PRICE_ID}
-      - STRIPE_PRO_ANNUAL_PRICE_ID=${STRIPE_PRO_ANNUAL_PRICE_ID}
-      - STRIPE_PRO_PLUS_MONTHLY_PRICE_ID=${STRIPE_PRO_PLUS_MONTHLY_PRICE_ID}
-      - STRIPE_PRO_PLUS_ANNUAL_PRICE_ID=${STRIPE_PRO_PLUS_ANNUAL_PRICE_ID}
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"  # Only localhost access (reverse proxy required)
     volumes:
@@ -146,9 +120,8 @@ networks:
 
 volumes:
   zbory_chwz_postgres_data:
-    driver: local
+    name: zbory_chwz_postgres_data
   zbory_chwz_redis_data:
-    driver: local
+    name: zbory_chwz_redis_data
   zbory_chwz_uploads:
-    driver: local
-
+    name: zbory_chwz_uploads

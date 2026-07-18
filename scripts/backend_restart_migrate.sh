@@ -15,20 +15,18 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKEND_DIR="$PROJECT_DIR/backend"
-COMPOSE_FILE="docker-compose.dev.yml"
 
 echo -e "${GREEN}🐳 Starting backend restart and migration...${NC}"
 
-if [ -d "$BACKEND_DIR" ] && [ -f "$BACKEND_DIR/$COMPOSE_FILE" ]; then
-  cd "$BACKEND_DIR"
+if [ -f "$PROJECT_DIR/compose.yaml" ] || [ -f "$PROJECT_DIR/docker-compose.dev.yml" ]; then
+  cd "$PROJECT_DIR"
 
   echo -e "${YELLOW}🔨 Building app image...${NC}"
-  docker compose -f "$COMPOSE_FILE" build app
+  docker compose build app
 
   echo ""
   echo -e "${YELLOW}🔄 Restarting app container...${NC}"
-  docker compose -f "$COMPOSE_FILE" up -d --force-recreate app
+  docker compose up -d --force-recreate app
 
   echo ""
   echo -e "${YELLOW}⏳ Waiting for app to be healthy...${NC}"
@@ -36,13 +34,12 @@ if [ -d "$BACKEND_DIR" ] && [ -f "$BACKEND_DIR/$COMPOSE_FILE" ]; then
 
   echo ""
   echo -e "${YELLOW}🔄 Running database migrations...${NC}"
-  docker compose -f "$COMPOSE_FILE" exec app python cli.py db migrate
+  docker compose exec app python cli.py db migrate
 
   echo -e "${GREEN}✅ Backend restarted and migrations applied${NC}"
 else
-  echo -e "${YELLOW}⚠️  Backend not found or docker-compose.dev.yml missing, skipping backend deployment${NC}"
+  echo -e "${YELLOW}⚠️  compose.yaml / docker-compose.dev.yml missing in project root, skipping backend deployment${NC}"
   exit 0
 fi
 
 echo -e "${GREEN}✅ Backend restart and migration completed successfully!${NC}"
-

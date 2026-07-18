@@ -155,10 +155,10 @@ The `scripts/deploy.sh` script performs the following:
    - Remove old files: `sudo rm -rf /var/www/gear-stack/*`
    - Copy new build: `sudo cp -r dist/* /var/www/gear-stack/`
    - Fix ownership: `sudo chown -R caddy:deploy /var/www/gear-stack`
-5. **Restart backend and migrate**
-   - Stop Docker Compose: `docker compose -f docker-compose.dev.yml down`
-   - Start Docker Compose: `docker compose -f docker-compose.dev.yml up -d`
-   - Run migrations: `docker compose -f docker-compose.dev.yml exec app python cli.py db migrate`
+5. **Restart backend and migrate** (from repo root)
+   - Stop Docker Compose: `docker compose down`
+   - Start Docker Compose: `docker compose up -d`
+   - Run migrations: `docker compose exec app python cli.py db migrate`
 
 ## Permission Structure
 
@@ -226,7 +226,7 @@ sudo systemctl status caddy
 
 # Check backend containers
 cd /home/$USER/projects/gear-stack/backend
-docker compose -f docker-compose.dev.yml ps
+docker compose ps
 
 # Check deployed frontend
 ls -la /var/www/gear-stack/
@@ -255,5 +255,5 @@ The FastAPI backend also adds cache headers as a fallback, but Caddy configurati
 
 # Backend logs
 cd /home/$USER/projects/gear-stack/backend
-docker compose -f docker-compose.dev.yml logs -f
+docker compose logs -f
 ```
