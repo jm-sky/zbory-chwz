@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Clock, Mail, Map, MapPin, Phone, User } from 'lucide-vue-next'
+import { Clock, Globe, Landmark, Mail, Map, MapPin, Phone, User } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import Badge from '@/components/ui/badge/Badge.vue'
+import { formatIban } from '@/shared/utils/formatIban'
 import { formatPhoneNumber } from '@/shared/utils/formatPhone'
 import type { ICongregationDetail } from '../types/congregation.types'
 import { formatAddress, formatServiceTimes } from '../utils/congregationDisplay'
@@ -27,6 +28,43 @@ const { t } = useI18n()
       <p class="mt-1 pl-8 text-foreground">
         {{ formatAddress(congregation) }}
       </p>
+    </div>
+
+    <!-- Congregation contact info (website / e-mail / IBAN) -->
+    <div v-if="congregation.website || congregation.email || congregation.iban">
+      <div class="flex items-center gap-3">
+        <Globe class="size-5 shrink-0 text-muted-foreground" />
+        <h3 class="text-sm font-medium text-muted-foreground">
+          {{ t('congregations.detail.congregationContact') }}
+        </h3>
+      </div>
+      <div class="mt-1 space-y-1 pl-8">
+        <a
+          v-if="congregation.website"
+          :href="congregation.website"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Globe class="size-3.5 shrink-0" />
+          <span class="break-all">{{ congregation.website }}</span>
+        </a>
+        <a
+          v-if="congregation.email"
+          :href="`mailto:${congregation.email}`"
+          class="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Mail class="size-3.5 shrink-0" />
+          <span class="break-all">{{ congregation.email }}</span>
+        </a>
+        <div
+          v-if="congregation.iban"
+          class="flex items-center gap-2 text-sm text-muted-foreground"
+        >
+          <Landmark class="size-3.5 shrink-0" />
+          <span class="font-mono break-all">{{ formatIban(congregation.iban) }}</span>
+        </div>
+      </div>
     </div>
 
     <!-- Service Times -->

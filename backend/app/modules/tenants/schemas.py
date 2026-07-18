@@ -61,6 +61,9 @@ class PublicCongregationResponse(BaseModel):
     postal_code: str | None = None
     province: str | None = None
     country: str | None = None
+    website: str | None = None
+    email: str | None = None
+    iban: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     # Service times (first few)
@@ -99,6 +102,9 @@ class CongregationDetailResponse(BaseModel):
     postal_code: str | None = None
     province: str | None = None
     country: str | None = None
+    website: str | None = None
+    email: str | None = None
+    iban: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     # Full (unlimited) service times

@@ -233,6 +233,9 @@ class CongregationImportService:
             postal_code=merged("postal_code"),
             province=province,
             country=country,
+            website=merged("website"),
+            email=merged("email"),
+            iban=merged("iban"),
             status=existing.status if existing else "draft",
         )
 

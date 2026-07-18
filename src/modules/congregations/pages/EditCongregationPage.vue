@@ -60,6 +60,9 @@ const formSchema = z.object({
   postal_code: z.string().nullable().optional(),
   province: z.string().nullable().optional(),
   country: z.string().default(DEFAULT_COUNTRY_CODE),
+  website: z.string().nullable().optional(),
+  email: z.string().email(t('congregations.edit.address.emailInvalid', 'Nieprawidłowy adres e-mail')).or(z.literal('')).nullable().optional(),
+  iban: z.string().nullable().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
   address_status: z.enum(['draft', 'published', 'published_unverified']).optional(),
@@ -77,6 +80,9 @@ const form = useForm({
     postal_code: null,
     province: null,
     country: DEFAULT_COUNTRY_CODE,
+    website: null,
+    email: null,
+    iban: null,
     latitude: null,
     longitude: null,
     address_status: 'draft' as const,
@@ -187,6 +193,9 @@ async function loadCongregation() {
       postal_code: congregationFull.value.address?.postal_code ?? null,
       province: congregationFull.value.address?.province ?? null,
       country: congregationFull.value.address?.country ?? DEFAULT_COUNTRY_CODE,
+      website: congregationFull.value.address?.website ?? null,
+      email: congregationFull.value.address?.email ?? null,
+      iban: congregationFull.value.address?.iban ?? null,
       latitude: congregationFull.value.address?.latitude ?? null,
       longitude: congregationFull.value.address?.longitude ?? null,
       address_status: (congregationFull.value.address?.status as 'draft' | 'published' | 'published_unverified') ?? 'draft',
@@ -236,6 +245,9 @@ const saveAddress = form.handleSubmit(async (values) => {
         postal_code: values.postal_code,
         province: values.province,
         country: values.country,
+        website: values.website || null,
+        email: values.email || null,
+        iban: values.iban || null,
         latitude: values.latitude,
         longitude: values.longitude,
         status: values.address_status,
@@ -247,6 +259,9 @@ const saveAddress = form.handleSubmit(async (values) => {
         postal_code: values.postal_code,
         province: values.province,
         country: values.country,
+        website: values.website || null,
+        email: values.email || null,
+        iban: values.iban || null,
         latitude: values.latitude,
         longitude: values.longitude,
         status: values.address_status,
@@ -525,6 +540,56 @@ onMounted(() => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
+            </div>
+
+            <FormField v-slot="{ componentField }" name="website">
+              <FormItem>
+                <FormLabel>
+                  {{ t('congregations.edit.address.website', 'Strona WWW') }}
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    :placeholder="t('congregations.edit.address.websitePlaceholder', 'np. https://example.pl')"
+                    v-bind="componentField"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            </FormField>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField v-slot="{ componentField }" name="email">
+                <FormItem>
+                  <FormLabel>
+                    {{ t('congregations.edit.address.email', 'E-mail zboru') }}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      :placeholder="t('congregations.edit.address.emailPlaceholder', 'np. kontakt@example.pl')"
+                      v-bind="componentField"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
+
+              <FormField v-slot="{ componentField }" name="iban">
+                <FormItem>
+                  <FormLabel>
+                    {{ t('congregations.edit.address.iban', 'Numer konta') }}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      :placeholder="t('congregations.edit.address.ibanPlaceholder', 'np. 61 1090 1014 0000 0712 1981 2874')"
+                      v-bind="componentField"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               </FormField>

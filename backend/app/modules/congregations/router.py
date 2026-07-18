@@ -110,6 +110,9 @@ async def get_address(
         postal_code=address.postal_code,
         province=address.province,
         country=address.country,
+        website=address.website,
+        email=address.email,
+        iban=address.iban,
         latitude=decode_coordinate(address.latitude),
         longitude=decode_coordinate(address.longitude),
         geocode_status=address.geocode_status,
@@ -145,6 +148,9 @@ async def create_address(
         postal_code=payload.postal_code,
         province=payload.province,
         country=payload.country,
+        website=payload.website,
+        email=payload.email,
+        iban=payload.iban,
         latitude=payload.latitude,
         longitude=payload.longitude,
         status=payload.status,
@@ -160,6 +166,9 @@ async def create_address(
         postal_code=address.postal_code,
         province=address.province,
         country=address.country,
+        website=address.website,
+        email=address.email,
+        iban=address.iban,
         latitude=decode_coordinate(address.latitude),
         longitude=decode_coordinate(address.longitude),
         geocode_status=address.geocode_status,
@@ -202,6 +211,12 @@ async def update_address(
         address.province = payload.province
     if payload.country is not None:
         address.country = payload.country
+    if payload.website is not None:
+        address.website = payload.website
+    if payload.email is not None:
+        address.email = payload.email
+    if payload.iban is not None:
+        address.iban = payload.iban
     if payload.latitude is not None:
         address.latitude = str(payload.latitude)
         address.geocode_status = "manual"
@@ -233,6 +248,9 @@ async def update_address(
         postal_code=address.postal_code,
         province=address.province,
         country=address.country,
+        website=address.website,
+        email=address.email,
+        iban=address.iban,
         latitude=decode_coordinate(address.latitude),
         longitude=decode_coordinate(address.longitude),
         geocode_status=address.geocode_status,
