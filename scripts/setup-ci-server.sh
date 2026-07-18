@@ -25,11 +25,12 @@ sudo chmod -R 775 "$DEPLOY_DIR"
 sudo chmod g+s "$DEPLOY_DIR"
 
 echo "==> Sudoers"
-sudo tee /etc/sudoers.d/zbory-chwz-deploy > /dev/null <<'EOF'
+sudo tee /etc/sudoers.d/zbory-chwz-deploy > /dev/null <<EOF
 deploy ALL=(ALL) NOPASSWD: /bin/rm -rf /var/www/zbory-chwz/*
 deploy ALL=(ALL) NOPASSWD: /bin/cp -r * /var/www/zbory-chwz/
 deploy ALL=(ALL) NOPASSWD: /usr/bin/chown -R caddy\:deploy /var/www/zbory-chwz
 deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl reload caddy
+${PROJECT_USER} ALL=(deploy) NOPASSWD: ${PROJECT_DIR}/scripts/frontend_pnpm_build.sh
 EOF
 sudo chmod 440 /etc/sudoers.d/zbory-chwz-deploy
 sudo visudo -c -f /etc/sudoers.d/zbory-chwz-deploy

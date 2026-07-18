@@ -15,22 +15,21 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPTS_DIR="$PROJECT_DIR/scripts"
 DEPLOY_DIR="/var/www/zbory-chwz"
 
 echo -e "${GREEN}🔨 Starting frontend build and deploy...${NC}"
 
-# Step 1: Install frontend dependencies
-echo -e "${YELLOW}📦 Step 1: Installing frontend dependencies...${NC}"
-cd "$PROJECT_DIR"
-CI=true pnpm install --frozen-lockfile
-
-# Step 2: Build frontend
-echo -e "${YELLOW}🔨 Step 2: Building frontend...${NC}"
-# Clean up dist directory to avoid permission issues
-rm -rf dist
-# Increase Node.js memory limit to avoid "Heap Limit Reached" errors on VPS
-export NODE_OPTIONS="--max-old-space-size=4096"
-pnpm build
+# Step 1+2: Install dependencies and build.
+# Always run as the `deploy` OS user, regardless of who invoked this script,
+# so node_modules/.pnpm-store ownership never splits between `deploy` (CI)
+# and the main user (manual deploys) — see frontend_pnpm_build.sh.
+echo -e "${YELLOW}📦 Step 1: Installing dependencies and building frontend...${NC}"
+if [ "$(whoami)" = "deploy" ]; then
+  "$SCRIPTS_DIR/frontend_pnpm_build.sh"
+else
+  sudo -u deploy "$SCRIPTS_DIR/frontend_pnpm_build.sh"
+fi
 echo -e "${GREEN}✅ Frontend build completed${NC}"
 
 # Step 3: Deploy to /var/www/zbory-chwz
