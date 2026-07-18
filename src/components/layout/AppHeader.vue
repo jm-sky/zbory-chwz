@@ -102,8 +102,8 @@ const handleLogout = async () => {
         </template>
       </nav>
 
-      <div class="flex flex-1 items-center justify-end space-x-2 mr-6">
-        <nav class="flex items-center space-x-2">
+      <div class="flex flex-1 items-center justify-end gap-x-2 mr-1 md:mr-6">
+        <nav class="flex items-center gap-x-1">
           <LocaleToggle />
           <DarkModeToggle />
           <UserNav
