@@ -49,10 +49,11 @@ _VERIFICATION_JSON_SCHEMA = {
 _EXTRACTION_SYSTEM_PROMPT = (
     "Wyciągnij z poniższej notatki dane o zborach (kongregacjach) w niej wspomnianych. "
     "Dla każdego zboru zwróć jego nazwę, adres (ulica, miasto, kod pocztowy, województwo "
-    "jako ASCII slug np. 'lubuskie', kraj jako kod ISO 3166-1 alpha-2, domyślnie 'PL') oraz "
-    "dane osoby kontaktowej (imię i nazwisko, tytuł/funkcja np. 'Pastor', telefon, e-mail), "
-    "jeśli są podane. Dla pól, których nie ma w tekście, zwróć null — nie zgaduj brakujących "
-    "danych."
+    "jako ASCII slug np. 'lubuskie', kraj jako kod ISO 3166-1 alpha-2, domyślnie 'PL'), "
+    "oficjalną stronę WWW zboru, oficjalny e-mail zboru (nie osoby prywatnej), numer konta "
+    "bankowego zboru (IBAN lub polski NRB) oraz dane osoby kontaktowej (imię i nazwisko, "
+    "tytuł/funkcja np. 'Pastor', telefon, e-mail), jeśli są podane. Dla pól, których nie ma "
+    "w tekście, zwróć null — nie zgaduj brakujących danych."
 )
 
 _CONGREGATION_FIELDS = (
@@ -62,6 +63,9 @@ _CONGREGATION_FIELDS = (
     "postal_code",
     "province",
     "country",
+    "website",
+    "email",
+    "iban",
     "contact_name",
     "contact_title",
     "contact_phone",

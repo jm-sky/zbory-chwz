@@ -27,6 +27,9 @@ export interface ICongregationDetailed extends ICongregation {
   province?: string | null
   /** ISO 3166-1 alpha-2 country code, e.g. 'PL' */
   country?: string | null
+  website?: string | null
+  email?: string | null
+  iban?: string | null
   latitude?: number | null
   longitude?: number | null
   // Service times
@@ -66,6 +69,9 @@ export interface ICongregationDetail {
   province?: string | null
   /** ISO 3166-1 alpha-2 country code, e.g. 'PL' */
   country?: string | null
+  website?: string | null
+  email?: string | null
+  iban?: string | null
   latitude?: number | null
   longitude?: number | null
   // Full, unlimited service times
@@ -100,6 +106,9 @@ export interface IAddress {
   postal_code?: string | null
   province?: string | null
   country: string
+  website?: string | null
+  email?: string | null
+  iban?: string | null
   latitude?: number | null
   longitude?: number | null
   geocode_status?: GeocodeStatus
@@ -132,6 +141,9 @@ export interface IAddressCreateRequest {
   postal_code?: string | null
   province?: string | null
   country?: string
+  website?: string | null
+  email?: string | null
+  iban?: string | null
   latitude?: number | null
   longitude?: number | null
   status?: string
@@ -143,6 +155,9 @@ export interface IAddressUpdateRequest {
   postal_code?: string | null
   province?: string | null
   country?: string | null
+  website?: string | null
+  email?: string | null
+  iban?: string | null
   latitude?: number | null
   longitude?: number | null
   status?: string | null

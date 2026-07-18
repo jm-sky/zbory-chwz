@@ -1,15 +1,45 @@
 """Pydantic schemas for congregation endpoints."""
 
+import re
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.modules.congregations.geo import (
     COUNTRY_CODE_PATTERN,
     DEFAULT_COUNTRY,
     is_valid_province,
 )
+from app.modules.congregations.iban import is_valid_iban, normalize_iban
+
+_WEBSITE_RE = re.compile(r"^https?://[^\s/]+\.[^\s]+$")
+
+
+def normalize_website(value: str) -> str:
+    """Trim and add an https:// scheme if the user typed a bare domain."""
+    trimmed = value.strip()
+    if not re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", trimmed):
+        trimmed = f"https://{trimmed}"
+    return trimmed
+
+
+def validate_website(value: str | None) -> str | None:
+    if value is None or value == "":
+        return None
+    normalized = normalize_website(value)
+    if not _WEBSITE_RE.match(normalized):
+        raise ValueError(f"{value!r} is not a valid website address")
+    return normalized
+
+
+def validate_iban(value: str | None) -> str | None:
+    if value is None or value == "":
+        return None
+    normalized = normalize_iban(value)
+    if not is_valid_iban(normalized):
+        raise ValueError(f"{value!r} is not a valid IBAN")
+    return normalized
 
 
 class AddressResponse(BaseModel):
@@ -20,6 +50,9 @@ class AddressResponse(BaseModel):
     postal_code: str | None = None
     province: str | None = None
     country: str
+    website: str | None = None
+    email: str | None = None
+    iban: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     geocode_status: str = "pending"
@@ -36,9 +69,15 @@ class AddressCreateRequest(BaseModel):
     postal_code: str | None = Field(default=None, max_length=20)
     province: str | None = Field(default=None, max_length=100)
     country: str = Field(default=DEFAULT_COUNTRY, pattern=COUNTRY_CODE_PATTERN)
+    website: str | None = Field(default=None, max_length=255)
+    email: EmailStr | None = None
+    iban: str | None = Field(default=None, max_length=34)
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
     status: str = Field(default="draft", max_length=32)
+
+    _normalize_website = field_validator("website")(validate_website)
+    _normalize_iban = field_validator("iban")(validate_iban)
 
     @model_validator(mode="after")
     def check_province_belongs_to_country(self) -> "AddressCreateRequest":
@@ -53,9 +92,15 @@ class AddressUpdateRequest(BaseModel):
     postal_code: str | None = Field(default=None, max_length=20)
     province: str | None = Field(default=None, max_length=100)
     country: str | None = Field(default=None, pattern=COUNTRY_CODE_PATTERN)
+    website: str | None = Field(default=None, max_length=255)
+    email: EmailStr | None = None
+    iban: str | None = Field(default=None, max_length=34)
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
     status: str | None = Field(default=None, max_length=32)
+
+    _normalize_website = field_validator("website")(validate_website)
+    _normalize_iban = field_validator("iban")(validate_iban)
 
 
 class GeocodeRequest(BaseModel):
@@ -117,6 +162,9 @@ ImportFieldKey = Literal[
     "postal_code",
     "province",
     "country",
+    "website",
+    "email",
+    "iban",
     "contact_name",
     "contact_title",
     "contact_phone",

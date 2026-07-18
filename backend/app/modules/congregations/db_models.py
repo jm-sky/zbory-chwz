@@ -24,6 +24,14 @@ class CongregationAddressDB(Base):
     province: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
     # ISO 3166-1 alpha-2; see app/modules/congregations/geo.py
     country: Mapped[str] = mapped_column(String(2), default=DEFAULT_COUNTRY, nullable=False)
+    # Public congregation contact info; same status-gated visibility as the
+    # rest of the address, no per-field visibility like ServiceAssignmentDB's
+    # phone/email. iban stores the full canonical IBAN (always with a country
+    # prefix, no spaces); display formatting is country-dependent (see
+    # src/shared/utils/formatIban.ts).
+    website: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    email: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    iban: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
     # GPS coordinates for map display. Stored as encrypted decimal strings (like the
     # rest of the address) since distance filtering happens entirely client-side —
     # the DB never needs to do numeric WHERE/ORDER BY on these columns, so encrypting

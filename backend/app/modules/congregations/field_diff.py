@@ -16,6 +16,7 @@ from app.modules.churches.contact_sync import assignment_contact_snapshot, match
 from app.modules.churches.db_models import ServiceAssignmentDB
 from app.modules.churches.repositories import ChurchRepository
 from app.modules.congregations.geo import DEFAULT_COUNTRY
+from app.modules.congregations.iban import is_valid_iban, normalize_iban
 from app.modules.congregations.repositories import CongregationRepository
 
 FIELD_LABELS: dict[str, str] = {
@@ -24,6 +25,9 @@ FIELD_LABELS: dict[str, str] = {
     "postal_code": "Kod pocztowy",
     "province": "Województwo",
     "country": "Kraj",
+    "website": "Strona WWW",
+    "email": "E-mail zboru",
+    "iban": "Numer konta",
     "contact_name": "Osoba kontaktowa",
     "contact_title": "Funkcja",
     "contact_phone": "Telefon",
@@ -40,7 +44,7 @@ MANUAL_ONLY_FIELD_LABELS: dict[str, str] = {
     "longitude": "Długość geogr.",
 }
 
-ADDRESS_FIELDS = {"street", "city", "postal_code", "province", "country", "latitude", "longitude"}
+ADDRESS_FIELDS = {"street", "city", "postal_code", "province", "country", "website", "email", "iban", "latitude", "longitude"}
 CONTACT_FIELDS = {"contact_name", "contact_title", "contact_phone", "contact_email"}
 
 FIELD_GROUPS: dict[str, str] = {
@@ -53,6 +57,7 @@ FIELD_GROUPS: dict[str, str] = {
 _DEFAULT_PHONE_COUNTRY_CODE = "48"
 
 _EMAIL_FORMAT_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+_WEBSITE_FORMAT_RE = re.compile(r"^\S+\.\S+$")
 
 
 def new_value_format_plausible(field_key: str, value: str | None) -> bool:
@@ -66,8 +71,12 @@ def new_value_format_plausible(field_key: str, value: str | None) -> bool:
     if field_key == "contact_phone":
         normalized = normalize_phone(value)
         return normalized is not None and len(re.sub(r"\D", "", normalized)) >= 7
-    if field_key == "contact_email":
+    if field_key in ("contact_email", "email"):
         return bool(_EMAIL_FORMAT_RE.match(value.strip()))
+    if field_key == "website":
+        return bool(_WEBSITE_FORMAT_RE.match(value.strip()))
+    if field_key == "iban":
+        return is_valid_iban(normalize_iban(value))
     return True
 
 
@@ -120,6 +129,9 @@ async def build_field_diff(
         "postal_code": entry.postal_code,
         "province": entry.province,
         "country": entry.country or DEFAULT_COUNTRY,
+        "website": entry.website,
+        "email": entry.email,
+        "iban": normalize_iban(entry.iban) if entry.iban else None,
         "contact_name": entry.contact_name,
         "contact_title": entry.contact_title,
         "contact_phone": normalize_phone(entry.contact_phone),
@@ -131,6 +143,9 @@ async def build_field_diff(
         "postal_code": current_address.postal_code if current_address else None,
         "province": current_address.province if current_address else None,
         "country": current_address.country if current_address else None,
+        "website": current_address.website if current_address else None,
+        "email": current_address.email if current_address else None,
+        "iban": current_address.iban if current_address else None,
         "contact_name": (current_contact["contact_name"] if current_contact else None),
         "contact_title": (current_contact["contact_title"] if current_contact else None),
         "contact_phone": (normalize_phone(current_contact["contact_phone"]) if current_contact else None),

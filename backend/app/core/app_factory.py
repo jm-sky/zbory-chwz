@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -194,13 +195,20 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-        """Handle validation errors."""
+        """Handle validation errors.
+
+        exc.errors() carries a "ctx": {"error": <exception>} entry for any
+        field_validator/model_validator that raised a plain ValueError (e.g.
+        AddressCreateRequest's province/iban checks) — jsonable_encoder is
+        needed here because plain json.dumps can't serialize that raw
+        exception object; the human-readable text is already in "msg".
+        """
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "error": "Validation Error",
                 "message": "Request validation failed",
-                "details": exc.errors(),
+                "details": jsonable_encoder(exc.errors()),
             },
         )
 

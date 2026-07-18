@@ -43,6 +43,9 @@ class CongregationRepository:
         postal_code: str | None = None,
         province: str | None = None,
         country: str = DEFAULT_COUNTRY,
+        website: str | None = None,
+        email: str | None = None,
+        iban: str | None = None,
         latitude: float | None = None,
         longitude: float | None = None,
         status: str = "draft",
@@ -65,6 +68,9 @@ class CongregationRepository:
             existing.postal_code = postal_code
             existing.province = province
             existing.country = country
+            existing.website = website
+            existing.email = email
+            existing.iban = iban
             existing.latitude = encoded_lat
             existing.longitude = encoded_lng
             existing.geocode_status = geocode_status
@@ -82,6 +88,9 @@ class CongregationRepository:
             postal_code=postal_code,
             province=province,
             country=country,
+            website=website,
+            email=email,
+            iban=iban,
             latitude=encoded_lat,
             longitude=encoded_lng,
             geocode_status=geocode_status,
