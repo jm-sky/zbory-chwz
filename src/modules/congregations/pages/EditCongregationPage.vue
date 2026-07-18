@@ -221,6 +221,29 @@ async function loadCongregation() {
 }
 
 // Save functions
+type FormValues = z.infer<typeof formSchema>
+
+async function persistAddress(values: FormValues) {
+  const payload = {
+    street: values.street,
+    city: values.city,
+    postal_code: values.postal_code,
+    province: values.province,
+    country: values.country,
+    website: values.website || null,
+    email: values.email || null,
+    iban: values.iban || null,
+    latitude: values.latitude,
+    longitude: values.longitude,
+    status: values.address_status,
+  }
+  if (congregationFull.value?.address) {
+    await congregationApiService.updateAddress(congregationId, payload)
+  } else {
+    await congregationApiService.createOrUpdateAddress(congregationId, payload)
+  }
+}
+
 const saveBasicInfo = form.handleSubmit(async (values) => {
   try {
     await congregationApiService.updateCongregation(congregationId, {
@@ -228,8 +251,10 @@ const saveBasicInfo = form.handleSubmit(async (values) => {
       description: values.description,
       status: values.status,
     })
+    await persistAddress(values)
     toast.success(t('congregations.edit.basicInfo.saveSuccess', 'Podstawowe informacje zostały zapisane'))
     await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await loadCongregation()
   } catch (error) {
     logSafeError('Failed to save basic info:', error)
     handleError(error, { setErrors: form.setErrors, fallbackMessage: t('congregations.edit.basicInfo.saveError', 'Nie udało się zapisać podstawowych informacji') })
@@ -238,35 +263,7 @@ const saveBasicInfo = form.handleSubmit(async (values) => {
 
 const saveAddress = form.handleSubmit(async (values) => {
   try {
-    if (congregationFull.value?.address) {
-      await congregationApiService.updateAddress(congregationId, {
-        street: values.street,
-        city: values.city,
-        postal_code: values.postal_code,
-        province: values.province,
-        country: values.country,
-        website: values.website || null,
-        email: values.email || null,
-        iban: values.iban || null,
-        latitude: values.latitude,
-        longitude: values.longitude,
-        status: values.address_status,
-      })
-    } else {
-      await congregationApiService.createOrUpdateAddress(congregationId, {
-        street: values.street,
-        city: values.city,
-        postal_code: values.postal_code,
-        province: values.province,
-        country: values.country,
-        website: values.website || null,
-        email: values.email || null,
-        iban: values.iban || null,
-        latitude: values.latitude,
-        longitude: values.longitude,
-        status: values.address_status,
-      })
-    }
+    await persistAddress(values)
     toast.success(t('congregations.edit.address.saveSuccess', 'Adres został zapisany'))
     await queryClient.invalidateQueries({ queryKey: ['congregations'] })
     await loadCongregation()
@@ -425,6 +422,56 @@ onMounted(() => {
                 <FormMessage />
               </FormItem>
             </FormField>
+
+            <FormField v-slot="{ componentField }" name="website">
+              <FormItem>
+                <FormLabel>
+                  {{ t('congregations.edit.address.website', 'Strona WWW') }}
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    :placeholder="t('congregations.edit.address.websitePlaceholder', 'np. https://example.pl')"
+                    v-bind="componentField"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            </FormField>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField v-slot="{ componentField }" name="email">
+                <FormItem>
+                  <FormLabel>
+                    {{ t('congregations.edit.address.email', 'E-mail zboru') }}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      :placeholder="t('congregations.edit.address.emailPlaceholder', 'np. kontakt\\@example.pl')"
+                      v-bind="componentField"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
+
+              <FormField v-slot="{ componentField }" name="iban">
+                <FormItem>
+                  <FormLabel>
+                    {{ t('congregations.edit.address.iban', 'Numer konta') }}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      :placeholder="t('congregations.edit.address.ibanPlaceholder', 'np. 61 1090 1014 0000 0712 1981 2874')"
+                      v-bind="componentField"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
+            </div>
           </div>
 
           <div class="flex justify-end">
@@ -540,56 +587,6 @@ onMounted(() => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              </FormField>
-            </div>
-
-            <FormField v-slot="{ componentField }" name="website">
-              <FormItem>
-                <FormLabel>
-                  {{ t('congregations.edit.address.website', 'Strona WWW') }}
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    :placeholder="t('congregations.edit.address.websitePlaceholder', 'np. https://example.pl')"
-                    v-bind="componentField"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField v-slot="{ componentField }" name="email">
-                <FormItem>
-                  <FormLabel>
-                    {{ t('congregations.edit.address.email', 'E-mail zboru') }}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      :placeholder="t('congregations.edit.address.emailPlaceholder', 'np. kontakt@example.pl')"
-                      v-bind="componentField"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              </FormField>
-
-              <FormField v-slot="{ componentField }" name="iban">
-                <FormItem>
-                  <FormLabel>
-                    {{ t('congregations.edit.address.iban', 'Numer konta') }}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      :placeholder="t('congregations.edit.address.ibanPlaceholder', 'np. 61 1090 1014 0000 0712 1981 2874')"
-                      v-bind="componentField"
-                    />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               </FormField>

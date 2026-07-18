@@ -156,7 +156,7 @@ export const congregationsEn = {
         website: 'Website',
         websitePlaceholder: 'e.g. https://example.com',
         email: 'Congregation e-mail',
-        emailPlaceholder: 'e.g. contact@example.com',
+        emailPlaceholder: 'e.g. contact\\@example.com',
         emailInvalid: 'Invalid e-mail address',
         iban: 'Account number',
         ibanPlaceholder: 'e.g. 61 1090 1014 0000 0712 1981 2874',

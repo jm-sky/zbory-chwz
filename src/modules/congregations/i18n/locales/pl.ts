@@ -156,7 +156,7 @@ export const congregationsPl = {
         website: 'Strona WWW',
         websitePlaceholder: 'np. https://example.pl',
         email: 'E-mail zboru',
-        emailPlaceholder: 'np. kontakt@example.pl',
+        emailPlaceholder: 'np. kontakt\\@example.pl',
         emailInvalid: 'Nieprawidłowy adres e-mail',
         iban: 'Numer konta',
         ibanPlaceholder: 'np. 61 1090 1014 0000 0712 1981 2874',
