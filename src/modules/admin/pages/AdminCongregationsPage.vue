@@ -387,11 +387,12 @@ function completenessFor(tenant: IAdminTenant) {
     postal_code: tenant.postal_code,
     province: tenant.province,
     website: tenant.website,
-    email: tenant.email,
     latitude: tenant.latitude,
     longitude: tenant.longitude,
     service_times_count: tenant.service_times_count,
     card_contacts_count: tenant.card_contacts_count,
+    has_contact_email: tenant.has_contact_email,
+    has_contact_phone: tenant.has_contact_phone,
   })
 }
 

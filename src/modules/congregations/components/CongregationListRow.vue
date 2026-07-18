@@ -33,7 +33,8 @@ const emit = defineEmits<{
   delete: []
 }>()
 
-const firstContact = computed(() => contactsOf(congregation)[0])
+const contacts = computed(() => contactsOf(congregation))
+const firstContact = computed(() => contacts.value[0])
 const completeness = computed(() =>
   calculateCongregationCompleteness({
     description: congregation.description,
@@ -41,11 +42,12 @@ const completeness = computed(() =>
     postal_code: congregation.postal_code,
     province: congregation.province,
     website: congregation.website,
-    email: congregation.email,
     latitude: congregation.latitude,
     longitude: congregation.longitude,
     service_times_count: congregation.service_times?.length,
     card_contacts_count: congregation.card_contacts?.length,
+    has_contact_email: contacts.value.some(c => !!c.email),
+    has_contact_phone: contacts.value.some(c => !!c.phone),
   }),
 )
 </script>

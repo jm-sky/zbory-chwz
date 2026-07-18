@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ButtonGroup } from '@/components/ui/button-group'
 import Button from '@/components/ui/button/Button.vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -52,7 +51,7 @@ function handleAdd() {
     </div>
 
     <div class="flex flex-wrap items-end gap-3">
-      <ButtonGroup>
+      <div class="flex flex-wrap gap-1">
         <Button
           v-for="key in WEEKDAY_KEYS"
           :key="key"
@@ -65,7 +64,7 @@ function handleAdd() {
         >
           {{ t(`congregations.edit.weekdaysShort.${key}`) }}
         </Button>
-      </ButtonGroup>
+      </div>
 
       <div class="space-y-1">
         <Label class="text-xs text-muted-foreground">

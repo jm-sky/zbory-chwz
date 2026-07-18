@@ -72,7 +72,7 @@ const notFound = computed<boolean>(() => getErrorStatus(error.value) === 404)
         </template>
         <template v-if="congregation.canManage" #actions>
           <ButtonLink
-            :to="CongregationRoutePaths.editById(congregation.id)"
+            :to="{ path: CongregationRoutePaths.editById(congregation.id), query: { from: 'detail' } }"
             size="sm"
             :aria-label="t('congregations.detail.edit')"
           >

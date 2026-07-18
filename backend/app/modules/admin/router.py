@@ -155,10 +155,12 @@ async def get_all_tenants(
     addresses = await congregation_repo.get_addresses_for_tenants(tenant_ids)
     service_times_by_tenant = await congregation_repo.get_service_times_for_tenants(tenant_ids)
     contacts_count_by_tenant = await church_repo.count_service_assignments_for_churches(tenant_ids)
+    contact_flags_by_tenant = await church_repo.get_contact_info_flags_for_churches(tenant_ids)
 
     responses = []
     for tenant in tenants:
         address = addresses.get(tenant.id)
+        contact_flags = contact_flags_by_tenant.get(tenant.id, {})
         responses.append(
             TenantResponse(
                 id=tenant.id,
@@ -179,6 +181,8 @@ async def get_all_tenants(
                 longitude=decode_coordinate(address.longitude) if address else None,
                 service_times_count=len(service_times_by_tenant.get(tenant.id, [])),
                 card_contacts_count=contacts_count_by_tenant.get(tenant.id, 0),
+                has_contact_email=contact_flags.get("has_email", False),
+                has_contact_phone=contact_flags.get("has_phone", False),
             )
         )
 

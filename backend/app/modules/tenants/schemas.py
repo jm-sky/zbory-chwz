@@ -38,6 +38,8 @@ class TenantResponse(BaseModel):
     longitude: float | None = None
     service_times_count: int = 0
     card_contacts_count: int = 0
+    has_contact_email: bool = False
+    has_contact_phone: bool = False
 
 
 class TenantListResponse(BaseModel):

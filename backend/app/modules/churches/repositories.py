@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import case, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -585,6 +585,34 @@ class ChurchRepository:
         for scope_id, count in result.all():
             counts[scope_id] = count
         return counts
+
+    async def get_contact_info_flags_for_churches(
+        self,
+        church_ids: Sequence[str],
+    ) -> dict[str, dict[str, bool]]:
+        """For each church, whether any assigned person has an email and/or phone set."""
+        if not church_ids:
+            return {}
+        # MAX(CASE ...) instead of the Postgres-only bool_or, so this also runs
+        # against the SQLite engine used by the integration test suite.
+        stmt = (
+            select(
+                ServiceAssignmentDB.scope_id,
+                func.max(case((PersonDB.email.is_not(None), 1), else_=0)),
+                func.max(case((PersonDB.phone.is_not(None), 1), else_=0)),
+            )
+            .join(PersonDB, ServiceAssignmentDB.person_id == PersonDB.id)
+            .where(
+                ServiceAssignmentDB.scope_type == "church",
+                ServiceAssignmentDB.scope_id.in_(church_ids),
+            )
+            .group_by(ServiceAssignmentDB.scope_id)
+        )
+        result = await self.db.execute(stmt)
+        flags: dict[str, dict[str, bool]] = {}
+        for scope_id, has_email, has_phone in result.all():
+            flags[scope_id] = {"has_email": bool(has_email), "has_phone": bool(has_phone)}
+        return flags
 
     async def list_public_branches_for_churches(self, church_ids: Sequence[str]) -> dict[str, list[BranchDB]]:
         """Publicly visible branches for many churches at once, keyed by church id."""

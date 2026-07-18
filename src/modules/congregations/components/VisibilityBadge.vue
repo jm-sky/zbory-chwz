@@ -36,8 +36,20 @@ const variant = computed<NonNullable<BadgeVariants['variant']>>(() => VARIANT_BY
       {{ label }}
     </TooltipContent>
   </Tooltip>
-  <Badge v-else :variant class="gap-1">
-    <component :is="icon" class="size-3" />
-    {{ label }}
-  </Badge>
+  <template v-else>
+    <Tooltip>
+      <TooltipTrigger as-child>
+        <Badge :variant class="gap-1 px-1.5 py-0 sm:hidden">
+          <component :is="icon" class="size-3" />
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent>
+        {{ label }}
+      </TooltipContent>
+    </Tooltip>
+    <Badge :variant class="hidden gap-1 sm:inline-flex">
+      <component :is="icon" class="size-3" />
+      {{ label }}
+    </Badge>
+  </template>
 </template>
