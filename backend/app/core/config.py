@@ -745,6 +745,18 @@ class WebAuthnSettings(BaseSettings):
     )
 
 
+class HealthSettings(BaseSettings):
+    """Health/monitoring configuration (Ops Monitor integration)."""
+
+    model_config = _base_config
+
+    details_token: str = Field(
+        default="",
+        validation_alias="HEALTH_DETAILS_TOKEN",
+        description="Bearer token required to access GET /api/health/details (Ops Monitor)",
+    )
+
+
 class Settings(BaseSettings):
     """
     Main application settings composed of nested configuration classes.
@@ -772,6 +784,7 @@ class Settings(BaseSettings):
     ai: AISettings = Field(default_factory=AISettings)
     email_import: EmailImportSettings = Field(default_factory=EmailImportSettings)
     nominatim: NominatimSettings = Field(default_factory=NominatimSettings)
+    health: HealthSettings = Field(default_factory=HealthSettings)
 
     # Legacy compatibility - still accessible at root level
     frontend_url: str = Field(
