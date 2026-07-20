@@ -49,7 +49,7 @@ const notFound = computed<boolean>(() => getErrorStatus(error.value) === 404)
         :icon="Church"
         :label="congregation.name"
         with-back-button
-        @back="router.push(CongregationRoutePaths.list)"
+        @back="router.push({ path: CongregationRoutePaths.list, query: route.query })"
       >
         <template #description>
           <div class="flex items-center gap-2 flex-wrap">

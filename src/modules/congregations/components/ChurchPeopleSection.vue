@@ -40,6 +40,7 @@ import {
   ELEVATED_ACL_ROLES,
   type VisibilityLevel,
 } from '../types/visibility.types'
+import { congregationKeys } from '../utils/congregationKeys'
 import ContactFieldWithVisibility from './ContactFieldWithVisibility.vue'
 import VisibilityLevelIconSelect from './VisibilityLevelIconSelect.vue'
 import VisibilityLevelSelect from './VisibilityLevelSelect.vue'
@@ -141,7 +142,7 @@ async function toggleShowOnList(assignment: IServiceAssignment, checked: boolean
     if (index >= 0) {
       assignments.value[index] = updated
     }
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     handleError(error)
   } finally {
@@ -235,7 +236,7 @@ async function addPerson() {
     assignments.value.push(created)
     resetForm()
     toast.success(t('congregations.people.added', 'Osoba dodana'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     handleError(error)
   }
@@ -281,7 +282,7 @@ async function saveEdit() {
     editDialogOpen.value = false
     editingId.value = null
     toast.success(t('congregations.people.updated', 'Zapisano zmiany'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     handleError(error)
   } finally {
@@ -295,7 +296,7 @@ async function removeAssignment(assignmentId: string) {
     await churchApiService.deleteServiceAssignment(churchId, assignmentId)
     assignments.value = assignments.value.filter(a => a.id !== assignmentId)
     toast.success(t('congregations.people.removed', 'Usunięto przypisanie'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     handleError(error)
   }
@@ -315,7 +316,7 @@ async function updateAssignmentVisibility(
     if (index >= 0) {
       assignments.value[index] = updated
     }
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     handleError(error)
   } finally {
@@ -350,7 +351,7 @@ async function moveAssignment(index: number, direction: 'up' | 'down') {
         churchApiService.updateServiceAssignment(churchId, a.id, { sortOrder: a.sortOrder }),
       ),
     )
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     assignments.value = previous
     handleError(error)

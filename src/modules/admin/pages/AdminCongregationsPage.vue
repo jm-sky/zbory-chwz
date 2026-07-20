@@ -37,6 +37,7 @@ import TableEmptyDecorated from '@/components/ui/table/TableEmptyDecorated.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import CongregationCompletenessIndicator from '@/modules/congregations/components/CongregationCompletenessIndicator.vue'
 import { calculateCongregationCompleteness } from '@/modules/congregations/utils/congregationCompleteness'
+import { congregationKeys } from '@/modules/congregations/utils/congregationKeys'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { IAdminUser } from '../types/admin.types'
 import type { IAddress, IAdminTenant, IAdminTenantMembership } from '../types/tenant.types'
@@ -108,7 +109,7 @@ async function createTenant() {
     toast.success(t('admin.congregations.createSuccess', 'Congregation created successfully'))
     createDialogOpen.value = false
     resetForm()
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     await loadTenants()
   } catch (error) {
     console.error('Failed to create tenant:', error)
@@ -160,7 +161,7 @@ async function updateTenant() {
     editDialogOpen.value = false
     selectedTenant.value = null
     resetForm()
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     await loadTenants()
   } catch (error) {
     console.error('Failed to update tenant:', error)
@@ -175,7 +176,7 @@ async function publishTenant(tenant: IAdminTenant) {
       status: 'published',
     })
     toast.success(t('admin.congregations.publishSuccess', 'Congregation published successfully'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     await loadTenants()
   } catch (error) {
     console.error('Failed to publish tenant:', error)
@@ -190,7 +191,7 @@ async function unpublishTenant(tenant: IAdminTenant) {
       status: 'draft',
     })
     toast.success(t('admin.congregations.unpublishSuccess', 'Congregation unpublished successfully'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     await loadTenants()
   } catch (error) {
     console.error('Failed to unpublish tenant:', error)
@@ -207,7 +208,7 @@ async function deleteTenant(tenantId: string) {
   try {
     await adminApiService.deleteTenant(tenantId)
     toast.success(t('admin.congregations.deleteSuccess', 'Congregation deleted successfully'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     await loadTenants()
   } catch (error) {
     console.error('Failed to delete tenant:', error)
@@ -219,7 +220,7 @@ async function restoreTenant(tenantId: string) {
   try {
     await adminApiService.restoreTenant(tenantId)
     toast.success(t('admin.congregations.restoreSuccess', 'Congregation restored'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     await loadTenants()
   } catch (error) {
     console.error('Failed to restore tenant:', error)

@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import { congregationKeys } from '@/modules/congregations/utils/congregationKeys'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type {
   IImportApplyItem,
@@ -141,7 +142,7 @@ async function apply() {
       + `${t('admin.congregationImport.updated', 'zaktualizowano')} ${result.updated}, `
       + `${t('admin.congregationImport.skipped', 'pominięto')} ${result.skipped}`,
     )
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     rawText.value = ''
     proposalStates.value = []
     candidates.value = []
@@ -157,7 +158,7 @@ function goBack() {
 }
 
 async function onInboxItemApplied() {
-  await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+  await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
 }
 </script>
 

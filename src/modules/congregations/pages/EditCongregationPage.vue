@@ -36,6 +36,7 @@ import { getWeekdayOrder, WEEKDAY_KEYS } from '../constants/weekdays'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
 import { calculateCongregationCompleteness } from '../utils/congregationCompleteness'
+import { congregationKeys } from '../utils/congregationKeys'
 import {
   countryOptions,
   DEFAULT_COUNTRY_CODE,
@@ -311,7 +312,7 @@ const saveBasicInfo = form.handleSubmit(async (values) => {
     })
     await persistAddress(values)
     toast.success(t('congregations.edit.basicInfo.saveSuccess', 'Podstawowe informacje zostały zapisane'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     await loadCongregation()
   } catch (error) {
     logSafeError('Failed to save basic info:', error)
@@ -323,7 +324,7 @@ const saveAddress = form.handleSubmit(async (values) => {
   try {
     await persistAddress(values)
     toast.success(t('congregations.edit.address.saveSuccess', 'Adres został zapisany'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     await loadCongregation()
   } catch (error) {
     logSafeError('Failed to save address:', error)
@@ -352,7 +353,7 @@ async function saveServiceTimes() {
 
     deletedServiceTimeIds.value = []
     toast.success(t('congregations.edit.serviceTimes.saveSuccess', 'Godziny nabożeństw zostały zapisane'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     await loadCongregation()
   } catch (error) {
     logSafeError('Failed to save service times:', error)

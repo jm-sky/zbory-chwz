@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import type { IBranch } from '../types/church.types'
 import { churchApiService } from '../services/churchApiService'
+import { congregationKeys } from '../utils/congregationKeys'
 
 const { churchId } = defineProps<{ churchId: string }>()
 
@@ -39,7 +40,7 @@ async function addBranch() {
     branches.value.push(branch)
     newName.value = ''
     toast.success(t('congregations.branches.added', 'Placówka dodana'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     handleError(error)
   }
@@ -51,7 +52,7 @@ async function removeBranch(branchId: string) {
     await churchApiService.deleteBranch(churchId, branchId)
     branches.value = branches.value.filter(b => b.id !== branchId)
     toast.success(t('congregations.branches.removed', 'Placówka usunięta'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     handleError(error)
   }

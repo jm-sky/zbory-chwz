@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { Church, Plus, Search } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import CommonPageHeader from '@/components/layout/CommonPageHeader.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -28,6 +28,7 @@ import { useCongregationListViewMode } from '../composables/useCongregationListV
 import { useCongregations } from '../composables/useCongregations'
 import { CongregationRoutePaths } from '../routes'
 import { congregationApiService } from '../services/congregationApiService'
+import { congregationKeys } from '../utils/congregationKeys'
 import CongregationExportMenu from './CongregationExportMenu.vue'
 import CongregationFilters from './CongregationFilters.vue'
 import CongregationListCard from './CongregationListCard.vue'
@@ -35,6 +36,7 @@ import CongregationListRow from './CongregationListRow.vue'
 import CongregationsMapView from './map/CongregationsMapView.vue'
 
 const { t } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const queryClient = useQueryClient()
 const authStore = useAuthStore()
@@ -94,7 +96,7 @@ async function handleEdit(congregation: ICongregationDetailed) {
 
 function handleOpen(congregation: ICongregationDetailed) {
   if (congregation.type === 'branch') return
-  router.push(CongregationRoutePaths.detailById(congregation.id))
+  router.push({ path: CongregationRoutePaths.detailById(congregation.id), query: route.query })
 }
 
 function handleMapMarkerOpen(id: string): void {
@@ -111,7 +113,7 @@ async function handleUnpublish(congregation: ICongregationDetailed) {
     await congregationApiService.unpublishCongregation(congregation.id)
     toast.success(t('congregations.list.unpublishSuccess', 'Zbór został cofnięty z publikacji'))
     // Invalidate and refetch congregations
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     logSafeError('Failed to unpublish congregation:', error)
     handleError(error, { fallbackMessage: t('congregations.list.unpublishError', 'Nie udało się cofnąć publikacji zboru') })
@@ -134,7 +136,7 @@ async function handleCreate() {
     toast.info(t('congregations.list.createDraftHint', 'Zbór jest widoczny jako szkic. Aby opublikować go publicznie, uzupełnij adres i ustaw status adresu na opublikowany.'))
     createDialogOpen.value = false
     resetCreateForm()
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
     // A congregation only appears on this public list once it has a published
     // address — send the admin straight to the edit page to fill it in.
     router.push(CongregationRoutePaths.editById(created.id))
@@ -154,7 +156,7 @@ async function handleDelete(congregation: ICongregationDetailed) {
   try {
     await congregationApiService.deleteCongregation(congregation.id)
     toast.success(t('congregations.list.deleteSuccess', 'Zbór został usunięty'))
-    await queryClient.invalidateQueries({ queryKey: ['congregations'] })
+    await queryClient.invalidateQueries({ queryKey: congregationKeys.all, refetchType: 'all' })
   } catch (error) {
     logSafeError('Failed to delete congregation:', error)
     handleError(error, { fallbackMessage: t('congregations.list.deleteError', 'Nie udało się usunąć zboru') })
