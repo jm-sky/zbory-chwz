@@ -55,13 +55,13 @@ const completeness = computed(() => {
 <template>
   <div
     :class="[
-      'group rounded-lg border p-6 transition-all hover:shadow-md',
+      'group rounded-lg border p-6 transition-all hover:shadow-lg',
       congregation.type !== 'branch' ? 'cursor-pointer' : '',
       congregation.status === 'draft'
         ? 'border-dashed bg-muted/20 border-muted-foreground/30 opacity-75 hover:border-muted-foreground/50'
         : congregation.status === 'published_unverified'
           ? 'bg-muted/30 border-muted-foreground/20 hover:border-muted-foreground/40 opacity-90'
-          : 'bg-card hover:border-primary/50'
+          : 'bg-card hover:border-primary/50 hover:-translate-y-0.5 transition-all duration-200 ease-in-out delay-100'
     ]"
     @click="emit('open')"
   >
