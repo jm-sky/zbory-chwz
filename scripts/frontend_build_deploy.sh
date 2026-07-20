@@ -20,11 +20,11 @@ DEPLOY_DIR="/var/www/zbory-chwz"
 
 echo -e "${GREEN}🔨 Starting frontend build and deploy...${NC}"
 
-# Step 1+2: Install dependencies and build.
+# Install dependencies and build.
 # Always run as the `deploy` OS user, regardless of who invoked this script,
 # so node_modules/.pnpm-store ownership never splits between `deploy` (CI)
 # and the main user (manual deploys) — see frontend_pnpm_build.sh.
-echo -e "${YELLOW}📦 Step 1: Installing dependencies and building frontend...${NC}"
+echo -e "${YELLOW}📦 Installing dependencies and building frontend...${NC}"
 if [ "$(whoami)" = "deploy" ]; then
   "$SCRIPTS_DIR/frontend_pnpm_build.sh"
 else
@@ -32,8 +32,8 @@ else
 fi
 echo -e "${GREEN}✅ Frontend build completed${NC}"
 
-# Step 3: Deploy to /var/www/zbory-chwz
-echo -e "${YELLOW}📋 Step 3: Deploying to ${DEPLOY_DIR}...${NC}"
+# Deploy to /var/www/zbory-chwz
+echo -e "${YELLOW}📋 Deploying to ${DEPLOY_DIR}...${NC}"
 
 deploy_frontend() {
   rm -rf "${DEPLOY_DIR:?}"/*
