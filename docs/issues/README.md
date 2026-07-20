@@ -48,5 +48,6 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 036 | [2026-07-09--036--card-visibility-rendering.md](2026-07-09--036--card-visibility-rendering.md) | Karta zboru — renderowanie widoczności kontaktu | `done` |
 | 037 | [2026-07-08--037--backport-jwt-2fa-shared-core.md](2026-07-08--037--backport-jwt-2fa-shared-core.md) | Backport JWT hardening i 2FA (shared core) | `done` |
 | 038 | [2026-07-10--038--google-contacts-sync.md](2026-07-10--038--google-contacts-sync.md) | Synchronizacja z Google Contacts (import zborów/osób, export kontaktów) | `planned` |
+| 039 | [2026-07-20--039--backport-shared-core-security-fixes.md](2026-07-20--039--backport-shared-core-security-fixes.md) | Backport: rate limiting, admin auth bypass, WebAuthn login (shared core) | `done` |
 
 When adding a new issue: pick next `NNN`, create `YYYY-MM-DD--NNN--slug.md`, add a row here.

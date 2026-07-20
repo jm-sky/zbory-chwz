@@ -98,16 +98,20 @@ class TwoFactorService implements ITwoFactorService {
     return response.data
   }
 
-  async verifyPasskey(): Promise<WebAuthnVerifyResponse> {
-    const response = await apiClient.post<WebAuthnVerifyResponse>('/two-factor/webauthn/authenticate/initiate')
+  async verifyPasskey(twoFactorToken: string): Promise<WebAuthnVerifyResponse> {
+    const response = await apiClient.post<WebAuthnVerifyResponse>('/two-factor/webauthn/authenticate/initiate', {
+      twoFactorToken,
+    })
     return response.data
   }
 
   async completePasskeyVerification(
+    twoFactorToken: string,
     challengeToken: string,
     credential: AuthenticationResponseJSON
   ): Promise<TwoFactorVerifyResponse> {
     const response = await apiClient.post<TwoFactorVerifyResponse>('/two-factor/webauthn/authenticate/complete', {
+      twoFactorToken,
       challengeToken,
       credential,
     })

@@ -102,8 +102,9 @@ export interface ITwoFactorService {
     registrationToken: string,
     credential: RegistrationResponseJSON
   ): Promise<Passkey>
-  verifyPasskey(): Promise<WebAuthnVerifyResponse>
+  verifyPasskey(twoFactorToken: string): Promise<WebAuthnVerifyResponse>
   completePasskeyVerification(
+    twoFactorToken: string,
     challengeToken: string,
     credential: AuthenticationResponseJSON
   ): Promise<TwoFactorVerifyResponse>

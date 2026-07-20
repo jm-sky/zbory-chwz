@@ -2,6 +2,7 @@ import { startAuthentication, startRegistration } from '@simplewebauthn/browser'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 // modules/auth/composables/useWebAuthn.ts
 import { twoFactorService } from '@/modules/auth/services/twoFactorService'
+import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { twoFactorQueryKeys } from './useTwoFactor'
 import type {
   ITwoFactorService,
@@ -45,12 +46,19 @@ export function useRegisterPasskey(service?: ITwoFactorService) {
  * Hook for verifying with a passkey during login
  */
 export function useVerifyPasskey(service?: ITwoFactorService) {
+  const queryClient = useQueryClient()
+  const authStore = useAuthStore()
+
   return useMutation({
     mutationFn: async () => {
       const svc = service ?? twoFactorService
+      const twoFactorToken = authStore.twoFactorToken
+      if (!twoFactorToken) {
+        throw new Error('No pending 2FA token — start from the login form')
+      }
 
       // Step 1: Get verification options from backend
-      const verifyResponse = await svc.verifyPasskey()
+      const verifyResponse = await svc.verifyPasskey(twoFactorToken)
 
       // Step 2: Start WebAuthn authentication ceremony
       const credential = await startAuthentication({
@@ -59,9 +67,23 @@ export function useVerifyPasskey(service?: ITwoFactorService) {
 
       // Step 3: Complete verification with backend
       return await svc.completePasskeyVerification(
+        twoFactorToken,
         verifyResponse.challengeToken,
         credential
       )
+    },
+    onSuccess: async (data) => {
+      if (data.verified && data.accessToken) {
+        // Store the access token and refresh token
+        authStore.setToken(data.accessToken)
+        if (data.refreshToken) {
+          authStore.setRefreshToken(data.refreshToken)
+        }
+        // Clear 2FA token
+        authStore.clearTwoFactorToken()
+        // Invalidate all 2FA queries to refresh status
+        await queryClient.invalidateQueries({ queryKey: twoFactorQueryKeys.all })
+      }
     },
   })
 }

@@ -21,13 +21,13 @@ requests>=2.31.0  # For web scraping
 beautifulsoup4>=4.12.0  # For HTML parsing
 
 # Email Templates
-jinja2>=3.1.0
+jinja2>=3.1.6
 
 # Utilities
-python-dotenv>=1.0.0
+python-dotenv>=1.2.2
 
 # Image Processing & File Storage
-Pillow>=11.0.0  # Image processing
+Pillow>=12.3.0  # Image processing
 python-magic>=0.4.27  # MIME type validation
 aiofiles>=24.1.0  # Async file operations
 aioboto3>=13.3.0  # Async S3 client (optional, for S3 storage)
@@ -51,7 +51,7 @@ mypy>=1.14.0
 # Additional dependencies will be added here by fastapi-registry modules
 PyJWT>=2.10.0
 bcrypt>=4.0.0
-Jinja2>=3.1.0
+Jinja2>=3.1.6
 pyotp>=2.9.0
 webauthn>=2.3.0
 cryptography>=41.0.0
