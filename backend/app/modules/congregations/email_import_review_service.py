@@ -85,6 +85,7 @@ class EmailImportReviewService:
         await import_service.apply_fields(message.resolved_tenant_id, values, contact_person_id)
 
         actor_label = f"{reviewer.name} (ręcznie zatwierdzone z e-maila)"
+        batch_id = generate_id()
         for field_change in request.fields:
             if not field_change.apply:
                 continue
@@ -92,6 +93,7 @@ class EmailImportReviewService:
                 CongregationChangeLogDB(
                     id=generate_id(),
                     tenant_id=message.resolved_tenant_id,
+                    batch_id=batch_id,
                     section=FIELD_GROUPS[field_change.field],
                     field=field_change.field,
                     old_value=diff.old_values.get(field_change.field),

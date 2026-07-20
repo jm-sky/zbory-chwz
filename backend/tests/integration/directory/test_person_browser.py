@@ -408,14 +408,38 @@ async def test_update_person_logs_change_history(ctx) -> None:
     response = await client.get(f"/api/people-directory/persons/{ids['person_a1']}/change-log")
 
     assert response.status_code == 200
-    entries = response.json()["entries"]
-    assert len(entries) == 1
-    assert entries[0]["field"] == "phone"
-    assert entries[0]["field_label"] == "Telefon"
-    assert entries[0]["old_value"] is None
-    assert entries[0]["new_value"] == "+48111222333"
-    assert entries[0]["source"] == "admin_manual"
-    assert entries[0]["actor_label"] == ADMIN_ID
+    body = response.json()
+    assert body["total"] == 1
+    batches = body["batches"]
+    assert len(batches) == 1
+    assert len(batches[0]["changes"]) == 1
+    assert batches[0]["changes"][0]["field"] == "phone"
+    assert batches[0]["changes"][0]["field_label"] == "Telefon"
+    assert batches[0]["changes"][0]["old_value"] is None
+    assert batches[0]["changes"][0]["new_value"] == "+48111222333"
+    assert batches[0]["source"] == "admin_manual"
+    assert batches[0]["actor_label"] == ADMIN_ID
+
+
+@pytest.mark.asyncio
+async def test_update_person_multi_field_change_logs_one_batch(ctx) -> None:
+    """One PATCH changing 2 fields at once should render as a single batch, not two."""
+    client, ids, login = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    await client.patch(
+        f"/api/people-directory/persons/{ids['person_a1']}",
+        json={"phone": "+48111222333", "email": "nowy@example.com"},
+    )
+
+    response = await client.get(f"/api/people-directory/persons/{ids['person_a1']}/change-log")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    batches = body["batches"]
+    assert len(batches) == 1
+    assert {c["field"] for c in batches[0]["changes"]} == {"phone", "email"}
 
 
 @pytest.mark.asyncio
@@ -431,7 +455,7 @@ async def test_update_person_unchanged_field_logs_nothing(ctx) -> None:
     response = await client.get(f"/api/people-directory/persons/{ids['person_a1']}/change-log")
 
     assert response.status_code == 200
-    assert response.json()["entries"] == []
+    assert response.json()["batches"] == []
 
 
 @pytest.mark.asyncio
@@ -457,4 +481,4 @@ async def test_pastor_can_view_change_log_in_scope(ctx) -> None:
     response = await client.get(f"/api/people-directory/persons/{ids['person_a1']}/change-log")
 
     assert response.status_code == 200
-    assert len(response.json()["entries"]) == 1
+    assert len(response.json()["batches"]) == 1

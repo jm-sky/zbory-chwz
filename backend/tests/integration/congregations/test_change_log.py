@@ -57,6 +57,7 @@ async def _seed(session: AsyncSession) -> None:
         CongregationChangeLogDB(
             id=generate_id(),
             tenant_id=TENANT_ID,
+            batch_id=generate_id(),
             section="contact",
             field="contact_phone",
             old_value=None,
@@ -96,7 +97,7 @@ async def ctx():
         def login(user: User) -> None:
             app.dependency_overrides[get_current_user] = lambda: user
 
-        yield client, login
+        yield client, login, session_factory
 
     app.dependency_overrides.clear()
     await engine.dispose()
@@ -104,47 +105,130 @@ async def ctx():
 
 @pytest.mark.asyncio
 async def test_admin_can_view_change_log(ctx) -> None:
-    client, login = ctx
+    client, login, _session_factory = ctx
     login(_api_user(ADMIN_ID, is_admin=True))
 
     response = await client.get(f"/api/congregations/{TENANT_ID}/change-log")
 
     assert response.status_code == 200
-    entries = response.json()["entries"]
-    assert len(entries) == 1
-    assert entries[0]["field"] == "contact_phone"
-    assert entries[0]["field_label"] == "Telefon"
-    assert entries[0]["actor_label"] == "Jan Kowalski (automatycznie, AI 0.95)"
+    body = response.json()
+    assert body["total"] == 1
+    batches = body["batches"]
+    assert len(batches) == 1
+    assert len(batches[0]["changes"]) == 1
+    assert batches[0]["changes"][0]["field"] == "contact_phone"
+    assert batches[0]["changes"][0]["field_label"] == "Telefon"
+    assert batches[0]["actor_label"] == "Jan Kowalski (automatycznie, AI 0.95)"
 
 
 @pytest.mark.asyncio
 async def test_tenant_member_can_view_change_log(ctx) -> None:
-    client, login = ctx
+    client, login, _session_factory = ctx
     login(_api_user(OWNER_MEMBER_ID))
 
     response = await client.get(f"/api/congregations/{TENANT_ID}/change-log")
 
     assert response.status_code == 200
-    assert len(response.json()["entries"]) == 1
+    assert len(response.json()["batches"]) == 1
 
 
 @pytest.mark.asyncio
 async def test_pastoral_acl_user_can_view_change_log(ctx) -> None:
     """A community-scope bishop with no direct tenant membership - only ACL access."""
-    client, login = ctx
+    client, login, _session_factory = ctx
     login(_api_user(BISHOP_ID))
 
     response = await client.get(f"/api/congregations/{TENANT_ID}/change-log")
 
     assert response.status_code == 200
-    assert len(response.json()["entries"]) == 1
+    assert len(response.json()["batches"]) == 1
 
 
 @pytest.mark.asyncio
 async def test_unrelated_user_cannot_view_change_log(ctx) -> None:
-    client, login = ctx
+    client, login, _session_factory = ctx
     login(_api_user(STRANGER_ID))
 
     response = await client.get(f"/api/congregations/{TENANT_ID}/change-log")
 
     assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_multi_field_batch_groups_into_one_tile(ctx) -> None:
+    """Two rows sharing a batch_id (one action that changed two fields) render as one batch."""
+    client, login, session_factory = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    shared_batch_id = generate_id()
+    async with session_factory() as session:
+        session.add(
+            CongregationChangeLogDB(
+                id=generate_id(),
+                tenant_id=TENANT_ID,
+                batch_id=shared_batch_id,
+                section="address",
+                field="street",
+                old_value="Stara 1",
+                new_value="Nowa 2",
+                source="admin_manual",
+                actor_label="Jan Kowalski",
+            )
+        )
+        session.add(
+            CongregationChangeLogDB(
+                id=generate_id(),
+                tenant_id=TENANT_ID,
+                batch_id=shared_batch_id,
+                section="address",
+                field="city",
+                old_value="Poznań",
+                new_value="Warszawa",
+                source="admin_manual",
+                actor_label="Jan Kowalski",
+            )
+        )
+        await session.commit()
+
+    response = await client.get(f"/api/congregations/{TENANT_ID}/change-log")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 2  # the seeded email_auto batch + this new admin_manual batch
+    multi_field_batch = next(b for b in body["batches"] if b["batch_id"] == shared_batch_id)
+    assert len(multi_field_batch["changes"]) == 2
+    assert {c["field"] for c in multi_field_batch["changes"]} == {"street", "city"}
+
+
+@pytest.mark.asyncio
+async def test_change_log_pagination_paginates_by_batch(ctx) -> None:
+    client, login, session_factory = ctx
+    login(_api_user(ADMIN_ID, is_admin=True))
+
+    async with session_factory() as session:
+        for i in range(3):
+            session.add(
+                CongregationChangeLogDB(
+                    id=generate_id(),
+                    tenant_id=TENANT_ID,
+                    batch_id=generate_id(),
+                    section="address",
+                    field="street",
+                    old_value=None,
+                    new_value=f"Ulica {i}",
+                    source="admin_manual",
+                    actor_label="Jan Kowalski",
+                )
+            )
+        await session.commit()
+
+    response = await client.get(f"/api/congregations/{TENANT_ID}/change-log", params={"skip": 0, "limit": 2})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 4  # 1 seeded + 3 new batches
+    assert len(body["batches"]) == 2
+
+    response_page_2 = await client.get(f"/api/congregations/{TENANT_ID}/change-log", params={"skip": 2, "limit": 2})
+    assert response_page_2.status_code == 200
+    assert len(response_page_2.json()["batches"]) == 2

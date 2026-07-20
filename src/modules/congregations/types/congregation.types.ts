@@ -198,18 +198,25 @@ export interface IServiceTimeUpdateRequest {
 }
 
 /** Field-level change history (docs/plans/2026-07-13--clergy-email-updates.md). */
-export interface IChangeLogEntry {
+export interface IChangeLogFieldChange {
   id: string
   section: 'address' | 'contact'
   field: string
   field_label: string
   old_value: string | null
   new_value: string | null
+}
+
+/** One action (e.g. one form save), grouping every field it changed. */
+export interface IChangeLogBatch {
+  batch_id: string
   source: 'admin_manual' | 'import_paste' | 'email_auto' | 'email_reviewed'
   actor_label: string
   created_at: string
+  changes: IChangeLogFieldChange[]
 }
 
 export interface IChangeLogResponse {
-  entries: IChangeLogEntry[]
+  batches: IChangeLogBatch[]
+  total: number
 }

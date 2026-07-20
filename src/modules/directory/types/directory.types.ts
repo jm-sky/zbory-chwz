@@ -49,17 +49,24 @@ export interface IPersonMergeRequest {
   mergePersonId: string
 }
 
-export interface IPersonChangeLogEntry {
+export interface IPersonChangeLogFieldChange {
   id: string
   field: 'firstName' | 'lastName' | 'email' | 'phone'
   field_label: string
   old_value: string | null
   new_value: string | null
+}
+
+/** One action (e.g. one PATCH request), grouping every field it changed. */
+export interface IPersonChangeLogBatch {
+  batch_id: string
   source: 'admin_manual'
   actor_label: string
   created_at: string
+  changes: IPersonChangeLogFieldChange[]
 }
 
 export interface IPersonChangeLogResponse {
-  entries: IPersonChangeLogEntry[]
+  batches: IPersonChangeLogBatch[]
+  total: number
 }

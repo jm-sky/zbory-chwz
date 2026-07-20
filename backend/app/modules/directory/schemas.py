@@ -73,16 +73,24 @@ PERSON_FIELD_LABELS: dict[str, str] = {
 }
 
 
-class PersonChangeLogEntry(BaseModel):
+class PersonChangeLogFieldChange(BaseModel):
     id: str
     field: PersonChangeLogField
     field_label: str
     old_value: str | None
     new_value: str | None
+
+
+class PersonChangeLogBatch(BaseModel):
+    """One action (e.g. one PATCH request), grouping every field it changed."""
+
+    batch_id: str
     source: Literal["admin_manual"]
     actor_label: str
     created_at: datetime
+    changes: list[PersonChangeLogFieldChange]
 
 
 class PersonChangeLogResponse(BaseModel):
-    entries: list[PersonChangeLogEntry]
+    batches: list[PersonChangeLogBatch]
+    total: int

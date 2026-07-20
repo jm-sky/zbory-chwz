@@ -6,7 +6,7 @@ See docs/plans/2026-07-09--mailing-lists.md.
 import logging
 
 from fastapi import Depends
-from sqlalchemy import or_, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.id_utils import generate_id
@@ -266,11 +266,13 @@ class DirectoryRepository:
         }
         changes = {field: (before[field], after[field]) for field in before if before[field] != after[field]}
         if changes:
+            batch_id = generate_id()
             for field, (old_value, new_value) in changes.items():
                 self.db.add(
                     PersonChangeLogDB(
                         id=generate_id(),
                         person_id=person_id,
+                        batch_id=batch_id,
                         field=field,
                         old_value=old_value,
                         new_value=new_value,
@@ -283,10 +285,25 @@ class DirectoryRepository:
 
         return person
 
-    async def get_change_log(self, person_id: str) -> list[PersonChangeLogDB]:
-        stmt = select(PersonChangeLogDB).where(PersonChangeLogDB.person_id == person_id).order_by(PersonChangeLogDB.created_at.desc())
+    async def get_change_log(self, person_id: str, *, skip: int = 0, limit: int = 20) -> list[PersonChangeLogDB]:
+        """Return change-log rows for one page of batches (most recently touched batch first).
+
+        Pagination is applied to distinct `batch_id`s, not raw rows, so a multi-field
+        batch is never split across pages.
+        """
+        batch_ids_stmt = select(PersonChangeLogDB.batch_id).where(PersonChangeLogDB.person_id == person_id).group_by(PersonChangeLogDB.batch_id).order_by(func.max(PersonChangeLogDB.created_at).desc()).offset(skip).limit(limit)
+        batch_ids = (await self.db.execute(batch_ids_stmt)).scalars().all()
+        if not batch_ids:
+            return []
+
+        stmt = select(PersonChangeLogDB).where(PersonChangeLogDB.batch_id.in_(batch_ids)).order_by(PersonChangeLogDB.created_at.desc())
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
+
+    async def count_change_log_batches(self, person_id: str) -> int:
+        stmt = select(func.count(func.distinct(PersonChangeLogDB.batch_id))).where(PersonChangeLogDB.person_id == person_id)
+        result = await self.db.execute(stmt)
+        return result.scalar_one()
 
     async def merge_persons(self, keep_id: str, merge_id: str) -> PersonDB | None:
         keep_person = await self.get_person(keep_id)
