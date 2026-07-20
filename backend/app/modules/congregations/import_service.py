@@ -9,6 +9,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.id_utils import generate_id
 from app.modules.ai.provider import OpenRouterProvider
 from app.modules.ai.schemas import ExtractedCongregation
 from app.modules.churches.contact_sync import (
@@ -185,6 +186,10 @@ class CongregationImportService:
         address_changes = {field: (before_address[field], values[field]) for field in _ADDRESS_FIELDS if field in values and values[field] != before_address[field]}
         contact_changes = {field: (before_contact[field], values[field]) for field in _CONTACT_FIELDS if field in values and values[field] != before_contact[field]}
 
+        # Shared batch_id: address and contact changes from one paste-import action
+        # should render as a single change-history tile, even though they're written
+        # via two separate log_changes() calls.
+        batch_id = generate_id()
         await self._congregation_repo.log_changes(
             tenant_id,
             section="address",
@@ -192,6 +197,7 @@ class CongregationImportService:
             source="import_paste",
             actor_label=actor_name,
             actor_user_id=actor_user_id,
+            batch_id=batch_id,
         )
         await self._congregation_repo.log_changes(
             tenant_id,
@@ -200,6 +206,7 @@ class CongregationImportService:
             source="import_paste",
             actor_label=actor_name,
             actor_user_id=actor_user_id,
+            batch_id=batch_id,
         )
 
     async def apply_fields(self, tenant_id: str, values: dict[str, str | None], contact_person_id: str | None) -> None:

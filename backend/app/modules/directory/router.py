@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.auth.models import User
 from app.modules.churches.db_models import PersonDB
+from app.modules.directory.db_models import PersonChangeLogDB
 from app.modules.directory.repositories import (
     Affiliation,
     DirectoryRepository,
@@ -20,7 +21,8 @@ from app.modules.directory.schemas import (
     DirectoryPersonResponse,
     PersonAffiliationResponse,
     PersonBrowseResponse,
-    PersonChangeLogEntry,
+    PersonChangeLogBatch,
+    PersonChangeLogFieldChange,
     PersonChangeLogResponse,
     PersonListResponse,
     PersonMergeRequest,
@@ -39,6 +41,37 @@ async def _require_access(current_user: User, repo: DirectoryRepository) -> set[
             detail="No ACL role grants access to the people directory",
         )
     return allowed
+
+
+def _group_person_change_log_by_batch(rows: list[PersonChangeLogDB]) -> list[PersonChangeLogBatch]:
+    """Group flat change-log rows (as returned by the repo, batch-ordered) into batches."""
+    batches: dict[str, list[PersonChangeLogDB]] = {}
+    order: list[str] = []
+    for row in rows:
+        if row.batch_id not in batches:
+            batches[row.batch_id] = []
+            order.append(row.batch_id)
+        batches[row.batch_id].append(row)
+
+    return [
+        PersonChangeLogBatch(
+            batch_id=batch_id,
+            source=batches[batch_id][0].source,  # type: ignore[arg-type]
+            actor_label=batches[batch_id][0].actor_label,
+            created_at=max(row.created_at for row in batches[batch_id]),
+            changes=[
+                PersonChangeLogFieldChange(
+                    id=row.id,
+                    field=row.field,  # type: ignore[arg-type]
+                    field_label=PERSON_FIELD_LABELS.get(row.field, row.field),
+                    old_value=row.old_value,
+                    new_value=row.new_value,
+                )
+                for row in batches[batch_id]
+            ],
+        )
+        for batch_id in order
+    ]
 
 
 def _person_response(person: PersonDB, affiliations: list[Affiliation]) -> PersonBrowseResponse:
@@ -156,26 +189,15 @@ async def get_person_change_log(
     person_id: str,
     current_user: CurrentUser,
     repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
 ) -> PersonChangeLogResponse:
     allowed = await _require_access(current_user, repo)
     await _get_person_in_scope(person_id, allowed, repo)
 
-    entries = await repo.get_change_log(person_id)
-    return PersonChangeLogResponse(
-        entries=[
-            PersonChangeLogEntry(
-                id=entry.id,
-                field=entry.field,  # type: ignore[arg-type]
-                field_label=PERSON_FIELD_LABELS.get(entry.field, entry.field),
-                old_value=entry.old_value,
-                new_value=entry.new_value,
-                source=entry.source,  # type: ignore[arg-type]
-                actor_label=entry.actor_label,
-                created_at=entry.created_at,
-            )
-            for entry in entries
-        ]
-    )
+    rows = await repo.get_change_log(person_id, skip=skip, limit=limit)
+    total = await repo.count_change_log_batches(person_id)
+    return PersonChangeLogResponse(batches=_group_person_change_log_by_batch(rows), total=total)
 
 
 @router.post("/persons/merge", response_model=PersonBrowseResponse)

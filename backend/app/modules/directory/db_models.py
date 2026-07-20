@@ -16,6 +16,9 @@ class PersonChangeLogDB(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     person_id: Mapped[str] = mapped_column(String(36), ForeignKey("persons.id", ondelete="CASCADE"), nullable=False)
+    # Groups the rows written by a single action (e.g. one PATCH that changes several fields)
+    # so the change-history UI can render one tile per action instead of one per field.
+    batch_id: Mapped[str] = mapped_column(String(36), nullable=False)
     # "firstName" | "lastName" | "email" | "phone"
     field: Mapped[str] = mapped_column(String(32), nullable=False)
     # Encrypted at rest, same as the source persons columns (see PersonDB).

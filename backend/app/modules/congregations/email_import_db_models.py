@@ -46,6 +46,9 @@ class CongregationChangeLogDB(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    # Groups the rows written by a single action (e.g. one form save that changes several fields)
+    # so the change-history UI can render one tile per action instead of one per field.
+    batch_id: Mapped[str] = mapped_column(String(36), nullable=False)
     # "address" | "contact"
     section: Mapped[str] = mapped_column(String(16), nullable=False)
     field: Mapped[str] = mapped_column(String(64), nullable=False)

@@ -64,10 +64,11 @@ class DirectoryApiService {
    * current user has no ACL access to the people directory - the caller
    * should simply hide the section, not show an error.
    */
-  async getChangeLog(personId: string): Promise<IPersonChangeLogResponse | null> {
+  async getChangeLog(personId: string, params: { skip: number, limit: number }): Promise<IPersonChangeLogResponse | null> {
     try {
       const { data } = await apiClient.get<IPersonChangeLogResponse>(
         `/people-directory/persons/${personId}/change-log`,
+        { params },
       )
       return data
     } catch (error) {

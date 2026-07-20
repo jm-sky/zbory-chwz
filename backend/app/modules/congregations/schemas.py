@@ -278,17 +278,25 @@ class EmailImportApproveRequest(BaseModel):
     fields: list[ImportApplyField]
 
 
-class ChangeLogEntry(BaseModel):
+class ChangeLogFieldChange(BaseModel):
     id: str
     section: Literal["address", "contact"]
     field: str
     field_label: str
     old_value: str | None = None
     new_value: str | None = None
+
+
+class ChangeLogBatch(BaseModel):
+    """One action (e.g. one form save), grouping every field it changed."""
+
+    batch_id: str
     source: Literal["admin_manual", "import_paste", "email_auto", "email_reviewed"]
     actor_label: str
     created_at: datetime
+    changes: list[ChangeLogFieldChange]
 
 
 class ChangeLogResponse(BaseModel):
-    entries: list[ChangeLogEntry]
+    batches: list[ChangeLogBatch]
+    total: int

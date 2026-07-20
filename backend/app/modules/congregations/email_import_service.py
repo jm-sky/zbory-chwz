@@ -278,11 +278,13 @@ class EmailImportService:
             status="auto_applied",
         )
 
+        batch_id = generate_id()
         for key in changed:
             self.db.add(
                 CongregationChangeLogDB(
                     id=generate_id(),
                     tenant_id=final.tenant_id,
+                    batch_id=batch_id,
                     section=FIELD_GROUPS[key],
                     field=key,
                     old_value=diff.old_values[key],

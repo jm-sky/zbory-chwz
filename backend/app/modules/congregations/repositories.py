@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from fastapi import Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.id_utils import generate_id
@@ -116,10 +116,26 @@ class CongregationRepository:
         existing.last_updated_label = label
         await self.db.commit()
 
-    async def get_change_log(self, tenant_id: str) -> list[CongregationChangeLogDB]:
-        stmt = select(CongregationChangeLogDB).where(CongregationChangeLogDB.tenant_id == tenant_id).order_by(CongregationChangeLogDB.created_at.desc())
+    async def get_change_log(self, tenant_id: str, *, skip: int = 0, limit: int = 20) -> list[CongregationChangeLogDB]:
+        """Return change-log rows for one page of batches (most recently touched batch first).
+
+        Pagination is applied to distinct `batch_id`s, not raw rows, so a multi-field
+        batch is never split across pages - every row belonging to the page's batches
+        is returned regardless of how many fields it contains.
+        """
+        batch_ids_stmt = select(CongregationChangeLogDB.batch_id).where(CongregationChangeLogDB.tenant_id == tenant_id).group_by(CongregationChangeLogDB.batch_id).order_by(func.max(CongregationChangeLogDB.created_at).desc()).offset(skip).limit(limit)
+        batch_ids = (await self.db.execute(batch_ids_stmt)).scalars().all()
+        if not batch_ids:
+            return []
+
+        stmt = select(CongregationChangeLogDB).where(CongregationChangeLogDB.batch_id.in_(batch_ids)).order_by(CongregationChangeLogDB.created_at.desc())
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
+
+    async def count_change_log_batches(self, tenant_id: str) -> int:
+        stmt = select(func.count(func.distinct(CongregationChangeLogDB.batch_id))).where(CongregationChangeLogDB.tenant_id == tenant_id)
+        result = await self.db.execute(stmt)
+        return result.scalar_one()
 
     async def log_changes(
         self,
@@ -131,15 +147,25 @@ class CongregationRepository:
         actor_label: str,
         actor_user_id: str | None = None,
         actor_person_id: str | None = None,
-    ) -> None:
-        """Append one change-log row per changed field. No-op (no commit) if `changes` is empty."""
+        batch_id: str | None = None,
+    ) -> str | None:
+        """Append one change-log row per changed field, all sharing one batch_id.
+
+        No-op (no commit) if `changes` is empty - returns None in that case so a
+        caller chaining multiple log_changes() calls into one batch (e.g. address
+        then contact fields from a single import) doesn't invent a batch_id for an
+        action that wrote nothing. Otherwise returns the batch_id used (generated
+        if not passed in), so the caller can reuse it for a subsequent call.
+        """
         if not changes:
-            return
+            return None
+        batch_id = batch_id or generate_id()
         for field, (old_value, new_value) in changes.items():
             self.db.add(
                 CongregationChangeLogDB(
                     id=generate_id(),
                     tenant_id=tenant_id,
+                    batch_id=batch_id,
                     section=section,
                     field=field,
                     old_value=old_value,
@@ -151,6 +177,7 @@ class CongregationRepository:
                 )
             )
         await self.db.commit()
+        return batch_id
 
     async def get_addresses_by_status(self, statuses: Sequence[str]) -> dict[str, CongregationAddressDB]:
         """Get addresses with any of the given statuses, keyed by tenant id."""

@@ -3,13 +3,14 @@
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.core.limiter import rate_limit
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.auth.models import User
 from app.modules.churches.acl_service import AclService, get_acl_service
 from app.modules.congregations.db_models import CongregationAddressDB, decode_coordinate
+from app.modules.congregations.email_import_db_models import CongregationChangeLogDB
 from app.modules.congregations.field_diff import ADDRESS_FIELDS, FIELD_LABELS, MANUAL_ONLY_FIELD_LABELS
 from app.modules.congregations.geo import is_valid_province
 from app.modules.congregations.geocoding import geocode_address
@@ -21,7 +22,8 @@ from app.modules.congregations.schemas import (
     AddressCreateRequest,
     AddressResponse,
     AddressUpdateRequest,
-    ChangeLogEntry,
+    ChangeLogBatch,
+    ChangeLogFieldChange,
     ChangeLogResponse,
     CongregationFullResponse,
     GeocodeRequest,
@@ -58,6 +60,38 @@ async def _verify_change_log_access(
         return
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+
+def _group_change_log_by_batch(rows: list[CongregationChangeLogDB]) -> list[ChangeLogBatch]:
+    """Group flat change-log rows (as returned by the repo, batch-ordered) into batches."""
+    batches: dict[str, list[CongregationChangeLogDB]] = {}
+    order: list[str] = []
+    for row in rows:
+        if row.batch_id not in batches:
+            batches[row.batch_id] = []
+            order.append(row.batch_id)
+        batches[row.batch_id].append(row)
+
+    return [
+        ChangeLogBatch(
+            batch_id=batch_id,
+            source=batches[batch_id][0].source,  # type: ignore[arg-type]
+            actor_label=batches[batch_id][0].actor_label,
+            created_at=max(row.created_at for row in batches[batch_id]),
+            changes=[
+                ChangeLogFieldChange(
+                    id=row.id,
+                    section=row.section,  # type: ignore[arg-type]
+                    field=row.field,
+                    field_label=FIELD_LABELS.get(row.field) or MANUAL_ONLY_FIELD_LABELS.get(row.field, row.field),
+                    old_value=row.old_value,
+                    new_value=row.new_value,
+                )
+                for row in batches[batch_id]
+            ],
+        )
+        for batch_id in order
+    ]
 
 
 def _address_snapshot(address: CongregationAddressDB | None) -> dict[str, str | None]:
@@ -505,23 +539,11 @@ async def get_change_log(
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
     acl_service: Annotated[AclService, Depends(get_acl_service)],
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
 ) -> ChangeLogResponse:
     await _verify_change_log_access(tenant_id, current_user, tenant_repo, acl_service)
 
-    entries = await repo.get_change_log(tenant_id)
-    return ChangeLogResponse(
-        entries=[
-            ChangeLogEntry(
-                id=entry.id,
-                section=entry.section,  # type: ignore[arg-type]
-                field=entry.field,
-                field_label=FIELD_LABELS.get(entry.field) or MANUAL_ONLY_FIELD_LABELS.get(entry.field, entry.field),
-                old_value=entry.old_value,
-                new_value=entry.new_value,
-                source=entry.source,  # type: ignore[arg-type]
-                actor_label=entry.actor_label,
-                created_at=entry.created_at,
-            )
-            for entry in entries
-        ]
-    )
+    rows = await repo.get_change_log(tenant_id, skip=skip, limit=limit)
+    total = await repo.count_change_log_batches(tenant_id)
+    return ChangeLogResponse(batches=_group_change_log_by_batch(rows), total=total)

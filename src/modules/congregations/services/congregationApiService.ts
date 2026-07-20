@@ -283,9 +283,9 @@ class CongregationApiService {
    * pastoral ACL only) - the caller should simply hide the section, not
    * show an error.
    */
-  async getChangeLog(tenantId: string): Promise<IChangeLogResponse | null> {
+  async getChangeLog(tenantId: string, params: { skip: number, limit: number }): Promise<IChangeLogResponse | null> {
     try {
-      const response = await apiClient.get<IChangeLogResponse>(`/congregations/${tenantId}/change-log`)
+      const response = await apiClient.get<IChangeLogResponse>(`/congregations/${tenantId}/change-log`, { params })
       return response.data
     } catch (error) {
       if (isAxiosError(error) && error.response?.status === 403) {
