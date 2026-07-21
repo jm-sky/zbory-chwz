@@ -112,7 +112,6 @@ networks:
 volumes:
   zbory_chwz_postgres_data:
     name: zbory_chwz_postgres_data
-    external: true
   zbory_chwz_redis_data:
     name: zbory_chwz_redis_data
   zbory_chwz_uploads:
