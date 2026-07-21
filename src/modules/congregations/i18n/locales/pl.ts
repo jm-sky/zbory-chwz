@@ -2,7 +2,7 @@ export const congregationsPl = {
   congregations: {
     list: {
       title: 'Zbory CHWZ',
-      description: 'Lista zborów Chrześcijańskiej Wspólnoty Wolnych Zielonoświątkowców',
+      description: 'Lista zborów Chrześcijańskiej Wspólnoty Zielonoświątkowej',
       unpublish: 'Cofnij publikację',
       unpublishConfirm: 'Czy na pewno chcesz cofnąć publikację tego zboru?',
       unpublishSuccess: 'Zbór został cofnięty z publikacji',

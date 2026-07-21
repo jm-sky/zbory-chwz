@@ -1,6 +1,6 @@
 # Zbory CHWZ
 
-Aplikacja do publicznej prezentacji oraz zarządzania bazą adresów zborów CHWZ (Chrześcijańska Wspólnota Wolnych Zielonoświątkowców) z możliwością edycji danych przez uprawnione osoby.
+Aplikacja do publicznej prezentacji oraz zarządzania bazą adresów zborów CHWZ (Chrześcijańska Wspólnota Zielonoświątkowa) z możliwością edycji danych przez uprawnione osoby.
 
 ## Domeny
 - **zbory.chwz.waw.pl** *(preferowana)*

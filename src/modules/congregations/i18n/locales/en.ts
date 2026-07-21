@@ -2,7 +2,7 @@ export const congregationsEn = {
   congregations: {
     list: {
       title: 'CHWZ Congregations',
-      description: 'List of congregations of the Christian Community of Free Pentecostals',
+      description: 'List of congregations of the Christian Pentecostal Community',
       unpublish: 'Unpublish',
       unpublishConfirm: 'Are you sure you want to unpublish this congregation?',
       unpublishSuccess: 'Congregation has been unpublished',

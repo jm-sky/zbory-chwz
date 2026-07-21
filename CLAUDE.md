@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Zbory CHWZ is a Vue 3 application for managing and publicly presenting CHWZ (Chrześcijańska Wspólnota Wolnych Zielonoświątkowców) congregation data. The app uses a multi-tenant architecture with backend API integration for authentication, data management, and admin functionality.
+Zbory CHWZ is a Vue 3 application for managing and publicly presenting CHWZ (Chrześcijańska Wspólnota Zielonoświątkowa) congregation data. The app uses a multi-tenant architecture with backend API integration for authentication, data management, and admin functionality.
 
 ## Commands
 

@@ -328,7 +328,7 @@ export default {
   },
   landing: {
     title: 'Zbory CHWZ',
-    subtitle: 'Zarządzaj i publikuj informacje o zborach Chrześcijańskiej Wspólnoty Wolnych Zielonoświątkowców',
+    subtitle: 'Zarządzaj i publikuj informacje o zborach Chrześcijańskiej Wspólnoty Zielonoświątkowej',
     welcomeBack: 'Witaj ponownie, {name}!',
     feature1: {
       title: 'Katalog',
@@ -418,7 +418,7 @@ export default {
   },
   about: {
     title: 'O aplikacji Zbory CHWZ',
-    subtitle: 'Aplikacja do zarządzania i publicznej prezentacji zborów Chrześcijańskiej Wspólnoty Wolnych Zielonoświątkowców',
+    subtitle: 'Aplikacja do zarządzania i publicznej prezentacji zborów Chrześcijańskiej Wspólnoty Zielonoświątkowej',
     tableOfContents: {
       title: 'Spis treści',
     },

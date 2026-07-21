@@ -54,8 +54,8 @@ onMounted(() => {
             </h2>
           </div>
           <p class="mb-4 text-muted-foreground">
-            System zarządzania i publicznej prezentacji zborów Chrześcijańskiej Wspólnoty Wolnych
-            Zielonoświątkowców.
+            System zarządzania i publicznej prezentacji zborów Chrześcijańskiej Wspólnoty
+            Zielonoświątkowej.
           </p>
 
           <div class="flex flex-wrap gap-4">

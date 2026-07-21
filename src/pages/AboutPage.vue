@@ -14,7 +14,7 @@ const aiContextMarkdown = computed(() => {
   return `# Zbory CHWZ - AI Context
 
 ## Overview
-Zbory CHWZ is a full-stack web application for managing and publicly presenting congregation data for the Christian Community of Free Pentecostals (CHWZ). It is designed for congregation administrators, church leadership, and the public seeking congregation information.
+Zbory CHWZ is a full-stack web application for managing and publicly presenting congregation data for the Christian Pentecostal Community (CHWZ). It is designed for congregation administrators, church leadership, and the public seeking congregation information.
 
 ## Key Capabilities
 - **Multi-User Platform** - Secure user accounts with authentication and authorization
@@ -123,7 +123,7 @@ const handleCopy = async () => {
           {{ t('about.title', 'About Zbory CHWZ') }}
         </h1>
         <p class="text-muted-foreground">
-          {{ t('about.subtitle', 'Application for managing and publicly presenting congregations of the Christian Community of Free Pentecostals') }}
+          {{ t('about.subtitle', 'Application for managing and publicly presenting congregations of the Christian Pentecostal Community') }}
         </p>
       </div>
 

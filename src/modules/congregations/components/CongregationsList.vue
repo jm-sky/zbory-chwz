@@ -169,7 +169,7 @@ async function handleDelete(congregation: ICongregationDetailed) {
     <CommonPageHeader
       :icon="Church"
       :label="t('congregations.list.title', 'Zbory CHWZ')"
-      :description="t('congregations.list.description', 'Lista zborów Chrześcijańskiej Wspólnoty Wolnych Zielonoświątkowców')"
+      :description="t('congregations.list.description', 'Lista zborów Chrześcijańskiej Wspólnoty Zielonoświątkowej')"
     >
       <template #actions>
         <Button

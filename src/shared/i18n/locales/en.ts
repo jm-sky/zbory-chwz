@@ -328,7 +328,7 @@ export default {
   },
   landing: {
     title: 'Zbory CHWZ',
-    subtitle: 'Manage and publicly present congregation data for the Christian Community of Free Pentecostals',
+    subtitle: 'Manage and publicly present congregation data for the Christian Pentecostal Community',
     welcomeBack: 'Welcome back, {name}!',
     feature1: {
       title: 'Directory',
@@ -418,7 +418,7 @@ export default {
   },
   about: {
     title: 'About Zbory CHWZ',
-    subtitle: 'Application for managing and publicly presenting congregations of the Christian Community of Free Pentecostals',
+    subtitle: 'Application for managing and publicly presenting congregations of the Christian Pentecostal Community',
     tableOfContents: {
       title: 'Table of Contents',
     },
