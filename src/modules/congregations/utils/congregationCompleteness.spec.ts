@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { calculateCongregationCompleteness, COMPLETENESS_WEIGHTS } from './congregationCompleteness'
+import type { ICongregationDetail } from '../types/congregation.types'
+import {
+  calculateCongregationCompleteness,
+  calculateCongregationCompletenessFromDetail,
+  COMPLETENESS_WEIGHTS,
+} from './congregationCompleteness'
+
+function detailCongregation(overrides: Partial<ICongregationDetail> = {}): ICongregationDetail {
+  return {
+    id: 'cong-1',
+    name: 'Test Congregation',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    service_times: [],
+    card_contacts: [],
+    branches: [],
+    canManage: true,
+    ...overrides,
+  }
+}
 
 describe('COMPLETENESS_WEIGHTS', () => {
   it('sums to 100', () => {
@@ -70,5 +88,31 @@ describe('calculateCongregationCompleteness', () => {
     const result = calculateCongregationCompleteness({ service_times_count: 0, card_contacts_count: 0 })
     expect(result.missingFields).toContain('service_times')
     expect(result.missingFields).toContain('card_contacts')
+  })
+})
+
+describe('calculateCongregationCompletenessFromDetail', () => {
+  it('counts hidden contacts toward card_contacts and contact_email', () => {
+    const result = calculateCongregationCompletenessFromDetail(detailCongregation({
+      card_contacts: [],
+      hidden_contacts: [{ name: 'Hidden Contact', email: 'hidden@example.com' }],
+    }))
+
+    expect(result.missingFields).not.toContain('card_contacts')
+    expect(result.missingFields).not.toContain('contact_email')
+    expect(result.missingFields).toContain('contact_phone')
+    expect(result.score).toBe(COMPLETENESS_WEIGHTS.card_contacts + COMPLETENESS_WEIGHTS.contact_email)
+  })
+
+  it('ignores empty hidden_contacts', () => {
+    const result = calculateCongregationCompletenessFromDetail(detailCongregation({
+      card_contacts: [{ name: 'Visible Contact', phone: '123456789' }],
+      hidden_contacts: [],
+    }))
+
+    expect(result.missingFields).not.toContain('card_contacts')
+    expect(result.missingFields).not.toContain('contact_phone')
+    expect(result.missingFields).toContain('contact_email')
+    expect(result.score).toBe(COMPLETENESS_WEIGHTS.card_contacts + COMPLETENESS_WEIGHTS.contact_phone)
   })
 })

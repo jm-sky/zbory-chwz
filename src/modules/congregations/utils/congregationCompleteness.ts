@@ -1,3 +1,5 @@
+import type { ICongregationDetail } from '../types/congregation.types'
+
 /**
  * Profile completeness scoring for congregations.
  *
@@ -82,4 +84,26 @@ export function calculateCongregationCompleteness(input: ICompletenessInput): IC
   )
 
   return { score, missingFields }
+}
+
+/** Maps a congregation detail response to completeness input, including hidden contacts. */
+export function calculateCongregationCompletenessFromDetail(congregation: ICongregationDetail): ICompletenessResult {
+  const allContacts = [
+    ...congregation.card_contacts,
+    ...(congregation.hidden_contacts ?? []),
+  ]
+
+  return calculateCongregationCompleteness({
+    description: congregation.description,
+    street: congregation.street,
+    postal_code: congregation.postal_code,
+    province: congregation.province,
+    website: congregation.website,
+    latitude: congregation.latitude,
+    longitude: congregation.longitude,
+    service_times_count: congregation.service_times.length,
+    card_contacts_count: allContacts.length,
+    has_contact_email: allContacts.some(contact => !!contact.email?.trim()),
+    has_contact_phone: allContacts.some(contact => !!contact.phone?.trim()),
+  })
 }

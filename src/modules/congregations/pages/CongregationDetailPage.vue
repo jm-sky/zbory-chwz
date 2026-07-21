@@ -7,20 +7,28 @@ import CommonPageHeader from '@/components/layout/CommonPageHeader.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
+import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { getErrorStatus } from '@/shared/utils/errorGuards'
 import ChangeHistorySection from '../components/ChangeHistorySection.vue'
+import CongregationCompletenessIndicator from '../components/CongregationCompletenessIndicator.vue'
 import CongregationDetailContent from '../components/CongregationDetailContent.vue'
 import { useCongregationDetail } from '../composables/useCongregationDetail'
 import { CongregationRoutePaths } from '../routes'
+import { calculateCongregationCompletenessFromDetail } from '../utils/congregationCompleteness'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const congregationId = computed<string>(() => route.params.id as string)
 const { data: congregation, isLoading, isError, error } = useCongregationDetail(congregationId)
 
 const notFound = computed<boolean>(() => getErrorStatus(error.value) === 404)
+const isAdmin = computed<boolean>(() => !!(authStore.user?.isAdmin || authStore.user?.isOwner))
+const completeness = computed(() =>
+  congregation.value ? calculateCongregationCompletenessFromDetail(congregation.value) : null,
+)
 </script>
 
 <template>
@@ -81,6 +89,12 @@ const notFound = computed<boolean>(() => getErrorStatus(error.value) === 404)
           </ButtonLink>
         </template>
       </CommonPageHeader>
+
+      <CongregationCompletenessIndicator
+        v-if="isAdmin && completeness"
+        :score="completeness.score"
+        :missing-fields="completeness.missingFields"
+      />
 
       <CongregationDetailContent :congregation="congregation" />
 
