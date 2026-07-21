@@ -8,7 +8,7 @@ export const settingsPl = {
     },
     page: {
       title: 'Ustawienia',
-      subtitle: 'Zarządzaj preferencjami i własnymi kategoriami',
+      subtitle: 'Zarządzaj preferencjami konta i ustawieniami bezpieczeństwa',
       save: 'Zapisz',
       error_prefix: 'Błąd ładowania ustawień',
       sections: {
@@ -37,8 +37,8 @@ export const settingsPl = {
           },
         },
         defaultContainersPublic: {
-          label: 'Nowe kontenery domyślnie publiczne',
-          subtitle: 'Po włączeniu, nowo utworzone kontenery będą domyślnie publiczne',
+          label: 'Nowe zbiory domyślnie publiczne',
+          subtitle: 'Po włączeniu nowo utworzone zbiory będą domyślnie publiczne',
         },
         profilePublic: {
           label: 'Udostępnij profil publicznie',
@@ -83,8 +83,8 @@ export const settingsPl = {
       },
     },
     preferences: {
-      title: 'Preferencje Sprzętu',
-      description: 'Zarządzaj preferencjami i ustawieniami dotyczącymi sprzętu',
+      title: 'Preferencje aplikacji',
+      description: 'Zarządzaj preferencjami i ustawieniami aplikacji',
       save: 'Zapisz',
       saved: 'Zapisano',
       preferredWeightUnit: {
@@ -102,7 +102,7 @@ export const settingsPl = {
       },
       defaultCurrency: {
         label: 'Domyślna Waluta',
-        subtitle: 'Domyślna waluta dla cen w przedmiotach i kontenerach',
+        subtitle: 'Domyślna waluta dla wartości pieniężnych w aplikacji',
         placeholder: 'Wybierz walutę',
       },
       imageProcessingMode: {
@@ -181,7 +181,7 @@ export const settingsPl = {
       description: 'Trwale usuń swoje konto i wszystkie powiązane dane',
       warning_title: 'Ostrzeżenie: Ta akcja nie może być cofnięta',
       warning_1: 'Wszystkie Twoje dane zostaną trwale usunięte',
-      warning_2: 'Utracisz dostęp do wszystkich swoich kontenerów i przedmiotów',
+      warning_2: 'Utracisz dostęp do zborów, grup i innych danych powiązanych z kontem',
       warning_3: 'Ta akcja nie może być odwrócona',
       button: 'Usuń Konto',
       modal: {

@@ -8,7 +8,7 @@ export const settingsEn = {
     },
     page: {
       title: 'Settings',
-      subtitle: 'Manage your preferences and custom categories',
+      subtitle: 'Manage your account preferences and security settings',
       save: 'Save',
       error_prefix: 'Error loading settings',
       sections: {
@@ -37,8 +37,8 @@ export const settingsEn = {
           },
         },
         defaultContainersPublic: {
-          label: 'New Containers Default to Public',
-          subtitle: 'When enabled, newly created containers will be public by default',
+          label: 'New congregations default to public',
+          subtitle: 'When enabled, newly created congregations will be public by default',
         },
         profilePublic: {
           label: 'Make Profile Public',
@@ -83,8 +83,8 @@ export const settingsEn = {
       },
     },
     preferences: {
-      title: 'Gear Preferences',
-      description: 'Manage your gear-specific preferences and settings',
+      title: 'Application preferences',
+      description: 'Manage your application preferences and settings',
       save: 'Save',
       saved: 'Saved',
       preferredWeightUnit: {
@@ -102,7 +102,7 @@ export const settingsEn = {
       },
       defaultCurrency: {
         label: 'Default Currency',
-        subtitle: 'Default currency for prices in items and containers',
+        subtitle: 'Default currency for monetary values in the application',
         placeholder: 'Select a currency',
       },
       imageProcessingMode: {
@@ -181,7 +181,7 @@ export const settingsEn = {
       description: 'Permanently delete your account and all associated data',
       warning_title: 'Warning: This action cannot be undone',
       warning_1: 'All your data will be permanently deleted',
-      warning_2: 'You will lose access to all your containers and items',
+      warning_2: 'You will lose access to congregations, groups, and other data linked to your account',
       warning_3: 'This action cannot be reversed',
       button: 'Delete Account',
       modal: {

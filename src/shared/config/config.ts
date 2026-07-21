@@ -27,7 +27,7 @@ export const config = {
     description: import.meta.env.VITE_APP_DESCRIPTION ?? 'Aplikacja do zarządzania i publicznej prezentacji zborów CHWZ.',
   },
   i18n: {
-    defaultLocale: (import.meta.env.VITE_DEFAULT_LOCALE ?? 'en') as SupportedLocale,
+    defaultLocale: (import.meta.env.VITE_DEFAULT_LOCALE ?? 'pl') as SupportedLocale,
     fallbackLocale: (import.meta.env.VITE_FALLBACK_LOCALE ?? 'en') as SupportedLocale,
   },
   contact: {
