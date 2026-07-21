@@ -734,6 +734,109 @@ async def _delete_user_from_db(user_id: str, *, hard: bool = False) -> None:
         break
 
 
+@users_app.command("change-password")
+def users_change_password(
+    identifier: str | None = typer.Argument(
+        None, help="User email or ID whose password to change"
+    ),
+    password: str | None = typer.Option(
+        None,
+        "--password",
+        help="New password (not recommended, will prompt if not provided)",
+    ),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
+) -> None:
+    """Change a user's password by email or ID (admin override, no current password).
+
+    Examples:
+        # Interactive mode (will prompt for email/ID and new password)
+        python -m cli users change-password
+
+        # Change password by email
+        python -m cli users change-password user@example.com
+
+        # Non-interactive (for scripts)
+        python -m cli users change-password user@example.com \\
+            --password "SecurePass123!" --yes
+    """
+    asyncio.run(_users_change_password_async(identifier, password, yes))
+
+
+async def _users_change_password_async(
+    identifier: str | None, password: str | None, yes: bool
+) -> None:
+    """Async implementation of password change."""
+    from rich.console import Console
+
+    console = Console()
+
+    try:
+        if not identifier:
+            identifier = Prompt.ask("[cyan]Enter user email or ID[/cyan]")
+
+        with console.status("[bold green]Finding user...", spinner="dots"):
+            user = await _find_user(identifier)
+
+        if not user:
+            console.print(f"\n[red]User not found:[/red] {identifier}\n")
+            return
+
+        console.print("\n[bold cyan]User:[/bold cyan]\n")
+
+        user_info = f"""[bold]ID:[/bold] {user['id']}
+[bold]Email:[/bold] {user['email']}
+[bold]Name:[/bold] {user['name']}
+[bold]Role:[/bold] {'Administrator' if user['isAdmin'] else 'User'}"""
+
+        panel = Panel(user_info, border_style="cyan")
+        console.print(panel)
+
+        password_value = await _get_password(console, password, no_input=False)
+
+        if not yes:
+            if not Confirm.ask(
+                "\nAre you sure you want to change this user's password?",
+                default=False,
+            ):
+                console.print("[yellow]Cancelled[/yellow]")
+                return
+
+        with console.status("[bold green]Updating password...", spinner="dots"):
+            await _change_password_in_db(user["id"], password_value)
+
+        console.print("\n[bold green]✓[/bold green] Password changed successfully\n")
+        console.print(
+            "[dim]Existing sessions have been invalidated (token version bumped).[/dim]\n"
+        )
+
+    except Exception as e:
+        console.print(f"\n[red]Error changing password:[/red] {e}\n")
+        raise typer.Exit(1)
+
+
+async def _change_password_in_db(user_id: str, new_password: str) -> None:
+    """Set a new password for a user and invalidate existing tokens.
+
+    Args:
+        user_id: User ID
+        new_password: New plaintext password (will be hashed)
+    """
+    from app.core.database import get_db
+    from app.modules.auth.repositories import UserRepository
+
+    async for db in get_db():
+        repo = UserRepository(db)
+        user = await repo.get_user_by_id(user_id)
+        if not user:
+            raise ValueError(f"User with id {user_id} not found")
+
+        user.set_password(new_password)
+        user.clear_reset_token()
+        await repo.update_user(user)
+        await repo.increment_token_version(user_id)
+        break
+
+
 @users_app.command("toggle-admin")
 def users_toggle_admin(
     identifier: str | None = typer.Argument(None, help="User email or ID"),
