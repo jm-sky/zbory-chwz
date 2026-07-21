@@ -1,5 +1,5 @@
-import { chromium, type Page } from 'playwright'
 import path from 'node:path'
+import { chromium, type Page } from 'playwright'
 
 const BASE_URL = 'http://localhost:5176'
 const ASSETS_DIR = path.join(process.cwd(), 'docs/reviews/assets/2026-07-21--design-ux')
@@ -105,7 +105,6 @@ async function captureAuthFlow(page: Page, viewport: ViewportName): Promise<void
   await page.waitForTimeout(500)
   await screenshot(page, viewport, 'user-menu--logged-in', false)
 
-  const groupLink = page.getByRole('link', { name: /.+/ }).filter({ hasText: /group|grup/i }).first()
   await page.goto(`${BASE_URL}/groups`, { waitUntil: 'networkidle' })
   const firstGroup = page.locator('a[href^="/groups/"]').first()
   if (await firstGroup.isVisible().catch(() => false)) {
