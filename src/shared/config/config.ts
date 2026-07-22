@@ -25,6 +25,8 @@ export const config = {
     id: import.meta.env.VITE_APP_ID ?? 'zbory-chwz',
     name: import.meta.env.VITE_APP_NAME ?? 'Zbory CHWZ',
     description: import.meta.env.VITE_APP_DESCRIPTION ?? 'Aplikacja do zarządzania i publicznej prezentacji zborów CHWZ.',
+    // Public repo URL for the footer GitHub link; set to null to hide the link
+    githubUrl: 'https://github.com/jm-sky/zbory-chwz' as string | null,
   },
   i18n: {
     defaultLocale: (import.meta.env.VITE_DEFAULT_LOCALE ?? 'pl') as SupportedLocale,

@@ -49,7 +49,12 @@ const { version, buildDate } = useAppVersion()
           <HoverLink :to="{ name: PublicRouteNames.contact }">
             {{ t('footer.contact', 'Kontakt') }}
           </HoverLink>
-          <HoverLinkExternal :title="t('footer.github', 'GitHub')" href="https://github.com" class="inline-flex items-center gap-1">
+          <HoverLinkExternal
+            v-if="config.app.githubUrl"
+            :title="t('footer.github', 'GitHub')"
+            :href="config.app.githubUrl"
+            class="inline-flex items-center gap-1"
+          >
             <GithubIcon class="size-4" />
           </HoverLinkExternal>
         </nav>
