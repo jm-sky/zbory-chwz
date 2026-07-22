@@ -218,6 +218,35 @@ class TestRefreshAccessToken:
         mock_repository.get_user_by_id.assert_called_once_with("user123")
 
     @pytest.mark.asyncio
+    async def test_refresh_access_token_preserves_tv_and_jti(self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User) -> None:
+        """Refreshed tokens must carry `tv`/`jti` like a fresh login.
+
+        Regression test: refresh_access_token used to mint the new
+        access/refresh tokens via the low-level create_access_token/
+        create_refresh_token builders directly, omitting `tv` and `jti`
+        entirely. For any user whose tokenVersion isn't 0 (e.g. after a
+        password reset), the very first refresh cycle would silently
+        produce tokens that _verify_user_token rejects with 401 "Token has
+        been revoked" — logging the user out shortly after a successful
+        login.
+        """
+        from app.modules.auth.auth_utils import create_refresh_token, verify_token
+
+        sample_user.tokenVersion = 5
+        refresh_token = create_refresh_token(data={"sub": "user123", "email": "test@example.com"})
+        mock_repository.get_user_by_id.return_value = sample_user
+
+        result = await auth_service.refresh_access_token(refresh_token)
+
+        access_payload = verify_token(str(result["accessToken"]))
+        assert access_payload["tv"] == 5
+        assert access_payload["jti"]
+
+        refresh_payload = verify_token(str(result["refreshToken"]))
+        assert refresh_payload["tv"] == 5
+        assert refresh_payload["jti"]
+
+    @pytest.mark.asyncio
     async def test_refresh_access_token_invalid_token(self, auth_service: AuthService) -> None:
         """Test refresh with invalid token."""
         with pytest.raises(InvalidTokenError):

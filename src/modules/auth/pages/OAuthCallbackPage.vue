@@ -81,9 +81,12 @@ onMounted(async () => {
     })
 
     // Handle response
-    if ('requiresTwoFactor' in response) {
-      // 2FA required - redirect to 2FA page
-      toast.info(t('auth.oauth.callback.two_factor_required'))
+    if ('requiresTwoFactor' in response && response.requiresTwoFactor) {
+      authStore.setTwoFactorToken(
+        response.twoFactorToken,
+        response.methods,
+        response.preferredMethod
+      )
       await router.push(AuthRoutePaths.twoFactorVerify)
       return
     }

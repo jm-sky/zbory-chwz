@@ -1,18 +1,30 @@
 """Unit tests for 2FA login token issuance.
 
-Regression tests for the "2FA login is functionally broken" finding
-(ops-monitor review, 2026-07-20): tokens minted after a successful TOTP or
-passkey verification never carried tfaVerified=True, so _verify_user_token
-rejected every subsequent request from a 2FA-enabled user — enabling 2FA
-locked the user out of their own account.
+Regression tests for two related "2FA login is functionally broken" findings:
+
+1. (ops-monitor review, 2026-07-20) Tokens minted after a successful TOTP or
+   passkey verification never carried tfaVerified=True, so _verify_user_token
+   rejected every subsequent request from a 2FA-enabled user — enabling 2FA
+   locked the user out of their own account.
+2. (2026-07-22) Those same tokens were minted via the low-level
+   create_access_token/create_refresh_token builders directly instead of
+   AuthService._issue_login_tokens, so they never carried `tv` (token
+   version) or `jti` either. Any user whose tokenVersion isn't 0 (e.g.
+   anyone who ever reset their password) got a valid-looking 200 from
+   TOTP/passkey verification, then an immediate 401 "Token has been revoked"
+   on the very next request — looking like "2FA doesn't work" or "I get
+   logged out right after logging in".
 """
 
 import base64
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from app.modules.auth.auth_utils import verify_token
+from app.modules.auth.models import User
+from app.modules.auth.types.repository import UserRepositoryInterface
 from app.modules.two_factor.auth_utils import create_two_factor_token
 from app.modules.two_factor.crypto_utils import encrypt_secret
 from app.modules.two_factor.service import TwoFactorService
@@ -25,13 +37,36 @@ def mock_repository() -> AsyncMock:
 
 
 @pytest.fixture
-def two_factor_service(mock_repository: AsyncMock) -> TwoFactorService:
-    return TwoFactorService(repository=mock_repository, challenge_store=None)
+def sample_user() -> User:
+    return User(
+        id="user-123",
+        email="test@example.com",
+        name="Test User",
+        hashedPassword="hashed",
+        isActive=True,
+        isEmailVerified=True,
+        createdAt=datetime.now(UTC),
+        tokenVersion=3,
+    )
+
+
+@pytest.fixture
+def mock_user_repository(sample_user: User) -> AsyncMock:
+    repo = AsyncMock(spec=UserRepositoryInterface)
+    repo.get_user_by_id.return_value = sample_user
+    return repo
+
+
+@pytest.fixture
+def two_factor_service(mock_repository: AsyncMock, mock_user_repository: AsyncMock) -> TwoFactorService:
+    return TwoFactorService(repository=mock_repository, challenge_store=None, user_repository=mock_user_repository)
 
 
 class TestVerifyTotpLogin:
     @pytest.mark.asyncio
-    async def test_successful_totp_login_mints_tfa_verified_tokens(self, two_factor_service: TwoFactorService) -> None:
+    async def test_successful_totp_login_mints_tfa_verified_tokens(
+        self, two_factor_service: TwoFactorService, sample_user: User
+    ) -> None:
         two_factor_service.totp.verify_code = AsyncMock(return_value=(True, False))  # type: ignore[method-assign]
         two_factor_token = create_two_factor_token({"sub": "user-123"})
 
@@ -42,14 +77,19 @@ class TestVerifyTotpLogin:
 
         access_payload = verify_token(result["accessToken"])
         assert access_payload["tfaVerified"] is True
+        assert access_payload["jti"]
+        assert access_payload["tv"] == sample_user.tokenVersion
 
         refresh_payload = verify_token(result["refreshToken"])
         assert refresh_payload["tfaVerified"] is True
+        assert refresh_payload["tv"] == sample_user.tokenVersion
 
 
 class TestCompletePasskeyAuthentication:
     @pytest.mark.asyncio
-    async def test_successful_passkey_login_mints_tfa_verified_tokens(self, mock_repository: AsyncMock, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_successful_passkey_login_mints_tfa_verified_tokens(
+        self, mock_repository: AsyncMock, mock_user_repository: AsyncMock, sample_user: User, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         from webauthn.helpers import bytes_to_base64url
 
         passkey = MagicMock()
@@ -71,7 +111,7 @@ class TestCompletePasskeyAuthentication:
             MagicMock(return_value={"new_sign_count": 6}),
         )
 
-        service = TwoFactorService(repository=mock_repository, challenge_store=None)
+        service = TwoFactorService(repository=mock_repository, challenge_store=None, user_repository=mock_user_repository)
         challenge_data = {
             "user_id": "user-123",
             "challenge": base64.b64encode(b"raw-challenge-bytes").decode(),
@@ -95,6 +135,8 @@ class TestCompletePasskeyAuthentication:
 
         access_payload = verify_token(result["accessToken"])
         assert access_payload["tfaVerified"] is True
+        assert access_payload["jti"]
+        assert access_payload["tv"] == sample_user.tokenVersion
 
         mock_repository.update_passkey_counter.assert_awaited_once_with("passkey-1", 6)
 

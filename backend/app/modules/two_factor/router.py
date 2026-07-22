@@ -4,6 +4,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from app.core.auth.dependencies import get_token_blacklist_service
+from app.core.auth.token_blacklist import TokenBlacklistService
 from app.core.limiter import rate_limit
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.auth.repositories import get_user_repository
@@ -39,8 +41,15 @@ router = APIRouter(tags=["Two-Factor Authentication"])
 
 async def get_service(
     repo: Any = Depends(get_two_factor_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
+    blacklist_service: TokenBlacklistService = Depends(get_token_blacklist_service),
 ) -> TwoFactorService:
-    """Get TwoFactorService with Redis challenge store."""
+    """Get TwoFactorService with Redis challenge store.
+
+    user_repo/blacklist_service are required by verify_totp_login and
+    complete_passkey_authentication to mint full-claim login tokens (see
+    TwoFactorService._issue_login_tokens).
+    """
     challenge_store = None
     try:
         # Try to get Redis-based challenge store
@@ -61,7 +70,12 @@ async def get_service(
         logger = logging.getLogger(__name__)
         logger.warning(f"Failed to initialize challenge store: {e}. WebAuthn will work without server-side challenge storage (INSECURE)")
 
-    return TwoFactorService(repository=repo, challenge_store=challenge_store)
+    return TwoFactorService(
+        repository=repo,
+        challenge_store=challenge_store,
+        user_repository=user_repo,
+        token_blacklist_service=blacklist_service,
+    )
 
 
 @router.post("/totp/initiate", response_model=TotpInitiateResponse)

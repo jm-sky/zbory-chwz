@@ -18,7 +18,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 import jwt
-from webauthn.helpers import base64url_to_bytes
+from webauthn.helpers import base64url_to_bytes, bytes_to_base64url
 
 from app.core.config import settings
 
@@ -240,7 +240,7 @@ class WebAuthnService:
         # Build allow-list of (credential_id_bytes, transports) for the library
         allow_credentials: list[tuple[bytes, list[str]]] = []
         for pk in enabled_passkeys:
-            credential_id_bytes = base64.b64decode(pk.credential_id)
+            credential_id_bytes = base64url_to_bytes(pk.credential_id)
             transports = json.loads(pk.transports) if pk.transports else []
             allow_credentials.append((credential_id_bytes, transports))
 
@@ -320,8 +320,8 @@ class WebAuthnService:
             raise ValueError("Missing credential rawId")
 
         # Decode credential ID
-        credential_id = base64.b64decode(raw_id)
-        credential_id_b64 = base64.b64encode(credential_id).decode()
+        credential_id = base64url_to_bytes(raw_id)
+        credential_id_b64 = bytes_to_base64url(credential_id)
 
         # Find passkey by credential ID
         passkey = await self.repository.get_passkey_by_credential_id(credential_id_b64)
