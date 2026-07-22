@@ -192,7 +192,7 @@ def migrate_database(
 
             except Exception as e:
                 console.print(f"[red]✗ Migration {version} failed:[/red] {e}")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
 
         console.print("\n[bold green]✓ All pending migrations completed[/bold green]")
 

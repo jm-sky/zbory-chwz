@@ -30,12 +30,25 @@ TENANT_ID = "tenant-poznan"
 
 
 def _api_user(user_id: str) -> User:
-    return User(id=user_id, email=f"{user_id}@example.com", name=user_id, createdAt=datetime.now(UTC))
+    return User(
+        id=user_id,
+        email=f"{user_id}@example.com",
+        name=user_id,
+        createdAt=datetime.now(UTC),
+    )
 
 
 async def _seed(session: AsyncSession) -> None:
     now = datetime.now(UTC)
-    session.add(TenantDB(id=TENANT_ID, name="Zbór w Poznaniu", status="published", owner_id=OWNER_ID, created_at=now))
+    session.add(
+        TenantDB(
+            id=TENANT_ID,
+            name="Zbór w Poznaniu",
+            status="published",
+            owner_id=OWNER_ID,
+            created_at=now,
+        )
+    )
     session.add(TenantMembershipDB(tenant_id=TENANT_ID, user_id=OWNER_ID, role="owner"))
     await session.commit()
 
@@ -96,7 +109,12 @@ async def test_create_address_normalizes_website_and_bare_polish_nrb(ctx) -> Non
 async def test_create_address_keeps_a_foreign_iban_prefix(ctx) -> None:
     response = await ctx.post(
         f"/api/congregations/{TENANT_ID}/address",
-        json={"city": "Poznań", "country": "PL", "status": "draft", "iban": "DE89 3704 0044 0532 0130 00"},
+        json={
+            "city": "Poznań",
+            "country": "PL",
+            "status": "draft",
+            "iban": "DE89 3704 0044 0532 0130 00",
+        },
     )
 
     assert response.status_code == 201, response.text
@@ -107,7 +125,12 @@ async def test_create_address_keeps_a_foreign_iban_prefix(ctx) -> None:
 async def test_create_address_rejects_invalid_iban_checksum(ctx) -> None:
     response = await ctx.post(
         f"/api/congregations/{TENANT_ID}/address",
-        json={"city": "Poznań", "country": "PL", "status": "draft", "iban": "PL61109010140000071219812875"},
+        json={
+            "city": "Poznań",
+            "country": "PL",
+            "status": "draft",
+            "iban": "PL61109010140000071219812875",
+        },
     )
 
     assert response.status_code == 422
@@ -117,7 +140,12 @@ async def test_create_address_rejects_invalid_iban_checksum(ctx) -> None:
 async def test_create_address_rejects_invalid_email(ctx) -> None:
     response = await ctx.post(
         f"/api/congregations/{TENANT_ID}/address",
-        json={"city": "Poznań", "country": "PL", "status": "draft", "email": "not-an-email"},
+        json={
+            "city": "Poznań",
+            "country": "PL",
+            "status": "draft",
+            "email": "not-an-email",
+        },
     )
 
     assert response.status_code == 422

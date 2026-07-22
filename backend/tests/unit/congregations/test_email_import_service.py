@@ -22,12 +22,24 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.common.id_utils import generate_id
 from app.core.database import Base
-from app.modules.ai.schemas import ExtractedCongregation, ExtractionResult, VerificationResult
+from app.modules.ai.schemas import (
+    ExtractedCongregation,
+    ExtractionResult,
+    VerificationResult,
+)
 from app.modules.auth.db_models import UserDB
-from app.modules.churches.db_models import ChurchDB, CommunityDB, PersonDB, ServiceAssignmentDB
+from app.modules.churches.db_models import (
+    ChurchDB,
+    CommunityDB,
+    PersonDB,
+    ServiceAssignmentDB,
+)
 from app.modules.congregations import email_import_service as svc_module
 from app.modules.congregations.db_models import CongregationAddressDB
-from app.modules.congregations.email_import_db_models import CongregationChangeLogDB, EmailImportMessageDB
+from app.modules.congregations.email_import_db_models import (
+    CongregationChangeLogDB,
+    EmailImportMessageDB,
+)
 from app.modules.congregations.imap_client import InboundEmail
 from app.modules.tenants.db_models import TenantDB
 
@@ -85,7 +97,12 @@ async def db() -> AsyncGenerator[object, None]:
 
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     async with session_factory() as session:
-        owner = UserDB(id=generate_id(), email="owner@example.com", name="Owner", hashed_password="x")
+        owner = UserDB(
+            id=generate_id(),
+            email="owner@example.com",
+            name="Owner",
+            hashed_password="x",
+        )
         session.add(owner)
         await session.flush()
 
@@ -93,18 +110,57 @@ async def db() -> AsyncGenerator[object, None]:
         session.add(community)
         await session.flush()
 
-        tenant = TenantDB(id=generate_id(), name="Zbór w Świebodzinie", status="published", owner_id=owner.id)
+        tenant = TenantDB(
+            id=generate_id(),
+            name="Zbór w Świebodzinie",
+            status="published",
+            owner_id=owner.id,
+        )
         session.add(tenant)
         await session.flush()
-        session.add(ChurchDB(id=tenant.id, community_id=community.id, region_id=None, tenant_id=owner.id, name=tenant.name))
-        session.add(CongregationAddressDB(id=generate_id(), tenant_id=tenant.id, church_id=tenant.id, city="Świebodzin", country="PL", status="published"))
+        session.add(
+            ChurchDB(
+                id=tenant.id,
+                community_id=community.id,
+                region_id=None,
+                tenant_id=owner.id,
+                name=tenant.name,
+            )
+        )
+        session.add(
+            CongregationAddressDB(
+                id=generate_id(),
+                tenant_id=tenant.id,
+                church_id=tenant.id,
+                city="Świebodzin",
+                country="PL",
+                status="published",
+            )
+        )
 
-        pastor = PersonDB(id=generate_id(), first_name="Jan", last_name="Kowalski", email="pastor@example.com")
+        pastor = PersonDB(
+            id=generate_id(),
+            first_name="Jan",
+            last_name="Kowalski",
+            email="pastor@example.com",
+        )
         session.add(pastor)
         await session.flush()
-        session.add(ServiceAssignmentDB(id=generate_id(), person_id=pastor.id, scope_type="church", scope_id=tenant.id))
+        session.add(
+            ServiceAssignmentDB(
+                id=generate_id(),
+                person_id=pastor.id,
+                scope_type="church",
+                scope_id=tenant.id,
+            )
+        )
 
-        other_person = PersonDB(id=generate_id(), first_name="Anna", last_name="Nowak", email="anna@example.com")
+        other_person = PersonDB(
+            id=generate_id(),
+            first_name="Anna",
+            last_name="Nowak",
+            email="anna@example.com",
+        )
         session.add(other_person)
 
         await session.commit()
@@ -121,14 +177,23 @@ def _reset_fake_imap() -> None:
     _FakeImapClient.instances = []
 
 
-def _fake_settings(*, enabled: bool = True, trust_threshold: float = 0.9, superadmin_email: str | None = "admin@example.com") -> SimpleNamespace:
+def _fake_settings(
+    *,
+    enabled: bool = True,
+    trust_threshold: float = 0.9,
+    superadmin_email: str | None = "admin@example.com",
+) -> SimpleNamespace:
     return SimpleNamespace(
         email_import=SimpleNamespace(enabled=enabled, trust_auto_apply_threshold=trust_threshold),
         security=SimpleNamespace(superadmin_email=superadmin_email),
     )
 
 
-def _patch_imap(monkeypatch: pytest.MonkeyPatch, emails: list[InboundEmail], **settings_kwargs: object) -> _FakeImapClient:
+def _patch_imap(
+    monkeypatch: pytest.MonkeyPatch,
+    emails: list[InboundEmail],
+    **settings_kwargs: object,
+) -> _FakeImapClient:
     client = _FakeImapClient(settings=None)
     client.emails = emails
     monkeypatch.setattr(svc_module, "ImapClient", lambda settings: client)
@@ -201,7 +266,11 @@ async def test_unknown_sender_is_queued_without_ai_call(db: object, monkeypatch:
 
 @pytest.mark.asyncio
 async def test_high_trust_change_is_auto_applied_and_logged(db: object, monkeypatch: pytest.MonkeyPatch) -> None:
-    email = _inbound("pastor@example.com", "Nasz nowy numer telefonu to 600 111 222.", message_id="<abc@example.com>")
+    email = _inbound(
+        "pastor@example.com",
+        "Nasz nowy numer telefonu to 600 111 222.",
+        message_id="<abc@example.com>",
+    )
     _patch_imap(monkeypatch, [email], trust_threshold=0.9)
     email_service = _patch_email_service(monkeypatch)
     extraction = ExtractionResult(congregations=[ExtractedCongregation(name="Zbór w Świebodzinie", contact_phone="600111222")])
@@ -238,7 +307,12 @@ async def test_low_trust_change_is_queued_not_applied(db: object, monkeypatch: p
     _patch_imap(monkeypatch, [email], trust_threshold=0.9)
     email_service = _patch_email_service(monkeypatch)
     extraction = ExtractionResult(congregations=[ExtractedCongregation(name="Zbór w Świebodzinie", contact_phone="600111222")])
-    _patch_ai(monkeypatch, extraction, trust_score=0.4, reasoning="Treść nie uzasadnia zmiany.")
+    _patch_ai(
+        monkeypatch,
+        extraction,
+        trust_score=0.4,
+        reasoning="Treść nie uzasadnia zmiany.",
+    )
 
     service = svc_module.EmailImportService(db)  # type: ignore[arg-type]
     await service.poll_and_process()
@@ -255,7 +329,11 @@ async def test_low_trust_change_is_queued_not_applied(db: object, monkeypatch: p
 
 @pytest.mark.asyncio
 async def test_spf_fail_skips_ai_verification_and_stays_pending(db: object, monkeypatch: pytest.MonkeyPatch) -> None:
-    email = _inbound("pastor@example.com", "Nasz nowy numer telefonu to 600 111 222.", auth_spf="fail")
+    email = _inbound(
+        "pastor@example.com",
+        "Nasz nowy numer telefonu to 600 111 222.",
+        auth_spf="fail",
+    )
     _patch_imap(monkeypatch, [email])
     _patch_email_service(monkeypatch)
     extraction = ExtractionResult(congregations=[ExtractedCongregation(name="Zbór w Świebodzinie", contact_phone="600111222")])
@@ -334,7 +412,10 @@ async def test_marks_seen_only_after_successful_processing(db: object, monkeypat
     email = _inbound("pastor@example.com", "Coś tam", uid="42")
     client = _patch_imap(monkeypatch, [email])
     _patch_email_service(monkeypatch)
-    _patch_ai(monkeypatch, ExtractionResult(congregations=[ExtractedCongregation(name="Zbór w Świebodzinie")]))
+    _patch_ai(
+        monkeypatch,
+        ExtractionResult(congregations=[ExtractedCongregation(name="Zbór w Świebodzinie")]),
+    )
 
     service = svc_module.EmailImportService(db)  # type: ignore[arg-type]
     await service.poll_and_process()

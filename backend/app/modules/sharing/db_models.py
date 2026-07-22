@@ -16,7 +16,11 @@ class ShareLinkDB(Base):
             name="ck_congregation_share_links_visibility_level",
         ),
         Index("ix_congregation_share_links_tenant_active", "tenant_id", "revoked_at"),
-        Index("ix_congregation_share_links_creator_active", "created_by_user_id", "revoked_at"),
+        Index(
+            "ix_congregation_share_links_creator_active",
+            "created_by_user_id",
+            "revoked_at",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)

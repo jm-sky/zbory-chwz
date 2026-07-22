@@ -91,9 +91,7 @@ def test_non_owner_admin_cannot_delete_other_admin() -> None:
 def test_cannot_delete_protected_user_email(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.modules.admin import authorization
 
-    monkeypatch.setattr(
-        authorization.settings.security, "protected_user_email", "root@example.com"
-    )
+    monkeypatch.setattr(authorization.settings.security, "protected_user_email", "root@example.com")
     with pytest.raises(HTTPException) as exc_info:
         enforce_user_mutation_permissions(
             actor_is_admin=True,

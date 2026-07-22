@@ -20,7 +20,12 @@ from app.common.id_utils import generate_id
 from app.core.database import Base, get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
-from app.modules.churches.db_models import ChurchDB, PersonDB, ServiceAssignmentDB, ServiceTypeDB
+from app.modules.churches.db_models import (
+    ChurchDB,
+    PersonDB,
+    ServiceAssignmentDB,
+    ServiceTypeDB,
+)
 from app.modules.congregations.db_models import CongregationAddressDB
 from app.modules.congregations.email_import_db_models import CongregationChangeLogDB
 from app.modules.tenants.db_models import TenantDB
@@ -350,7 +355,11 @@ async def test_apply_updates_only_the_pinned_contact_when_multiple_exist(ctx) ->
                     "tenant_id": EXISTING_TENANT_ID,
                     "contact_person_id": jan_assignment_id,
                     "fields": [
-                        {"field": "contact_phone", "value": "+48600700800", "apply": True},
+                        {
+                            "field": "contact_phone",
+                            "value": "+48600700800",
+                            "apply": True,
+                        },
                     ],
                 }
             ]

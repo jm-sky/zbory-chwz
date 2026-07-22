@@ -169,7 +169,7 @@ async def _test_storage_async(skip_cleanup: bool) -> None:
             console.print("[yellow]To use S3 storage, install required dependencies:[/yellow]")
             console.print("[cyan]  pip install aioboto3[/cyan]")
         console.print()
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     except Exception as e:
         console.print()
@@ -186,7 +186,7 @@ async def _test_storage_async(skip_cleanup: bool) -> None:
             console.print("  • Check IAM permissions for the access key")
 
         console.print()
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @test_app.command("email")
@@ -286,7 +286,7 @@ async def _test_email_async(to: str, template: str) -> None:
         console.print("[bold red]✗ Email service dependencies missing![/bold red]")
         console.print(f"[dim]Error: {e}[/dim]")
         console.print()
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     except Exception as e:
         console.print()
@@ -306,7 +306,7 @@ async def _test_email_async(to: str, template: str) -> None:
             console.print("  • Check firewall settings")
 
         console.print()
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @test_app.command("ai")
@@ -414,7 +414,7 @@ async def _test_ai_async(prompt: str, model: str) -> None:
         console.print("[yellow]Install AI dependencies:[/yellow]")
         console.print("[cyan]  pip install openai aiocache[/cyan]")
         console.print()
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     except Exception as e:
         console.print()
@@ -431,4 +431,4 @@ async def _test_ai_async(prompt: str, model: str) -> None:
         console.print("  • View available models at: https://openrouter.ai/models")
 
         console.print()
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None

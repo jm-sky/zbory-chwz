@@ -7,6 +7,7 @@ after logout or account deletion.
 import hashlib
 import logging
 from datetime import UTC, datetime
+from typing import cast
 
 from redis.asyncio import Redis
 
@@ -143,11 +144,14 @@ class TokenBlacklistService:
         now = int(datetime.now(UTC).timestamp())
         await self.redis.zremrangebyscore(sessions_key, "-inf", now)
 
-        sessions = await self.redis.zrangebyscore(
-            sessions_key,
-            min=now,
-            max="+inf",
-            withscores=True,
+        sessions = cast(
+            "list[tuple[bytes | str, float]]",
+            await self.redis.zrangebyscore(
+                sessions_key,
+                min=now,
+                max="+inf",
+                withscores=True,
+            ),
         )
 
         count = 0

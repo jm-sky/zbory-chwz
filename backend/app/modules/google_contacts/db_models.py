@@ -25,7 +25,12 @@ class GoogleContactsConnectionDB(Base):
     __tablename__ = "google_contacts_connections"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
     scope: Mapped[str] = mapped_column(String(32), nullable=False, default="readonly")
     access_token: Mapped[str] = mapped_column(Text, nullable=False)  # encrypted
     refresh_token: Mapped[str | None] = mapped_column(Text, nullable=True)  # encrypted

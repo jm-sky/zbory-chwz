@@ -141,9 +141,7 @@ class TestLoginWithOAuth:
     machinery as password login — jti, tv, session tracking)."""
 
     @pytest.mark.asyncio
-    async def test_login_with_oauth_new_user_issues_full_tokens(
-        self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User
-    ) -> None:
+    async def test_login_with_oauth_new_user_issues_full_tokens(self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User) -> None:
         from app.modules.auth.auth_utils import verify_token
 
         mock_repository.get_user_by_oauth_provider.return_value = None
@@ -153,7 +151,11 @@ class TestLoginWithOAuth:
 
         response = await auth_service.login_with_oauth(
             "google",
-            {"email": "test@example.com", "providerId": "provider-123", "name": "Test User"},
+            {
+                "email": "test@example.com",
+                "providerId": "provider-123",
+                "name": "Test User",
+            },
         )
 
         assert response.accessToken is not None
@@ -171,9 +173,7 @@ class TestLoginWithOAuth:
         mock_repository.create_oauth_connection.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_login_with_oauth_survives_token_version_bump(
-        self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User
-    ) -> None:
+    async def test_login_with_oauth_survives_token_version_bump(self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User) -> None:
         """A user whose tokenVersion was bumped (e.g. password change) must
         still get a token carrying the *current* tv, not a stale default of 0
         that the tv-enforcement dependency would immediately reject."""
@@ -183,9 +183,7 @@ class TestLoginWithOAuth:
         mock_repository.get_user_by_oauth_provider.return_value = sample_user
         mock_repository.create_oauth_connection.return_value = None
 
-        response = await auth_service.login_with_oauth(
-            "google", {"email": "test@example.com", "providerId": "provider-123"}
-        )
+        response = await auth_service.login_with_oauth("google", {"email": "test@example.com", "providerId": "provider-123"})
 
         payload = verify_token(response.accessToken)
         assert payload["tv"] == 5

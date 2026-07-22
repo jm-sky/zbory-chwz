@@ -58,9 +58,7 @@ class AdminService:
         return str(dt)
 
     # User operations
-    async def get_all_users(
-        self, skip: int = 0, limit: int = 100
-    ) -> list[AdminUserResponse]:
+    async def get_all_users(self, skip: int = 0, limit: int = 100) -> list[AdminUserResponse]:
         """Get all users with admin metadata.
 
         Args:
@@ -85,11 +83,9 @@ class AdminService:
                     isOwner=user.is_owner,
                     isPremium=user.is_premium,
                     isEmailVerified=user.is_email_verified,
-                    emailVerifiedAt=self._serialize_datetime(user.email_verified_at)
-                    or "",
+                    emailVerifiedAt=self._serialize_datetime(user.email_verified_at) or "",
                     createdAt=self._serialize_datetime(user.created_at) or "",
-                    updatedAt=self._serialize_datetime(user.created_at)
-                    or "",  # UserDB doesn't have updated_at
+                    updatedAt=self._serialize_datetime(user.created_at) or "",  # UserDB doesn't have updated_at
                 )
             )
 
@@ -121,13 +117,10 @@ class AdminService:
             isEmailVerified=user.is_email_verified,
             emailVerifiedAt=self._serialize_datetime(user.email_verified_at) or "",
             createdAt=self._serialize_datetime(user.created_at) or "",
-            updatedAt=self._serialize_datetime(user.created_at)
-            or "",  # UserDB doesn't have updated_at
+            updatedAt=self._serialize_datetime(user.created_at) or "",  # UserDB doesn't have updated_at
         )
 
-    async def update_user(
-        self, user_id: str, user_data: UserUpdate, current_user: "User"
-    ) -> AdminUserResponse | None:
+    async def update_user(self, user_id: str, user_data: UserUpdate, current_user: "User") -> AdminUserResponse | None:
         """Update user information.
 
         Args:
@@ -207,11 +200,9 @@ class AdminService:
             isActive=updated_user.is_active,
             isAdmin=updated_user.is_admin,
             isEmailVerified=updated_user.is_email_verified,
-            emailVerifiedAt=self._serialize_datetime(updated_user.email_verified_at)
-            or "",
+            emailVerifiedAt=self._serialize_datetime(updated_user.email_verified_at) or "",
             createdAt=self._serialize_datetime(updated_user.created_at) or "",
-            updatedAt=self._serialize_datetime(updated_user.created_at)
-            or "",  # UserDB doesn't have updated_at
+            updatedAt=self._serialize_datetime(updated_user.created_at) or "",  # UserDB doesn't have updated_at
         )
 
     async def delete_user(self, user_id: str, current_user: "User") -> bool:

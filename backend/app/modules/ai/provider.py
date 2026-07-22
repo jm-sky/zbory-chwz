@@ -179,5 +179,8 @@ class OpenRouterProvider:
         content = response.choices[0].message.content
         if not content:
             logger.warning("AI verification returned an empty response")
-            return VerificationResult(trust_score=0.0, reasoning="Pusta odpowiedź modelu AI — wymagana ręczna weryfikacja.")
+            return VerificationResult(
+                trust_score=0.0,
+                reasoning="Pusta odpowiedź modelu AI — wymagana ręczna weryfikacja.",
+            )
         return VerificationResult.model_validate(json.loads(content))

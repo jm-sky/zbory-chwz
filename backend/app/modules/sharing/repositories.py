@@ -55,12 +55,24 @@ class ShareLinkRepository:
 
     async def list_active_for_user(self, user_id: str) -> Sequence[ShareLinkDB]:
         """List a user's own all-congregations (tenant-less) share links."""
-        stmt = select(ShareLinkDB).where(ShareLinkDB.tenant_id.is_(None), ShareLinkDB.created_by_user_id == user_id, ShareLinkDB.revoked_at.is_(None)).order_by(ShareLinkDB.created_at.desc())
+        stmt = (
+            select(ShareLinkDB)
+            .where(
+                ShareLinkDB.tenant_id.is_(None),
+                ShareLinkDB.created_by_user_id == user_id,
+                ShareLinkDB.revoked_at.is_(None),
+            )
+            .order_by(ShareLinkDB.created_at.desc())
+        )
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
     async def get_by_id_for_user(self, link_id: str, user_id: str) -> ShareLinkDB | None:
-        stmt = select(ShareLinkDB).where(ShareLinkDB.id == link_id, ShareLinkDB.tenant_id.is_(None), ShareLinkDB.created_by_user_id == user_id)
+        stmt = select(ShareLinkDB).where(
+            ShareLinkDB.id == link_id,
+            ShareLinkDB.tenant_id.is_(None),
+            ShareLinkDB.created_by_user_id == user_id,
+        )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 

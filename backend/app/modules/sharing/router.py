@@ -20,7 +20,11 @@ router = APIRouter(prefix="/congregations", tags=["Sharing"])
 global_router = APIRouter(prefix="/share-links", tags=["Sharing"])
 
 
-@router.post("/{tenant_id}/share-links", status_code=status.HTTP_201_CREATED, response_model=ShareLinkResponse)
+@router.post(
+    "/{tenant_id}/share-links",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ShareLinkResponse,
+)
 @rate_limit("10/hour")
 async def create_share_link(
     request: Request,
@@ -72,7 +76,10 @@ async def revoke_share_link(
 
     share_link = await service.repository.get_by_id(link_id, tenant_id)
     if share_link is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Share link {link_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Share link {link_id} not found",
+        )
 
     await service.repository.revoke(share_link)
 
@@ -117,6 +124,9 @@ async def revoke_global_share_link(
     """Revoke an all-congregations share link, taking effect immediately."""
     share_link = await service.repository.get_by_id_for_user(link_id, current_user.id)
     if share_link is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Share link {link_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Share link {link_id} not found",
+        )
 
     await service.repository.revoke(share_link)

@@ -11,7 +11,11 @@ from app.modules.auth.models import User
 from app.modules.churches.acl_service import AclService, get_acl_service
 from app.modules.congregations.db_models import CongregationAddressDB, decode_coordinate
 from app.modules.congregations.email_import_db_models import CongregationChangeLogDB
-from app.modules.congregations.field_diff import ADDRESS_FIELDS, FIELD_LABELS, MANUAL_ONLY_FIELD_LABELS
+from app.modules.congregations.field_diff import (
+    ADDRESS_FIELDS,
+    FIELD_LABELS,
+    MANUAL_ONLY_FIELD_LABELS,
+)
 from app.modules.congregations.geo import is_valid_province
 from app.modules.congregations.geocoding import geocode_address
 from app.modules.congregations.repositories import (
@@ -62,7 +66,9 @@ async def _verify_change_log_access(
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
 
-def _group_change_log_by_batch(rows: list[CongregationChangeLogDB]) -> list[ChangeLogBatch]:
+def _group_change_log_by_batch(
+    rows: list[CongregationChangeLogDB],
+) -> list[ChangeLogBatch]:
     """Group flat change-log rows (as returned by the repo, batch-ordered) into batches."""
     batches: dict[str, list[CongregationChangeLogDB]] = {}
     order: list[str] = []

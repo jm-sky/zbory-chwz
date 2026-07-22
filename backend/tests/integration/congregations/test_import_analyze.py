@@ -238,7 +238,9 @@ async def test_analyze_ignores_phone_formatting_differences(ctx) -> None:
 
 
 @pytest.mark.asyncio
-async def test_analyze_proposes_normalized_phone_when_number_actually_changes(ctx) -> None:
+async def test_analyze_proposes_normalized_phone_when_number_actually_changes(
+    ctx,
+) -> None:
     client, login, fake_extraction, _ = ctx
     login(_api_user(ADMIN_ID, is_admin=True))
     fake_extraction(

@@ -139,7 +139,7 @@ def recaptcha_protected(
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"reCAPTCHA verification failed: {str(e)}",
-                    )
+                    ) from e
             else:
                 logger.debug(f"reCAPTCHA disabled, skipping verification for action: {action}")
 

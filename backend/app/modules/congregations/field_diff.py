@@ -12,7 +12,10 @@ import re
 from dataclasses import dataclass, field
 
 from app.modules.ai.schemas import ExtractedCongregation
-from app.modules.churches.contact_sync import assignment_contact_snapshot, match_contact_assignment
+from app.modules.churches.contact_sync import (
+    assignment_contact_snapshot,
+    match_contact_assignment,
+)
 from app.modules.churches.db_models import ServiceAssignmentDB
 from app.modules.churches.repositories import ChurchRepository
 from app.modules.congregations.geo import DEFAULT_COUNTRY
@@ -44,7 +47,18 @@ MANUAL_ONLY_FIELD_LABELS: dict[str, str] = {
     "longitude": "Długość geogr.",
 }
 
-ADDRESS_FIELDS = {"street", "city", "postal_code", "province", "country", "website", "email", "iban", "latitude", "longitude"}
+ADDRESS_FIELDS = {
+    "street",
+    "city",
+    "postal_code",
+    "province",
+    "country",
+    "website",
+    "email",
+    "iban",
+    "latitude",
+    "longitude",
+}
 CONTACT_FIELDS = {"contact_name", "contact_title", "contact_phone", "contact_email"}
 
 FIELD_GROUPS: dict[str, str] = {
@@ -152,4 +166,9 @@ async def build_field_diff(
         "contact_email": (current_contact["contact_email"] if current_contact else None),
     }
 
-    return FieldDiff(new_values=new_values, old_values=old_values, assignments=assignments, matched_assignment=matched_assignment)
+    return FieldDiff(
+        new_values=new_values,
+        old_values=old_values,
+        assignments=assignments,
+        matched_assignment=matched_assignment,
+    )

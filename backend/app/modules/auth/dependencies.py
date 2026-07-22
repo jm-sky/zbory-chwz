@@ -30,12 +30,7 @@ optional_security = HTTPBearer(auto_error=False)
 # Try to use 2FA-enabled auth service if available
 HAS_2FA = False
 try:
-    from app.modules.two_factor.auth_integration import (
-        AuthServiceWith2FA,
-        get_auth_service_with_2fa,
-    )
     from app.modules.two_factor.repositories import get_two_factor_repository
-    from app.modules.two_factor.types.repository import TwoFactorRepositoryInterface
 
     HAS_2FA = True
 except ImportError:
@@ -189,23 +184,23 @@ async def _verify_user_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
     except InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
     except InactiveUserError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
-        )
+        ) from None
     except EmailNotVerifiedError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email verification required",
-        )
+        ) from None
 
 
 # Create get_current_user function with consistent signature

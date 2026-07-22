@@ -20,7 +20,10 @@ from app.modules.churches.db_models import (
     ServiceAssignmentDB,
     ServiceTypeDB,
 )
-from app.modules.churches.person_search import SEARCH_CANDIDATE_CAP, person_matches_query
+from app.modules.churches.person_search import (
+    SEARCH_CANDIDATE_CAP,
+    person_matches_query,
+)
 from app.modules.directory.db_models import PersonChangeLogDB
 from app.modules.directory.schemas import PersonUpdateRequest
 from app.modules.groups.db_models import PeopleGroupDB, PeopleGroupMembershipDB
@@ -157,11 +160,24 @@ class DirectoryRepository:
         result = await self.db.execute(stmt)
         candidates = list(result.scalars().all())
         if len(candidates) == SEARCH_CANDIDATE_CAP:
-            logger.warning("list_persons: candidate set hit the %d-row safety cap; results may be incomplete for this scope", SEARCH_CANDIDATE_CAP)
+            logger.warning(
+                "list_persons: candidate set hit the %d-row safety cap; results may be incomplete for this scope",
+                SEARCH_CANDIDATE_CAP,
+            )
 
         trimmed = query.strip() if query else ""
         if trimmed:
-            candidates = [p for p in candidates if person_matches_query(first_name=p.first_name, last_name=p.last_name, email=p.email, phone=p.phone, query=trimmed)]
+            candidates = [
+                p
+                for p in candidates
+                if person_matches_query(
+                    first_name=p.first_name,
+                    last_name=p.last_name,
+                    email=p.email,
+                    phone=p.phone,
+                    query=trimmed,
+                )
+            ]
 
         candidates.sort(key=lambda p: ((p.first_name or "").lower(), (p.last_name or "").lower()))
         return candidates[:200]

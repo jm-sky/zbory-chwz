@@ -43,7 +43,9 @@ async def _require_access(current_user: User, repo: DirectoryRepository) -> set[
     return allowed
 
 
-def _group_person_change_log_by_batch(rows: list[PersonChangeLogDB]) -> list[PersonChangeLogBatch]:
+def _group_person_change_log_by_batch(
+    rows: list[PersonChangeLogDB],
+) -> list[PersonChangeLogBatch]:
     """Group flat change-log rows (as returned by the repo, batch-ordered) into batches."""
     batches: dict[str, list[PersonChangeLogDB]] = {}
     order: list[str] = []

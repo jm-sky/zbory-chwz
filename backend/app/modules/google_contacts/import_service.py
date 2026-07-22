@@ -13,11 +13,16 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.modules.churches.contact_sync import get_primary_contact_snapshot, upsert_primary_card_contact
+from app.modules.churches.contact_sync import (
+    get_primary_contact_snapshot,
+    upsert_primary_card_contact,
+)
 from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.churches.repositories import ChurchRepository
 from app.modules.churches.schemas import ServiceAssignmentCreateRequest
-from app.modules.congregations.field_diff import FIELD_LABELS as _CONGREGATION_FIELD_LABELS
+from app.modules.congregations.field_diff import (
+    FIELD_LABELS as _CONGREGATION_FIELD_LABELS,
+)
 from app.modules.congregations.field_diff import normalize_phone
 from app.modules.congregations.geo import DEFAULT_COUNTRY, is_valid_province
 from app.modules.congregations.repositories import CongregationRepository
@@ -29,7 +34,6 @@ from app.modules.google_contacts.schemas import (
     GoogleContactChurchFieldDiffResponse,
     GoogleContactChurchProposal,
     GoogleContactFieldChange,
-    GoogleContactImportSelection,
     GoogleContactPersonApplyItem,
     GoogleContactPersonProposal,
     GoogleContactsAnalyzeRequest,
@@ -139,7 +143,7 @@ class GoogleContactsImportService:
             "postalCode": contact.addressPostalCode,
             "province": province,
             "country": country,
-            "phone": normalize_phone(contact.phoneNumbers[0]) if contact.phoneNumbers else None,
+            "phone": (normalize_phone(contact.phoneNumbers[0]) if contact.phoneNumbers else None),
             "email": contact.emailAddresses[0] if contact.emailAddresses else None,
         }
         old_values = await self._church_old_values(tenant_id)
@@ -259,7 +263,13 @@ class GoogleContactsImportService:
                 churches_created += 1
             else:
                 churches_updated += 1
-            await self._log(user_id, item.resourceName, "church", tenant_id, "created" if item.action == "create" else "updated")
+            await self._log(
+                user_id,
+                item.resourceName,
+                "church",
+                tenant_id,
+                "created" if item.action == "create" else "updated",
+            )
 
         for person_item in request.personItems:
             if person_item.action == "skip":
@@ -272,7 +282,13 @@ class GoogleContactsImportService:
                 persons_created += 1
             else:
                 persons_updated += 1
-            await self._log(user_id, person_item.resourceName, "person", person_id, "created" if person_item.action == "create" else "updated")
+            await self._log(
+                user_id,
+                person_item.resourceName,
+                "person",
+                person_id,
+                "created" if person_item.action == "create" else "updated",
+            )
 
         return GoogleContactsApplyResponse(
             churchesCreated=churches_created,
@@ -282,7 +298,14 @@ class GoogleContactsImportService:
             skipped=skipped,
         )
 
-    async def _log(self, user_id: str, resource_name: str, entity_type: str, matched_entity_id: str | None, action: str) -> None:
+    async def _log(
+        self,
+        user_id: str,
+        resource_name: str,
+        entity_type: str,
+        matched_entity_id: str | None,
+        action: str,
+    ) -> None:
         await self._google_contacts_repo.log_import(
             user_id=user_id,
             google_resource_name=resource_name,
@@ -345,7 +368,11 @@ class GoogleContactsImportService:
             tenant_id,
             street=merged("street", item.street, existing.street if existing else None),
             city=city,
-            postal_code=merged("postalCode", item.postalCode, existing.postal_code if existing else None),
+            postal_code=merged(
+                "postalCode",
+                item.postalCode,
+                existing.postal_code if existing else None,
+            ),
             province=merged("province", item.province, existing.province if existing else None),
             country=merged("country", item.country, existing.country if existing else None) or DEFAULT_COUNTRY,
             status=existing.status if existing else "draft",
@@ -377,7 +404,11 @@ class GoogleContactsImportService:
             fields=fields,
         )
 
-    async def _apply_person_item(self, item: GoogleContactPersonApplyItem, resource_name_to_tenant_id: dict[str, str]) -> str:
+    async def _apply_person_item(
+        self,
+        item: GoogleContactPersonApplyItem,
+        resource_name_to_tenant_id: dict[str, str],
+    ) -> str:
         if item.assignToChurch:
             church_id = item.churchId
             if not church_id and item.newChurchResourceName:

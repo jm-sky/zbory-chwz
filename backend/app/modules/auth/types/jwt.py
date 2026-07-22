@@ -26,6 +26,8 @@ class JWTPayload(TypedDict, total=False):
         tfaVerified: Whether 2FA has been verified (optional)
         tfaMethod: 2FA method used - 'totp' or 'webauthn' (optional)
         type: Token type - 'access', 'refresh', '2fa_verification', etc. - REQUIRED
+        jti: JWT ID - unique session identifier (optional, used for session tracking/revocation)
+        tv: Token version - user's tokenVersion at issuance time (optional, used to invalidate old tokens)
 
     See docs/JWT_FLOW.md for detailed flow documentation.
     """
@@ -37,11 +39,14 @@ class JWTPayload(TypedDict, total=False):
     iat: int
     exp: int
     aud: str | None
+    iss: str | None
     tfaPending: bool | None
     tfaVerified: bool | None
     tfaMethod: str | None  # 'totp' | 'webauthn'
     type: str
     emailVerified: bool | None
+    jti: str
+    tv: int
 
 
 class CreateAccessTokenOptions(TypedDict, total=False):
@@ -54,6 +59,8 @@ class CreateAccessTokenOptions(TypedDict, total=False):
         trol: Tenant Role (optional, role within tenant)
         tfaVerified: Whether 2FA has been verified (default: False)
         tfaMethod: 2FA method used - 'totp' or 'webauthn' (optional)
+        jti: JWT ID - unique session identifier (optional, used for session tracking/revocation)
+        tv: Token version - user's tokenVersion at issuance time (optional, used to invalidate old tokens)
     """
 
     sub: str
@@ -63,6 +70,8 @@ class CreateAccessTokenOptions(TypedDict, total=False):
     tfaVerified: bool
     tfaMethod: str | None  # 'totp' | 'webauthn'
     emailVerified: bool | None
+    jti: str
+    tv: int
 
 
 class CreateRefreshTokenOptions(TypedDict, total=False):
@@ -73,6 +82,8 @@ class CreateRefreshTokenOptions(TypedDict, total=False):
         email: User email address - RECOMMENDED
         tfaVerified: Whether 2FA has been verified (default: False)
         tfaMethod: 2FA method used - 'totp' or 'webauthn' (optional)
+        jti: JWT ID - unique session identifier (optional, used for session tracking/revocation)
+        tv: Token version - user's tokenVersion at issuance time (optional, used to invalidate old tokens)
 
     Note: tid/trol are NOT preserved in refresh tokens (security).
     """
@@ -82,3 +93,5 @@ class CreateRefreshTokenOptions(TypedDict, total=False):
     tfaVerified: bool
     tfaMethod: str | None  # 'totp' | 'webauthn'
     emailVerified: bool | None
+    jti: str
+    tv: int

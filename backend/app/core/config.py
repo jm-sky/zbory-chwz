@@ -715,7 +715,10 @@ class NominatimSettings(BaseSettings):
     model_config = _base_config
 
     enabled: bool = Field(default=True, validation_alias="NOMINATIM_ENABLED")
-    base_url: str = Field(default="https://nominatim.openstreetmap.org", validation_alias="NOMINATIM_BASE_URL")
+    base_url: str = Field(
+        default="https://nominatim.openstreetmap.org",
+        validation_alias="NOMINATIM_BASE_URL",
+    )
     user_agent: str = Field(
         default="ZboryCHWZ/1.0 (+https://chwz.waw.pl)",
         validation_alias="NOMINATIM_USER_AGENT",

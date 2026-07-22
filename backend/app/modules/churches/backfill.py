@@ -3,6 +3,7 @@
 import logging
 
 from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.id_utils import generate_id
 from app.modules.churches.acl_seed import ensure_acl_roles
@@ -96,7 +97,7 @@ async def backfill_churches(repo: ChurchRepository) -> dict[str, int]:
     return stats
 
 
-async def _get_or_create_community(db, stats: dict[str, int]) -> CommunityDB:
+async def _get_or_create_community(db: AsyncSession, stats: dict[str, int]) -> CommunityDB:
     result = await db.execute(select(CommunityDB).where(CommunityDB.slug == CHWZ_COMMUNITY_SLUG))
     community = result.scalar_one_or_none()
     if community:
@@ -113,7 +114,7 @@ async def _get_or_create_community(db, stats: dict[str, int]) -> CommunityDB:
     return community
 
 
-async def _ensure_regions(db, community_id: str, stats: dict[str, int]) -> dict[str, RegionDB]:
+async def _ensure_regions(db: AsyncSession, community_id: str, stats: dict[str, int]) -> dict[str, RegionDB]:
     regions_by_slug: dict[str, RegionDB] = {}
     for item in REGIONS_SEED:
         result = await db.execute(
@@ -137,7 +138,7 @@ async def _ensure_regions(db, community_id: str, stats: dict[str, int]) -> dict[
     return regions_by_slug
 
 
-async def _ensure_service_types(db, stats: dict[str, int]) -> dict[str, ServiceTypeDB]:
+async def _ensure_service_types(db: AsyncSession, stats: dict[str, int]) -> dict[str, ServiceTypeDB]:
     by_slug: dict[str, ServiceTypeDB] = {}
     for slug, name, scope, role, senior, order in SERVICE_TYPES_SEED:
         result = await db.execute(select(ServiceTypeDB).where(ServiceTypeDB.slug == slug))
@@ -171,7 +172,7 @@ async def _ensure_service_types(db, stats: dict[str, int]) -> dict[str, ServiceT
 
 
 async def _migrate_removed_service_types(
-    db,
+    db: AsyncSession,
     service_types_by_slug: dict[str, ServiceTypeDB],
     stats: dict[str, int],
 ) -> None:
@@ -182,7 +183,7 @@ async def _migrate_removed_service_types(
         if not old_type or not new_type:
             continue
         result = await db.execute(update(ServiceAssignmentDB).where(ServiceAssignmentDB.service_type_id == old_type.id).values(service_type_id=new_type.id))
-        stats["service_assignments_migrated"] = stats.get("service_assignments_migrated", 0) + (result.rowcount or 0)
+        stats["service_assignments_migrated"] = stats.get("service_assignments_migrated", 0) + (getattr(result, "rowcount", 0) or 0)
 
     for slug in REMOVED_SERVICE_TYPE_SLUGS:
         result = await db.execute(select(ServiceTypeDB).where(ServiceTypeDB.slug == slug))
@@ -195,7 +196,7 @@ async def _migrate_removed_service_types(
 
 
 async def _ensure_church_slug_alias(
-    db,
+    db: AsyncSession,
     *,
     church_id: str,
     country: str,
@@ -241,7 +242,7 @@ async def _ensure_church_slug_alias(
     await db.flush()
 
 
-async def _ensure_city_aliases(db, stats: dict[str, int]) -> None:
+async def _ensure_city_aliases(db: AsyncSession, stats: dict[str, int]) -> None:
     for item in CITY_ALIASES_SEED:
         result = await db.execute(
             select(CityAliasDB).where(
@@ -263,7 +264,7 @@ async def _ensure_city_aliases(db, stats: dict[str, int]) -> None:
     await db.flush()
 
 
-async def _get_or_create_org_tenant(db, stats: dict[str, int]) -> TenantDB:
+async def _get_or_create_org_tenant(db: AsyncSession, stats: dict[str, int]) -> TenantDB:
     result = await db.execute(select(TenantDB).where(TenantDB.name == CHWZ_ORG_TENANT_NAME))
     org = result.scalar_one_or_none()
     if org:
@@ -294,7 +295,7 @@ async def _get_or_create_org_tenant(db, stats: dict[str, int]) -> TenantDB:
     return org
 
 
-async def _resolve_region_for_tenant(db, tenant_id: str, regions_by_slug: dict[str, RegionDB]) -> str | None:
+async def _resolve_region_for_tenant(db: AsyncSession, tenant_id: str, regions_by_slug: dict[str, RegionDB]) -> str | None:
     result = await db.execute(select(CongregationAddressDB).where(CongregationAddressDB.tenant_id == tenant_id))
     address = result.scalar_one_or_none()
     if not address:
@@ -307,7 +308,7 @@ async def _resolve_region_for_tenant(db, tenant_id: str, regions_by_slug: dict[s
     return region.id if region else None
 
 
-async def _link_congregation_rows(db, church_id: str, stats: dict[str, int]) -> None:
+async def _link_congregation_rows(db: AsyncSession, church_id: str, stats: dict[str, int]) -> None:
     for model in (
         CongregationAddressDB,
         CongregationServiceTimeDB,

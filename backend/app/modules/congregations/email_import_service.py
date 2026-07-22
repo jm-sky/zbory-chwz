@@ -25,8 +25,17 @@ from app.modules.ai.schemas import ExtractionResult
 from app.modules.churches.contact_sync import assignment_title
 from app.modules.churches.db_models import PersonDB
 from app.modules.churches.repositories import ChurchRepository
-from app.modules.congregations.email_import_db_models import CongregationChangeLogDB, EmailImportMessageDB
-from app.modules.congregations.field_diff import FIELD_GROUPS, FIELD_LABELS, FieldDiff, build_field_diff, new_value_format_plausible
+from app.modules.congregations.email_import_db_models import (
+    CongregationChangeLogDB,
+    EmailImportMessageDB,
+)
+from app.modules.congregations.field_diff import (
+    FIELD_GROUPS,
+    FIELD_LABELS,
+    FieldDiff,
+    build_field_diff,
+    new_value_format_plausible,
+)
 from app.modules.congregations.imap_client import ImapClient, InboundEmail
 from app.modules.congregations.import_service import CongregationImportService
 from app.modules.congregations.repositories import CongregationRepository
@@ -98,7 +107,10 @@ class EmailImportService:
                     await self._process_one(inbound, tenants, name_slugs, tenant_names)
                     result.processed += 1
                 except Exception:
-                    logger.exception("Failed processing inbound e-mail from %s; leaving unseen for retry", mask_email(inbound.from_address))
+                    logger.exception(
+                        "Failed processing inbound e-mail from %s; leaving unseen for retry",
+                        mask_email(inbound.from_address),
+                    )
                     continue
 
                 await asyncio.to_thread(client.mark_seen, inbound.imap_uid)
@@ -117,7 +129,13 @@ class EmailImportService:
         tenant_names: dict[str, str],
     ) -> None:
         if not inbound.from_address:
-            await self._save_message(inbound, resolution="unknown_sender", sender_person_id=None, tenant_id=None, extraction=None)
+            await self._save_message(
+                inbound,
+                resolution="unknown_sender",
+                sender_person_id=None,
+                tenant_id=None,
+                extraction=None,
+            )
             return
 
         # Pre-check without an AI-extracted name: does the sender have a
@@ -126,7 +144,13 @@ class EmailImportService:
         # states which zbór it's about (see OpenRouterProvider.extract_congregations).
         precheck = await self._resolver.resolve(inbound.from_address, None, tenants, name_slugs)
         if precheck.kind == "unknown_sender":
-            await self._save_message(inbound, resolution="unknown_sender", sender_person_id=None, tenant_id=None, extraction=None)
+            await self._save_message(
+                inbound,
+                resolution="unknown_sender",
+                sender_person_id=None,
+                tenant_id=None,
+                extraction=None,
+            )
             return
 
         context_hint = None
@@ -180,7 +204,13 @@ class EmailImportService:
         changed = diff.changed_keys()
 
         if not changed:
-            await self._save_message(inbound, resolution="matched_by_name", sender_person_id=final.person.id, tenant_id=final.tenant_id, extraction=extraction)
+            await self._save_message(
+                inbound,
+                resolution="matched_by_name",
+                sender_person_id=final.person.id,
+                tenant_id=final.tenant_id,
+                extraction=extraction,
+            )
             return
 
         # Hard, free-to-check gates before spending an AI call: anti-spoofing
@@ -241,7 +271,16 @@ class EmailImportService:
             return
 
         assert verification_score is not None and verification_reasoning is not None
-        await self._apply_and_log(inbound, extraction, final, diff, changed, church_name, verification_score, verification_reasoning)
+        await self._apply_and_log(
+            inbound,
+            extraction,
+            final,
+            diff,
+            changed,
+            church_name,
+            verification_score,
+            verification_reasoning,
+        )
 
     async def _apply_and_log(
         self,
@@ -316,7 +355,14 @@ class EmailImportService:
             logger.warning("SUPERADMIN_EMAIL not configured; skipping auto-apply notification")
             return
 
-        changes = [{"label": FIELD_LABELS[key], "old_value": diff.old_values[key], "new_value": diff.new_values[key]} for key in changed]
+        changes = [
+            {
+                "label": FIELD_LABELS[key],
+                "old_value": diff.old_values[key],
+                "new_value": diff.new_values[key],
+            }
+            for key in changed
+        ]
         try:
             await get_email_service().send_email(
                 to=admin_email,
@@ -332,7 +378,10 @@ class EmailImportService:
                 },
             )
         except Exception:
-            logger.exception("Failed to send auto-apply admin notification for tenant %s", final.tenant_id)
+            logger.exception(
+                "Failed to send auto-apply admin notification for tenant %s",
+                final.tenant_id,
+            )
 
     async def _save_message(
         self,

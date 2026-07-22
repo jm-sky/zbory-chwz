@@ -25,9 +25,17 @@ from app.core.database import Base, get_db
 from app.modules.ai.schemas import ExtractedCongregation, ExtractionResult
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
-from app.modules.churches.db_models import ChurchDB, CommunityDB, PersonDB, ServiceAssignmentDB
+from app.modules.churches.db_models import (
+    ChurchDB,
+    CommunityDB,
+    PersonDB,
+    ServiceAssignmentDB,
+)
 from app.modules.congregations.db_models import CongregationAddressDB
-from app.modules.congregations.email_import_db_models import CongregationChangeLogDB, EmailImportMessageDB
+from app.modules.congregations.email_import_db_models import (
+    CongregationChangeLogDB,
+    EmailImportMessageDB,
+)
 from app.modules.tenants.db_models import TenantDB
 from main import app
 
@@ -37,20 +45,65 @@ PERSON_ID = "person-pastor"
 
 
 def _api_user(user_id: str, *, is_admin: bool = False) -> User:
-    return User(id=user_id, email=f"{user_id}@example.com", name=user_id, isAdmin=is_admin, createdAt=datetime.now(UTC))
+    return User(
+        id=user_id,
+        email=f"{user_id}@example.com",
+        name=user_id,
+        isAdmin=is_admin,
+        createdAt=datetime.now(UTC),
+    )
 
 
 async def _seed(session: AsyncSession) -> str:
     now = datetime.now(UTC)
-    session.add(TenantDB(id=TENANT_ID, name="Zbór w Świebodzinie", status="published", owner_id=ADMIN_ID, created_at=now))
+    session.add(
+        TenantDB(
+            id=TENANT_ID,
+            name="Zbór w Świebodzinie",
+            status="published",
+            owner_id=ADMIN_ID,
+            created_at=now,
+        )
+    )
     community = CommunityDB(id=generate_id(), name="CHWZ", slug="chwz", visibility="hidden")
     session.add(community)
     await session.flush()
-    session.add(ChurchDB(id=TENANT_ID, community_id=community.id, region_id=None, tenant_id=ADMIN_ID, name="Zbór w Świebodzinie"))
-    session.add(CongregationAddressDB(id=generate_id(), tenant_id=TENANT_ID, church_id=TENANT_ID, city="Świebodzin", country="PL", status="published"))
-    session.add(PersonDB(id=PERSON_ID, first_name="Jan", last_name="Kowalski", email="pastor@example.com"))
+    session.add(
+        ChurchDB(
+            id=TENANT_ID,
+            community_id=community.id,
+            region_id=None,
+            tenant_id=ADMIN_ID,
+            name="Zbór w Świebodzinie",
+        )
+    )
+    session.add(
+        CongregationAddressDB(
+            id=generate_id(),
+            tenant_id=TENANT_ID,
+            church_id=TENANT_ID,
+            city="Świebodzin",
+            country="PL",
+            status="published",
+        )
+    )
+    session.add(
+        PersonDB(
+            id=PERSON_ID,
+            first_name="Jan",
+            last_name="Kowalski",
+            email="pastor@example.com",
+        )
+    )
     await session.flush()
-    session.add(ServiceAssignmentDB(id=generate_id(), person_id=PERSON_ID, scope_type="church", scope_id=TENANT_ID))
+    session.add(
+        ServiceAssignmentDB(
+            id=generate_id(),
+            person_id=PERSON_ID,
+            scope_type="church",
+            scope_id=TENANT_ID,
+        )
+    )
 
     extraction = ExtractionResult(congregations=[ExtractedCongregation(name="Zbór w Świebodzinie", contact_phone="600111222")])
     message_id = generate_id()

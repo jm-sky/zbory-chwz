@@ -4,15 +4,19 @@ Helper functions for common repository operations using composition over inherit
 These functions can be used by any repository without requiring base class inheritance.
 """
 
-from typing import Any, TypeVar
+from typing import Any, Protocol
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-T = TypeVar("T")
+
+class HasId(Protocol):
+    """Protocol for ORM models with an id column."""
+
+    id: Any
 
 
-async def get_by_id[T](session: AsyncSession, model: type[T], id: str) -> T | None:
+async def get_by_id[T: HasId](session: AsyncSession, model: type[T], id: str) -> T | None:
     """Get entity by ID.
 
     Args:
@@ -23,9 +27,7 @@ async def get_by_id[T](session: AsyncSession, model: type[T], id: str) -> T | No
     Returns:
         Entity instance or None if not found
     """
-    # Use getattr to access the id column dynamically
-    id_column = model.id
-    result = await session.execute(select(model).where(id_column == id))
+    result = await session.execute(select(model).where(model.id == id))
     return result.scalar_one_or_none()
 
 

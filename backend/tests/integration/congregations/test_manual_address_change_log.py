@@ -34,12 +34,25 @@ TENANT_ID = "tenant-poznan"
 
 
 def _api_user(user_id: str) -> User:
-    return User(id=user_id, email=f"{user_id}@example.com", name=user_id, createdAt=datetime.now(UTC))
+    return User(
+        id=user_id,
+        email=f"{user_id}@example.com",
+        name=user_id,
+        createdAt=datetime.now(UTC),
+    )
 
 
 async def _seed(session: AsyncSession) -> None:
     now = datetime.now(UTC)
-    session.add(TenantDB(id=TENANT_ID, name="Zbór w Poznaniu", status="published", owner_id=OWNER_ID, created_at=now))
+    session.add(
+        TenantDB(
+            id=TENANT_ID,
+            name="Zbór w Poznaniu",
+            status="published",
+            owner_id=OWNER_ID,
+            created_at=now,
+        )
+    )
     session.add(TenantMembershipDB(tenant_id=TENANT_ID, user_id=OWNER_ID, role="owner"))
     await session.commit()
 
@@ -85,7 +98,12 @@ async def test_create_address_logs_admin_manual_entries(ctx) -> None:
 
     response = await client.post(
         f"/api/congregations/{TENANT_ID}/address",
-        json={"city": "Poznań", "street": "Rynek 1", "country": "PL", "status": "draft"},
+        json={
+            "city": "Poznań",
+            "street": "Rynek 1",
+            "country": "PL",
+            "status": "draft",
+        },
     )
 
     assert response.status_code == 201

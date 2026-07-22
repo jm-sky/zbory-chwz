@@ -1,6 +1,5 @@
 """AWS S3 storage adapter."""
 
-
 try:
     import aioboto3
     from botocore.exceptions import ClientError

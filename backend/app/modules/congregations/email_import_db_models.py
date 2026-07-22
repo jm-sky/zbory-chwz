@@ -59,5 +59,9 @@ class CongregationChangeLogDB(Base):
     actor_label: Mapped[str] = mapped_column(String(255), nullable=False)
     actor_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     actor_person_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("persons.id", ondelete="SET NULL"), nullable=True)
-    email_import_message_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("email_import_messages.id", ondelete="SET NULL"), nullable=True)
+    email_import_message_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("email_import_messages.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)

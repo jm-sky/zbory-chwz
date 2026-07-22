@@ -96,7 +96,14 @@ async def _build_congregation_detail(
         iban=address.iban if address else None,
         latitude=decode_coordinate(address.latitude) if address else None,
         longitude=decode_coordinate(address.longitude) if address else None,
-        service_times=[{"day": service_time.day, "time": service_time.time, "description": service_time.description} for service_time in service_times],
+        service_times=[
+            {
+                "day": service_time.day,
+                "time": service_time.time,
+                "description": service_time.description,
+            }
+            for service_time in service_times
+        ],
         card_contacts=card_contacts,
         hidden_contacts=hidden_profile_contacts,
         branches=[CongregationBranchSummary(id=branch.id, name=branch.name) for branch in visible_branches],
@@ -298,8 +305,8 @@ async def list_congregations_detailed(
                         postal_code=address.postal_code if address else None,
                         province=address.province if address else None,
                         country=address.country if address else None,
-                        latitude=decode_coordinate(address.latitude) if address else None,
-                        longitude=decode_coordinate(address.longitude) if address else None,
+                        latitude=(decode_coordinate(address.latitude) if address else None),
+                        longitude=(decode_coordinate(address.longitude) if address else None),
                     )
                 )
 

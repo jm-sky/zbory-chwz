@@ -130,7 +130,7 @@ def require_2fa_rate_limit(max_attempts: int = 5, window_minutes: int = 15) -> C
                         raise HTTPException(
                             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                             detail=f"Too many failed attempts. Account locked for {window_minutes} minutes.",
-                        )
+                        ) from e
                 raise
             except Exception:
                 # Other exceptions - don't count as verification failure

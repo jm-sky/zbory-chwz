@@ -19,8 +19,15 @@ from app.modules.auth.models import User
 from app.modules.churches.contact_sync import match_contact_assignment
 from app.modules.churches.db_models import PersonDB
 from app.modules.churches.repositories import ChurchRepository
-from app.modules.congregations.email_import_db_models import CongregationChangeLogDB, EmailImportMessageDB
-from app.modules.congregations.field_diff import FIELD_GROUPS, FIELD_LABELS, build_field_diff
+from app.modules.congregations.email_import_db_models import (
+    CongregationChangeLogDB,
+    EmailImportMessageDB,
+)
+from app.modules.congregations.field_diff import (
+    FIELD_GROUPS,
+    FIELD_LABELS,
+    build_field_diff,
+)
 from app.modules.congregations.import_service import CongregationImportService
 from app.modules.congregations.repositories import CongregationRepository
 from app.modules.congregations.schemas import (
@@ -76,7 +83,12 @@ class EmailImportReviewService:
             )
 
         entry = self._parse_single_entry(message)
-        diff = await build_field_diff(entry, message.resolved_tenant_id, self._congregation_repo, self._church_repo)
+        diff = await build_field_diff(
+            entry,
+            message.resolved_tenant_id,
+            self._congregation_repo,
+            self._church_repo,
+        )
 
         values: dict[str, str | None] = {f.field: f.value for f in request.fields if f.apply}
         contact_person_id = diff.matched_assignment.id if diff.matched_assignment else None
@@ -128,15 +140,24 @@ class EmailImportReviewService:
         if message is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
         if message.status != "pending":
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Message already {message.status}")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Message already {message.status}",
+            )
         return message
 
     def _parse_single_entry(self, message: EmailImportMessageDB) -> ExtractedCongregation:
         if not message.extraction_json:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Message has no extracted data")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Message has no extracted data",
+            )
         extraction = ExtractionResult.model_validate_json(message.extraction_json)
         if len(extraction.congregations) != 1:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Message does not resolve to exactly one congregation")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Message does not resolve to exactly one congregation",
+            )
         return extraction.congregations[0]
 
     async def _build_proposal_if_resolved(self, message: EmailImportMessageDB) -> ImportProposal | None:
@@ -148,7 +169,12 @@ class EmailImportReviewService:
             return None
         entry = extraction.congregations[0]
 
-        diff = await build_field_diff(entry, message.resolved_tenant_id, self._congregation_repo, self._church_repo)
+        diff = await build_field_diff(
+            entry,
+            message.resolved_tenant_id,
+            self._congregation_repo,
+            self._church_repo,
+        )
         field_keys = diff.changed_keys()
         fields = [
             ImportFieldChange(

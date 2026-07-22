@@ -22,7 +22,13 @@ PERSON_CONTACT_NO_MATCH = {
 }
 
 NOTES_MATCH_CONTACT = {
-    "names": [{"displayName": "Piotr Wiśniewski", "givenName": "Piotr", "familyName": "Wiśniewski"}],
+    "names": [
+        {
+            "displayName": "Piotr Wiśniewski",
+            "givenName": "Piotr",
+            "familyName": "Wiśniewski",
+        }
+    ],
     "biographies": [{"value": "Starszy zboru, kontakt do CHWZ"}],
 }
 
@@ -33,7 +39,13 @@ CASE_INSENSITIVE_CONTACT = {
 # Google sometimes parses a congregation's name into givenName/familyName
 # instead of leaving it as a plain organization.
 CHURCH_NAME_SPLIT_INTO_PARTS_CONTACT = {
-    "names": [{"displayName": "Zbór CHWZ Warszawa", "givenName": "Zbór", "familyName": "Warszawa"}],
+    "names": [
+        {
+            "displayName": "Zbór CHWZ Warszawa",
+            "givenName": "Zbór",
+            "familyName": "Warszawa",
+        }
+    ],
 }
 
 CUSTOM_KEYWORD_CONTACT = {

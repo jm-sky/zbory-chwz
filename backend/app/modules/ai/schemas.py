@@ -35,8 +35,14 @@ class ExtractedCongregation(BaseModel):
     province: str | None = Field(default=None, description="Polish voivodeship as an ASCII slug, e.g. 'lubuskie'")
     country: str | None = Field(default=None, description="ISO 3166-1 alpha-2 country code, e.g. 'PL'")
     website: str | None = Field(default=None, description="The congregation's official website URL")
-    email: str | None = Field(default=None, description="The congregation's official e-mail address (not a person's)")
-    iban: str | None = Field(default=None, description="The congregation's bank account number (IBAN or Polish NRB)")
+    email: str | None = Field(
+        default=None,
+        description="The congregation's official e-mail address (not a person's)",
+    )
+    iban: str | None = Field(
+        default=None,
+        description="The congregation's bank account number (IBAN or Polish NRB)",
+    )
     contact_name: str | None = None
     contact_title: str | None = Field(default=None, description="e.g. 'Pastor', 'Diakon'")
     contact_phone: str | None = None
@@ -63,5 +69,9 @@ class VerificationResult(BaseModel):
     e-mail-sourced change can be auto-applied without admin review.
     """
 
-    trust_score: float = Field(ge=0.0, le=1.0, description="0-1 confidence this update is legitimate and internally consistent")
+    trust_score: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="0-1 confidence this update is legitimate and internally consistent",
+    )
     reasoning: str = Field(description="Short justification in Polish")

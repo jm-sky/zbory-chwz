@@ -67,7 +67,9 @@ async def load_service_types_by_slug(db: AsyncSession) -> dict[str, ServiceTypeD
     return {service_type.slug: service_type for service_type in result.scalars().all()}
 
 
-def assignment_contact_snapshot(assignment: ServiceAssignmentDB) -> dict[str, str | None]:
+def assignment_contact_snapshot(
+    assignment: ServiceAssignmentDB,
+) -> dict[str, str | None]:
     person = assignment.person
     if not person:
         return {
@@ -103,11 +105,7 @@ def match_contact_assignment(
     if not detected_name:
         return None
 
-    name_slugs = {
-        assignment.id: slugify(person_display_name(assignment.person) or "")
-        for assignment in assignments
-        if assignment.person
-    }
+    name_slugs = {assignment.id: slugify(person_display_name(assignment.person) or "") for assignment in assignments if assignment.person}
     if not name_slugs:
         return None
 

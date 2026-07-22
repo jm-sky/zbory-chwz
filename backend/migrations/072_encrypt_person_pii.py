@@ -68,7 +68,10 @@ async def _widen_columns_for_ciphertext(conn) -> None:
         print("  Note: non-PostgreSQL dialect detected — skipping column widening (already unbounded)")
         return
 
-    for table, columns in (("persons", _PERSON_TEXT_COLUMNS), ("congregation_addresses", _ADDRESS_TEXT_COLUMNS)):
+    for table, columns in (
+        ("persons", _PERSON_TEXT_COLUMNS),
+        ("congregation_addresses", _ADDRESS_TEXT_COLUMNS),
+    ):
         for column in columns:
             await conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN {column} TYPE TEXT"))
     print("  ✓ Widened persons/congregation_addresses text columns to TEXT")
@@ -121,7 +124,10 @@ async def _encrypt_persons() -> int:
 
             if updates:
                 set_clause = ", ".join(f"{col} = :{col}" for col in updates)
-                await session.execute(text(f"UPDATE persons SET {set_clause} WHERE id = :id"), {**updates, "id": person_id})
+                await session.execute(
+                    text(f"UPDATE persons SET {set_clause} WHERE id = :id"),
+                    {**updates, "id": person_id},
+                )
                 encrypted += 1
 
             if (i + 1) % BATCH_SIZE == 0:
@@ -153,7 +159,10 @@ async def _encrypt_addresses() -> int:
 
             if updates:
                 set_clause = ", ".join(f"{col} = :{col}" for col in updates)
-                await session.execute(text(f"UPDATE congregation_addresses SET {set_clause} WHERE id = :id"), {**updates, "id": address_id})
+                await session.execute(
+                    text(f"UPDATE congregation_addresses SET {set_clause} WHERE id = :id"),
+                    {**updates, "id": address_id},
+                )
                 encrypted += 1
 
             if (i + 1) % BATCH_SIZE == 0:

@@ -31,15 +31,11 @@ def two_factor_service(mock_repository: AsyncMock) -> TwoFactorService:
 
 class TestVerifyTotpLogin:
     @pytest.mark.asyncio
-    async def test_successful_totp_login_mints_tfa_verified_tokens(
-        self, two_factor_service: TwoFactorService
-    ) -> None:
+    async def test_successful_totp_login_mints_tfa_verified_tokens(self, two_factor_service: TwoFactorService) -> None:
         two_factor_service.totp.verify_code = AsyncMock(return_value=(True, False))  # type: ignore[method-assign]
         two_factor_token = create_two_factor_token({"sub": "user-123"})
 
-        result = await two_factor_service.verify_totp_login(
-            two_factor_token=two_factor_token, code="123456"
-        )
+        result = await two_factor_service.verify_totp_login(two_factor_token=two_factor_token, code="123456")
 
         assert result["accessToken"]
         assert result["refreshToken"]
@@ -53,18 +49,14 @@ class TestVerifyTotpLogin:
 
 class TestCompletePasskeyAuthentication:
     @pytest.mark.asyncio
-    async def test_successful_passkey_login_mints_tfa_verified_tokens(
-        self, mock_repository: AsyncMock, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_successful_passkey_login_mints_tfa_verified_tokens(self, mock_repository: AsyncMock, monkeypatch: pytest.MonkeyPatch) -> None:
         from webauthn.helpers import bytes_to_base64url
 
         passkey = MagicMock()
         passkey.id = "passkey-1"
         passkey.user_id = "user-123"
         passkey.is_enabled = True
-        passkey.public_key = encrypt_secret(
-            bytes_to_base64url(b"fake-public-key-bytes")
-        )
+        passkey.public_key = encrypt_secret(bytes_to_base64url(b"fake-public-key-bytes"))
         passkey.counter = 5
 
         mock_repository.get_passkey_by_credential_id = AsyncMock(return_value=passkey)
@@ -107,9 +99,7 @@ class TestCompletePasskeyAuthentication:
         mock_repository.update_passkey_counter.assert_awaited_once_with("passkey-1", 6)
 
     @pytest.mark.asyncio
-    async def test_expected_user_id_mismatch_is_rejected(
-        self, mock_repository: AsyncMock
-    ) -> None:
+    async def test_expected_user_id_mismatch_is_rejected(self, mock_repository: AsyncMock) -> None:
         service = TwoFactorService(repository=mock_repository, challenge_store=None)
         challenge_data = {
             "user_id": "user-123",

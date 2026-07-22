@@ -52,11 +52,34 @@ async def _seed(session: AsyncSession) -> None:
         [
             UserDB(id=OWNER_ID, email="owner@example.com", name="Owner"),
             CommunityDB(id=community_id, name="CHWZ", slug="chwz", created_at=now),
-            ServiceTypeDB(id=diacon_type_id, slug="diacon", name="Diakon", scope_type="church", sort_order=10),
+            ServiceTypeDB(
+                id=diacon_type_id,
+                slug="diacon",
+                name="Diakon",
+                scope_type="church",
+                sort_order=10,
+            ),
         ]
     )
-    session.add(TenantDB(id=TENANT_ID, name="Zbor Testowy", status="published", owner_id=OWNER_ID, created_at=now))
-    session.add(ChurchDB(id=TENANT_ID, community_id=community_id, tenant_id=TENANT_ID, name="Zbor Testowy", visibility="public", created_at=now))
+    session.add(
+        TenantDB(
+            id=TENANT_ID,
+            name="Zbor Testowy",
+            status="published",
+            owner_id=OWNER_ID,
+            created_at=now,
+        )
+    )
+    session.add(
+        ChurchDB(
+            id=TENANT_ID,
+            community_id=community_id,
+            tenant_id=TENANT_ID,
+            name="Zbor Testowy",
+            visibility="public",
+            created_at=now,
+        )
+    )
     session.add(
         CongregationAddressDB(
             id=generate_id(),

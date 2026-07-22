@@ -20,7 +20,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.common.id_utils import generate_id
 from app.core.database import Base
 from app.modules.auth.db_models import UserDB
-from app.modules.churches.db_models import ChurchDB, CommunityDB, PersonDB, RegionDB, ServiceAssignmentDB
+from app.modules.churches.db_models import (
+    ChurchDB,
+    CommunityDB,
+    PersonDB,
+    RegionDB,
+    ServiceAssignmentDB,
+)
 from app.modules.congregations.sender_resolver import SenderResolver
 from app.modules.tenants.db_models import TenantDB
 
@@ -56,7 +62,12 @@ async def setup() -> AsyncGenerator[dict, None]:
 
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     async with session_factory() as session:
-        owner = UserDB(id=generate_id(), email="owner@example.com", name="Owner", hashed_password="x")
+        owner = UserDB(
+            id=generate_id(),
+            email="owner@example.com",
+            name="Owner",
+            hashed_password="x",
+        )
         session.add(owner)
         await session.flush()
 
@@ -64,29 +75,88 @@ async def setup() -> AsyncGenerator[dict, None]:
         session.add(community)
         await session.flush()
 
-        region = RegionDB(id=generate_id(), community_id=community.id, name="Region Zachodni", slug="zachodni")
+        region = RegionDB(
+            id=generate_id(),
+            community_id=community.id,
+            name="Region Zachodni",
+            slug="zachodni",
+        )
         session.add(region)
         await session.flush()
 
-        home_church = await _make_tenant_and_church(session, owner.id, name="Zbór w Świebodzinie", community_id=community.id, region_id=region.id)
-        other_in_region = await _make_tenant_and_church(session, owner.id, name="Zbór w Zielonej Górze", community_id=community.id, region_id=region.id)
-        other_community = await _make_tenant_and_church(session, owner.id, name="Zbór w Warszawie", community_id=community.id, region_id=None)
+        home_church = await _make_tenant_and_church(
+            session,
+            owner.id,
+            name="Zbór w Świebodzinie",
+            community_id=community.id,
+            region_id=region.id,
+        )
+        other_in_region = await _make_tenant_and_church(
+            session,
+            owner.id,
+            name="Zbór w Zielonej Górze",
+            community_id=community.id,
+            region_id=region.id,
+        )
+        other_community = await _make_tenant_and_church(
+            session,
+            owner.id,
+            name="Zbór w Warszawie",
+            community_id=community.id,
+            region_id=None,
+        )
         await session.flush()
 
-        pastor = PersonDB(id=generate_id(), first_name="Jan", last_name="Kowalski", email="pastor@example.com")
+        pastor = PersonDB(
+            id=generate_id(),
+            first_name="Jan",
+            last_name="Kowalski",
+            email="pastor@example.com",
+        )
         session.add(pastor)
         await session.flush()
-        session.add(ServiceAssignmentDB(id=generate_id(), person_id=pastor.id, scope_type="church", scope_id=home_church.id))
+        session.add(
+            ServiceAssignmentDB(
+                id=generate_id(),
+                person_id=pastor.id,
+                scope_type="church",
+                scope_id=home_church.id,
+            )
+        )
 
-        regional_bishop = PersonDB(id=generate_id(), first_name="Adam", last_name="Nowak", email="bishop@example.com")
+        regional_bishop = PersonDB(
+            id=generate_id(),
+            first_name="Adam",
+            last_name="Nowak",
+            email="bishop@example.com",
+        )
         session.add(regional_bishop)
         await session.flush()
-        session.add(ServiceAssignmentDB(id=generate_id(), person_id=regional_bishop.id, scope_type="region", scope_id=region.id))
+        session.add(
+            ServiceAssignmentDB(
+                id=generate_id(),
+                person_id=regional_bishop.id,
+                scope_type="region",
+                scope_id=region.id,
+            )
+        )
 
-        no_home_bishop = PersonDB(id=generate_id(), first_name="Piotr", last_name="Wiśniewski", email="national@example.com")
+        no_home_bishop = PersonDB(
+            id=generate_id(),
+            first_name="Piotr",
+            last_name="Wiśniewski",
+            email="national@example.com",
+        )
         session.add(no_home_bishop)
         await session.flush()
-        session.add(ServiceAssignmentDB(id=generate_id(), person_id=no_home_bishop.id, scope_type="community", scope_id=community.id))
+        session.add(
+            ServiceAssignmentDB(
+                id=generate_id(),
+                person_id=no_home_bishop.id,
+                scope_type="community",
+                scope_id=community.id,
+            )
+        )
 
         await session.commit()
 
@@ -130,7 +200,12 @@ async def test_regional_bishop_no_location_is_ambiguous(setup: dict) -> None:
 
 @pytest.mark.asyncio
 async def test_regional_bishop_matches_own_region(setup: dict) -> None:
-    result = await setup["resolver"].resolve("bishop@example.com", "Zbór w Zielonej Górze", setup["tenants"], setup["name_slugs"])
+    result = await setup["resolver"].resolve(
+        "bishop@example.com",
+        "Zbór w Zielonej Górze",
+        setup["tenants"],
+        setup["name_slugs"],
+    )
     assert result.kind == "matched_by_name"
     assert result.tenant_id == setup["other_in_region"].id
 
@@ -144,14 +219,24 @@ async def test_regional_bishop_unauthorized_outside_region(setup: dict) -> None:
 
 @pytest.mark.asyncio
 async def test_national_bishop_authorized_via_community(setup: dict) -> None:
-    result = await setup["resolver"].resolve("national@example.com", "Zbór w Warszawie", setup["tenants"], setup["name_slugs"])
+    result = await setup["resolver"].resolve(
+        "national@example.com",
+        "Zbór w Warszawie",
+        setup["tenants"],
+        setup["name_slugs"],
+    )
     assert result.kind == "matched_by_name"
     assert result.tenant_id == setup["other_community"].id
 
 
 @pytest.mark.asyncio
 async def test_no_name_match_is_ambiguous(setup: dict) -> None:
-    result = await setup["resolver"].resolve("pastor@example.com", "Zupełnie inna nazwa spoza bazy", setup["tenants"], setup["name_slugs"])
+    result = await setup["resolver"].resolve(
+        "pastor@example.com",
+        "Zupełnie inna nazwa spoza bazy",
+        setup["tenants"],
+        setup["name_slugs"],
+    )
     assert result.kind == "ambiguous"
 
 

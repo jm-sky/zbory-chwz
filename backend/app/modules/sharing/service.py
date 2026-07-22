@@ -7,8 +7,14 @@ from typing import Literal
 from fastapi import Depends
 
 from app.modules.sharing.db_models import ShareLinkDB
-from app.modules.sharing.repositories import ShareLinkRepository, get_share_link_repository
-from app.modules.sharing.schemas import ShareLinkCreateVisibilityLevel, ShareLinkExpiryDays
+from app.modules.sharing.repositories import (
+    ShareLinkRepository,
+    get_share_link_repository,
+)
+from app.modules.sharing.schemas import (
+    ShareLinkCreateVisibilityLevel,
+    ShareLinkExpiryDays,
+)
 
 ResolveFailureReason = Literal["not_found", "expired", "revoked"]
 

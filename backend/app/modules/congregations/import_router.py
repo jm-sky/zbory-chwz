@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.modules.auth.dependencies import AdminOrOwnerUser
-from app.modules.congregations.email_import_review_service import EmailImportReviewService
+from app.modules.congregations.email_import_review_service import (
+    EmailImportReviewService,
+)
 from app.modules.congregations.import_service import CongregationImportService
 from app.modules.congregations.schemas import (
     EmailImportApproveRequest,

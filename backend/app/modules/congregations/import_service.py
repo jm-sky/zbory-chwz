@@ -22,7 +22,10 @@ from app.modules.churches.contact_sync import (
 )
 from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.churches.repositories import ChurchRepository
-from app.modules.churches.schemas import ServiceAssignmentCreateRequest, ServiceAssignmentUpdateRequest
+from app.modules.churches.schemas import (
+    ServiceAssignmentCreateRequest,
+    ServiceAssignmentUpdateRequest,
+)
 from app.modules.congregations.field_diff import ADDRESS_FIELDS as _ADDRESS_FIELDS
 from app.modules.congregations.field_diff import CONTACT_FIELDS as _CONTACT_FIELDS
 from app.modules.congregations.field_diff import FIELD_GROUPS as _FIELD_GROUPS
@@ -152,7 +155,14 @@ class CongregationImportService:
 
             before_address, before_contact = await self._capture_before(tenant_id, values, item.contact_person_id)
             await self.apply_fields(tenant_id, values, item.contact_person_id)
-            await self._log_manual_changes(tenant_id, values, before_address, before_contact, actor_name, owner_user_id)
+            await self._log_manual_changes(
+                tenant_id,
+                values,
+                before_address,
+                before_contact,
+                actor_name,
+                owner_user_id,
+            )
 
         return ImportApplyResponse(created=created, updated=updated, skipped=skipped)
 
@@ -209,7 +219,12 @@ class CongregationImportService:
             batch_id=batch_id,
         )
 
-    async def apply_fields(self, tenant_id: str, values: dict[str, str | None], contact_person_id: str | None) -> None:
+    async def apply_fields(
+        self,
+        tenant_id: str,
+        values: dict[str, str | None],
+        contact_person_id: str | None,
+    ) -> None:
         if _ADDRESS_FIELDS & values.keys():
             await self._apply_address_fields(tenant_id, values)
 
@@ -254,7 +269,10 @@ class CongregationImportService:
     ) -> None:
         assignments = await self._church_repo.list_service_assignments("church", tenant_id)
         if contact_person_id:
-            target = next((assignment for assignment in assignments if assignment.id == contact_person_id), None)
+            target = next(
+                (assignment for assignment in assignments if assignment.id == contact_person_id),
+                None,
+            )
         else:
             # No contact was pinned during analyze (e.g. an older client) -
             # fall back to the same confident-match-or-nothing logic rather

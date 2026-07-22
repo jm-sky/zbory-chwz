@@ -59,9 +59,7 @@ async def get_service(
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.warning(
-            f"Failed to initialize challenge store: {e}. WebAuthn will work without server-side challenge storage (INSECURE)"
-        )
+        logger.warning(f"Failed to initialize challenge store: {e}. WebAuthn will work without server-side challenge storage (INSECURE)")
 
     return TwoFactorService(repository=repo, challenge_store=challenge_store)
 
@@ -74,9 +72,7 @@ async def initiate_totp_setup(
     service: TwoFactorService = Depends(get_service),
 ) -> TotpInitiateResponse:
     _ = request  # required by slowapi rate limiting
-    data = await service.initiate_totp_setup(
-        user_id=current_user.id, email=current_user.email
-    )
+    data = await service.initiate_totp_setup(user_id=current_user.id, email=current_user.email)
     return TotpInitiateResponse(**data) if isinstance(data, dict) else data
 
 
@@ -90,12 +86,10 @@ async def verify_totp_setup(
 ) -> VerifyTotpSetupResponse:
     _ = request  # required by slowapi rate limiting
     try:
-        result = await service.verify_totp_setup(
-            setup_token=body.setupToken, code=body.code
-        )
+        result = await service.verify_totp_setup(setup_token=body.setupToken, code=body.code)
         return VerifyTotpSetupResponse(**result)
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.get("/totp/status", response_model=TotpStatusResponse)
@@ -107,11 +101,7 @@ async def totp_status(
 ) -> TotpStatusResponse:
     _ = request  # required by slowapi rate limiting
     status_data = await service.get_totp_status(user_id=current_user.id)
-    return (
-        TotpStatusResponse(**status_data)
-        if isinstance(status_data, dict)
-        else status_data
-    )
+    return TotpStatusResponse(**status_data) if isinstance(status_data, dict) else status_data
 
 
 @router.post("/totp/regenerate-backup-codes", response_model=BackupCodesResponse)
@@ -133,9 +123,9 @@ async def regenerate_backup_codes(
         )
         return BackupCodesResponse(**result) if isinstance(result, dict) else result
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.post("/totp/disable")
@@ -156,9 +146,9 @@ async def disable_totp(
             user_repository=user_repo,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.post("/totp/verify-login", response_model=TwoFactorVerifyResponse)
@@ -189,15 +179,13 @@ async def verify_totp_login(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=str(exc),
-            )
+            ) from exc
 
     return await _verify_with_rate_limit()  # type: ignore[no-any-return]
 
 
 # WebAuthn/Passkey endpoints
-@router.post(
-    "/webauthn/register/initiate", response_model=PasskeyRegistrationInitiateResponse
-)
+@router.post("/webauthn/register/initiate", response_model=PasskeyRegistrationInitiateResponse)
 @rate_limit("5/minute")
 async def initiate_passkey_registration(
     body: InitiatePasskeyRegistrationRequest,
@@ -213,11 +201,7 @@ async def initiate_passkey_registration(
         user_name=current_user.name,
         name=body.name,
     )
-    return (
-        PasskeyRegistrationInitiateResponse(**result)
-        if isinstance(result, dict)
-        else result
-    )
+    return PasskeyRegistrationInitiateResponse(**result) if isinstance(result, dict) else result
 
 
 @router.post("/webauthn/register/complete", response_model=PasskeyResponse)
@@ -247,7 +231,7 @@ async def complete_passkey_registration(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
-        )
+        ) from exc
 
 
 @router.get("/webauthn/passkeys", response_model=PasskeyListResponse)
@@ -295,11 +279,7 @@ async def webauthn_status(
     _ = request  # required by slowapi rate limiting
     """Get WebAuthn/Passkey status for the current user."""
     status_data = await service.get_webauthn_status(user_id=current_user.id)
-    return (
-        WebAuthnStatusResponse(**status_data)
-        if isinstance(status_data, dict)
-        else status_data
-    )
+    return WebAuthnStatusResponse(**status_data) if isinstance(status_data, dict) else status_data
 
 
 @router.get("/status", response_model=TwoFactorStatusResponse)
@@ -312,11 +292,7 @@ async def two_factor_status(
     _ = request  # required by slowapi rate limiting
     """Get combined 2FA status (TOTP + WebAuthn) for the current user."""
     status_data = await service.get_two_factor_status(user_id=current_user.id)
-    return (
-        TwoFactorStatusResponse(**status_data)
-        if isinstance(status_data, dict)
-        else status_data
-    )
+    return TwoFactorStatusResponse(**status_data) if isinstance(status_data, dict) else status_data
 
 
 # Additional WebAuthn endpoints
@@ -336,7 +312,7 @@ async def delete_passkey(
     try:
         await service.delete_passkey(passkey_id=passkey_id, user_id=current_user.id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
 @router.post("/webauthn/authenticate/initiate")
@@ -356,9 +332,9 @@ async def initiate_passkey_authentication(
         payload = verify_two_factor_token(body.twoFactorToken)
         return await service.initiate_passkey_authentication(user_id=payload["sub"])
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.post("/webauthn/authenticate/complete", response_model=TwoFactorVerifyResponse)
@@ -382,9 +358,9 @@ async def complete_passkey_authentication(
         )
         return TwoFactorVerifyResponse(**result)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.patch("/preferred-method")
@@ -400,13 +376,11 @@ async def update_preferred_method(
     try:
         method = body.preferredMethod
         if method is not None:
-            await service.update_preferred_method(
-                user_id=current_user.id, method=method
-            )
+            await service.update_preferred_method(user_id=current_user.id, method=method)
             return {"message": f"Preferred 2FA method updated to {method}"}
         else:
             # Clear preference (set to None)
             await service.update_preferred_method(user_id=current_user.id, method=None)
             return {"message": "Preferred 2FA method cleared"}
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

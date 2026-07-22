@@ -26,9 +26,7 @@ def test_trusts_last_forwarded_for_hop_not_first() -> None:
 def test_attacker_spoofed_leading_hops_are_ignored() -> None:
     # An attacker can freely set arbitrary leading hops per request; only the
     # proxy-appended last hop should ever be trusted.
-    request = _request_with_headers(
-        {"X-Forwarded-For": "10.0.0.1, 10.0.0.2, 10.0.0.3, 203.0.113.7"}
-    )
+    request = _request_with_headers({"X-Forwarded-For": "10.0.0.1, 10.0.0.2, 10.0.0.3, 203.0.113.7"})
     assert get_client_ip(request) == "203.0.113.7"
 
 

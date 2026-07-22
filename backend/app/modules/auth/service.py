@@ -244,7 +244,7 @@ class AuthService:
         except Exception as e:
             # Log unexpected errors for debugging
             logger.error(f"Unexpected error during token refresh: {e}", exc_info=True)
-            raise InvalidTokenError("Invalid or expired refresh token")
+            raise InvalidTokenError("Invalid or expired refresh token") from e
 
     async def request_password_reset(
         self,

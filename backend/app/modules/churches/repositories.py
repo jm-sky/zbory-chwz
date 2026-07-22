@@ -31,7 +31,10 @@ from app.modules.churches.db_models import (
     ServiceAssignmentDB,
     ServiceTypeDB,
 )
-from app.modules.churches.person_search import SEARCH_CANDIDATE_CAP, person_matches_query
+from app.modules.churches.person_search import (
+    SEARCH_CANDIDATE_CAP,
+    person_matches_query,
+)
 from app.modules.churches.schemas import (
     BranchCreateRequest,
     BranchUpdateRequest,
@@ -154,9 +157,22 @@ class ChurchRepository:
         result = await self.db.execute(stmt)
         candidates = result.scalars().all()
         if len(candidates) == SEARCH_CANDIDATE_CAP:
-            logger.warning("search_persons: candidate set hit the %d-row safety cap; results may be incomplete for this scope", SEARCH_CANDIDATE_CAP)
+            logger.warning(
+                "search_persons: candidate set hit the %d-row safety cap; results may be incomplete for this scope",
+                SEARCH_CANDIDATE_CAP,
+            )
 
-        matches = [p for p in candidates if person_matches_query(first_name=p.first_name, last_name=p.last_name, email=p.email, phone=p.phone, query=trimmed)]
+        matches = [
+            p
+            for p in candidates
+            if person_matches_query(
+                first_name=p.first_name,
+                last_name=p.last_name,
+                email=p.email,
+                phone=p.phone,
+                query=trimmed,
+            )
+        ]
         return matches[:limit]
 
     async def get_person(self, person_id: str) -> PersonDB | None:
@@ -611,7 +627,10 @@ class ChurchRepository:
         result = await self.db.execute(stmt)
         flags: dict[str, dict[str, bool]] = {}
         for scope_id, has_email, has_phone in result.all():
-            flags[scope_id] = {"has_email": bool(has_email), "has_phone": bool(has_phone)}
+            flags[scope_id] = {
+                "has_email": bool(has_email),
+                "has_phone": bool(has_phone),
+            }
         return flags
 
     async def list_public_branches_for_churches(self, church_ids: Sequence[str]) -> dict[str, list[BranchDB]]:
@@ -641,7 +660,13 @@ class ChurchRepository:
     ) -> dict[str, str | None]:
         person = assignment.person
         if not person:
-            return {"name": None, "title": None, "phone": None, "email": None, "description": None}
+            return {
+                "name": None,
+                "title": None,
+                "phone": None,
+                "email": None,
+                "description": None,
+            }
 
         name = " ".join(part for part in (person.first_name, person.last_name) if part).strip()
         service_type = assignment.service_type

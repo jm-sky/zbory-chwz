@@ -39,10 +39,7 @@ def enforce_user_mutation_permissions(
         )
 
     if is_delete:
-        if (
-            settings.security.protected_user_email
-            and target_email.lower() == settings.security.protected_user_email.lower()
-        ):
+        if settings.security.protected_user_email and target_email.lower() == settings.security.protected_user_email.lower():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cannot delete protected user",
@@ -68,9 +65,7 @@ def enforce_user_mutation_permissions(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Administrators cannot assign Owner role",
             )
-        if target_is_owner and (
-            new_is_owner is False or (new_role and new_role != "owner")
-        ):
+        if target_is_owner and (new_is_owner is False or (new_role and new_role != "owner")):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Administrators cannot modify Owner users",

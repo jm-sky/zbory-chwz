@@ -170,10 +170,17 @@ async def test_callback_stores_connection_then_contacts_are_filtered(ctx, monkey
         assert access_token == "access-token"
         return RAW_CONTACTS
 
-    monkeypatch.setattr(google_contacts_oauth_provider, "exchange_code_for_token", fake_exchange_code_for_token)
+    monkeypatch.setattr(
+        google_contacts_oauth_provider,
+        "exchange_code_for_token",
+        fake_exchange_code_for_token,
+    )
     monkeypatch.setattr(google_contacts_oauth_provider, "list_connections", fake_list_connections)
 
-    callback_response = await client.post("/api/google-contacts/callback", json={"code": "auth-code", "state": "some-state"})
+    callback_response = await client.post(
+        "/api/google-contacts/callback",
+        json={"code": "auth-code", "state": "some-state"},
+    )
     assert callback_response.status_code == 200
     assert callback_response.json()["connected"] is True
     assert callback_response.json()["scope"] == "readonly"
@@ -210,10 +217,17 @@ async def test_contacts_accepts_custom_keywords(ctx, monkeypatch) -> None:
     async def fake_list_connections(access_token: str) -> list[dict]:
         return RAW_CONTACTS
 
-    monkeypatch.setattr(google_contacts_oauth_provider, "exchange_code_for_token", fake_exchange_code_for_token)
+    monkeypatch.setattr(
+        google_contacts_oauth_provider,
+        "exchange_code_for_token",
+        fake_exchange_code_for_token,
+    )
     monkeypatch.setattr(google_contacts_oauth_provider, "list_connections", fake_list_connections)
 
-    await client.post("/api/google-contacts/callback", json={"code": "auth-code", "state": "some-state"})
+    await client.post(
+        "/api/google-contacts/callback",
+        json={"code": "auth-code", "state": "some-state"},
+    )
 
     contacts_response = await client.get("/api/google-contacts/contacts", params={"keywords": "nowak"})
     assert contacts_response.status_code == 200

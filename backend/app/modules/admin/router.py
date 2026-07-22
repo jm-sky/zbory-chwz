@@ -18,6 +18,23 @@ from app.modules.auth.repositories import (
     get_user_repository as get_auth_user_repository,
 )
 from app.modules.churches.provisioning import provision_church_for_tenant
+from app.modules.churches.repositories import ChurchRepository, get_church_repository
+from app.modules.congregations.db_models import decode_coordinate
+from app.modules.congregations.repositories import (
+    CongregationRepository,
+    get_congregation_repository,
+)
+from app.modules.tenants.db_models import TenantMembershipDB
+from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
+from app.modules.tenants.schemas import (
+    TenantCreateRequest,
+    TenantListResponse,
+    TenantMembershipCreateRequest,
+    TenantMembershipResponse,
+    TenantMembershipUpdateRequest,
+    TenantResponse,
+    TenantUpdateRequest,
+)
 from app.modules.users.repositories import UserRepository, get_user_repository
 from app.modules.users.schemas import UserUpdate
 
@@ -114,26 +131,6 @@ async def delete_user(
 
 
 # Tenants/Congregations endpoints
-from app.modules.churches.repositories import ChurchRepository, get_church_repository
-from app.modules.congregations.db_models import decode_coordinate
-from app.modules.congregations.repositories import (
-    CongregationRepository,
-    get_congregation_repository,
-)
-from app.modules.tenants.db_models import TenantMembershipDB
-from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
-from app.modules.tenants.schemas import (
-    TenantCreateRequest,
-    TenantListResponse,
-    TenantMembershipCreateRequest,
-    TenantMembershipResponse,
-    TenantMembershipUpdateRequest,
-    TenantResponse,
-    TenantUpdateRequest,
-)
-from app.modules.users.repositories import UserRepository
-
-
 @router.get(
     "/tenants",
     response_model=TenantListResponse,

@@ -21,7 +21,10 @@ from app.modules.churches.schemas import (
     ServiceAssignmentUpdateRequest,
     ServiceTypeResponse,
 )
-from app.modules.directory.repositories import DirectoryRepository, get_directory_repository
+from app.modules.directory.repositories import (
+    DirectoryRepository,
+    get_directory_repository,
+)
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 
 router = APIRouter(prefix="/churches", tags=["Churches"])

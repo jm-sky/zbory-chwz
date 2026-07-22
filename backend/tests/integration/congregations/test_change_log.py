@@ -36,22 +36,52 @@ TENANT_ID = "tenant-swiebodzin"
 
 
 def _api_user(user_id: str, *, is_admin: bool = False) -> User:
-    return User(id=user_id, email=f"{user_id}@example.com", name=user_id, isAdmin=is_admin, createdAt=datetime.now(UTC))
+    return User(
+        id=user_id,
+        email=f"{user_id}@example.com",
+        name=user_id,
+        isAdmin=is_admin,
+        createdAt=datetime.now(UTC),
+    )
 
 
 async def _seed(session: AsyncSession) -> None:
     now = datetime.now(UTC)
-    session.add(TenantDB(id=TENANT_ID, name="Zbór w Świebodzinie", status="published", owner_id=OWNER_MEMBER_ID, created_at=now))
+    session.add(
+        TenantDB(
+            id=TENANT_ID,
+            name="Zbór w Świebodzinie",
+            status="published",
+            owner_id=OWNER_MEMBER_ID,
+            created_at=now,
+        )
+    )
     community = CommunityDB(id=generate_id(), name="CHWZ", slug="chwz", visibility="hidden")
     session.add(community)
     await session.flush()
-    session.add(ChurchDB(id=TENANT_ID, community_id=community.id, region_id=None, tenant_id=OWNER_MEMBER_ID, name="Zbór w Świebodzinie"))
+    session.add(
+        ChurchDB(
+            id=TENANT_ID,
+            community_id=community.id,
+            region_id=None,
+            tenant_id=OWNER_MEMBER_ID,
+            name="Zbór w Świebodzinie",
+        )
+    )
     session.add(TenantMembershipDB(tenant_id=TENANT_ID, user_id=OWNER_MEMBER_ID, role="owner"))
 
     role = RoleDB(id=generate_id(), name="bishop", scope_type="community")
     session.add(role)
     await session.flush()
-    session.add(UserRoleAssignmentDB(id=generate_id(), user_id=BISHOP_ID, role_id=role.id, scope_type="community", scope_id=community.id))
+    session.add(
+        UserRoleAssignmentDB(
+            id=generate_id(),
+            user_id=BISHOP_ID,
+            role_id=role.id,
+            scope_type="community",
+            scope_id=community.id,
+        )
+    )
 
     session.add(
         CongregationChangeLogDB(

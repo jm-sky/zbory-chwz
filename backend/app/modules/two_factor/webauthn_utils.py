@@ -78,9 +78,7 @@ def _get_timeout() -> int:
     return 60000
 
 
-def create_registration_options(
-    user_id: str, user_email: str, user_name: str
-) -> tuple[str, str]:
+def create_registration_options(user_id: str, user_email: str, user_name: str) -> tuple[str, str]:
     """
     Create WebAuthn registration options.
 

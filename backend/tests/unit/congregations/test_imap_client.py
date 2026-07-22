@@ -14,7 +14,10 @@ from email import message_from_string
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from app.modules.congregations.imap_client import extract_text_body, parse_authentication_results
+from app.modules.congregations.imap_client import (
+    extract_text_body,
+    parse_authentication_results,
+)
 
 
 def test_extract_text_body_plain() -> None:

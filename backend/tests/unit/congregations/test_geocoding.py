@@ -47,9 +47,22 @@ def _fast_throttle(monkeypatch):
 @pytest.mark.asyncio
 async def test_geocode_address_returns_exact_match_with_street(monkeypatch) -> None:
     headers: dict = {}
-    monkeypatch.setattr(geocoding.httpx, "AsyncClient", _fake_client([{"lat": "51.1079", "lon": "17.0385", "display_name": "Wrocław, Poland"}], captured_headers=headers))
+    monkeypatch.setattr(
+        geocoding.httpx,
+        "AsyncClient",
+        _fake_client(
+            [{"lat": "51.1079", "lon": "17.0385", "display_name": "Wrocław, Poland"}],
+            captured_headers=headers,
+        ),
+    )
 
-    result = await geocoding.geocode_address(street="Rynek 1", city="Wrocław", postal_code="50-101", province="dolnoslaskie", country="PL")
+    result = await geocoding.geocode_address(
+        street="Rynek 1",
+        city="Wrocław",
+        postal_code="50-101",
+        province="dolnoslaskie",
+        country="PL",
+    )
 
     assert result is not None
     assert result.latitude == pytest.approx(51.1079)
@@ -75,11 +88,25 @@ async def test_geocode_address_strips_polish_street_prefix(monkeypatch) -> None:
 
         async def get(self, url, params=None, headers=None, timeout=None):
             captured_params.update(params or {})
-            return _FakeResponse([{"lat": "52.2141815", "lon": "21.0210292", "display_name": "Marszałkowska 1, Warszawa"}])
+            return _FakeResponse(
+                [
+                    {
+                        "lat": "52.2141815",
+                        "lon": "21.0210292",
+                        "display_name": "Marszałkowska 1, Warszawa",
+                    }
+                ]
+            )
 
     monkeypatch.setattr(geocoding.httpx, "AsyncClient", _FakeAsyncClient)
 
-    result = await geocoding.geocode_address(street="ul. Marszałkowska 1", city="Warszawa", postal_code="00-590", province="mazowieckie", country="PL")
+    result = await geocoding.geocode_address(
+        street="ul. Marszałkowska 1",
+        city="Warszawa",
+        postal_code="00-590",
+        province="mazowieckie",
+        country="PL",
+    )
 
     assert result is not None
     assert "ul." not in captured_params["q"]
@@ -88,7 +115,11 @@ async def test_geocode_address_strips_polish_street_prefix(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_geocode_address_without_street_is_approximate(monkeypatch) -> None:
-    monkeypatch.setattr(geocoding.httpx, "AsyncClient", _fake_client([{"lat": "50.0", "lon": "20.0", "display_name": "Some City"}]))
+    monkeypatch.setattr(
+        geocoding.httpx,
+        "AsyncClient",
+        _fake_client([{"lat": "50.0", "lon": "20.0", "display_name": "Some City"}]),
+    )
 
     result = await geocoding.geocode_address(street=None, city="Kraków", postal_code=None, province=None, country="PL")
 
@@ -100,14 +131,24 @@ async def test_geocode_address_without_street_is_approximate(monkeypatch) -> Non
 async def test_geocode_address_returns_none_when_no_results(monkeypatch) -> None:
     monkeypatch.setattr(geocoding.httpx, "AsyncClient", _fake_client([]))
 
-    result = await geocoding.geocode_address(street=None, city="Nieistniejące Miasto", postal_code=None, province=None, country="PL")
+    result = await geocoding.geocode_address(
+        street=None,
+        city="Nieistniejące Miasto",
+        postal_code=None,
+        province=None,
+        country="PL",
+    )
 
     assert result is None
 
 
 @pytest.mark.asyncio
 async def test_geocode_address_returns_none_on_malformed_result(monkeypatch) -> None:
-    monkeypatch.setattr(geocoding.httpx, "AsyncClient", _fake_client([{"display_name": "Missing lat/lon"}]))
+    monkeypatch.setattr(
+        geocoding.httpx,
+        "AsyncClient",
+        _fake_client([{"display_name": "Missing lat/lon"}]),
+    )
 
     result = await geocoding.geocode_address(street=None, city="Wrocław", postal_code=None, province=None, country="PL")
 
@@ -115,7 +156,9 @@ async def test_geocode_address_returns_none_on_malformed_result(monkeypatch) -> 
 
 
 @pytest.mark.asyncio
-async def test_geocode_address_disabled_returns_none_without_calling_client(monkeypatch) -> None:
+async def test_geocode_address_disabled_returns_none_without_calling_client(
+    monkeypatch,
+) -> None:
     monkeypatch.setattr(geocoding.settings.nominatim, "enabled", False)
 
     def _boom(*args, **kwargs):

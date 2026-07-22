@@ -161,9 +161,7 @@ class UserRepository:
             # Legacy support: map role string to flags
             auth_user.isAdmin = role == "admin"
             auth_user.isOwner = role == "owner"
-            auth_user.isPremium = (
-                role == "premium" or role == "admin" or role == "owner"
-            )
+            auth_user.isPremium = role == "premium" or role == "admin" or role == "owner"
         else:
             # Use explicit flags if provided
             if is_admin is not None:
@@ -191,9 +189,7 @@ class UserRepository:
         """Permanently delete user from database."""
         return await self._auth_repo.delete_user(user_id, soft_delete=False)
 
-    async def count_users(
-        self, include_inactive: bool = False, search: str | None = None
-    ) -> int:
+    async def count_users(self, include_inactive: bool = False, search: str | None = None) -> int:
         """Count total users in database with optional search.
 
         Args:
@@ -203,9 +199,7 @@ class UserRepository:
         Returns:
             Total count of users matching criteria
         """
-        return await self._auth_repo.count_users(
-            include_inactive=include_inactive, search=search
-        )
+        return await self._auth_repo.count_users(include_inactive=include_inactive, search=search)
 
 
 def get_user_repository(

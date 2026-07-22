@@ -14,7 +14,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.common.crypto.encrypted_types import EncryptedString, hmac_email, hmac_phone_digits
+from app.common.crypto.encrypted_types import (
+    EncryptedString,
+    hmac_email,
+    hmac_phone_digits,
+)
 from app.core.database import Base
 from app.modules.churches.visibility import (
     DEFAULT_EMAIL_VISIBILITY,

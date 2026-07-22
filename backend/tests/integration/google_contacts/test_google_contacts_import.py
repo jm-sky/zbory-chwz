@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-characters-long-for-testing")
@@ -26,7 +26,12 @@ from app.core.database import Base, get_db
 from app.modules.auth.db_models import UserDB
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
-from app.modules.churches.db_models import ChurchDB, CommunityDB, PersonDB, ServiceAssignmentDB
+from app.modules.churches.db_models import (
+    ChurchDB,
+    CommunityDB,
+    PersonDB,
+    ServiceAssignmentDB,
+)
 from app.modules.congregations.db_models import CongregationAddressDB
 from app.modules.tenants.db_models import TenantDB
 from main import app
@@ -142,7 +147,15 @@ async def _seed_church(session_factory, *, tenant_id: str, name: str) -> None:
 async def _seed_person(session_factory, *, email: str | None = None, phone: str | None = None) -> str:
     person_id = generate_id()
     async with session_factory() as session:
-        session.add(PersonDB(id=person_id, first_name="Jan", last_name="Kowalski", email=email, phone=phone))
+        session.add(
+            PersonDB(
+                id=person_id,
+                first_name="Jan",
+                last_name="Kowalski",
+                email=email,
+                phone=phone,
+            )
+        )
         await session.commit()
     return person_id
 
@@ -167,8 +180,14 @@ async def test_analyze_church_matched_vs_new(ctx) -> None:
         "/api/google-contacts/import/analyze",
         json={
             "items": [
-                {"contact": _contact("people/c1", organization_name="Zbór CHWZ Warszawa"), "type": "church"},
-                {"contact": _contact("people/c2", organization_name="Zbór CHWZ Nowy Sącz"), "type": "church"},
+                {
+                    "contact": _contact("people/c1", organization_name="Zbór CHWZ Warszawa"),
+                    "type": "church",
+                },
+                {
+                    "contact": _contact("people/c2", organization_name="Zbór CHWZ Nowy Sącz"),
+                    "type": "church",
+                },
             ]
         },
     )
@@ -191,7 +210,14 @@ async def test_analyze_church_matches_preposition_variant(ctx) -> None:
 
     response = await client.post(
         "/api/google-contacts/import/analyze",
-        json={"items": [{"contact": _contact("people/c1", organization_name="Zbór Warszawa"), "type": "church"}]},
+        json={
+            "items": [
+                {
+                    "contact": _contact("people/c1", organization_name="Zbór Warszawa"),
+                    "type": "church",
+                }
+            ]
+        },
     )
 
     assert response.status_code == 200
@@ -262,7 +288,11 @@ async def test_analyze_church_diff_flags_changed_field(ctx) -> None:
         json={
             "items": [
                 {
-                    "contact": _contact("people/c1", organization_name="Zbór CHWZ Gdańsk", city="Gdańsk nowy"),
+                    "contact": _contact(
+                        "people/c1",
+                        organization_name="Zbór CHWZ Gdańsk",
+                        city="Gdańsk nowy",
+                    ),
                     "type": "church",
                 }
             ]
@@ -286,8 +316,24 @@ async def test_analyze_person_matches_by_email(ctx) -> None:
         "/api/google-contacts/import/analyze",
         json={
             "items": [
-                {"contact": _contact("people/p1", first_name="Jan", last_name="K.", email="jan@example.com"), "type": "person"},
-                {"contact": _contact("people/p2", first_name="Nowy", last_name="Kontakt", email="nowy@example.com"), "type": "person"},
+                {
+                    "contact": _contact(
+                        "people/p1",
+                        first_name="Jan",
+                        last_name="K.",
+                        email="jan@example.com",
+                    ),
+                    "type": "person",
+                },
+                {
+                    "contact": _contact(
+                        "people/p2",
+                        first_name="Nowy",
+                        last_name="Kontakt",
+                        email="nowy@example.com",
+                    ),
+                    "type": "person",
+                },
             ]
         },
     )
@@ -358,7 +404,12 @@ async def test_apply_updates_matched_church_name(ctx) -> None:
         "/api/google-contacts/import/apply",
         json={
             "churchItems": [
-                {"resourceName": "people/c1", "action": "update", "tenantId": tenant_id, "name": "Nowa nazwa"},
+                {
+                    "resourceName": "people/c1",
+                    "action": "update",
+                    "tenantId": tenant_id,
+                    "name": "Nowa nazwa",
+                },
             ],
             "personItems": [],
         },
@@ -506,7 +557,14 @@ async def test_apply_update_only_touches_provided_address_fields(ctx) -> None:
     response = await client.post(
         "/api/google-contacts/import/apply",
         json={
-            "churchItems": [{"resourceName": "people/c1", "action": "update", "tenantId": tenant_id, "postalCode": "91-000"}],
+            "churchItems": [
+                {
+                    "resourceName": "people/c1",
+                    "action": "update",
+                    "tenantId": tenant_id,
+                    "postalCode": "91-000",
+                }
+            ],
             "personItems": [],
         },
     )
@@ -532,7 +590,14 @@ async def test_apply_links_new_person_to_newly_created_church(ctx) -> None:
     response = await client.post(
         "/api/google-contacts/import/apply",
         json={
-            "churchItems": [{"resourceName": "people/c1", "action": "create", "name": "Zbór CHWZ Poznań", "city": "Poznań"}],
+            "churchItems": [
+                {
+                    "resourceName": "people/c1",
+                    "action": "create",
+                    "name": "Zbór CHWZ Poznań",
+                    "city": "Poznań",
+                }
+            ],
             "personItems": [
                 {
                     "resourceName": "people/p1",
@@ -564,7 +629,9 @@ async def test_apply_links_new_person_to_newly_created_church(ctx) -> None:
 
 
 @pytest.mark.asyncio
-async def test_apply_new_church_resource_name_without_matching_church_fails(ctx) -> None:
+async def test_apply_new_church_resource_name_without_matching_church_fails(
+    ctx,
+) -> None:
     client, login, _ = ctx
     login(_api_user(ADMIN_ID, is_admin=True))
 

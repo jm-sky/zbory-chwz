@@ -94,6 +94,7 @@ services:
       - ./backend/main.py:/app/main.py:rw,delegated
       - ./backend/cli:/app/cli:ro,delegated
       - ./backend/cli.py:/app/cli.py:ro,delegated
+      - ./backend/pyproject.toml:/app/pyproject.toml:ro,delegated
       - ./backend/images:/app/images:ro,delegated
       # Mount uploads directory for persistent file storage
       - zbory_chwz_uploads:/app/uploads

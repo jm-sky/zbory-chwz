@@ -72,7 +72,7 @@ async def callback(
     try:
         await service.complete_connection(user_id=current_user.id, code=callback_data.code)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     return await service.get_connection_status(current_user.id)
 
 
@@ -116,8 +116,10 @@ async def disconnect(
 async def list_contacts(
     current_user: AdminOrOwnerUser,
     service: Annotated[GoogleContactsService, Depends(get_google_contacts_service)],
-    keywords: Annotated[list[str], Query()] = list(FILTER_KEYWORDS),
+    keywords: Annotated[list[str] | None, Query()] = None,
 ) -> GoogleContactsListResponse:
+    if keywords is None:
+        keywords = list(FILTER_KEYWORDS)
     suggestions, total_fetched = await service.load_filtered_contacts(current_user.id, keywords)
     return GoogleContactsListResponse(
         contacts=suggestions,
@@ -170,4 +172,4 @@ async def apply_import(
     except HTTPException:
         raise
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

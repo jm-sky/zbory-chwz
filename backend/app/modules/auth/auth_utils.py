@@ -124,9 +124,9 @@ def verify_token(token: str, expected_type: str | None = None) -> JWTPayload:
             issuer=settings.security.jwt_issuer,
         )
     except jwt.ExpiredSignatureError:
-        raise ExpiredTokenError()
+        raise ExpiredTokenError() from None
     except jwt.InvalidTokenError:
-        raise InvalidTokenError()
+        raise InvalidTokenError() from None
 
     if expected_type is not None and payload.get("type") != expected_type:
         raise InvalidTokenError()

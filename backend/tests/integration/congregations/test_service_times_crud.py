@@ -28,13 +28,27 @@ OTHER_CHURCH_ID = "church-service-times-other"
 
 
 def _api_user(user_id: str) -> User:
-    return User(id=user_id, email=f"{user_id}@example.com", name=user_id, isAdmin=False, createdAt=datetime.now(UTC))
+    return User(
+        id=user_id,
+        email=f"{user_id}@example.com",
+        name=user_id,
+        isAdmin=False,
+        createdAt=datetime.now(UTC),
+    )
 
 
 async def _seed(session: AsyncSession) -> None:
     now = datetime.now(UTC)
     for church_id in (CHURCH_ID, OTHER_CHURCH_ID):
-        session.add(TenantDB(id=church_id, name="Zbor Testowy", status="published", owner_id=MEMBER_ID, created_at=now))
+        session.add(
+            TenantDB(
+                id=church_id,
+                name="Zbor Testowy",
+                status="published",
+                owner_id=MEMBER_ID,
+                created_at=now,
+            )
+        )
         session.add(TenantMembershipDB(tenant_id=church_id, user_id=MEMBER_ID, role="member"))
     await session.commit()
 
@@ -76,7 +90,12 @@ async def test_create_service_time_with_description_round_trips(ctx) -> None:
 
     response = await client.post(
         f"/api/congregations/{CHURCH_ID}/service-times",
-        json={"day": "sobota", "time": "21:00", "description": "Modlitwa nocna", "order": 0},
+        json={
+            "day": "sobota",
+            "time": "21:00",
+            "description": "Modlitwa nocna",
+            "order": 0,
+        },
     )
 
     assert response.status_code == 201
@@ -109,7 +128,12 @@ async def test_update_service_time_changes_fields_and_round_trips(ctx) -> None:
 
     created = await client.post(
         f"/api/congregations/{CHURCH_ID}/service-times",
-        json={"day": "sobota", "time": "21:00", "description": "Modlitwa nocna", "order": 0},
+        json={
+            "day": "sobota",
+            "time": "21:00",
+            "description": "Modlitwa nocna",
+            "order": 0,
+        },
     )
     service_time_id = created.json()["id"]
 
@@ -136,7 +160,12 @@ async def test_update_service_time_partial_leaves_other_fields_unchanged(ctx) ->
 
     created = await client.post(
         f"/api/congregations/{CHURCH_ID}/service-times",
-        json={"day": "sobota", "time": "21:00", "description": "Modlitwa nocna", "order": 3},
+        json={
+            "day": "sobota",
+            "time": "21:00",
+            "description": "Modlitwa nocna",
+            "order": 3,
+        },
     )
     service_time_id = created.json()["id"]
 

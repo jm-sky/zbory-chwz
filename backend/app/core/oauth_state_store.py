@@ -49,7 +49,11 @@ class OAuthStateStore:
             provider: OAuth provider the state was issued for
             ttl: Time-to-live in seconds (default: 10 minutes)
         """
-        await self.redis.setex(self._key(state), ttl or self.default_ttl, json.dumps({"provider": provider}))
+        await self.redis.setex(
+            self._key(state),
+            ttl or self.default_ttl,
+            json.dumps({"provider": provider}),
+        )
 
     async def consume_state(self, state: str, provider: str) -> bool:
         """

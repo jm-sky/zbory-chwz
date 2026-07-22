@@ -28,18 +28,14 @@ class UserProfileUpdate(BaseModel):
     """
 
     name: str | None = Field(None, min_length=1, max_length=100)
-    avatarUrl: str | None = Field(
-        None, description="Avatar URL (only allowed providers like Gravatar)"
-    )
+    avatarUrl: str | None = Field(None, description="Avatar URL (only allowed providers like Gravatar)")
 
     @field_validator("avatarUrl")
     @classmethod
     def validate_avatar_url(cls, v: str | None) -> str | None:
         """Validate avatar URL against allowed providers."""
         if v is not None and not validate_avatar_url(v):
-            raise ValueError(
-                "Avatar URL must be from an allowed provider (e.g., Gravatar)"
-            )
+            raise ValueError("Avatar URL must be from an allowed provider (e.g., Gravatar)")
         return v
 
 

@@ -35,12 +35,25 @@ TENANT_ID = "tenant-poznan"
 
 
 def _api_user(user_id: str) -> User:
-    return User(id=user_id, email=f"{user_id}@example.com", name=user_id, createdAt=datetime.now(UTC))
+    return User(
+        id=user_id,
+        email=f"{user_id}@example.com",
+        name=user_id,
+        createdAt=datetime.now(UTC),
+    )
 
 
 async def _seed(session: AsyncSession) -> None:
     now = datetime.now(UTC)
-    session.add(TenantDB(id=TENANT_ID, name="Zbór w Poznaniu", status="published", owner_id=OWNER_ID, created_at=now))
+    session.add(
+        TenantDB(
+            id=TENANT_ID,
+            name="Zbór w Poznaniu",
+            status="published",
+            owner_id=OWNER_ID,
+            created_at=now,
+        )
+    )
     session.add(TenantMembershipDB(tenant_id=TENANT_ID, user_id=OWNER_ID, role="owner"))
     session.add(
         CongregationAddressDB(
@@ -97,7 +110,12 @@ async def test_geocode_preview_returns_coordinates_without_saving(ctx, monkeypat
     login(_api_user(OWNER_ID))
 
     async def _fake_geocode_address(**kwargs):
-        return GeocodeResult(latitude=52.4064, longitude=16.9252, display_name="Poznań, Poland", confidence="exact")
+        return GeocodeResult(
+            latitude=52.4064,
+            longitude=16.9252,
+            display_name="Poznań, Poland",
+            confidence="exact",
+        )
 
     monkeypatch.setattr(congregations_router, "geocode_address", _fake_geocode_address)
 
