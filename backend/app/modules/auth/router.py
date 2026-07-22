@@ -531,12 +531,18 @@ async def get_oauth_auth_url(request_data: OAuthAuthUrlRequest, request: Request
     """
     Generate OAuth authorization URL.
 
-    Returns authorization URL and CSRF state parameter.
+    Returns authorization URL and CSRF state parameter. The state is also
+    persisted server-side (short TTL, single-use) so the callback can verify
+    it instead of trusting only the frontend's copy.
     """
     from app.core.oauth import oauth_service
+    from app.core.oauth_state_store import get_oauth_state_store
 
     state = oauth_service.generate_state()
     auth_url = oauth_service.get_authorization_url(request_data.provider, state)
+
+    state_store = await get_oauth_state_store()
+    await state_store.store_state(state, request_data.provider)
 
     return OAuthAuthUrlResponse(authUrl=auth_url, state=state)
 
@@ -560,10 +566,18 @@ async def oauth_callback(
 
     Security features:
     - ✅ Rate limiting: 10 requests/minute
-    - ✅ CSRF protection via state parameter
+    - ✅ CSRF protection via state parameter (verified + consumed server-side)
     - ⚪ reCAPTCHA: Optional (enable via RECAPTCHA_ENABLED=true)
     """
     from app.core.oauth import oauth_service
+    from app.core.oauth_state_store import get_oauth_state_store
+
+    state_store = await get_oauth_state_store()
+    if not await state_store.consume_state(callback_data.state, provider):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired state parameter",
+        )
 
     try:
         # Exchange code for token

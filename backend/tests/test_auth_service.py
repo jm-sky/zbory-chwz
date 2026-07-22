@@ -136,6 +136,71 @@ class TestLoginUser:
             )
 
 
+class TestLoginWithOAuth:
+    """Tests for OAuth login (issue 036: must reuse the same token-issuing
+    machinery as password login — jti, tv, session tracking)."""
+
+    @pytest.mark.asyncio
+    async def test_login_with_oauth_new_user_issues_full_tokens(
+        self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User
+    ) -> None:
+        from app.modules.auth.auth_utils import verify_token
+
+        mock_repository.get_user_by_oauth_provider.return_value = None
+        mock_repository.get_user_by_email.return_value = None
+        mock_repository.create_oauth_user.return_value = sample_user
+        mock_repository.create_oauth_connection.return_value = None
+
+        response = await auth_service.login_with_oauth(
+            "google",
+            {"email": "test@example.com", "providerId": "provider-123", "name": "Test User"},
+        )
+
+        assert response.accessToken is not None
+        assert response.refreshToken is not None
+        assert response.requiresEmailVerification is False
+
+        # The old bug: tokens were minted via raw create_access_token({"sub": user.id})
+        # with no jti/tv, so revocation and token-version enforcement silently
+        # no-op'd for OAuth sessions. They must now carry the same claims as
+        # password login.
+        payload = verify_token(response.accessToken)
+        assert payload["jti"]
+        assert payload["tv"] == sample_user.tokenVersion
+        assert payload["emailVerified"] == sample_user.isEmailVerified
+        mock_repository.create_oauth_connection.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_login_with_oauth_survives_token_version_bump(
+        self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User
+    ) -> None:
+        """A user whose tokenVersion was bumped (e.g. password change) must
+        still get a token carrying the *current* tv, not a stale default of 0
+        that the tv-enforcement dependency would immediately reject."""
+        from app.modules.auth.auth_utils import verify_token
+
+        sample_user.tokenVersion = 5
+        mock_repository.get_user_by_oauth_provider.return_value = sample_user
+        mock_repository.create_oauth_connection.return_value = None
+
+        response = await auth_service.login_with_oauth(
+            "google", {"email": "test@example.com", "providerId": "provider-123"}
+        )
+
+        payload = verify_token(response.accessToken)
+        assert payload["tv"] == 5
+
+    @pytest.mark.asyncio
+    async def test_login_with_oauth_missing_email_raises(self, auth_service: AuthService) -> None:
+        with pytest.raises(ValueError, match="Email is required"):
+            await auth_service.login_with_oauth("google", {"providerId": "abc"})
+
+    @pytest.mark.asyncio
+    async def test_login_with_oauth_missing_provider_raises(self, auth_service: AuthService) -> None:
+        with pytest.raises(ValueError, match="Provider and user_info are required"):
+            await auth_service.login_with_oauth("", {"email": "test@example.com"})
+
+
 class TestRefreshAccessToken:
     """Tests for token refresh."""
 

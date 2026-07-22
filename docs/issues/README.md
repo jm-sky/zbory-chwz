@@ -49,5 +49,6 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 037 | [2026-07-08--037--backport-jwt-2fa-shared-core.md](2026-07-08--037--backport-jwt-2fa-shared-core.md) | Backport JWT hardening i 2FA (shared core) | `done` |
 | 038 | [2026-07-10--038--google-contacts-sync.md](2026-07-10--038--google-contacts-sync.md) | Synchronizacja z Google Contacts (import zborów/osób, export kontaktów) | `planned` |
 | 039 | [2026-07-20--039--backport-shared-core-security-fixes.md](2026-07-20--039--backport-shared-core-security-fixes.md) | Backport: rate limiting, admin auth bypass, WebAuthn login (shared core) | `done` |
+| 040 | [2026-07-22--040--oauth-session-and-state-backport.md](2026-07-22--040--oauth-session-and-state-backport.md) | Backport: OAuth session/jti/tv/2FA + CSRF state store (gear-stack 036+037) | `done` |
 
 When adding a new issue: pick next `NNN`, create `YYYY-MM-DD--NNN--slug.md`, add a row here.

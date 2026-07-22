@@ -517,16 +517,16 @@ class AuthService:
 
         return True
 
-    async def login_with_oauth(self, provider: str, user_info: dict) -> LoginResponse:
+    async def _resolve_oauth_user(self, provider: str, user_info: dict) -> User:
         """
-        Login or register user via OAuth.
+        Look up, link, or create the user for an OAuth login, without issuing tokens.
 
         Args:
             provider: OAuth provider name (google, github, etc.)
             user_info: User information from OAuth provider (camelCase format from OAuthUserInfo)
 
         Returns:
-            LoginResponse with tokens and user info
+            The resolved user
 
         Raises:
             ValueError: If provider or user_info is invalid
@@ -585,15 +585,27 @@ class AuthService:
             avatar_url=avatar_url,
         )
 
-        # Generate tokens
-        access_token = create_access_token({"sub": user.id})
-        refresh_token = create_refresh_token({"sub": user.id})
+        return user
 
-        return LoginResponse(
-            user=UserResponse(**user.to_response()),
-            accessToken=access_token,
-            refreshToken=refresh_token,
-            tokenType="bearer",
-            expiresIn=settings.security.access_token_expires_minutes * 60,
-            requiresEmailVerification=False,  # OAuth emails are pre-verified
-        )
+    async def login_with_oauth(self, provider: str, user_info: dict) -> LoginResponse:
+        """
+        Login or register user via OAuth.
+
+        Routes through ``_issue_login_tokens`` (same as password login) so OAuth
+        sessions get a tracked `jti`, `tv`, and `emailVerified` claim like every
+        other login path.
+
+        Args:
+            provider: OAuth provider name (google, github, etc.)
+            user_info: User information from OAuth provider (camelCase format from OAuthUserInfo)
+
+        Returns:
+            LoginResponse with tokens and user info
+
+        Raises:
+            ValueError: If provider or user_info is invalid
+        """
+        user = await self._resolve_oauth_user(provider, user_info)
+        response = await self._issue_login_tokens(user)
+        response.requiresEmailVerification = False  # OAuth emails are pre-verified
+        return response
