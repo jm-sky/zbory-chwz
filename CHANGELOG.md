@@ -11,18 +11,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] - 2026-07-23
+
 ### Added
-- CLI `users change-password` command to set a user's password by email or ID (admin override; invalidates existing sessions via token version bump).
+- CLI `users change-password` for admin password resets
+- Congregation profile/completeness indicators; visibility indicators on list/detail
+- Website, e-mail, and IBAN fields on congregation address (Basic Info section)
+- Paginated change-history sections grouped by action
+- Admin congregation status filter; `GET /api/health/details` for Ops Monitor
+- Configurable footer GitHub link via `config.app.githubUrl`
 
 ### Changed
-
-### Deprecated
-
-### Removed
+- Docker Compose at repo root; Compose-managed Postgres volume; removed deprecated MinIO service
+- Shared compose auto-detect via `scripts/lib/detect_compose.sh`
+- CHWZ terminology and i18n string updates; Design & UX review notes (July 2026)
 
 ### Fixed
+- Preserve list filters on back navigation; stale congregation cache
+- Mobile visibility dropdown / indicator regressions; service types in people modal
+- Deploy: pin frontend pnpm to deploy OS user; remove nested step numbering
 
 ### Security
+- Path-safe storage and OAuth state cleanup; unified OAuth callback `/auth/callback/:provider`
+- OAuth session tracking, 2FA challenge, CSRF state store; `tv`/`jti` on 2FA login/refresh
+- Rate limiting, admin auth, WebAuthn login hardening; pnpm Dependabot overrides
 
 ---
 
