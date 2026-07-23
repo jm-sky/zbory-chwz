@@ -32,10 +32,7 @@ onMounted(async () => {
     const code = route.query.code as string
     const state = route.query.state as string
     const errorParam = route.query.error as string
-    const providerParam =
-      (route.params.provider as string)
-      || (route.meta.fixedOAuthProvider as string)
-      || ''
+    const providerParam = (route.params.provider as string) || ''
 
     provider.value = providerParam
 
