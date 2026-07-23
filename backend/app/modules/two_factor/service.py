@@ -18,6 +18,7 @@ from app.modules.settings.db_models import UserSettingsDB
 
 from .totp_service import TotpService
 from .types.repository import TwoFactorRepositoryInterface
+from .types.tokens import LoginTokens, TwoFactorLoginResult
 from .webauthn_service import WebAuthnService
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ class TwoFactorService:
         self.user_repository = user_repository
         self.token_blacklist_service = token_blacklist_service
 
-    async def _issue_login_tokens(self, user_id: str, tfa_method: str) -> dict[str, Any]:
+    async def _issue_login_tokens(self, user_id: str, tfa_method: str) -> LoginTokens:
         """Mint access/refresh tokens for a completed 2FA login.
 
         Delegates to ``AuthService._issue_login_tokens`` (the same helper the
@@ -138,7 +139,7 @@ class TwoFactorService:
         """Disable TOTP. Delegates to TotpService."""
         return await self.totp.disable(user_id, password, backup_code, user_repository)
 
-    async def verify_totp_login(self, two_factor_token: str, code: str) -> dict[str, Any]:
+    async def verify_totp_login(self, two_factor_token: str, code: str) -> TwoFactorLoginResult:
         """Verify TOTP code during login and return JWT tokens.
 
         This method combines TOTP verification with token generation.
@@ -157,7 +158,13 @@ class TwoFactorService:
 
             raise InvalidTwoFactorCodeError("Invalid verification code")
 
-        return await self._issue_login_tokens(user_id, tfa_method="totp")
+        tokens = await self._issue_login_tokens(user_id, tfa_method="totp")
+
+        return {
+            "verified": True,
+            "method": "totp",
+            **tokens,
+        }
 
     # ==================================================================
     # WebAuthn Methods - delegate to WebAuthnService
@@ -202,7 +209,7 @@ class TwoFactorService:
         credential_json: dict,
         challenge_data: dict | None = None,
         expected_user_id: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> TwoFactorLoginResult:
         """Complete passkey authentication during login and return JWT tokens.
 
         Delegates credential verification to WebAuthnService, then mints
