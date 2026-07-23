@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 
@@ -35,9 +36,15 @@ def extract_user_from_token(request: Request) -> str | None:
             if token:
                 # Simple JWT decode (just to get user_id, not full verification)
                 import jwt
+
                 from app.core.config import settings
 
-                payload: dict[str, Any] = jwt.decode(token, settings.security.secret_key, algorithms=[settings.security.jwt_algorithm], options={"verify_exp": False})
+                payload: dict[str, Any] = jwt.decode(
+                    token,
+                    settings.security.secret_key,
+                    algorithms=[settings.security.jwt_algorithm],
+                    options={"verify_exp": False},
+                )
                 user_id = payload.get("sub")
                 return str(user_id) if user_id else None
     except (json.JSONDecodeError, KeyError, ValueError) as e:
@@ -123,7 +130,7 @@ def require_2fa_rate_limit(max_attempts: int = 5, window_minutes: int = 15) -> C
                         raise HTTPException(
                             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                             detail=f"Too many failed attempts. Account locked for {window_minutes} minutes.",
-                        )
+                        ) from e
                 raise
             except Exception:
                 # Other exceptions - don't count as verification failure

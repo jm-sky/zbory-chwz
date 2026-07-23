@@ -3,6 +3,7 @@ import { Rocket } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
 import GuestLayoutFooter from '@/components/layout/GuestLayoutFooter.vue'
 import LogoText from '@/components/ui/LogoText.vue'
+import { PublicRouteNames } from '@/router/publicRoutes'
 import DarkModeToggle from '@/shared/components/DarkModeToggle.vue'
 import LocaleToggle from '@/shared/i18n/components/LocaleToggle.vue'
 
@@ -70,7 +71,7 @@ const layoutActionsComponent = route.meta.layoutActionsComponent
       <main class="flex-1 flex flex-col items-center justify-center p-8 sm:p-12">
         <!-- Mobile logo (shown only on small screens) -->
         <div class="lg:hidden mb-8">
-          <RouterLink to="/" class="block hover:opacity-80 hover:scale-105 transition-all">
+          <RouterLink :to="{ name: PublicRouteNames.landing }" class="block hover:opacity-80 hover:scale-105 transition-all">
             <LogoText class="text-2xl" />
           </RouterLink>
         </div>

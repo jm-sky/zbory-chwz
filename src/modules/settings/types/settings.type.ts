@@ -2,12 +2,15 @@ import type { SupportedLocale } from '@/shared/i18n'
 
 export type Theme = 'light' | 'dark'
 
+export type ImageProcessingMode = 'high_quality' | 'balanced' | 'storage_saver'
+
 export interface Settings {
   darkMode: boolean
   locale: SupportedLocale
   defaultContainersPublic: boolean
   profilePublic: boolean
   emailPublic: boolean
+  imageProcessingMode?: ImageProcessingMode | null
 }
 
 export interface UpdateSettingsData {
@@ -16,6 +19,7 @@ export interface UpdateSettingsData {
   defaultContainersPublic?: boolean
   profilePublic?: boolean
   emailPublic?: boolean
+  imageProcessingMode?: ImageProcessingMode | null
 }
 
 export interface ISettingsService {

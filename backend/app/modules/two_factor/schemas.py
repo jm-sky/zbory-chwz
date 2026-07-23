@@ -145,9 +145,21 @@ class InitiatePasskeyAuthenticationResponse(BaseModel):
     expiresAt: datetime
 
 
-class CompletePasskeyAuthenticationRequest(BaseModel):
-    """Request to complete passkey authentication."""
+class InitiatePasskeyAuthenticationRequest(BaseModel):
+    """Request to initiate passkey authentication during login.
 
+    twoFactorToken identifies the pending-2FA user (issued after password
+    verification) — this endpoint is called before the user has a full
+    session, so it cannot rely on CurrentUser.
+    """
+
+    twoFactorToken: str
+
+
+class CompletePasskeyAuthenticationRequest(BaseModel):
+    """Request to complete passkey authentication during login."""
+
+    twoFactorToken: str
     challengeToken: str
     credential: dict  # PublicKeyCredential from WebAuthn API
 
@@ -155,7 +167,7 @@ class CompletePasskeyAuthenticationRequest(BaseModel):
 class UpdatePreferredMethodRequest(BaseModel):
     """Request to update preferred 2FA method."""
 
-    method: str  # 'totp' or 'webauthn'
+    preferredMethod: str | None = None  # 'totp', 'webauthn', or null to clear preference
 
 
 class TotpStatusCompactResponse(BaseModel):

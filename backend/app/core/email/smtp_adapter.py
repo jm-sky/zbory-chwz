@@ -20,7 +20,15 @@ class SMTPEmailAdapter(EmailAdapter):
     from_email: str
     use_tls: bool
 
-    def __init__(self, host: str, port: int = 587, user: str = "", password: str = "", from_email: str = "noreply@example.com", use_tls: bool = True):
+    def __init__(
+        self,
+        host: str,
+        port: int = 587,
+        user: str = "",
+        password: str = "",
+        from_email: str = "noreply@example.com",
+        use_tls: bool = True,
+    ):
         """Initialize SMTP email adapter.
 
         Args:
@@ -38,7 +46,14 @@ class SMTPEmailAdapter(EmailAdapter):
         self.from_email = from_email
         self.use_tls = use_tls
 
-    async def send_email(self, to: str, subject: str, html_body: str, text_body: str | None = None, from_email: str | None = None) -> bool:
+    async def send_email(
+        self,
+        to: str,
+        subject: str,
+        html_body: str,
+        text_body: str | None = None,
+        from_email: str | None = None,
+    ) -> bool:
         """Send email via SMTP.
 
         Args:

@@ -4,12 +4,15 @@ import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import GuestLayoutCard from '@/components/layout/GuestLayoutCard.vue'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import GuestLayoutCentered from '@/layouts/GuestLayoutCentered.vue'
 import TotpVerifyForm from '@/modules/auth/components/TotpVerifyForm.vue'
 import WebAuthnVerifyForm from '@/modules/auth/components/WebAuthnVerifyForm.vue'
-import { AuthRouteNames, AuthRoutePaths } from '@/modules/auth/config/routes'
+import { useAuth } from '@/modules/auth/composables/useAuth'
+import { AuthRouteNames } from '@/modules/auth/config/routes'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import { PublicRoutePaths } from '@/router/publicRoutes'
 import type { ITwoFactorService } from '@/modules/auth/types/twoFactor.type'
 
 const props = defineProps<{
@@ -22,6 +25,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const { logout, isLoggingOut } = useAuth()
 
 // Get 2FA token and methods from store
 const twoFactorToken = computed(() => authStore.twoFactorToken)
@@ -68,9 +72,17 @@ onMounted(() => {
 
 const handleVerificationSuccess = async (_accessToken: string) => {
   // Token is already set in store by the verification composable
-  // Redirect to dashboard or intended page
-  const redirectTo = typeof route.query.redirectTo === 'string' ? route.query.redirectTo : AuthRoutePaths.dashboard
+  // Redirect to landing page or intended page
+  const redirectTo = typeof route.query.redirectTo === 'string' ? route.query.redirectTo : PublicRoutePaths.landing
   await router.push(redirectTo)
+}
+
+const handleLogout = async () => {
+  try {
+    await logout()
+  } finally {
+    await router.push({ name: AuthRouteNames.login })
+  }
 }
 </script>
 
@@ -91,10 +103,10 @@ const handleVerificationSuccess = async (_accessToken: string) => {
       <Tabs v-if="hasTOTP && hasWebAuthn" :default-value="defaultMethod" class="w-full">
         <TabsList class="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="totp">
-            {{ t('auth.two_factor.totp.title') }}
+            {{ t('auth.two_factor.totp.tab_label') }}
           </TabsTrigger>
           <TabsTrigger value="webauthn">
-            {{ t('auth.two_factor.webauthn.title') }}
+            {{ t('auth.two_factor.webauthn.tab_label') }}
           </TabsTrigger>
         </TabsList>
 
@@ -125,6 +137,16 @@ const handleVerificationSuccess = async (_accessToken: string) => {
       <div v-else class="text-center text-muted-foreground py-4">
         {{ t('auth.two_factor.no_methods_configured') }}
       </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        class="mt-4 w-full"
+        :loading="isLoggingOut"
+        @click="handleLogout"
+      >
+        {{ t('auth.logout') }}
+      </Button>
     </GuestLayoutCard>
   </GuestLayoutCentered>
 </template>

@@ -12,8 +12,8 @@ from fastapi import Depends
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.common.id_utils import generate_id
+from app.core.database import get_db
 
 from .db_models import PasskeyDB, TotpConfigDB
 from .types.repository import TwoFactorRepositoryInterface
@@ -149,6 +149,14 @@ class TwoFactorRepository(TwoFactorRepositoryInterface):
         await self.db.execute(stmt)
         await self.db.commit()
 
+    async def delete_all_passkeys(self, user_id: str) -> None:
+        """Delete all passkeys for a user."""
+        stmt = delete(PasskeyDB).where(PasskeyDB.user_id == user_id)
+        await self.db.execute(stmt)
+        await self.db.commit()
 
-def get_two_factor_repository(db: AsyncSession = Depends(get_db)) -> TwoFactorRepositoryInterface:
+
+def get_two_factor_repository(
+    db: AsyncSession = Depends(get_db),
+) -> TwoFactorRepositoryInterface:
     return TwoFactorRepository(db)

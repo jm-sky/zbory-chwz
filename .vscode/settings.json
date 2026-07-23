@@ -1,52 +1,10 @@
 {
-  // Python configuration for backend subdirectory
-  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
-  "python.analysis.extraPaths": [
-    "${workspaceFolder}/backend"
-  ],
-  "python.analysis.autoImportCompletions": true,
-  "python.analysis.typeCheckingMode": "basic",
-  "python.analysis.pythonVersion": "3.12",
-  "python.analysis.diagnosticMode": "workspace",
-  
-  // Black formatter configuration (auto-detects pyproject.toml in backend/)
-  "black-formatter.path": [
-    "${workspaceFolder}/backend/.venv/bin/black"
-  ],
-  
-  // Pylint configuration
-  "pylint.args": [
-    "--rcfile=${workspaceFolder}/backend/.pylintrc"
-  ],
-  
-  // Flake8 configuration
-  "flake8.args": [
-    "--config=${workspaceFolder}/backend/.flake8"
-  ],
-  "flake8.path": [
-    "${workspaceFolder}/backend"
-  ],
-  
-  // File associations
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "backend/app/seeders/catalogue_items.json"
+      ],
+      "url": "./backend/app/seeders/catalogue_items.schema.json"
     }
-  },
-  
-  // Exclude patterns
-  "files.exclude": {
-    "**/__pycache__": true,
-    "**/*.pyc": true
-  },
-  
-  // Search exclude patterns
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/__pycache__": true,
-    "**/.venv": true,
-    "**/venv": true
-  }
+  ]
 }

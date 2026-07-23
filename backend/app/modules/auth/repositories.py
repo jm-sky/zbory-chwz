@@ -15,24 +15,23 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 from fastapi import Depends
-from sqlalchemy import select, func
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.common.id_utils import generate_id
 from app.common.repository_utils import normalize_email
 from app.common.search import SearchMixin
+from app.core.database import get_db
 
 from .auth_utils import (
     create_password_reset_token,
     get_password_hash,
     verify_password,
 )
-from .db_models import UserDB
+from .db_models import OAuthConnectionDB, UserDB
 from .exceptions import UserAlreadyExistsError
 from .models import User
 from .types.repository import UserRepositoryInterface
-
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +65,8 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             hashedPassword=user_db.hashed_password or "",  # OAuth users may not have password
             isActive=user_db.is_active,
             isAdmin=user_db.is_admin,
+            isOwner=user_db.is_owner,
+            isPremium=user_db.is_premium,
             isEmailVerified=user_db.is_email_verified,
             createdAt=user_db.created_at,
             resetToken=user_db.reset_token,
@@ -76,6 +77,7 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             oauthProvider=user_db.oauth_provider,
             oauthProviderId=user_db.oauth_provider_id,
             avatarUrl=user_db.avatar_url,
+            tokenVersion=user_db.token_version,
         )
 
     async def create_user(
@@ -215,9 +217,11 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
         # Update fields
         user_db.email = user.email
         user_db.name = user.name
-        user_db.hashed_password = user.hashedPassword
+        user_db.hashed_password = user.hashedPassword  # type: ignore[assignment]
         user_db.is_active = user.isActive
         user_db.is_admin = user.isAdmin
+        user_db.is_owner = user.isOwner
+        user_db.is_premium = user.isPremium
         user_db.reset_token = user.resetToken
         user_db.reset_token_expiry = user.resetTokenExpiry
         user_db.is_email_verified = user.isEmailVerified
@@ -274,8 +278,8 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
         if not user or not user.isActive:
             return False
 
-        # Verify current password
-        if not verify_password(current_password, user.hashedPassword):
+        # Verify current password (hashedPassword is guaranteed non-empty for active users)
+        if not user.hashedPassword or not verify_password(current_password, user.hashedPassword):
             return False
 
         # Update password
@@ -317,22 +321,52 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
         if not user_db:
             return False
 
+        # Always remove OAuth connections tied to this user.
+        await self.db.execute(delete(OAuthConnectionDB).where(OAuthConnectionDB.user_id == user_id))
+        # Best-effort cleanup for 2FA artifacts (module may be disabled in some deployments).
+        try:
+            from app.modules.two_factor.db_models import PasskeyDB, TotpConfigDB
+
+            await self.db.execute(delete(TotpConfigDB).where(TotpConfigDB.user_id == user_id))
+            await self.db.execute(delete(PasskeyDB).where(PasskeyDB.user_id == user_id))
+        except ImportError:
+            pass
+
         if soft_delete:
             # Soft delete: mark as deleted and anonymize data
             user_db.deleted_at = datetime.now(UTC)
             user_db.is_active = False
+            user_db.token_version += 1
             # Anonymize email and name for GDPR compliance
             user_db.email = f"deleted_{user_db.id}@deleted.local"
             user_db.name = "Deleted User"
             # Clear sensitive data
+            user_db.hashed_password = None  # type: ignore[assignment]
             user_db.reset_token = None
             user_db.reset_token_expiry = None
+            user_db.email_verification_token = None
+            user_db.email_verification_sent_at = None
+            user_db.email_verified_at = None
+            user_db.oauth_provider = None
+            user_db.oauth_provider_id = None
+            user_db.avatar_url = None
         else:
             # Hard delete: physically remove from database
             await self.db.delete(user_db)
 
         await self.db.commit()
         return True
+
+    async def increment_token_version(self, user_id: str) -> int:
+        """Increment token_version to invalidate all existing tokens for a user."""
+        stmt = select(UserDB).where(UserDB.id == user_id)
+        result = await self.db.execute(stmt)
+        user_db = result.scalar_one_or_none()
+        if not user_db:
+            return 0
+        user_db.token_version = (user_db.token_version or 0) + 1
+        await self.db.commit()
+        return user_db.token_version
 
     async def create_oauth_user(
         self,
@@ -392,6 +426,134 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             return None
 
         return self._map_user(user_db)
+
+    async def get_oauth_connections(self, user_id: str) -> list[dict]:
+        """Get all OAuth connections for a user."""
+        stmt = select(OAuthConnectionDB).where(OAuthConnectionDB.user_id == user_id)
+        result = await self.db.execute(stmt)
+        connections = result.scalars().all()
+
+        return [
+            {
+                "id": conn.id,
+                "provider": conn.provider,
+                "providerId": conn.provider_id,
+                "email": conn.email,
+                "name": conn.name,
+                "avatarUrl": conn.avatar_url,
+                "createdAt": conn.created_at,
+            }
+            for conn in connections
+        ]
+
+    async def create_oauth_connection(
+        self,
+        user_id: str,
+        provider: str,
+        provider_id: str,
+        email: str | None = None,
+        name: str | None = None,
+        avatar_url: str | None = None,
+    ) -> dict:
+        """Create or update OAuth connection for a user."""
+        # Check if connection already exists for this user and provider
+        stmt = select(OAuthConnectionDB).where(
+            OAuthConnectionDB.user_id == user_id,
+            OAuthConnectionDB.provider == provider,
+            OAuthConnectionDB.provider_id == provider_id,
+        )
+        result = await self.db.execute(stmt)
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            # Connection already exists for this user - update it with latest data
+            existing.email = email
+            existing.name = name
+            existing.avatar_url = avatar_url
+            await self.db.commit()
+            await self.db.refresh(existing)
+
+            return {
+                "id": existing.id,
+                "provider": existing.provider,
+                "providerId": existing.provider_id,
+                "email": existing.email,
+                "name": existing.name,
+                "avatarUrl": existing.avatar_url,
+                "createdAt": existing.created_at,
+            }
+
+        # Check if connection exists for this provider+provider_id but different user
+        # (shouldn't happen due to unique constraint, but check for safety)
+        stmt_check = select(OAuthConnectionDB).where(
+            OAuthConnectionDB.provider == provider,
+            OAuthConnectionDB.provider_id == provider_id,
+        )
+        result_check = await self.db.execute(stmt_check)
+        existing_check = result_check.scalar_one_or_none()
+
+        if existing_check:
+            # Connection exists but for different user - this shouldn't happen
+            # but if it does, update it to point to current user
+            existing_check.user_id = user_id
+            existing_check.email = email
+            existing_check.name = name
+            existing_check.avatar_url = avatar_url
+            await self.db.commit()
+            await self.db.refresh(existing_check)
+
+            return {
+                "id": existing_check.id,
+                "provider": existing_check.provider,
+                "providerId": existing_check.provider_id,
+                "email": existing_check.email,
+                "name": existing_check.name,
+                "avatarUrl": existing_check.avatar_url,
+                "createdAt": existing_check.created_at,
+            }
+
+        # Create new connection
+        connection_id = generate_id()
+        connection_db = OAuthConnectionDB(
+            id=connection_id,
+            user_id=user_id,
+            provider=provider,
+            provider_id=provider_id,
+            email=email,
+            name=name,
+            avatar_url=avatar_url,
+            created_at=datetime.now(UTC),
+        )
+
+        self.db.add(connection_db)
+        await self.db.commit()
+        await self.db.refresh(connection_db)
+
+        return {
+            "id": connection_db.id,
+            "provider": connection_db.provider,
+            "providerId": connection_db.provider_id,
+            "email": connection_db.email,
+            "name": connection_db.name,
+            "avatarUrl": connection_db.avatar_url,
+            "createdAt": connection_db.created_at,
+        }
+
+    async def delete_oauth_connection(self, user_id: str, provider: str) -> bool:
+        """Delete an OAuth connection for a user."""
+        stmt = select(OAuthConnectionDB).where(
+            OAuthConnectionDB.user_id == user_id,
+            OAuthConnectionDB.provider == provider,
+        )
+        result = await self.db.execute(stmt)
+        connection = result.scalar_one_or_none()
+
+        if not connection:
+            return False
+
+        await self.db.delete(connection)
+        await self.db.commit()
+        return True
 
 
 def get_user_repository(

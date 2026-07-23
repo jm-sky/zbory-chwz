@@ -1,6 +1,13 @@
 export const userEn = {
   user: {
     guest: 'Guest',
+    menu: {
+      title: 'User menu',
+    },
+    avatar: {
+      alt: 'User avatar',
+      guestAlt: 'Guest avatar',
+    },
     profile: {
       title: 'Profile',
       edit_button: 'Edit Profile',
@@ -41,6 +48,11 @@ export const userEn = {
       public_containers: 'Public Containers',
       no_containers: 'No public containers',
       no_containers_description: 'This user has not shared any public containers yet',
+    },
+    roles: {
+      admin: 'Admin',
+      owner: 'Owner',
+      premium: 'Premium',
     },
   },
 }

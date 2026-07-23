@@ -55,7 +55,11 @@ def create_two_factor_token(data: CreateTwoFactorTokenOptions) -> str:
         "tfaVerified": False,
         "tfaMethod": None,
     }
-    return jwt.encode(dict(payload), settings.security.secret_key, algorithm=settings.security.jwt_algorithm)
+    return jwt.encode(
+        dict(payload),
+        settings.security.secret_key,
+        algorithm=settings.security.jwt_algorithm,
+    )
 
 
 def verify_two_factor_token(token: str) -> TwoFactorTokenPayload:

@@ -24,6 +24,12 @@ interface ImportMetaEnv {
   readonly VITE_CONTACT_EMAIL?: string
   readonly VITE_API_PROXY_URL?: string
   readonly VITE_PORT?: string
+  readonly VITE_SENTRY_DSN?: string
+  readonly VITE_SENTRY_ENVIRONMENT?: string
+  readonly VITE_SENTRY_TRACES_SAMPLE_RATE?: string
+  readonly VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE?: string
+  readonly VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE?: string
+  readonly VITE_MAPTILER_API_KEY?: string
 }
 
 interface ImportMeta {

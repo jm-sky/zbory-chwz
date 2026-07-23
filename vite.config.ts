@@ -1,14 +1,17 @@
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
-import { VitePWA } from 'vite-plugin-pwa'
 import pkg from './package.json'
+import { pwaPlugin } from './pwa.config'
 
-// https://vite.dev/config/
+// https://vite.dev/config/Pfix
 export default defineConfig(({ mode }) => {
   const root = fileURLToPath(new URL('./', import.meta.url))
   const envVars = loadEnv(mode, root, 'VITE_')
+  const isProduction = mode === 'production'
+  const sentryEnabled = !!envVars.VITE_SENTRY_DSN && !!process.env.SENTRY_AUTH_TOKEN
 
   return {
     define: {
@@ -18,91 +21,22 @@ export default defineConfig(({ mode }) => {
     plugins: [
       tailwindcss(),
       vue(),
-      VitePWA({
-        registerType: 'prompt',
-        includeAssets: ['favicon.ico', 'favicon.svg', 'backpack-icon.svg'],
-        manifest: {
-          name: 'Gear Stack',
-          short_name: 'Gear Stack',
-          description: 'Gear Stack for managing survival gear and bug-out bag equipment.',
-          theme_color: '#18181b',
-          background_color: '#ffffff',
-          display: 'standalone',
-          orientation: 'portrait',
-          scope: '/',
-          start_url: '/',
-          icons: [
-            {
-              src: 'favicon.ico',
-              sizes: '48x48',
-              type: 'image/x-icon',
-            },
-            {
-              src: 'favicon.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
-              purpose: 'any maskable',
-            },
-            {
-              src: 'backpack-icon.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
-              purpose: 'any maskable',
-            },
-          ],
-        },
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
+      pwaPlugin,
+      // Sentry plugin for source maps upload (only in production builds)
+      ...(isProduction && sentryEnabled
+        ? [
+            sentryVitePlugin({
+              org: process.env.SENTRY_ORG,
+              project: process.env.SENTRY_PROJECT,
+              authToken: process.env.SENTRY_AUTH_TOKEN,
+              sourcemaps: {
+                assets: './dist/**',
+                ignore: ['./node_modules'],
+                filesToDeleteAfterUpload: './dist/**/*.map',
               },
-            },
-            {
-              urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'gstatic-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-            {
-              urlPattern: /^https:\/\/api\./i,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'api-cache',
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 5, // 5 minutes
-                },
-                networkTimeoutSeconds: 10,
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-          ],
-        },
-        devOptions: {
-          enabled: false, // Disable PWA in dev mode for faster development
-        },
-      }),
+            }),
+          ]
+        : []),
     ],
     resolve: {
       alias: {
@@ -120,6 +54,45 @@ export default defineConfig(({ mode }) => {
     },
     watch: {
       ignored: ['**/backend/**'],
+    },
+    build: {
+      chunkSizeWarningLimit: 600,
+      sourcemap: true, // Generate source maps to satisfy Lighthouse performance audit
+      cssCodeSplit: true, // Split CSS into separate chunks for better caching
+      rollupOptions: {
+        // @vueuse/core@14.3.0 — misplaced /* #__PURE__ */ in dist (vueuse/vueuse#5387)
+        onwarn(warning, warn) {
+          if (warning.code === 'INVALID_ANNOTATION') return
+          warn(warning)
+        },
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return
+
+            if (id.includes('lucide-vue-next')) return 'vendor-icons'
+            if (id.includes('@unovis') || id.includes('elkjs') || id.includes('maplibre-gl') || id.includes('leaflet') || id.includes('/three/')) {
+              return 'vendor-charts'
+            }
+            if (id.includes('vee-validate') || id.includes('@vee-validate') || id.includes('/zod/')) return 'vendor-forms'
+            if (id.includes('markdown-it')) return 'vendor-markdown'
+            if (id.includes('date-fns')) return 'vendor-dates'
+            if (id.includes('qrcode')) return 'vendor-qrcode'
+            if (id.includes('@simplewebauthn')) return 'vendor-webauthn'
+            if (id.includes('@tanstack/vue-table')) return 'vendor-table'
+            if (id.includes('@tanstack/vue-query')) return 'vendor-query'
+            if (id.includes('@vueuse/')) return 'vendor-vueuse'
+            if (id.includes('reka-ui')) return 'vendor-ui'
+            if (id.includes('floating-vue')) return 'vendor-tooltips'
+            if (id.includes('vue-sonner') || id.includes('/sonner/')) return 'vendor-notifications'
+            if (id.includes('vue-i18n')) return 'vendor-i18n'
+            if (id.includes('vue-router')) return 'vendor-router'
+            if (id.includes('pinia')) return 'vendor-pinia'
+            if (id.includes('/vue/') || id.includes('/@vue/')) return 'vendor-vue'
+
+            return 'vendor'
+          },
+        },
+      },
     },
   }
 })

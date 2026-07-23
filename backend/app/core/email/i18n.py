@@ -3,7 +3,10 @@
 import json
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +17,7 @@ DEFAULT_LOCALE: SupportedLocale = "pl"
 _translations_cache: dict[str, dict] = {}
 
 
-def _load_translations(locale: SupportedLocale) -> dict:
+def _load_translations(locale: SupportedLocale) -> dict[str, Any]:
     """Load translations for a given locale.
 
     Args:
@@ -30,8 +33,8 @@ def _load_translations(locale: SupportedLocale) -> dict:
     translations_file = translations_dir / f"{locale}.json"
 
     try:
-        with open(translations_file, "r", encoding="utf-8") as f:
-            translations = json.load(f)
+        with open(translations_file, encoding="utf-8") as f:
+            translations: dict[str, Any] = json.load(f)
             _translations_cache[locale] = translations
             return translations
     except FileNotFoundError:
@@ -46,7 +49,7 @@ def _load_translations(locale: SupportedLocale) -> dict:
         return {}
 
 
-def get_translations(locale: SupportedLocale) -> dict:
+def get_translations(locale: SupportedLocale) -> dict[str, Any]:
     """Get translations for a given locale.
 
     Args:
@@ -120,6 +123,7 @@ async def get_user_locale(
 
     try:
         from sqlalchemy import select
+
         from app.modules.settings.db_models import UserSettingsDB
 
         result = await db.execute(select(UserSettingsDB).where(UserSettingsDB.user_id == user_id))
@@ -127,9 +131,11 @@ async def get_user_locale(
 
         if settings and settings.locale:
             # Map locale from database (en/pl) to SupportedLocale
-            locale = settings.locale.lower()
-            if locale in ("pl", "en"):
-                return locale  # type: ignore[return-value]
+            locale_str = settings.locale.lower()
+            if locale_str == "pl":
+                return "pl"
+            elif locale_str == "en":
+                return "en"
     except Exception as e:
         logger.warning(f"Failed to get user locale for user {user_id}: {e}")
 

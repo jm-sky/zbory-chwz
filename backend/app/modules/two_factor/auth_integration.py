@@ -11,16 +11,18 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.modules.auth.auth_utils import create_access_token, create_refresh_token
-from app.modules.auth.service import AuthService
-from app.modules.auth.schemas import LoginResponse, UserResponse
-from app.modules.auth.repositories import get_user_repository
-from app.modules.auth.types.repository import UserRepositoryInterface
+from app.core.auth.dependencies import get_token_blacklist_service
+from app.core.auth.token_blacklist import TokenBlacklistService
 from app.core.config import settings
+from app.modules.auth.models import User
+from app.modules.auth.repositories import get_user_repository
+from app.modules.auth.schemas import LoginResponse
+from app.modules.auth.service import AuthService
+from app.modules.auth.types.repository import UserRepositoryInterface
 
 from .repositories import get_two_factor_repository
-from .service import TwoFactorService
 from .schemas import TwoFactorRequiredResponse
+from .service import TwoFactorService
 from .types.repository import TwoFactorRepositoryInterface
 
 
@@ -36,9 +38,49 @@ class AuthServiceWith2FA(AuthService):
         self,
         user_repository: UserRepositoryInterface,
         two_factor_service: TwoFactorService,
+        token_blacklist_service: TokenBlacklistService | None = None,
     ):
-        super().__init__(user_repository)
+        super().__init__(
+            user_repository=user_repository,
+            token_blacklist_service=token_blacklist_service,
+            two_factor_repository=two_factor_service.repository,
+        )
         self.two_factor_service = two_factor_service
+
+    async def _build_two_factor_challenge(self, user: User) -> TwoFactorRequiredResponse:
+        """Build the 2FA challenge response for a user with 2FA enabled."""
+        from .auth_utils import create_two_factor_token
+
+        two_factor_token = create_two_factor_token(
+            data={
+                "sub": user.id,
+                "email": user.email,
+            }
+        )
+        methods = await self.two_factor_service.get_available_methods(user.id)
+        preferred = await self.two_factor_service.get_preferred_method(user.id)
+
+        # Get expiration from token
+        import jwt
+
+        token_payload = jwt.decode(
+            two_factor_token,
+            settings.security.secret_key,
+            algorithms=[settings.security.jwt_algorithm],
+            options={"verify_exp": False},
+        )
+        from datetime import UTC, datetime
+
+        expires_at = datetime.fromtimestamp(token_payload["exp"], tz=UTC)
+
+        return TwoFactorRequiredResponse(
+            requiresTwoFactor=True,
+            twoFactorToken=two_factor_token,
+            methods=methods,
+            preferredMethod=preferred,
+            allowBackupCodes=True,  # If TOTP enabled
+            expiresAt=expires_at,
+        )
 
     async def login_user(self, email: str, password: str) -> LoginResponse | TwoFactorRequiredResponse:  # type: ignore[override]
         """Login with 2FA check.
@@ -54,8 +96,8 @@ class AuthServiceWith2FA(AuthService):
         if not user:
             raise InvalidCredentialsError("Invalid email or password")
 
-        # Verify password
-        if not verify_password(password, user.hashedPassword):
+        # Verify password (hashedPassword is guaranteed non-empty for password auth)
+        if not user.hashedPassword or not verify_password(password, user.hashedPassword):
             raise InvalidCredentialsError("Invalid email or password")
 
         # Check if user is active
@@ -63,74 +105,32 @@ class AuthServiceWith2FA(AuthService):
             raise InvalidCredentialsError("User account is inactive")
 
         # Check if user has 2FA enabled
-        has_2fa = await self.two_factor_service.has_two_factor_enabled(user.id)
+        if await self.two_factor_service.has_two_factor_enabled(user.id):
+            return await self._build_two_factor_challenge(user)
 
-        if has_2fa:
-            # Generate 2FA token
-            from .auth_utils import create_two_factor_token
+        # No 2FA - generate tokens via parent helper (handles JTI tracking)
+        return await self._issue_login_tokens(user)
 
-            two_factor_token = create_two_factor_token(
-                data={
-                    "sub": user.id,
-                    "email": user.email,
-                }
-            )
-            methods = await self.two_factor_service.get_available_methods(user.id)
-            preferred = await self.two_factor_service.get_preferred_method(user.id)
+    async def login_with_oauth(self, provider: str, user_info: dict) -> LoginResponse | TwoFactorRequiredResponse:  # type: ignore[override]
+        """Login or register user via OAuth, honoring 2FA like password login.
 
-            # Get expiration from token
-            import jwt
+        If the resolved user has 2FA enabled, returns TwoFactorRequiredResponse
+        instead of tokens (same challenge flow as ``login_user``).
+        """
+        user = await self._resolve_oauth_user(provider, user_info)
 
-            token_payload = jwt.decode(
-                two_factor_token,
-                settings.security.secret_key,
-                algorithms=[settings.security.jwt_algorithm],
-                options={"verify_exp": False},
-            )
-            from datetime import UTC, datetime
+        if await self.two_factor_service.has_two_factor_enabled(user.id):
+            return await self._build_two_factor_challenge(user)
 
-            expires_at = datetime.fromtimestamp(token_payload["exp"], tz=UTC)
-
-            return TwoFactorRequiredResponse(
-                requiresTwoFactor=True,
-                twoFactorToken=two_factor_token,
-                methods=methods,
-                preferredMethod=preferred,
-                allowBackupCodes=True,  # If TOTP enabled
-                expiresAt=expires_at,
-            )
-
-        # No 2FA - generate tokens as normal
-        access_token = create_access_token(
-            data={
-                "sub": user.id,
-                "email": user.email,
-                "tfaVerified": False,
-                "tfaMethod": None,
-            }
-        )
-        refresh_token = create_refresh_token(
-            data={
-                "sub": user.id,
-                "email": user.email,
-                "tfaVerified": False,
-                "tfaMethod": None,
-            }
-        )
-
-        return LoginResponse(
-            user=UserResponse(**user.to_response()),
-            accessToken=access_token,
-            refreshToken=refresh_token,
-            tokenType="bearer",
-            expiresIn=settings.security.access_token_expires_minutes * 60,
-            requiresEmailVerification=not user.isEmailVerified,
-        )
+        response = await self._issue_login_tokens(user)
+        response.requiresEmailVerification = False  # OAuth emails are pre-verified
+        return response
 
 
 def get_auth_service_with_2fa(
     user_repository: Annotated[UserRepositoryInterface, Depends(get_user_repository)],
     two_factor_repository: Annotated[TwoFactorRepositoryInterface, Depends(get_two_factor_repository)],
+    blacklist_service: Annotated[TokenBlacklistService, Depends(get_token_blacklist_service)],
 ) -> AuthServiceWith2FA:
     """
     FastAPI dependency for AuthServiceWith2FA.
@@ -155,4 +155,5 @@ def get_auth_service_with_2fa(
     return AuthServiceWith2FA(
         user_repository=user_repository,
         two_factor_service=two_factor_service,
+        token_blacklist_service=blacklist_service,
     )

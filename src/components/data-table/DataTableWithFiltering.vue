@@ -49,7 +49,9 @@ const table = useVueTable({
     <!-- Search Input -->
     <div class="flex items-center py-4">
       <Input
+        id="data-table-filter"
         v-model="filtering"
+        name="data-table-filter"
         :placeholder="searchPlaceholder ?? 'Filter emails...'"
         class="max-w-sm"
       />

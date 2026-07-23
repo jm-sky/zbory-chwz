@@ -3,33 +3,79 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlparse
 
 from webauthn import (
+    generate_authentication_options,
     generate_registration_options,
-    verify_registration_response,
     options_to_json,
+    verify_authentication_response,
+    verify_registration_response,
 )
 from webauthn.helpers import (
     base64url_to_bytes,
     bytes_to_base64url,
+    parse_authentication_credential_json,
     parse_registration_credential_json,
 )
+from webauthn.helpers.structs import (
+    AuthenticatorTransport,
+    PublicKeyCredentialDescriptor,
+    UserVerificationRequirement,
+)
+
 from app.core.config import settings
 
 
+def _frontend_hostname() -> str:
+    """Hostname derived from FRONTEND_URL."""
+    return urlparse(settings.frontend_url).hostname or "localhost"
+
+
 def _get_rp_id() -> str:
-    """Get WebAuthn Relying Party ID from settings."""
-    return getattr(getattr(settings, "two_factor", object()), "webauthn_rp_id", "localhost")
+    """Get WebAuthn Relying Party ID from settings.
+
+    When WEBAUTHN_RP_ID is still ``localhost`` but the app is served on a real
+    domain (FRONTEND_URL), use that domain so browser ceremonies succeed.
+    """
+    configured = settings.webauthn.rp_id
+    frontend_host = _frontend_hostname()
+    if configured in ("localhost", "127.0.0.1") and frontend_host not in (
+        "localhost",
+        "127.0.0.1",
+    ):
+        return frontend_host
+    return configured or frontend_host
 
 
 def _get_rp_name() -> str:
     """Get WebAuthn Relying Party name from settings."""
-    return getattr(getattr(settings, "two_factor", object()), "webauthn_rp_name", "FastAPI App")
+    return settings.webauthn.rp_name
+
+
+def _get_origin() -> str:
+    """Expected WebAuthn origin (frontend URL).
+
+    When WEBAUTHN_ORIGIN is still a localhost URL but FRONTEND_URL is a real
+    domain, use FRONTEND_URL so verification matches the browser origin.
+    """
+    configured = settings.webauthn.origin
+    frontend = settings.frontend_url
+    if not configured:
+        return frontend
+    configured_host = urlparse(configured).hostname or ""
+    frontend_host = _frontend_hostname()
+    if configured_host in ("localhost", "127.0.0.1") and frontend_host not in (
+        "localhost",
+        "127.0.0.1",
+    ):
+        return frontend
+    return configured
 
 
 def _get_timeout() -> int:
-    """Get WebAuthn timeout from settings."""
-    return getattr(getattr(settings, "two_factor", object()), "webauthn_timeout", 60000)
+    """Get WebAuthn timeout in milliseconds."""
+    return 60000
 
 
 def create_registration_options(user_id: str, user_email: str, user_name: str) -> tuple[str, str]:
@@ -117,4 +163,84 @@ def verify_registration(
         "transports": transports,
         "backup_eligible": backup_eligible,
         "backup_state": verification.credential_backed_up,
+    }
+
+
+def create_authentication_options(
+    allow_credentials: list[tuple[bytes, list[str]]],
+) -> tuple[str, bytes]:
+    """
+    Create WebAuthn authentication (passkey login) options.
+
+    Args:
+        allow_credentials: List of (credential_id_bytes, transports) for the
+            user's enabled passkeys
+
+    Returns:
+        (options_json, challenge) - options for frontend (JSON string, already
+        base64url-encoded internally by options_to_json), raw challenge bytes
+        to store server-side for later verification
+    """
+    descriptors = [
+        PublicKeyCredentialDescriptor(
+            id=credential_id,
+            transports=[AuthenticatorTransport(t) for t in transports] or None,
+        )
+        for credential_id, transports in allow_credentials
+    ]
+
+    options = generate_authentication_options(
+        rp_id=_get_rp_id(),
+        allow_credentials=descriptors,
+        user_verification=UserVerificationRequirement.REQUIRED,
+        timeout=_get_timeout(),
+    )
+
+    return options_to_json(options), options.challenge
+
+
+def verify_authentication(
+    credential_json: dict[str, Any],
+    expected_challenge: bytes,
+    expected_origin: str,
+    credential_public_key: bytes,
+    credential_current_sign_count: int,
+    expected_rp_id: str | None = None,
+) -> dict[str, Any]:
+    """
+    Verify a WebAuthn authentication (passkey login) response.
+
+    Args:
+        credential_json: Credential JSON from frontend (navigator.credentials.get result)
+        expected_challenge: Raw challenge bytes that were sent to frontend as
+            `options.challenge` (the exact bytes `generate_authentication_options`
+            produced — not re-encoded, just round-tripped through storage)
+        expected_origin: Expected origin (e.g., "https://example.com")
+        credential_public_key: Decrypted, raw public key bytes for the stored passkey
+        credential_current_sign_count: Last known signature counter for the stored passkey
+        expected_rp_id: Expected Relying Party ID (uses settings if None)
+
+    Returns:
+        Dict with new_sign_count (verified, monotonically-increasing counter)
+
+    Raises:
+        Exception: If verification fails (bad signature, replayed/cloned
+            counter, origin/rp_id mismatch, challenge mismatch, etc.)
+    """
+    credential = parse_authentication_credential_json(credential_json)
+
+    rp_id = expected_rp_id or _get_rp_id()
+
+    verification = verify_authentication_response(
+        credential=credential,
+        expected_challenge=expected_challenge,
+        expected_rp_id=rp_id,
+        expected_origin=expected_origin,
+        credential_public_key=credential_public_key,
+        credential_current_sign_count=credential_current_sign_count,
+        require_user_verification=True,
+    )
+
+    return {
+        "new_sign_count": verification.new_sign_count,
     }

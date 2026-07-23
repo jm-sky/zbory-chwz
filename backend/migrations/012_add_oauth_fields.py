@@ -26,16 +26,14 @@ from app.core.database import engine
 async def column_exists(conn, table_name: str, column_name: str) -> bool:
     """Check if a column exists in a table."""
     result = await conn.execute(
-        text(
-            """
+        text("""
             SELECT EXISTS (
-                SELECT FROM information_schema.columns 
-                WHERE table_schema = 'public' 
+                SELECT FROM information_schema.columns
+                WHERE table_schema = 'public'
                 AND table_name = :table_name
                 AND column_name = :column_name
             );
-        """
-        ),
+        """),
         {"table_name": table_name, "column_name": column_name},
     )
     return result.scalar() is True

@@ -1,0 +1,45 @@
+import type { RouteRecordRaw } from 'vue-router'
+
+export const CongregationRoutePaths = {
+  list: import.meta.env.VITE_CONGREGATIONS_LIST_PATH ?? '/congregations',
+  detail: import.meta.env.VITE_CONGREGATIONS_DETAIL_PATH ?? '/congregations/:id',
+  detailById: (id: string) => `/congregations/${id}`,
+  edit: import.meta.env.VITE_CONGREGATIONS_EDIT_PATH ?? '/congregations/:id/edit',
+  editById: (id: string) => `/congregations/${id}/edit`,
+  shared: '/share/:token',
+  sharedByToken: (token: string) => `/share/${token}`,
+} as const
+
+export const CongregationRouteNames = {
+  list: 'congregations',
+  detail: 'congregationDetail',
+  edit: 'congregationEdit',
+  shared: 'sharedCongregation',
+} as const
+
+export const congregationRoutes: RouteRecordRaw[] = [
+  {
+    path: CongregationRoutePaths.list,
+    name: CongregationRouteNames.list,
+    component: () => import('@/pages/LandingPage.vue'),
+    meta: { title: 'congregations.list.title' },
+  },
+  {
+    path: CongregationRoutePaths.edit,
+    name: CongregationRouteNames.edit,
+    component: () => import('@/modules/congregations/pages/EditCongregationPage.vue'),
+    meta: { layout: 'authenticated', title: 'congregations.edit.title' },
+  },
+  {
+    path: CongregationRoutePaths.detail,
+    name: CongregationRouteNames.detail,
+    component: () => import('@/modules/congregations/pages/CongregationDetailPage.vue'),
+    meta: { title: 'congregations.detail.title' },
+  },
+  {
+    path: CongregationRoutePaths.shared,
+    name: CongregationRouteNames.shared,
+    component: () => import('@/modules/congregations/pages/SharedCongregationPage.vue'),
+    meta: { layout: 'public', title: 'congregations.sharedView.title' },
+  },
+]

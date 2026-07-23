@@ -155,10 +155,10 @@ The `scripts/deploy.sh` script performs the following:
    - Remove old files: `sudo rm -rf /var/www/gear-stack/*`
    - Copy new build: `sudo cp -r dist/* /var/www/gear-stack/`
    - Fix ownership: `sudo chown -R caddy:deploy /var/www/gear-stack`
-5. **Restart backend and migrate**
-   - Stop Docker Compose: `docker compose -f docker-compose.dev.yml down`
-   - Start Docker Compose: `docker compose -f docker-compose.dev.yml up -d`
-   - Run migrations: `docker compose -f docker-compose.dev.yml exec app python cli.py db migrate`
+5. **Restart backend and migrate** (from repo root)
+   - Stop Docker Compose: `docker compose down`
+   - Start Docker Compose: `docker compose up -d`
+   - Run migrations: `docker compose exec app python cli.py db migrate`
 
 ## Permission Structure
 
@@ -226,7 +226,7 @@ sudo systemctl status caddy
 
 # Check backend containers
 cd /home/$USER/projects/gear-stack/backend
-docker compose -f docker-compose.dev.yml ps
+docker compose ps
 
 # Check deployed frontend
 ls -la /var/www/gear-stack/
@@ -237,6 +237,17 @@ ls -la /var/www/gear-stack/
 sudo systemctl reload caddy
 ```
 
+### Configure Cache Headers for Static Assets
+
+To improve Lighthouse performance scores, configure cache headers in your Caddyfile. See `docs/deployment/Caddyfile.example` for a complete example.
+
+Key points:
+- **Hashed assets** (`/assets/*.js`, `/assets/*.css`): Cache for 1 year (`max-age=31536000, immutable`)
+- **Other static files**: Cache for 1 hour (`max-age=3600`)
+- **HTML files**: No cache (always fresh)
+
+The FastAPI backend also adds cache headers as a fallback, but Caddy configuration is recommended for optimal performance.
+
 ### View deployment logs
 ```bash
 # Frontend build logs (during manual deployment)
@@ -244,5 +255,5 @@ sudo systemctl reload caddy
 
 # Backend logs
 cd /home/$USER/projects/gear-stack/backend
-docker compose -f docker-compose.dev.yml logs -f
+docker compose logs -f
 ```

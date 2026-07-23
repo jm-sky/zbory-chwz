@@ -1,48 +1,33 @@
+import { adminRoutes } from '@/modules/admin/routes'
 import { AuthRouteNames, AuthRoutePaths, authRoutes } from '@/modules/auth/config/routes'
-import { gearRoutes } from '@/modules/gear/routes'
+import { congregationRoutes } from '@/modules/congregations/routes'
+import { directoryRoutes } from '@/modules/directory/routes'
+import { groupRoutes } from '@/modules/groups/routes'
 import { settingsRoutes } from '@/modules/settings/routes'
 import { userRoutes } from '@/modules/user/routes'
+import { publicRoutes } from '@/router/publicRoutes'
 import type { RouteRecordRaw } from 'vue-router'
 
 export const routes: RouteRecordRaw[] = [
-  {
-    path: '/',
-    name: 'landing',
-    component: () => import('@/pages/LandingPage.vue'),
-  },
+  // Landing page (public)
+  ...publicRoutes.filter(route => route.name === 'landing'),
+  // Dashboard
   {
     path: AuthRoutePaths.dashboard,
     name: AuthRouteNames.dashboard,
     component: () => import('@/pages/DashboardPage.vue'),
-    meta: { layout: 'authenticated' },
+    meta: { layout: 'authenticated', title: 'navigation.dashboard' },
   },
-  {
-    path: '/cookies',
-    name: 'cookies',
-    component: () => import('@/pages/CookiesPage.vue'),
-    meta: { layout: 'authenticated' },
-  },
-  {
-    path: '/privacy',
-    name: 'privacy',
-    component: () => import('@/pages/PrivacyPage.vue'),
-    meta: { layout: 'authenticated' },
-  },
-  {
-    path: '/contact',
-    name: 'contact',
-    component: () => import('@/pages/ContactPage.vue'),
-    meta: { layout: 'authenticated' },
-  },
+  // Other public pages (about, cookies, privacy, terms, contact)
+  ...publicRoutes.filter(route => route.name !== 'landing' && route.name !== 'not-found'),
+  // Module routes
   ...authRoutes,
-  ...gearRoutes,
+  ...adminRoutes,
+  ...congregationRoutes,
+  ...directoryRoutes,
+  ...groupRoutes,
   ...settingsRoutes,
   ...userRoutes,
   // 404 catch-all route - must be last
-  {
-    path: '/:pathMatch(.*)*',
-    name: 'not-found',
-    component: () => import('@/pages/NotFoundPage.vue'),
-    meta: { layout: 'public' },
-  },
+  ...publicRoutes.filter(route => route.name === 'not-found'),
 ]

@@ -7,12 +7,12 @@ to the database when they occur in decorated functions.
 import functools
 import inspect
 import logging
-from typing import Any, Awaitable, Callable, TypeVar, ParamSpec, cast
+from collections.abc import Awaitable, Callable
+from typing import Any, ParamSpec, TypeVar, cast
 
 from fastapi import Request
 
 from .db_models import LogLevel
-
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +69,20 @@ def log_errors(message: str | None = None, reraise: bool = True, level: LogLevel
                     # Log the error
                     if log_service:
                         try:
-                            await log_service.log_error(message=error_message, exception=e, module=func.__module__, function=func.__name__, user_id=user_id, request_id=request_id)
+                            await log_service.log_error(
+                                message=error_message,
+                                exception=e,
+                                module=func.__module__,
+                                function=func.__name__,
+                                user_id=user_id,
+                                request_id=request_id,
+                            )
                         except Exception as log_error:
                             # Fallback to standard logging if database logging fails
-                            logger.error(f"Failed to log error to database: {log_error}", exc_info=True)
+                            logger.error(
+                                f"Failed to log error to database: {log_error}",
+                                exc_info=True,
+                            )
                             logger.error(f"Original error: {error_message}", exc_info=e)
                     else:
                         # Fallback to standard logging if no log service available

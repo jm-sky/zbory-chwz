@@ -8,6 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.common.pagination import PaginatedResponse
+
 from .db_models import LogLevel
 
 

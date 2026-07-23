@@ -13,5 +13,6 @@ export const settingsRoutes: RouteRecordRaw[] = [
     path: SettingsRoutePaths.settings,
     name: SettingsRouteNames.settings,
     component: () => import('@/pages/settings/SettingsPage.vue'),
+    meta: { title: 'settings.page.title' },
   },
 ]

@@ -30,7 +30,7 @@ export const authEn = {
     back_to_login: 'Back to Login',
     reset_token: 'Reset Token',
     reset_code: 'Reset Code',
-    email_placeholder: 'your.email@example.com',
+    email_placeholder: 'Your e-mail address',
     password_requirements: 'Password must be at least 8 characters long',
     token_placeholder: 'Enter the token from your email',
     enter_new_password: 'Enter your new password',
@@ -85,8 +85,15 @@ export const authEn = {
       verification_success: 'Verification successful',
       verify_button: 'Verify',
       no_methods_configured: 'No 2FA methods configured',
+      setup: {
+        title: 'Two-Factor Authentication Setup',
+      },
+      verify: {
+        title: 'Two-Factor Authentication',
+      },
       totp: {
         title: 'Authenticator App (TOTP)',
+        tab_label: 'Authenticator',
         description: 'Use an authenticator app like Google Authenticator or Authy',
         setup: 'Set up Authenticator',
         cancel: 'Cancel',
@@ -120,6 +127,7 @@ export const authEn = {
       },
       webauthn: {
         title: 'Passkeys',
+        tab_label: 'Passkeys',
         description: 'Use biometric authentication or security keys',
         register: 'Register Passkey',
         register_title: 'Add New Passkey',
@@ -161,10 +169,20 @@ export const authEn = {
       email_required: 'Email address is required to resend the verification link.',
       invalid_or_expired: 'Verification link is invalid or has expired. Request a new one below.',
       success: 'Email address verified successfully.',
+      redirecting_to_dashboard: 'Redirecting to dashboard...',
+      redirecting_to_login: 'Redirecting to login...',
+    },
+    pages: {
+      login: 'Sign In',
+      register: 'Sign Up',
+      verifyEmail: 'Verify Email',
+      oauthCallback: 'OAuth Callback',
     },
     oauth: {
       button: {
         continue_with_google: 'Google',
+        continue_with_facebook: 'Facebook',
+        continue_with_github: 'GitHub',
         redirecting: 'Redirecting...',
       },
       or_continue_with: 'Or continue with',

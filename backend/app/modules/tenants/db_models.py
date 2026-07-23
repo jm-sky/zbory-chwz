@@ -16,8 +16,12 @@ class TenantDB(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Note: status is temporary - in the future, status should be on congregation/address level, not tenant
+    # Keeping it for now for backward compatibility, but it will be moved to congregation/address module
+    status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     owner_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class TenantMembershipDB(Base):

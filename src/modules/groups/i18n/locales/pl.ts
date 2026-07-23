@@ -1,0 +1,43 @@
+export const groupsPl = {
+  groups: {
+    list: {
+      title: 'Grupy ludzi',
+      subtitle: 'Struktury organizacyjne niezależne od pojedynczego zboru',
+      create: 'Nowa grupa',
+      createTitle: 'Nowa grupa',
+      created: 'Grupa utworzona',
+      empty: 'Brak grup',
+      memberCount: '{count} osób',
+    },
+    detail: {
+      title: 'Grupa',
+      back: 'Wróć do listy grup',
+      members: 'Członkowie',
+      noMembers: 'Brak członków',
+      addMember: 'Dodaj osobę',
+      memberAdded: 'Dodano członka',
+      memberRemoved: 'Usunięto z grupy',
+      removeMemberConfirm: 'Usunąć tę osobę z grupy?',
+      editTitle: 'Edytuj grupę',
+      updated: 'Zapisano zmiany',
+      deleteConfirm: 'Usunąć tę grupę?',
+      deleted: 'Grupa usunięta',
+    },
+    fields: {
+      name: 'Nazwa',
+      description: 'Opis',
+      visibility: 'Widoczność',
+      firstName: 'Imię',
+      lastName: 'Nazwisko',
+      email: 'E-mail',
+      phone: 'Telefon',
+      roleLabel: 'Rola w grupie',
+      roleLabelPlaceholder: 'np. Przewodniczący',
+    },
+    visibility: {
+      public: 'Publiczna',
+      authenticated: 'Zalogowani',
+      private: 'Prywatna',
+    },
+  },
+}

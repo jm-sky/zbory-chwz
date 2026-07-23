@@ -38,31 +38,36 @@ export const authRoutes: RouteRecordRaw[] = [
     path: AuthRoutePaths.login,
     name: AuthRouteNames.login,
     component: () => import('@/modules/auth/pages/LoginPage.vue'),
+    meta: { title: 'auth.pages.login' },
   },
   {
     path: AuthRoutePaths.register,
     name: AuthRouteNames.register,
     component: () => import('@/modules/auth/pages/RegisterPage.vue'),
+    meta: { title: 'auth.pages.register' },
   },
   {
     path: AuthRoutePaths.forgotPassword,
     name: AuthRouteNames.forgotPassword,
     component: () => import('@/modules/auth/pages/ForgotPasswordPage.vue'),
+    meta: { title: 'auth.forgot_password_page.title' },
   },
   {
     path: AuthRoutePaths.resetPassword,
     name: AuthRouteNames.resetPassword,
     component: () => import('@/modules/auth/pages/ResetPasswordPage.vue'),
+    meta: { title: 'auth.reset_password_page.title' },
   },
   {
     path: AuthRoutePaths.changePassword,
     name: AuthRouteNames.changePassword,
     component: () => import('@/modules/auth/pages/ChangePasswordPage.vue'),
+    meta: { title: 'auth.change_password_page.title' },
   },
   {
     path: AuthRoutePaths.twoFactorSetup,
     name: AuthRouteNames.twoFactorSetup,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, title: 'auth.two_factor.setup.title' },
     component: () => import('@/modules/auth/pages/TwoFactorSetupPage.vue'),
   },
   {
@@ -70,17 +75,19 @@ export const authRoutes: RouteRecordRaw[] = [
     name: AuthRouteNames.twoFactorVerify,
     // Note: This route does NOT require auth (requiresAuth: false)
     // because users in 2FA flow have twoFactorToken but no accessToken
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: false, title: 'auth.two_factor.verify.title' },
     component: () => import('@/modules/auth/pages/TwoFactorVerifyPage.vue'),
   },
   {
     path: AuthRoutePaths.verifyEmail,
     name: AuthRouteNames.verifyEmail,
     component: () => import('@/modules/auth/pages/VerifyEmailPage.vue'),
+    meta: { title: 'auth.pages.verifyEmail' },
   },
   {
     path: AuthRoutePaths.oauthCallback,
     name: AuthRouteNames.oauthCallback,
     component: () => import('@/modules/auth/pages/OAuthCallbackPage.vue'),
+    meta: { title: 'auth.pages.oauthCallback' },
   },
 ]

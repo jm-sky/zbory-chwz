@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AuthRoutePaths } from '@/modules/auth/config/routes'
 import { authService } from '@/modules/auth/services/authService'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import { PublicRoutePaths } from '@/router/publicRoutes'
 import { useRecaptcha } from '@/shared/composables/useRecaptcha'
 import type { AuthResponse, LoginResponse } from '../types/user.type'
 
@@ -31,7 +32,7 @@ onMounted(async () => {
     const code = route.query.code as string
     const state = route.query.state as string
     const errorParam = route.query.error as string
-    const providerParam = route.params.provider as string
+    const providerParam = (route.params.provider as string) || ''
 
     provider.value = providerParam
 
@@ -53,18 +54,7 @@ onMounted(async () => {
       return
     }
 
-    // Verify state parameter for CSRF protection
-    const storedState = localStorage.getItem('oauth_state')
-    if (!storedState || storedState !== state) {
-      error.value = t('auth.oauth.callback.invalid_state')
-      setTimeout(() => {
-        router.push(AuthRoutePaths.login)
-      }, 2000)
-      return
-    }
-
-    // Clear stored state
-    localStorage.removeItem('oauth_state')
+    // CSRF `state` is verified server-side (oauth_state_store) on the callback API.
 
     // Get reCAPTCHA token if enabled
     const recaptchaToken = await getToken('oauth_callback')
@@ -77,9 +67,12 @@ onMounted(async () => {
     })
 
     // Handle response
-    if ('requiresTwoFactor' in response) {
-      // 2FA required - redirect to 2FA page
-      toast.info(t('auth.oauth.callback.two_factor_required'))
+    if ('requiresTwoFactor' in response && response.requiresTwoFactor) {
+      authStore.setTwoFactorToken(
+        response.twoFactorToken,
+        response.methods,
+        response.preferredMethod
+      )
       await router.push(AuthRoutePaths.twoFactorVerify)
       return
     }
@@ -95,7 +88,7 @@ onMounted(async () => {
       avatarUrl: authResponse.user.avatarUrl,
     })
     toast.success(t('auth.oauth.callback.success', { provider: providerParam }))
-    await router.push(AuthRoutePaths.dashboard)
+    await router.push(PublicRoutePaths.landing)
   } catch (err: unknown) {
     console.error('OAuth callback error:', err)
 
@@ -129,11 +122,11 @@ onMounted(async () => {
     <Card class="w-full max-w-md">
       <CardHeader>
         <CardTitle v-if="error" class="text-destructive">
-          {{ $t('auth.oauth.callback.authentication_failed') }}
+          {{ t('auth.oauth.callback.authentication_failed') }}
         </CardTitle>
         <CardTitle v-else class="flex items-center">
           <div class="mr-2 size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          {{ $t('auth.oauth.callback.signing_in') }}
+          {{ t('auth.oauth.callback.signing_in') }}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -141,7 +134,7 @@ onMounted(async () => {
           {{ error }}
         </CardDescription>
         <CardDescription v-else>
-          {{ $t('auth.oauth.callback.processing', { provider }) }}
+          {{ t('auth.oauth.callback.processing', { provider }) }}
         </CardDescription>
       </CardContent>
     </Card>

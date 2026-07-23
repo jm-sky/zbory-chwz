@@ -43,6 +43,7 @@ import logging
 import secrets
 from datetime import datetime
 from typing import Any
+
 from pydantic import BaseModel, EmailStr
 
 from .auth_utils import (  # noqa: E402
@@ -54,7 +55,6 @@ from .exceptions import (  # noqa: E402
     ExpiredTokenError,
     InvalidTokenError,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,8 @@ class User(BaseModel):
     hashedPassword: str | None = None  # Nullable for OAuth users
     isActive: bool = True
     isAdmin: bool = False
+    isOwner: bool = False
+    isPremium: bool = False
     isEmailVerified: bool = False
     createdAt: datetime
     resetToken: str | None = None
@@ -78,6 +80,7 @@ class User(BaseModel):
     oauthProvider: str | None = None  # 'google', 'github', etc.
     oauthProviderId: str | None = None  # Provider's user ID
     avatarUrl: str | None = None  # Profile picture URL
+    tokenVersion: int = 0
 
     def verify_password(self, password: str) -> bool:
         """Verify password against stored hash."""
@@ -178,7 +181,11 @@ class User(BaseModel):
             logger.debug("Invalid email verification token for user %s", self.id)
             return False
         except Exception as e:
-            logger.error("Unexpected error validating email verification token: %s", e, exc_info=True)
+            logger.error(
+                "Unexpected error validating email verification token: %s",
+                e,
+                exc_info=True,
+            )
             return False
 
     def to_response(self) -> dict[str, Any]:
@@ -189,6 +196,8 @@ class User(BaseModel):
             "name": self.name,
             "isActive": self.isActive,
             "isAdmin": self.isAdmin,
+            "isOwner": self.isOwner,
+            "isPremium": self.isPremium,
             "createdAt": self.createdAt,
             "isEmailVerified": self.isEmailVerified,
             "emailVerifiedAt": self.emailVerifiedAt,

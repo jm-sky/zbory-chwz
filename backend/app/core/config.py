@@ -1,6 +1,6 @@
 """Application configuration using Pydantic Settings with modular structure."""
 
-from enum import Enum
+from enum import StrEnum
 from functools import lru_cache
 from typing import Literal
 
@@ -9,12 +9,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.helpers import parse_list_value
 
-
 # Shared config for all nested settings
 _base_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore")
 
 
-class Environment(str, Enum):
+class Environment(StrEnum):
     """Application environment."""
 
     LOCAL = "local"
@@ -29,10 +28,22 @@ class AppSettings(BaseSettings):
     model_config = _base_config
 
     name: str = Field(default="backend", validation_alias="APP_NAME", description="Application name")
-    display_name: str = Field(default="Gear Stack", validation_alias="APP_DISPLAY_NAME", description="Application display name for emails and UI")
-    version: str = Field(default="0.1.2", validation_alias="APP_VERSION", description="Application version")
+    display_name: str = Field(
+        default="Zbory CHWZ",
+        validation_alias="APP_DISPLAY_NAME",
+        description="Application display name for emails and UI",
+    )
+    version: str = Field(
+        default="0.1.2",
+        validation_alias="APP_VERSION",
+        description="Application version",
+    )
     debug: bool = Field(default=False, validation_alias="DEBUG", description="Debug mode")
-    environment: Environment = Field(default=Environment.DEVELOPMENT, validation_alias="ENVIRONMENT", description="Environment (local, development, test, production)")
+    environment: Environment = Field(
+        default=Environment.DEVELOPMENT,
+        validation_alias="ENVIRONMENT",
+        description="Environment (local, development, test, production)",
+    )
 
     @field_validator("environment")
     @classmethod
@@ -51,11 +62,31 @@ class ServerSettings(BaseSettings):
 
     host: str = Field(default="0.0.0.0", validation_alias="HOST", description="Server host")
     port: int = Field(default=8000, validation_alias="PORT", description="Server port")
-    reload: bool = Field(default=True, validation_alias="RELOAD", description="Auto-reload on code changes")
-    cors_origins: str | list[str] = Field(default='["http://localhost:3000"]', validation_alias="CORS_ORIGINS", description="Allowed CORS origins")
-    cors_credentials: bool = Field(default=True, validation_alias="CORS_CREDENTIALS", description="Allow credentials")
-    cors_methods: str | list[str] = Field(default='["*"]', validation_alias="CORS_METHODS", description="Allowed HTTP methods")
-    cors_headers: str | list[str] = Field(default='["*"]', validation_alias="CORS_HEADERS", description="Allowed HTTP headers")
+    reload: bool = Field(
+        default=True,
+        validation_alias="RELOAD",
+        description="Auto-reload on code changes",
+    )
+    cors_origins: str | list[str] = Field(
+        default='["http://localhost:3000"]',
+        validation_alias="CORS_ORIGINS",
+        description="Allowed CORS origins",
+    )
+    cors_credentials: bool = Field(
+        default=True,
+        validation_alias="CORS_CREDENTIALS",
+        description="Allow credentials",
+    )
+    cors_methods: str | list[str] = Field(
+        default='["*"]',
+        validation_alias="CORS_METHODS",
+        description="Allowed HTTP methods",
+    )
+    cors_headers: str | list[str] = Field(
+        default='["*"]',
+        validation_alias="CORS_HEADERS",
+        description="Allowed HTTP headers",
+    )
     allowed_hosts: str | list[str] = Field(
         default='["localhost", "127.0.0.1"]',
         validation_alias="ALLOWED_HOSTS",
@@ -82,10 +113,26 @@ class DatabaseSettings(BaseSettings):
 
     model_config = _base_config
 
-    url: str = Field(default="sqlite+aiosqlite:///./data/app.db", validation_alias="DATABASE_URL", description="Database connection URL")
-    pool_size: int = Field(default=5, validation_alias="DATABASE_POOL_SIZE", description="Database connection pool size")
-    max_overflow: int = Field(default=10, validation_alias="DATABASE_MAX_OVERFLOW", description="Max database connections overflow")
-    pool_recycle: int = Field(default=3600, validation_alias="DATABASE_POOL_RECYCLE", description="Database pool recycle time (seconds)")
+    url: str = Field(
+        default="sqlite+aiosqlite:///./data/app.db",
+        validation_alias="DATABASE_URL",
+        description="Database connection URL",
+    )
+    pool_size: int = Field(
+        default=5,
+        validation_alias="DATABASE_POOL_SIZE",
+        description="Database connection pool size",
+    )
+    max_overflow: int = Field(
+        default=10,
+        validation_alias="DATABASE_MAX_OVERFLOW",
+        description="Max database connections overflow",
+    )
+    pool_recycle: int = Field(
+        default=3600,
+        validation_alias="DATABASE_POOL_RECYCLE",
+        description="Database pool recycle time (seconds)",
+    )
     echo: bool = Field(default=False, validation_alias="DATABASE_ECHO", description="Echo SQL queries")
 
     @field_validator("url")
@@ -105,12 +152,61 @@ class SecuritySettings(BaseSettings):
 
     model_config = _base_config
 
-    secret_key: str = Field(default="change-me-in-production-min-32-chars!", validation_alias="SECRET_KEY", description="Secret key for JWT and other crypto operations")
-    jwt_algorithm: str = Field(default="HS256", validation_alias="JWT_ALGORITHM", description="JWT signing algorithm")
-    access_token_expires_minutes: int = Field(default=30, validation_alias="ACCESS_TOKEN_EXPIRES_MINUTES", description="Access token expiration in minutes")
-    refresh_token_expires_days: int = Field(default=7, validation_alias="REFRESH_TOKEN_EXPIRES_DAYS", description="Refresh token expiration in days")
-    password_reset_token_expires_hours: int = Field(default=1, validation_alias="PASSWORD_RESET_TOKEN_EXPIRES_HOURS", description="Password reset token expiration in hours")
-    email_verification_token_expires_hours: int = Field(default=24, validation_alias="EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS", description="Email verification token expiration in hours")
+    registration_enabled: bool = Field(
+        default=True,
+        validation_alias="REGISTRATION_ENABLED",
+        description="Enable user registration (disable for invite-only mode)",
+    )
+    secret_key: str = Field(
+        default="change-me-in-production-min-32-chars!",
+        validation_alias="SECRET_KEY",
+        description="Secret key for JWT and other crypto operations",
+    )
+    jwt_algorithm: str = Field(
+        default="HS256",
+        validation_alias="JWT_ALGORITHM",
+        description="JWT signing algorithm",
+    )
+    jwt_issuer: str = Field(
+        default="zbory-chwz",
+        validation_alias="JWT_ISSUER",
+        description="JWT 'iss' claim; verified on decode to bind tokens to this deployment",
+    )
+    jwt_audience: str = Field(
+        default="zbory-chwz",
+        validation_alias="JWT_AUDIENCE",
+        description="JWT 'aud' claim; verified on decode to bind tokens to this deployment",
+    )
+    access_token_expires_minutes: int = Field(
+        default=30,
+        validation_alias="ACCESS_TOKEN_EXPIRES_MINUTES",
+        description="Access token expiration in minutes",
+    )
+    refresh_token_expires_days: int = Field(
+        default=7,
+        validation_alias="REFRESH_TOKEN_EXPIRES_DAYS",
+        description="Refresh token expiration in days",
+    )
+    password_reset_token_expires_hours: int = Field(
+        default=1,
+        validation_alias="PASSWORD_RESET_TOKEN_EXPIRES_HOURS",
+        description="Password reset token expiration in hours",
+    )
+    email_verification_token_expires_hours: int = Field(
+        default=24,
+        validation_alias="EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS",
+        description="Email verification token expiration in hours",
+    )
+    superadmin_email: str | None = Field(
+        default=None,
+        validation_alias="SUPERADMIN_EMAIL",
+        description="Email address of the super admin user (owner) - cannot be deleted or demoted",
+    )
+    protected_user_email: str | None = Field(
+        default=None,
+        validation_alias="PROTECTED_USER_EMAIL",
+        description="Protected user email - this user cannot be deleted",
+    )
 
     @field_validator("secret_key")
     @classmethod
@@ -134,13 +230,41 @@ class RateLimitSettings(BaseSettings):
 
     model_config = _base_config
 
-    enabled: bool = Field(default=True, validation_alias="RATE_LIMIT_ENABLED", description="Enable rate limiting")
-    default_per_minute: int = Field(default=60, validation_alias="RATE_LIMIT_DEFAULT_PER_MINUTE", description="Default rate limit per minute")
-    default_per_hour: int = Field(default=1000, validation_alias="RATE_LIMIT_DEFAULT_PER_HOUR", description="Default rate limit per hour")
-    auth_register: str = Field(default="5/minute", validation_alias="AUTH_REGISTER_RATE_LIMIT", description="Registration rate limit")
-    auth_login: str = Field(default="10/minute", validation_alias="AUTH_LOGIN_RATE_LIMIT", description="Login rate limit")
-    auth_refresh: str = Field(default="20/minute", validation_alias="AUTH_REFRESH_RATE_LIMIT", description="Token refresh rate limit")
-    auth_password_change: str = Field(default="3/minute", validation_alias="AUTH_PASSWORD_CHANGE_RATE_LIMIT", description="Password change rate limit")
+    enabled: bool = Field(
+        default=True,
+        validation_alias="RATE_LIMIT_ENABLED",
+        description="Enable rate limiting",
+    )
+    default_per_minute: int = Field(
+        default=60,
+        validation_alias="RATE_LIMIT_DEFAULT_PER_MINUTE",
+        description="Default rate limit per minute",
+    )
+    default_per_hour: int = Field(
+        default=1000,
+        validation_alias="RATE_LIMIT_DEFAULT_PER_HOUR",
+        description="Default rate limit per hour",
+    )
+    auth_register: str = Field(
+        default="5/minute",
+        validation_alias="AUTH_REGISTER_RATE_LIMIT",
+        description="Registration rate limit",
+    )
+    auth_login: str = Field(
+        default="10/minute",
+        validation_alias="AUTH_LOGIN_RATE_LIMIT",
+        description="Login rate limit",
+    )
+    auth_refresh: str = Field(
+        default="20/minute",
+        validation_alias="AUTH_REFRESH_RATE_LIMIT",
+        description="Token refresh rate limit",
+    )
+    auth_password_change: str = Field(
+        default="3/minute",
+        validation_alias="AUTH_PASSWORD_CHANGE_RATE_LIMIT",
+        description="Password change rate limit",
+    )
 
 
 class LoggingSettings(BaseSettings):
@@ -149,7 +273,11 @@ class LoggingSettings(BaseSettings):
     model_config = _base_config
 
     level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(default="INFO", validation_alias="LOG_LEVEL", description="Logging level")
-    format: str = Field(default="%(asctime)s | %(name)s | %(levelname)s | %(message)s", validation_alias="LOG_FORMAT", description="Log format")
+    format: str = Field(
+        default="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
+        validation_alias="LOG_FORMAT",
+        description="Log format",
+    )
     file: str | None = Field(default=None, validation_alias="LOG_FILE", description="Log file path")
 
 
@@ -158,11 +286,42 @@ class RecaptchaSettings(BaseSettings):
 
     model_config = _base_config
 
-    enabled: bool = Field(default=False, validation_alias="RECAPTCHA_ENABLED", description="Enable reCAPTCHA verification (optional security feature)")
-    secret_key: str = Field(default="", validation_alias="RECAPTCHA_SECRET_KEY", description="Google reCAPTCHA v3 secret key")
-    site_key: str = Field(default="", validation_alias="RECAPTCHA_SITE_KEY", description="Google reCAPTCHA v3 site key (for frontend)")
-    min_score: float = Field(default=0.5, validation_alias="RECAPTCHA_MIN_SCORE", description="Minimum reCAPTCHA score to accept (0.0-1.0)")
-    verify_url: str = Field(default="https://www.google.com/recaptcha/api/siteverify", validation_alias="RECAPTCHA_VERIFY_URL", description="reCAPTCHA verification endpoint")
+    enabled: bool = Field(
+        default=False,
+        validation_alias="RECAPTCHA_ENABLED",
+        description="Enable reCAPTCHA verification (optional security feature)",
+    )
+    secret_key: str = Field(
+        default="",
+        validation_alias="RECAPTCHA_SECRET_KEY",
+        description="Google reCAPTCHA v3 secret key",
+    )
+    site_key: str = Field(
+        default="",
+        validation_alias="RECAPTCHA_SITE_KEY",
+        description="Google reCAPTCHA v3 site key (for frontend)",
+    )
+    min_score: float = Field(
+        default=0.5,
+        validation_alias="RECAPTCHA_MIN_SCORE",
+        description="Minimum reCAPTCHA score to accept (0.0-1.0)",
+    )
+    verify_url: str = Field(
+        default="https://www.google.com/recaptcha/api/siteverify",
+        validation_alias="RECAPTCHA_VERIFY_URL",
+        description="reCAPTCHA verification endpoint",
+    )
+
+    @field_validator("enabled", mode="before")
+    @classmethod
+    def parse_enabled(cls, v: str | bool) -> bool:
+        """Parse enabled field from string or bool."""
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            # Handle common boolean string representations
+            return v.lower() in ("true", "1", "yes", "on")
+        return False
 
     @field_validator("min_score")
     @classmethod
@@ -179,9 +338,64 @@ class OAuthSettings(BaseSettings):
     model_config = _base_config
 
     # Google OAuth
-    google_client_id: str = Field(default="", validation_alias="GOOGLE_OAUTH_CLIENT_ID", description="Google OAuth client ID")
-    google_client_secret: str = Field(default="", validation_alias="GOOGLE_OAUTH_CLIENT_SECRET", description="Google OAuth client secret")
-    google_redirect_uri: str = Field(default="", validation_alias="GOOGLE_OAUTH_REDIRECT_URI", description="Google OAuth redirect URI")
+    google_client_id: str = Field(
+        default="",
+        validation_alias="GOOGLE_OAUTH_CLIENT_ID",
+        description="Google OAuth client ID",
+    )
+    google_client_secret: str = Field(
+        default="",
+        validation_alias="GOOGLE_OAUTH_CLIENT_SECRET",
+        description="Google OAuth client secret",
+    )
+    google_redirect_uri: str = Field(
+        default="",
+        validation_alias="GOOGLE_OAUTH_REDIRECT_URI",
+        description="Google OAuth redirect URI",
+    )
+
+    # Google Contacts (People API) — reuses the Google OAuth client above
+    # (google_client_id/google_client_secret) with a separate redirect URI,
+    # since this is an independent, incremental-auth connection (not login).
+    google_contacts_redirect_uri: str = Field(
+        default="",
+        validation_alias="GOOGLE_CONTACTS_REDIRECT_URI",
+        description="Google Contacts (People API) OAuth redirect URI",
+    )
+
+    # Facebook OAuth
+    facebook_client_id: str = Field(
+        default="",
+        validation_alias="FACEBOOK_OAUTH_CLIENT_ID",
+        description="Facebook OAuth client ID (App ID)",
+    )
+    facebook_client_secret: str = Field(
+        default="",
+        validation_alias="FACEBOOK_OAUTH_CLIENT_SECRET",
+        description="Facebook OAuth client secret (App Secret)",
+    )
+    facebook_redirect_uri: str = Field(
+        default="",
+        validation_alias="FACEBOOK_OAUTH_REDIRECT_URI",
+        description="Facebook OAuth redirect URI",
+    )
+
+    # GitHub OAuth (login callback: /auth/callback/github)
+    github_client_id: str = Field(
+        default="",
+        validation_alias="GITHUB_OAUTH_CLIENT_ID",
+        description="GitHub OAuth client ID for login",
+    )
+    github_client_secret: str = Field(
+        default="",
+        validation_alias="GITHUB_OAUTH_CLIENT_SECRET",
+        description="GitHub OAuth client secret for login",
+    )
+    github_redirect_uri: str = Field(
+        default="",
+        validation_alias="GITHUB_OAUTH_REDIRECT_URI",
+        description="GitHub login callback URL (e.g. /auth/callback/github)",
+    )
 
 
 class EmailSettings(BaseSettings):
@@ -189,18 +403,361 @@ class EmailSettings(BaseSettings):
 
     model_config = _base_config
 
-    enabled: bool = Field(default=True, validation_alias="EMAIL_ENABLED", description="Enable email service")
-    adapter: Literal["file", "smtp"] = Field(default="file", validation_alias="EMAIL_ADAPTER", description="Email adapter type (file or smtp)")
-    file_path: str = Field(default="./emails", validation_alias="EMAIL_FILE_PATH", description="Path for file email adapter")
-    smtp_host: str = Field(default="localhost", validation_alias="SMTP_HOST", description="SMTP server host")
+    enabled: bool = Field(
+        default=True,
+        validation_alias="EMAIL_ENABLED",
+        description="Enable email service",
+    )
+    adapter: Literal["file", "smtp"] = Field(
+        default="file",
+        validation_alias="EMAIL_ADAPTER",
+        description="Email adapter type (file or smtp)",
+    )
+    file_path: str = Field(
+        default="./emails",
+        validation_alias="EMAIL_FILE_PATH",
+        description="Path for file email adapter",
+    )
+    smtp_host: str = Field(
+        default="localhost",
+        validation_alias="SMTP_HOST",
+        description="SMTP server host",
+    )
     smtp_port: int = Field(default=587, validation_alias="SMTP_PORT", description="SMTP server port")
     smtp_user: str = Field(default="", validation_alias="SMTP_USER", description="SMTP username")
     smtp_password: str = Field(default="", validation_alias="SMTP_PASSWORD", description="SMTP password")
-    smtp_from: str = Field(default="noreply@example.com", validation_alias="SMTP_FROM", description="Default from email address")
-    smtp_use_tls: bool = Field(default=True, validation_alias="SMTP_USE_TLS", description="Use TLS for SMTP connection")
-    enable_audit: bool = Field(default=True, validation_alias="EMAIL_ENABLE_AUDIT", description="Enable email audit logging to database")
-    enable_retry: bool = Field(default=False, validation_alias="EMAIL_ENABLE_RETRY", description="Enable retry logic for SMTP (with exponential backoff)")
-    max_retries: int = Field(default=5, validation_alias="EMAIL_MAX_RETRIES", description="Maximum retry attempts for SMTP")
+    smtp_from: str = Field(
+        default="noreply@example.com",
+        validation_alias="SMTP_FROM",
+        description="Default from email address",
+    )
+    smtp_use_tls: bool = Field(
+        default=True,
+        validation_alias="SMTP_USE_TLS",
+        description="Use TLS for SMTP connection",
+    )
+    enable_audit: bool = Field(
+        default=True,
+        validation_alias="EMAIL_ENABLE_AUDIT",
+        description="Enable email audit logging to database",
+    )
+    enable_retry: bool = Field(
+        default=False,
+        validation_alias="EMAIL_ENABLE_RETRY",
+        description="Enable retry logic for SMTP (with exponential backoff)",
+    )
+    max_retries: int = Field(
+        default=5,
+        validation_alias="EMAIL_MAX_RETRIES",
+        description="Maximum retry attempts for SMTP",
+    )
+
+
+class StorageSettings(BaseSettings):
+    """Storage configuration for file uploads."""
+
+    model_config = _base_config
+
+    # Storage type
+    type: Literal["local", "s3"] = Field(
+        default="local",
+        validation_alias="STORAGE_TYPE",
+        description="Storage backend type (local or s3)",
+    )
+
+    # Local storage
+    local_path: str = Field(
+        default="./uploads",
+        validation_alias="STORAGE_LOCAL_PATH",
+        description="Local storage base path",
+    )
+    base_url: str | None = Field(
+        default=None,
+        validation_alias="STORAGE_BASE_URL",
+        description="Base URL for serving uploaded files (e.g., https://api.zbory.chwz.waw.pl or http://localhost:8001). If not set, uses relative paths.",
+    )
+
+    # S3 storage
+    s3_bucket: str = Field(
+        default="",
+        validation_alias="STORAGE_S3_BUCKET",
+        description="S3 bucket name",
+    )
+    s3_access_key: str = Field(
+        default="",
+        validation_alias="STORAGE_S3_ACCESS_KEY",
+        description="S3 access key ID",
+    )
+    s3_secret_key: str = Field(
+        default="",
+        validation_alias="STORAGE_S3_SECRET_KEY",
+        description="S3 secret access key",
+    )
+    s3_region: str = Field(
+        default="us-east-1",
+        validation_alias="STORAGE_S3_REGION",
+        description="S3 region",
+    )
+    s3_endpoint_url: str | None = Field(
+        default=None,
+        validation_alias="STORAGE_S3_ENDPOINT_URL",
+        description="S3 endpoint URL (for S3-compatible services)",
+    )
+    s3_public_endpoint_url: str | None = Field(
+        default=None,
+        validation_alias="STORAGE_S3_PUBLIC_ENDPOINT_URL",
+        description="Public S3 endpoint URL for generating accessible URLs (e.g., http://localhost:9000 for MinIO in Docker). If not set, uses s3_endpoint_url.",
+    )
+
+    # Upload limits
+    max_file_size: int = Field(
+        default=20 * 1024 * 1024,  # 20 MB (default for regular users)
+        validation_alias="STORAGE_MAX_FILE_SIZE",
+        description="Maximum file size in bytes (default for regular users, admins have 50 MB)",
+    )
+    max_file_size_admin: int = Field(
+        default=50 * 1024 * 1024,  # 50 MB (for admins)
+        validation_alias="STORAGE_MAX_FILE_SIZE_ADMIN",
+        description="Maximum file size in bytes for administrators",
+    )
+    max_files_per_item: int = Field(
+        default=10,
+        validation_alias="STORAGE_MAX_FILES_PER_ITEM",
+        description="Maximum number of images per item",
+    )
+    allowed_mime_types: str | list[str] = Field(
+        default='["image/jpeg", "image/png", "image/webp", "image/gif"]',
+        validation_alias="STORAGE_ALLOWED_MIME_TYPES",
+        description="Allowed MIME types for uploads",
+    )
+
+    # Image processing
+    enable_processing: bool = Field(
+        default=True,
+        validation_alias="STORAGE_ENABLE_PROCESSING",
+        description="Enable auto-resize and optimization",
+    )
+    max_width: int = Field(
+        default=1920,
+        validation_alias="STORAGE_MAX_WIDTH",
+        description="Maximum image width (auto-resize)",
+    )
+    max_height: int = Field(
+        default=1920,
+        validation_alias="STORAGE_MAX_HEIGHT",
+        description="Maximum image height (auto-resize)",
+    )
+    jpeg_quality: int = Field(
+        default=85,
+        validation_alias="STORAGE_JPEG_QUALITY",
+        description="JPEG compression quality (1-100)",
+    )
+    convert_to_webp: bool = Field(
+        default=False,
+        validation_alias="STORAGE_CONVERT_TO_WEBP",
+        description="Convert images to WebP format",
+    )
+
+    @field_validator("allowed_mime_types", mode="after")
+    @classmethod
+    def parse_mime_types(cls, v: str | list[str]) -> list[str]:
+        """Parse MIME types from JSON array or comma-separated string."""
+        return parse_list_value(v)
+
+    @field_validator("jpeg_quality")
+    @classmethod
+    def validate_jpeg_quality(cls, v: int) -> int:
+        """Validate JPEG quality is in valid range."""
+        if not 1 <= v <= 100:
+            raise ValueError(f"JPEG quality must be between 1 and 100, got: {v}")
+        return v
+
+
+class SentrySettings(BaseSettings):
+    """Sentry error monitoring configuration."""
+
+    model_config = _base_config
+
+    enabled: bool = Field(
+        default=False,
+        validation_alias="SENTRY_ENABLED",
+        description="Enable Sentry error monitoring",
+    )
+    dsn: str = Field(
+        default="",
+        validation_alias="SENTRY_DSN",
+        description="Sentry DSN (Data Source Name) for error reporting",
+    )
+    environment: str = Field(
+        default="development",
+        validation_alias="SENTRY_ENVIRONMENT",
+        description="Environment name for Sentry (development, staging, production)",
+    )
+    traces_sample_rate: float = Field(
+        default=1.0,
+        validation_alias="SENTRY_TRACES_SAMPLE_RATE",
+        description="Performance monitoring sample rate (0.0-1.0)",
+    )
+    profiles_sample_rate: float = Field(
+        default=1.0,
+        validation_alias="SENTRY_PROFILES_SAMPLE_RATE",
+        description="Profiling sample rate (0.0-1.0)",
+    )
+    release: str | None = Field(
+        default=None,
+        validation_alias="SENTRY_RELEASE",
+        description="Release version for Sentry (e.g., git commit SHA or version number)",
+    )
+
+    @field_validator("enabled", mode="before")
+    @classmethod
+    def parse_enabled(cls, v: str | bool) -> bool:
+        """Parse enabled field from string or bool."""
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes", "on")
+        return False
+
+    @field_validator("traces_sample_rate", "profiles_sample_rate")
+    @classmethod
+    def validate_sample_rate(cls, v: float) -> float:
+        """Validate sample rate is in valid range."""
+        if not 0.0 <= v <= 1.0:
+            raise ValueError(f"Sample rate must be between 0.0 and 1.0, got: {v}")
+        return v
+
+
+class RedisSettings(BaseSettings):
+    """Redis configuration for token blacklist and challenge storage."""
+
+    model_config = _base_config
+
+    url: str = Field(
+        default="redis://localhost:6379/0",
+        validation_alias="REDIS_URL",
+        description="Redis connection URL",
+    )
+    token_blacklist_prefix: str = Field(
+        default="blacklist:token:",
+        validation_alias="REDIS_TOKEN_BLACKLIST_PREFIX",
+        description="Redis key prefix for token blacklist",
+    )
+    webauthn_challenge_prefix: str = Field(
+        default="webauthn:challenge:",
+        validation_alias="REDIS_WEBAUTHN_CHALLENGE_PREFIX",
+        description="Redis key prefix for WebAuthn challenges",
+    )
+    webauthn_challenge_ttl: int = Field(
+        default=300,
+        validation_alias="REDIS_WEBAUTHN_CHALLENGE_TTL",
+        description="WebAuthn challenge TTL in seconds (default: 5 minutes)",
+    )
+
+
+class AISettings(BaseSettings):
+    """AI configuration (OpenRouter integration).
+
+    Scoped to admin-only features (e.g. congregation address import) — no
+    per-user token/quota handling, unlike the fuller chat-assistant setup in
+    the sibling gear-stack app.
+    """
+
+    model_config = _base_config
+
+    enabled: bool = Field(default=True, validation_alias="AI_ENABLED")
+    openrouter_api_key: str = Field(default="", validation_alias="OPENROUTER_API_KEY")
+    openrouter_base_url: str = Field(
+        default="https://openrouter.ai/api/v1",
+        validation_alias="OPENROUTER_BASE_URL",
+    )
+    model: str = Field(
+        default="openai/gpt-4o-mini",
+        validation_alias="AI_MODEL",
+        description="OpenRouter model id; must support response_format json_schema",
+    )
+
+
+class EmailImportSettings(BaseSettings):
+    """Inbound e-mail import configuration (clergy self-service data updates).
+
+    A dedicated mailbox is polled over IMAP (see backend/cli/commands/mail.py);
+    messages are run through the existing AI extraction pipeline and either
+    auto-applied (high-trust, verified sender) or queued for admin review.
+    """
+
+    model_config = _base_config
+
+    enabled: bool = Field(default=False, validation_alias="EMAIL_IMPORT_ENABLED")
+    imap_host: str = Field(default="", validation_alias="EMAIL_IMPORT_IMAP_HOST")
+    imap_port: int = Field(default=993, validation_alias="EMAIL_IMPORT_IMAP_PORT")
+    imap_user: str = Field(default="", validation_alias="EMAIL_IMPORT_IMAP_USER")
+    imap_password: str = Field(default="", validation_alias="EMAIL_IMPORT_IMAP_PASSWORD")
+    imap_mailbox: str = Field(default="INBOX", validation_alias="EMAIL_IMPORT_IMAP_MAILBOX")
+    imap_use_ssl: bool = Field(default=True, validation_alias="EMAIL_IMPORT_IMAP_USE_SSL")
+    trust_auto_apply_threshold: float = Field(
+        default=0.9,
+        validation_alias="EMAIL_IMPORT_TRUST_THRESHOLD",
+        description="Minimum second-pass AI trust score (0-1) required to auto-apply a change without admin review",
+    )
+
+
+class NominatimSettings(BaseSettings):
+    """Nominatim (OpenStreetMap) geocoding configuration.
+
+    Used to turn a congregation's street/city/postal_code into lat/lng for
+    map display. Nominatim's public instance requires a descriptive
+    User-Agent identifying the application (its usage policy forbids the
+    default HTTP client UA) and enforces a max 1 request/second - see
+    app/modules/congregations/geocoding.py for the throttling that respects it.
+    """
+
+    model_config = _base_config
+
+    enabled: bool = Field(default=True, validation_alias="NOMINATIM_ENABLED")
+    base_url: str = Field(
+        default="https://nominatim.openstreetmap.org",
+        validation_alias="NOMINATIM_BASE_URL",
+    )
+    user_agent: str = Field(
+        default="ZboryCHWZ/1.0 (+https://chwz.waw.pl)",
+        validation_alias="NOMINATIM_USER_AGENT",
+        description="Sent as the User-Agent header, per Nominatim's usage policy",
+    )
+
+
+class WebAuthnSettings(BaseSettings):
+    """WebAuthn configuration."""
+
+    model_config = _base_config
+
+    rp_id: str = Field(
+        default="localhost",
+        validation_alias="WEBAUTHN_RP_ID",
+        description="WebAuthn Relying Party ID (domain)",
+    )
+    rp_name: str = Field(
+        default="Gear Stack",
+        validation_alias="WEBAUTHN_RP_NAME",
+        description="WebAuthn Relying Party Name",
+    )
+    origin: str = Field(
+        default="http://localhost:5176",
+        validation_alias="WEBAUTHN_ORIGIN",
+        description="WebAuthn expected origin (frontend URL)",
+    )
+
+
+class HealthSettings(BaseSettings):
+    """Health/monitoring configuration (Ops Monitor integration)."""
+
+    model_config = _base_config
+
+    details_token: str = Field(
+        default="",
+        validation_alias="HEALTH_DETAILS_TOKEN",
+        description="Bearer token required to access GET /api/health/details (Ops Monitor)",
+    )
 
 
 class Settings(BaseSettings):
@@ -223,9 +780,21 @@ class Settings(BaseSettings):
     recaptcha: RecaptchaSettings = Field(default_factory=RecaptchaSettings)
     oauth: OAuthSettings = Field(default_factory=OAuthSettings)
     email: EmailSettings = Field(default_factory=EmailSettings)
+    storage: StorageSettings = Field(default_factory=StorageSettings)
+    sentry: SentrySettings = Field(default_factory=SentrySettings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
+    webauthn: WebAuthnSettings = Field(default_factory=WebAuthnSettings)
+    ai: AISettings = Field(default_factory=AISettings)
+    email_import: EmailImportSettings = Field(default_factory=EmailImportSettings)
+    nominatim: NominatimSettings = Field(default_factory=NominatimSettings)
+    health: HealthSettings = Field(default_factory=HealthSettings)
 
     # Legacy compatibility - still accessible at root level
-    frontend_url: str = Field(default="http://localhost:3000", validation_alias="FRONTEND_URL", description="Frontend application URL for reset links and redirects")
+    frontend_url: str = Field(
+        default="http://localhost:3000",
+        validation_alias="FRONTEND_URL",
+        description="Frontend application URL for reset links and redirects",
+    )
 
     # Convenience methods
     def is_development(self) -> bool:

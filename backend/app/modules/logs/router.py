@@ -7,20 +7,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from .db_models import LogLevel
 from .repositories import LogRepository, get_log_repository
-from .service import LogService
 from .schemas import (
     LogCreateRequest,
     LogListResponse,
     LogResponse,
     MessageResponse,
 )
-
+from .service import LogService
 
 # Create router
 router = APIRouter()
 
 
-def get_log_service(repo: Annotated[LogRepository, Depends(get_log_repository)]) -> LogService:
+def get_log_service(
+    repo: Annotated[LogRepository, Depends(get_log_repository)],
+) -> LogService:
     """Dependency to get log service instance."""
     return LogService(repo)
 
@@ -35,7 +36,14 @@ def get_log_service(repo: Annotated[LogRepository, Depends(get_log_repository)])
 async def create_log(log_data: LogCreateRequest, service: Annotated[LogService, Depends(get_log_service)]) -> LogResponse:
     """Create a new log entry."""
     log = await service.log_repository.create_log(
-        level=log_data.level, message=log_data.message, module=log_data.module, function=log_data.function, user_id=log_data.userId, request_id=log_data.requestId, traceback=log_data.traceback, extra_data=log_data.extraData
+        level=log_data.level,
+        message=log_data.message,
+        module=log_data.module,
+        function=log_data.function,
+        user_id=log_data.userId,
+        request_id=log_data.requestId,
+        traceback=log_data.traceback,
+        extra_data=log_data.extraData,
     )
     return LogResponse(**log.to_response())
 
@@ -151,7 +159,10 @@ async def get_log(log_id: str, repo: Annotated[LogRepository, Depends(get_log_re
     summary="Cleanup old logs",
     description="Delete logs older than specified number of days",
 )
-async def cleanup_logs(service: Annotated[LogService, Depends(get_log_service)], days: int = Query(default=30, ge=1, le=365, description="Delete logs older than N days")) -> MessageResponse:
+async def cleanup_logs(
+    service: Annotated[LogService, Depends(get_log_service)],
+    days: int = Query(default=30, ge=1, le=365, description="Delete logs older than N days"),
+) -> MessageResponse:
     """Delete old logs."""
     deleted_count = await service.cleanup_old_logs(days=days)
     return MessageResponse(message=f"Successfully deleted {deleted_count} logs older than {days} days")

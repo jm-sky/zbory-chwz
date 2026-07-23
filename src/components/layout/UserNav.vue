@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { LogIn, LogOut, User, UserPlus } from 'lucide-vue-next'
+import { LogIn, LogOut, SettingsIcon, ShieldIcon, UserIcon } from 'lucide-vue-next'
 import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,31 +10,41 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
+import { AdminRoutePaths } from '@/modules/admin/routes'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRoutePaths } from '@/modules/auth/config/routes'
 import { SettingsRoutePaths } from '@/modules/settings/routes'
 import { UserRoutePaths } from '@/modules/user/routes'
+import { generateGravatarUrl, GRAVATAR_BASE_URL } from '@/modules/user/utils/generateGravatarUrl'
+import { usePermissions } from '@/shared/composables/usePermissions'
+import { getInitials } from '@/shared/utils/getInitials'
 import Avatar from '../ui/avatar/Avatar.vue'
 import AvatarFallback from '../ui/avatar/AvatarFallback.vue'
 import AvatarImage from '../ui/avatar/AvatarImage.vue'
 import DropdownMenuItemLink from '../ui/dropdown-menu/DropdownMenuItemLink.vue'
 
+const AVATAR_SIZE = 32
+
 export interface Link {
   to: string
   label: string
   icon?: Component
+  disabled?: boolean
+  hidden?: boolean
 }
 
 export interface UserNavProps {
   userName?: string
   userEmail?: string
   userAvatar?: string
+  coreLinks?: Link[]
   navLinks?: Link[]
 }
 
 const { t } = useI18n()
-const router = useRouter()
 const { isAuthenticated } = useAuth()
+const { canAccessAdminPanel } = usePermissions()
 
 const props = defineProps<UserNavProps>()
 
@@ -43,45 +52,70 @@ const emit = defineEmits<{
   logout: []
 }>()
 
-// Generate initials from name or email
-const initials = computed(() => {
-  if (props.userName) {
-    return props.userName
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2)
+const defaultCoreLinks = computed<Link[]>(() => [
+  {
+    to: UserRoutePaths.profile,
+    label: t('user.profile.title', 'Profile'),
+    icon: UserIcon,
+  },
+  {
+    to: SettingsRoutePaths.settings,
+    label: t('settings.page.title', 'Settings'),
+    icon: SettingsIcon,
+  },
+  {
+    to: AdminRoutePaths.dashboard,
+    label: t('admin.dashboard.title', 'Admin Dashboard'),
+    icon: ShieldIcon,
+    hidden: !canAccessAdminPanel.value,
   }
-  if (props.userEmail) {
-    return props.userEmail.substring(0, 2).toUpperCase()
+])
+
+const coreLinksList = computed<Link[]>(() => props.coreLinks ?? defaultCoreLinks.value)
+const coreLinksFiltered = computed<Link[]>(() => coreLinksList.value.filter((link) => !link.hidden))
+const initials = computed<string>(() => getInitials(props.userName ?? props.userEmail ?? 'U'))
+
+const avatarUrl = computed<string | undefined>(() =>{
+  if (props.userAvatar?.startsWith(GRAVATAR_BASE_URL)) {
+    return props.userAvatar.replace(/&s=\d+/, `&s=${AVATAR_SIZE}`)
   }
-  return 'U'
+
+  if (!props.userAvatar && props.userEmail) {
+    return generateGravatarUrl(props.userEmail, AVATAR_SIZE)
+  }
+
+  return props.userAvatar
 })
 
 const handleLogout = () => {
   emit('logout')
-}
-
-const navigateTo = (path: string) => {
-  router.push(path)
 }
 </script>
 
 <template>
   <DropdownMenu>
     <DropdownMenuTrigger as-child>
-      <Avatar aria-label="User menu" class="cursor-pointer">
-        <AvatarImage :src="userAvatar ?? ''" />
-        <AvatarFallback class="bg-primary text-primary-foreground">
-          {{ initials }}
+      <Avatar
+        role="button"
+        :aria-label="t('user.menu.title', 'User menu')"
+        :class="cn('ml-2 cursor-pointer hover:brightness-95 transition-all duration-300', !isAuthenticated && 'ring-2 ring-muted-foreground/30', isAuthenticated && canAccessAdminPanel && 'ring-2 ring-primary ring-offset-2 ring-offset-background')"
+      >
+        <AvatarImage
+          :src="avatarUrl ?? ''"
+          :alt="isAuthenticated ? (userName ?? userEmail ?? t('user.avatar.alt', 'User avatar')) : t('user.avatar.guestAlt', 'Guest avatar')"
+        />
+        <AvatarFallback :class="isAuthenticated ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'">
+          <UserIcon v-if="!isAuthenticated" class="size-4" />
+          <template v-else>
+            {{ initials }}
+          </template>
         </AvatarFallback>
       </Avatar>
     </DropdownMenuTrigger>
 
     <DropdownMenuContent class="w-64" align="end">
       <!-- User info -->
-      <DropdownMenuLabel>
+      <DropdownMenuLabel v-if="isAuthenticated">
         <div class="flex flex-col space-y-1">
           <p class="text-sm font-medium leading-none">
             {{ userName ?? 'N/A' }}
@@ -91,34 +125,41 @@ const navigateTo = (path: string) => {
           </p>
         </div>
       </DropdownMenuLabel>
+      <DropdownMenuLabel v-else>
+        <div class="flex flex-col space-y-1">
+          <p class="text-sm font-medium leading-none">
+            {{ t('user.guest', 'Guest') }}
+          </p>
+        </div>
+      </DropdownMenuLabel>
 
       <DropdownMenuSeparator />
 
       <!-- Navigation Links (mobile only) -->
       <template v-if="navLinks && navLinks.length > 0">
         <div class="md:hidden">
-          <DropdownMenuItem
+          <DropdownMenuItemLink
             v-for="link in navLinks"
             :key="link.to"
-            @click="navigateTo(link.to)"
+            :to="link.to"
           >
             <component :is="link.icon" v-if="link.icon" class="size-4 mr-2" />
             {{ link.label }}
-          </DropdownMenuItem>
+          </DropdownMenuItemLink>
           <DropdownMenuSeparator />
         </div>
       </template>
 
       <!-- Profile/Settings slot -->
       <slot name="menu-items">
-        <DropdownMenuItemLink :to="UserRoutePaths.profile">
-          <User class="size-4 mr-2" />
-          {{ t('user.profile.title', 'Profile') }}
-        </DropdownMenuItemLink>
-
-        <DropdownMenuItemLink :to="SettingsRoutePaths.settings">
-          <User class="size-4 mr-2" />
-          {{ t('settings.page.title', 'Settings') }}
+        <DropdownMenuItemLink
+          v-for="link in coreLinksFiltered"
+          v-show="!link.hidden"
+          :key="link.to"
+          :to="link.to"
+        >
+          <component :is="link.icon" v-if="link.icon" class="size-4 mr-2" />
+          {{ link.label }}
         </DropdownMenuItemLink>
       </slot>
 
@@ -133,10 +174,6 @@ const navigateTo = (path: string) => {
         <DropdownMenuItemLink :to="AuthRoutePaths.login">
           <LogIn class="size-4 mr-2" />
           {{ t('auth.login', 'Login') }}
-        </DropdownMenuItemLink>
-        <DropdownMenuItemLink :to="AuthRoutePaths.register">
-          <UserPlus class="size-4 mr-2" />
-          {{ t('auth.register', 'Register') }}
         </DropdownMenuItemLink>
       </template>
     </DropdownMenuContent>

@@ -1,63 +1,35 @@
 <script setup lang="ts">
-import { Package, User } from 'lucide-vue-next'
+import { User } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import Avatar from '@/components/ui/avatar/Avatar.vue'
 import AvatarFallback from '@/components/ui/avatar/AvatarFallback.vue'
 import AvatarImage from '@/components/ui/avatar/AvatarImage.vue'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
+import { Card, CardContent } from '@/components/ui/card'
+import UserRoleBadge from '@/components/ui/UserRoleBadge.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
-import ColorDot from '@/modules/gear/components/ColorDot.vue'
-import { apiClient } from '@/shared/services/apiClient'
+import { useAuth } from '@/modules/auth/composables/useAuth'
+import { getInitials } from '@/shared/utils/getInitials'
 import type { IUser } from '../types/user.types'
-import type { IGearContainer } from '@/modules/gear/types/gear.types'
-
-/**
- * Backend API response type for public user profile
- */
-interface PublicUserResponse {
-  id: string
-  name: string
-  avatarUrl?: string
-  email?: string
-  emailPublic: boolean
-}
+import { UserRoutePaths } from '../routes'
+import { userApiService } from '../services/userApiService'
 
 const route = useRoute()
-const router = useRouter()
 const { t } = useI18n()
+const { user: currentUser } = useAuth()
 
 const userId = route.params.userId as string
 const user = ref<IUser | null>(null)
-const containers = ref<IGearContainer[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
-/**
- * Map backend PublicUserResponse to frontend IUser
- */
-function mapToIUser(response: PublicUserResponse): IUser {
-  return {
-    id: response.id,
-    name: response.name,
-    email: response.email || '',
-    avatarUrl: response.avatarUrl,
-    emailPublic: response.emailPublic,
-    createdAt: '', // Not provided in public profile
-    updatedAt: '', // Not provided in public profile
-  }
-}
+const isCurrentUser = computed(() => user.value?.id === currentUser.value?.id)
 
-// Generate initials from name or email
 const initials = computed(() => {
   if (user.value?.name) {
-    return user.value.name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2)
+    return getInitials(user.value.name)
   }
   if (user.value?.email) {
     return user.value.email.substring(0, 2).toUpperCase()
@@ -67,13 +39,8 @@ const initials = computed(() => {
 
 onMounted(async () => {
   try {
-    // Fetch public user profile
-    const userResponse = await apiClient.get<PublicUserResponse>(`/users/${userId}/public`)
-    user.value = mapToIUser(userResponse.data)
-
-    // Fetch public containers for this user
-    const containersResponse = await apiClient.get<IGearContainer[]>(`/gear/public/containers?authorId=${userId}`)
-    containers.value = containersResponse.data
+    // Fetch public user profile using service
+    user.value = await userApiService.getPublicUser(userId)
   } catch (err: unknown) {
     console.error('Failed to load public user profile:', err)
     const errorResponse = err as { response?: { status?: number } }
@@ -88,19 +55,12 @@ onMounted(async () => {
     isLoading.value = false
   }
 })
-
-const handleContainerClick = (containerId: string) => {
-  router.push(`/gear/public/${containerId}`)
-}
 </script>
 
 <template>
   <AuthenticatedLayout>
     <div v-if="isLoading" class="space-y-6">
       <div class="h-32 bg-muted rounded animate-pulse" />
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="i in 6" :key="i" class="h-48 bg-muted rounded-lg animate-pulse" />
-      </div>
     </div>
 
     <div v-else-if="error" class="space-y-6">
@@ -116,75 +76,37 @@ const handleContainerClick = (containerId: string) => {
     <div v-else-if="user" class="space-y-6 w-full max-w-full">
       <!-- User Profile Header -->
       <Card>
-        <CardContent class="pt-6">
-          <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+        <CardContent>
+          <div class="flex flex-col sm:flex-row items-center sm:items-stretch gap-4 sm:gap-6">
             <Avatar class="size-20 sm:size-24 ring-1 ring-border shrink-0">
               <AvatarImage :src="user.avatarUrl ?? ''" :alt="user.name" />
               <AvatarFallback class="bg-muted text-muted-foreground text-xl sm:text-2xl font-semibold">
                 {{ initials }}
               </AvatarFallback>
             </Avatar>
-            <div class="text-center sm:text-left">
-              <h1 class="text-2xl sm:text-3xl font-bold mb-2">
-                {{ user.name }}
-              </h1>
-              <p v-if="user.emailPublic && user.email" class="text-muted-foreground text-sm sm:text-base break-all">
+            <div class="flex flex-col items-start text-center sm:text-left flex-1">
+              <div class="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+                <h1 class="text-2xl sm:text-3xl font-bold">
+                  {{ user.name }}
+                </h1>
+                <UserRoleBadge
+                  :is-admin="user.isAdmin"
+                  :is-owner="user.isOwner"
+                  :is-premium="user.isPremium"
+                />
+              </div>
+              <p v-if="user.emailPublic && user.email" class="flex items-center justify-center sm:justify-start w-full text-muted-foreground text-sm sm:text-base break-all mt-2">
                 {{ user.email }}
               </p>
+            </div>
+            <div v-if="isCurrentUser">
+              <ButtonLink :to="UserRoutePaths.profileEdit">
+                {{ t('common.edit') }}
+              </ButtonLink>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      <!-- Public Containers -->
-      <div>
-        <h2 class="text-xl sm:text-2xl font-bold mb-4">
-          {{ t('user.publicProfile.public_containers') }}
-        </h2>
-
-        <div v-if="containers.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
-          <div class="rounded-full bg-muted p-6 mb-4">
-            <Package class="size-12 text-muted-foreground" />
-          </div>
-          <h3 class="text-lg font-semibold mb-2">
-            {{ t('user.publicProfile.no_containers') }}
-          </h3>
-          <p class="text-muted-foreground max-w-md">
-            {{ t('user.publicProfile.no_containers_description') }}
-          </p>
-        </div>
-
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card
-            v-for="container in containers"
-            :key="container.id"
-            class="gap-1 hover:shadow-lg hover:bg-current/5 hover:scale-102 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-            @click="handleContainerClick(container.id)"
-          >
-            <CardHeader class="text-card-foreground">
-              <div class="flex items-center gap-2">
-                <ColorDot :color="container.color ?? undefined" />
-                <Package class="size-5" />
-                <CardTitle>{{ container.name }}</CardTitle>
-              </div>
-              <CardDescription v-if="container.description">
-                {{ container.description }}
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent class="flex flex-col gap-3 px-6 pb-4 text-card-foreground">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-xs px-2 py-1 rounded bg-muted">
-                  {{ container.type }}
-                </span>
-              </div>
-              <div class="text-sm text-muted-foreground">
-                {{ t('gear.container.itemsCount', { count: container.items.length }) }}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
     </div>
   </AuthenticatedLayout>
 </template>

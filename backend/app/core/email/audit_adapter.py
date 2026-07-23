@@ -5,12 +5,12 @@ storing all sent emails in the database for compliance and troubleshooting.
 """
 
 import logging
-from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .adapter import EmailAdapter
 from app.common.repositories import EmailAuditRepository
+
+from .adapter import EmailAdapter
 
 logger = logging.getLogger(__name__)
 

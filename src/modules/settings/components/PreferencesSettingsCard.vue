@@ -15,10 +15,12 @@ import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectLabel from '@/components/ui/select/SelectLabel.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
+import Separator from '@/components/ui/separator/Separator.vue'
 import { useSettings } from '@/modules/settings/composables/useSettings'
 import { settingsSchema } from '@/modules/settings/validation/settings.schema'
 import { useDarkMode } from '@/shared/composables/useDarkMode'
 import { type SupportedLocale, useLocale } from '@/shared/i18n'
+import ImageProcessingModeRadioGroup from './ImageProcessingModeRadioGroup.vue'
 import type { ISettingsService, Settings as SettingsType } from '@/modules/settings/types/settings.type'
 
 const props = defineProps<{
@@ -39,9 +41,9 @@ const { handleSubmit, setValues } = useForm({
   initialValues: {
     darkMode: getThemeValue(settings.value?.darkMode),
     locale: settings.value?.locale ?? currentLocale.value,
-    defaultContainersPublic: settings.value?.defaultContainersPublic ?? false,
     profilePublic: settings.value?.profilePublic ?? false,
     emailPublic: settings.value?.emailPublic ?? false,
+    imageProcessingMode: settings.value?.imageProcessingMode ?? 'balanced',
   }
 })
 
@@ -50,9 +52,9 @@ watch(() => settingsQuery.data.value, (val: SettingsType | undefined) => {
     setValues({
       darkMode: getThemeValue(val.darkMode),
       locale: val.locale,
-      defaultContainersPublic: val.defaultContainersPublic ?? false,
       profilePublic: val.profilePublic ?? false,
       emailPublic: val.emailPublic ?? false,
+      imageProcessingMode: val.imageProcessingMode ?? 'balanced',
     })
   }
 })
@@ -69,13 +71,14 @@ watch(() => isDark.value, (val: boolean) => {
   immediate: true,
 })
 
+
 const onSubmit = handleSubmit(async (values) => {
   await updateSettings({
     darkMode: values.darkMode === 'dark',
     locale: values.locale,
-    defaultContainersPublic: values.defaultContainersPublic,
     profilePublic: values.profilePublic,
     emailPublic: values.emailPublic,
+    imageProcessingMode: values.imageProcessingMode ?? null,
   })
 })
 </script>
@@ -89,7 +92,7 @@ const onSubmit = handleSubmit(async (values) => {
       </div>
       <CardDescription>{{ t('settings.page.sections.preferences.description') }}</CardDescription>
     </CardHeader>
-    <CardContent>
+    <CardContent :class="{ 'opacity-50': isUpdating }">
       <div v-if="isLoading" class="space-y-4">
         <div class="h-16 bg-muted rounded animate-pulse" />
         <div class="h-16 bg-muted rounded animate-pulse" />
@@ -114,7 +117,7 @@ const onSubmit = handleSubmit(async (values) => {
                 <FormControl>
                   <Select v-bind="componentField">
                     <SelectTrigger>
-                      <SelectValue :placeholder="t('settings.page.sections.theme.placeholder')" />
+                      <SelectValue :placeholder="t('settings.page.sections.theme.placeholder')" class="min-w-20" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -147,7 +150,7 @@ const onSubmit = handleSubmit(async (values) => {
                 <FormControl>
                   <Select v-bind="componentField">
                     <SelectTrigger>
-                      <SelectValue :placeholder="t('settings.page.sections.locale.placeholder')" />
+                      <SelectValue :placeholder="t('settings.page.sections.locale.placeholder')" class="min-w-20" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -158,6 +161,9 @@ const onSubmit = handleSubmit(async (values) => {
                         <SelectItem value="pl">
                           {{ t('settings.page.sections.locale.options.pl') }}
                         </SelectItem>
+                        <SelectItem value="ru">
+                          {{ t('settings.page.sections.locale.options.ru') }}
+                        </SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
@@ -167,24 +173,6 @@ const onSubmit = handleSubmit(async (values) => {
             </FormField>
           </div>
         </div>
-
-        <!-- Default Containers Public -->
-        <FormField v-slot="{ componentField, handleChange }" name="defaultContainersPublic">
-          <FormItem v-slot="{ id }" class="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-            <Checkbox
-              :id="id"
-              :model-value="componentField.modelValue"
-              @update:model-value="handleChange"
-            />
-            <div class="flex-1 space-y-1">
-              <FormLabel :label="$t('settings.page.sections.defaultContainersPublic.label')" class="cursor-pointer" />
-              <p class="text-sm text-muted-foreground">
-                {{ $t('settings.page.sections.defaultContainersPublic.subtitle') }}
-              </p>
-            </div>
-            <FormMessage />
-          </FormItem>
-        </FormField>
 
         <!-- Profile Public -->
         <FormField v-slot="{ componentField, handleChange }" name="profilePublic">
@@ -221,6 +209,26 @@ const onSubmit = handleSubmit(async (values) => {
             <FormMessage />
           </FormItem>
         </FormField>
+
+        <Separator />
+
+        <!-- Image Processing Mode -->
+        <div class="space-y-3">
+          <FormField v-slot="{ componentField }" name="imageProcessingMode">
+            <FormItem>
+              <FormLabel required>
+                {{ t('settings.preferences.imageProcessingMode.label') }}
+              </FormLabel>
+              <p class="text-sm text-muted-foreground">
+                {{ t('settings.preferences.imageProcessingMode.subtitle') }}
+              </p>
+              <FormControl>
+                <ImageProcessingModeRadioGroup v-bind="componentField" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+        </div>
 
         <div class="flex justify-end">
           <Button type="submit" :loading="isUpdating">

@@ -6,7 +6,9 @@
     "cypress.config.*",
     "nightwatch.conf.*",
     "playwright.config.*",
-    "eslint.config.*"
+    "eslint.config.*",
+    "scripts/**/*",
+    "backend/app/seeders/**/*.ts"
   ],
   "compilerOptions": {
     "noEmit": true,
@@ -14,6 +16,8 @@
 
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node"]
   }
 }

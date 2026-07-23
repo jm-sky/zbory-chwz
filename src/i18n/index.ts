@@ -6,22 +6,51 @@
 // instead of duplicating the i18n configuration logic.
 
 // Import module messages
-import { authEn, authPl } from '@/modules/auth/i18n'
-import { gearEn, gearPl } from '@/modules/gear/i18n'
-import { settingsEn, settingsPl } from '@/modules/settings/i18n'
-import { userEn, userPl } from '@/modules/user/i18n'
+import { adminEn, adminPl, adminRu } from '@/modules/admin/i18n'
+import { authEn, authPl, authRu } from '@/modules/auth/i18n'
+import { congregationsEn, congregationsPl } from '@/modules/congregations/i18n'
+import { directoryEn, directoryPl } from '@/modules/directory/i18n'
+import { groupsEn, groupsPl } from '@/modules/groups/i18n'
+import { settingsEn, settingsPl, settingsRu } from '@/modules/settings/i18n'
+import { userEn, userPl, userRu } from '@/modules/user/i18n'
 import { createI18nInstance } from '@/shared/i18n'
 // Import registry base messages (validation, errors, common)
 import registryEn from '@/shared/i18n/locales/en'
 import registryPl from '@/shared/i18n/locales/pl'
+import registryRu from '@/shared/i18n/locales/ru'
 
 // Import app-specific messages (if you have any custom translations)
 // import appEn from './locales/en'
 // import appPl from './locales/pl'
 
 // Merge all messages together
-const en = { ...registryEn, ...authEn, ...gearEn, ...settingsEn, ...userEn }
-const pl = { ...registryPl, ...authPl, ...gearPl, ...settingsPl, ...userPl }
+const en = {
+  ...registryEn,
+  ...adminEn,
+  ...authEn,
+  ...congregationsEn,
+  ...directoryEn,
+  ...groupsEn,
+  ...settingsEn,
+  ...userEn,
+}
+const pl = {
+  ...registryPl,
+  ...adminPl,
+  ...authPl,
+  ...congregationsPl,
+  ...directoryPl,
+  ...groupsPl,
+  ...settingsPl,
+  ...userPl,
+}
+const ru = {
+  ...registryRu,
+  ...adminRu,
+  ...authRu,
+  ...settingsRu,
+  ...userRu,
+}
 
 // If you have app-specific messages, merge them here:
 // const en = { ...registryEn, ...appEn }
@@ -39,5 +68,6 @@ export const i18n = createI18nInstance({
   messages: {
     en,
     pl,
+    ru,
   },
 })

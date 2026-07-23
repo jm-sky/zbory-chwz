@@ -7,14 +7,14 @@ through automatic retries with exponential backoff for transient errors.
 import asyncio
 import logging
 from smtplib import (
-    SMTPException,
-    SMTPServerDisconnected,
-    SMTPConnectError,
-    SMTPHeloError,
-    SMTPDataError,
     SMTPAuthenticationError,
+    SMTPConnectError,
+    SMTPDataError,
+    SMTPException,
+    SMTPHeloError,
     SMTPRecipientsRefused,
     SMTPSenderRefused,
+    SMTPServerDisconnected,
 )
 
 from .adapter import EmailAdapter
@@ -154,7 +154,7 @@ class RetrySMTPAdapter(EmailAdapter):
                 logger.error(f"Permanent SMTP error sending to {to}: " f"{type(e).__name__}: {e}. Not retrying.")
                 return False
 
-            except (TRANSIENT_SMTP_ERRORS, SMTPException, Exception) as e:
+            except (*TRANSIENT_SMTP_ERRORS, SMTPException) as e:
                 last_error = e
 
                 if attempt < self.max_retries:

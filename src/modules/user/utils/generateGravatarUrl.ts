@@ -5,12 +5,14 @@
 
 import md5 from 'md5'
 
+export const GRAVATAR_BASE_URL = 'https://www.gravatar.com/avatar'
+
 /**
  * Generates a Gravatar URL from an email address.
  * @param email - The email address to generate a Gravatar URL for
  * @returns The Gravatar URL
  */
-export function generateGravatarUrl(email: string): string {
+export function generateGravatarUrl(email: string, size: number = 128): string {
   if (!email || !email.trim()) {
     throw new Error('Email is required to generate Gravatar URL')
   }
@@ -22,5 +24,5 @@ export function generateGravatarUrl(email: string): string {
   const hash = md5(normalizedEmail)
   
   // Return Gravatar URL
-  return `https://www.gravatar.com/avatar/${hash}?d=404`
+  return `${GRAVATAR_BASE_URL}/${hash}?d=404&s=${size}`
 }

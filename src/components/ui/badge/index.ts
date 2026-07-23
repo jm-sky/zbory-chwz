@@ -16,12 +16,16 @@ export const badgeVariants = cva(
          'border-transparent bg-success text-white [a&]:hover:bg-success/90 focus-visible:ring-success/20 dark:focus-visible:ring-success/40 dark:bg-success/60',
         destructive:
          'border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
-        outline:
+        premium:
+          'border-transparent bg-violet-500 text-white [a&]:hover:bg-violet-500/90 focus-visible:ring-violet-500/20 dark:focus-visible:ring-violet-500/40 dark:bg-violet-500/60',
+         outline:
           'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
         'success-outline':
           'text-success border-success [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
         'destructive-outline':
           'text-destructive border-destructive [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
+        'primary-outline':
+          'text-primary border-primary [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
       },
     },
     defaultVariants: {

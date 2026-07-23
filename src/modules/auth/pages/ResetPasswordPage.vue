@@ -10,13 +10,15 @@ import { Input } from '@/components/ui/input'
 import GuestLayoutCentered from '@/layouts/GuestLayoutCentered.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { resetPasswordSchema } from '@/modules/auth/validation/resetPassword.schema'
-import { isValidationError } from '@/shared/utils/typeGuards'
+import { useHandleError } from '@/shared/composables/useHandleError'
+import { AuthRoutePaths } from '../config/routes'
 import type { ResetPasswordData } from '@/modules/auth/types/user.type'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { resetPassword, isResetPasswordLoading } = useAuth()
+const { handleError } = useHandleError()
 
 const { handleSubmit, setErrors } = useForm({
   validationSchema: toTypedSchema(resetPasswordSchema),
@@ -34,15 +36,10 @@ const onSubmit = handleSubmit(async (values: ResetPasswordData) => {
   try {
     const response = await resetPassword(values)
     successMessage.value = response.message
-    setTimeout(() => void router.push('/auth/login'), 2000)
-  } catch (err: unknown) {
-    if (isValidationError(err)) {
-      setErrors(err.response.data.errors)
-    } else {
-      // TODO: add toast/sonner notification from shadcn-vue
-      // toast.error('Unexpected error occurred in reset password process')
-      console.error('Reset password error:', err)
-    }
+    setTimeout(() => void router.push(AuthRoutePaths.login), 2000)
+  } catch (error: unknown) {
+    console.error('Reset password error:', error)
+    handleError(error, { setErrors })
   }
 })
 </script>

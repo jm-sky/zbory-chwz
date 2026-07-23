@@ -1,6 +1,7 @@
 """API router for user settings."""
 
 from datetime import UTC, datetime
+from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -11,7 +12,6 @@ from app.modules.auth.dependencies import CurrentUser
 
 from .db_models import UserSettingsDB
 from .schemas import SettingsResponse, UpdateSettingsRequest
-
 
 router = APIRouter(prefix="", tags=["Settings"])
 
@@ -38,13 +38,16 @@ async def get_my_settings(
 ) -> SettingsResponse:
     """Return preferences for the authenticated user."""
     settings = await _get_or_create_settings(db, current_user.id)
+    # Cast locale to Literal type - database stores it as string
+    locale = cast(Literal["en", "pl"], settings.locale)
     return SettingsResponse(
         darkMode=settings.dark_mode,
-        locale=settings.locale,
+        locale=locale,
         defaultContainersPublic=settings.default_containers_public,
         profilePublic=settings.is_public_profile,
         emailPublic=settings.is_public_email,
-    )  # type: ignore[arg-type]
+        imageProcessingMode=settings.image_processing_mode,
+    )
 
 
 @router.patch("", response_model=SettingsResponse)
@@ -55,7 +58,7 @@ async def update_my_settings(
     db: AsyncSession = Depends(get_db),
 ) -> SettingsResponse:
     """Update preferences for the authenticated user."""
-    if payload.darkMode is None and payload.locale is None and payload.defaultContainersPublic is None and payload.profilePublic is None and payload.emailPublic is None:
+    if payload.darkMode is None and payload.locale is None and payload.defaultContainersPublic is None and payload.profilePublic is None and payload.emailPublic is None and payload.imageProcessingMode is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one field must be provided.",
@@ -73,14 +76,25 @@ async def update_my_settings(
         settings.is_public_profile = payload.profilePublic
     if payload.emailPublic is not None:
         settings.is_public_email = payload.emailPublic
+    if payload.imageProcessingMode is not None:
+        # Only admins can set high_quality mode
+        if payload.imageProcessingMode == "high_quality" and not current_user.isAdmin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="High quality image processing mode is only available for administrators.",
+            )
+        settings.image_processing_mode = payload.imageProcessingMode
 
     settings.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(settings)
+    # Cast locale to Literal type - database stores it as string
+    locale = cast(Literal["en", "pl"], settings.locale)
     return SettingsResponse(
         darkMode=settings.dark_mode,
-        locale=settings.locale,
+        locale=locale,
         defaultContainersPublic=settings.default_containers_public,
         profilePublic=settings.is_public_profile,
         emailPublic=settings.is_public_email,
-    )  # type: ignore[arg-type]
+        imageProcessingMode=settings.image_processing_mode,
+    )

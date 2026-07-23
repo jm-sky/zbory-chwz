@@ -1,7 +1,7 @@
 """Unit tests for authentication service."""
 
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -136,6 +136,69 @@ class TestLoginUser:
             )
 
 
+class TestLoginWithOAuth:
+    """Tests for OAuth login (issue 036: must reuse the same token-issuing
+    machinery as password login — jti, tv, session tracking)."""
+
+    @pytest.mark.asyncio
+    async def test_login_with_oauth_new_user_issues_full_tokens(self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User) -> None:
+        from app.modules.auth.auth_utils import verify_token
+
+        mock_repository.get_user_by_oauth_provider.return_value = None
+        mock_repository.get_user_by_email.return_value = None
+        mock_repository.create_oauth_user.return_value = sample_user
+        mock_repository.create_oauth_connection.return_value = None
+
+        response = await auth_service.login_with_oauth(
+            "google",
+            {
+                "email": "test@example.com",
+                "providerId": "provider-123",
+                "name": "Test User",
+            },
+        )
+
+        assert response.accessToken is not None
+        assert response.refreshToken is not None
+        assert response.requiresEmailVerification is False
+
+        # The old bug: tokens were minted via raw create_access_token({"sub": user.id})
+        # with no jti/tv, so revocation and token-version enforcement silently
+        # no-op'd for OAuth sessions. They must now carry the same claims as
+        # password login.
+        payload = verify_token(response.accessToken)
+        assert payload["jti"]
+        assert payload["tv"] == sample_user.tokenVersion
+        assert payload["emailVerified"] == sample_user.isEmailVerified
+        mock_repository.create_oauth_connection.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_login_with_oauth_survives_token_version_bump(self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User) -> None:
+        """A user whose tokenVersion was bumped (e.g. password change) must
+        still get a token carrying the *current* tv, not a stale default of 0
+        that the tv-enforcement dependency would immediately reject."""
+        from app.modules.auth.auth_utils import verify_token
+
+        sample_user.tokenVersion = 5
+        mock_repository.get_user_by_oauth_provider.return_value = sample_user
+        mock_repository.create_oauth_connection.return_value = None
+
+        response = await auth_service.login_with_oauth("google", {"email": "test@example.com", "providerId": "provider-123"})
+
+        payload = verify_token(response.accessToken)
+        assert payload["tv"] == 5
+
+    @pytest.mark.asyncio
+    async def test_login_with_oauth_missing_email_raises(self, auth_service: AuthService) -> None:
+        with pytest.raises(ValueError, match="Email is required"):
+            await auth_service.login_with_oauth("google", {"providerId": "abc"})
+
+    @pytest.mark.asyncio
+    async def test_login_with_oauth_missing_provider_raises(self, auth_service: AuthService) -> None:
+        with pytest.raises(ValueError, match="Provider and user_info are required"):
+            await auth_service.login_with_oauth("", {"email": "test@example.com"})
+
+
 class TestRefreshAccessToken:
     """Tests for token refresh."""
 
@@ -153,6 +216,35 @@ class TestRefreshAccessToken:
         assert "refreshToken" in result
         assert result["tokenType"] == "bearer"
         mock_repository.get_user_by_id.assert_called_once_with("user123")
+
+    @pytest.mark.asyncio
+    async def test_refresh_access_token_preserves_tv_and_jti(self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User) -> None:
+        """Refreshed tokens must carry `tv`/`jti` like a fresh login.
+
+        Regression test: refresh_access_token used to mint the new
+        access/refresh tokens via the low-level create_access_token/
+        create_refresh_token builders directly, omitting `tv` and `jti`
+        entirely. For any user whose tokenVersion isn't 0 (e.g. after a
+        password reset), the very first refresh cycle would silently
+        produce tokens that _verify_user_token rejects with 401 "Token has
+        been revoked" — logging the user out shortly after a successful
+        login.
+        """
+        from app.modules.auth.auth_utils import create_refresh_token, verify_token
+
+        sample_user.tokenVersion = 5
+        refresh_token = create_refresh_token(data={"sub": "user123", "email": "test@example.com"})
+        mock_repository.get_user_by_id.return_value = sample_user
+
+        result = await auth_service.refresh_access_token(refresh_token)
+
+        access_payload = verify_token(str(result["accessToken"]))
+        assert access_payload["tv"] == 5
+        assert access_payload["jti"]
+
+        refresh_payload = verify_token(str(result["refreshToken"]))
+        assert refresh_payload["tv"] == 5
+        assert refresh_payload["jti"]
 
     @pytest.mark.asyncio
     async def test_refresh_access_token_invalid_token(self, auth_service: AuthService) -> None:

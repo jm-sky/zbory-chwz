@@ -35,9 +35,9 @@ const handleDisableTotp = handleSubmit(async (values: { password: string }) => {
     await disableTotp(values.password)
     toast.success(t('auth.two_factor.totp.disable_success'))
     emit('success')
-  } catch (err: unknown) {
-    console.error('Disable TOTP error:', err)
-    handleError(err, setErrors)
+  } catch (error: unknown) {
+    console.error('Disable TOTP error:', error)
+    handleError(error, { setErrors })
   }
 })
 </script>

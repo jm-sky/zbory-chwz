@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { ArrowLeft, Sparkles } from 'lucide-vue-next'
+import { ArrowLeft } from 'lucide-vue-next'
 import { useField, useForm } from 'vee-validate'
 import { onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -9,9 +9,12 @@ import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import GravatarIcon from '@/components/ui/icons/GravatarIcon.vue'
 import { Input } from '@/components/ui/input'
+import UserRoleBadge from '@/components/ui/UserRoleBadge.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useBackend } from '@/shared/composables/useBackend'
+import { useHandleError } from '@/shared/composables/useHandleError'
 import { useUser } from '../composables/useUser'
 import { UserRoutePaths } from '../routes'
 import { generateGravatarUrl } from '../utils/generateGravatarUrl'
@@ -21,10 +24,10 @@ const router = useRouter()
 const { t } = useI18n()
 const { profile, updateProfile } = useUser()
 const { shouldUseAPI: _shouldUseAPI } = useBackend()
+const { handleError } = useHandleError()
 
 const profileSchema = z.object({
   name: z.string().min(1, t('user.edit.name_required')),
-  email: z.string().email(t('user.edit.email_invalid')),
   avatarUrl: z
     .string()
     .optional()
@@ -34,25 +37,21 @@ const profileSchema = z.object({
     ),
 })
 
-const { handleSubmit, setValues } = useForm({
+const { handleSubmit, setValues, setErrors } = useForm({
   validationSchema: toTypedSchema(profileSchema),
   initialValues: {
     name: '',
-    email: '',
     avatarUrl: '',
   },
 })
 
-const { value: emailValue } = useField('email')
 const { value: avatarUrlValue } = useField('avatarUrl')
-
 
 // Populate form with current profile data
 onMounted(() => {
   if (profile.value) {
     setValues({
       name: profile.value.name,
-      email: profile.value.email,
       avatarUrl: profile.value.avatarUrl || '',
     })
   }
@@ -63,7 +62,6 @@ watch(() => profile.value, (newProfile) => {
   if (newProfile) {
     setValues({
       name: newProfile.name,
-      email: newProfile.email,
       avatarUrl: newProfile.avatarUrl ?? '',
     })
   }
@@ -74,7 +72,6 @@ const onSubmit = handleSubmit(
     try {
       const updateData = {
         name: values.name,
-        email: values.email,
         avatarUrl: values.avatarUrl && values.avatarUrl.trim() ? values.avatarUrl.trim() : undefined,
       }
 
@@ -83,7 +80,7 @@ const onSubmit = handleSubmit(
       router.push(UserRoutePaths.profile)
     } catch (error) {
       console.error('Profile update failed:', error)
-      toast.error(t('common.error'))
+      handleError(error, { setErrors })
     }
   },
   () => {
@@ -96,8 +93,8 @@ const handleCancel = () => {
 }
 
 const handleGenerateGravatar = () => {
-  const email = emailValue.value as string | undefined
-  if (!email || typeof email !== 'string' || !email.trim()) {
+  const email = profile.value?.email
+  if (!email || !email.trim()) {
     toast.error(t('user.edit.email_required_for_gravatar') || 'Email is required to generate Gravatar URL')
     return
   }
@@ -121,14 +118,22 @@ const handleGenerateGravatar = () => {
           <Button
             variant="ghost"
             size="icon"
+            :aria-label="t('common.back', 'Back')"
             @click="handleCancel"
           >
             <ArrowLeft class="size-4" />
           </Button>
           <div class="space-y-1">
-            <h1 class="text-3xl font-bold tracking-tight">
-              {{ t('user.edit.title') }}
-            </h1>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="text-3xl font-bold tracking-tight">
+                {{ t('user.edit.title') }}
+              </h1>
+              <UserRoleBadge
+                :is-admin="profile?.isAdmin"
+                :is-owner="profile?.isOwner"
+                :is-premium="profile?.isPremium"
+              />
+            </div>
             <p class="text-sm text-muted-foreground">
               {{ t('user.edit.subtitle') }}
             </p>
@@ -154,21 +159,22 @@ const handleGenerateGravatar = () => {
             </FormItem>
           </FormField>
 
-          <FormField v-slot="{ componentField }" name="email">
-            <FormItem>
-              <FormLabel required>
-                {{ t('user.edit.email_label') }}
-              </FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  :placeholder="t('user.edit.email_placeholder')"
-                  v-bind="componentField"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          </FormField>
+          <FormItem>
+            <FormLabel>
+              {{ t('user.edit.email_label') }}
+            </FormLabel>
+            <FormControl>
+              <Input
+                type="email"
+                :model-value="profile.email"
+                disabled
+                class="bg-muted cursor-not-allowed"
+              />
+            </FormControl>
+            <FormDescription>
+              {{ t('user.edit.email_readonly_help', 'Email cannot be changed for security reasons') }}
+            </FormDescription>
+          </FormItem>
 
           <FormField v-slot="{ componentField }" name="avatarUrl">
             <FormItem>
@@ -187,10 +193,10 @@ const handleGenerateGravatar = () => {
                     type="button"
                     variant="outline"
                     size="icon"
-                    :title="t('user.edit.generate_gravatar') || 'Generate Gravatar URL from email'"
+                    :aria-label="t('user.edit.generate_gravatar') || 'Generate Gravatar URL from email'"
                     @click="handleGenerateGravatar"
                   >
-                    <Sparkles class="size-4" />
+                    <GravatarIcon class="size-4" />
                   </Button>
                 </div>
               </FormControl>

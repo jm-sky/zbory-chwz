@@ -1,26 +1,61 @@
 """Authentication utilities for JWT token management and password hashing."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
+import bcrypt
 import jwt
-from passlib.context import CryptContext
 
 from ...core.config import settings
 from .types.jwt import CreateAccessTokenOptions, CreateRefreshTokenOptions, JWTPayload
 
 
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)  # type: ignore[no-any-return]
+    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password."""
-    return pwd_context.hash(password)  # type: ignore[no-any-return]
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+def _encode_token(
+    claims: dict[str, Any],
+    *,
+    token_type: str,
+    expires_delta: timedelta,
+) -> str:
+    """Encode a JWT, injecting the claims common to every token type.
+
+    Centralizes the encode/``exp``/``iat``/``type`` boilerplate previously copied
+    across every ``create_*_token`` builder, and stamps ``iss``/``aud`` so tokens
+    are bound to this deployment and can't be replayed against a sibling that
+    shares the same signing key (see verify_token).
+
+    Args:
+        claims: Token-type-specific payload claims (``sub``, ``email``, ...).
+        token_type: Value for the ``type`` claim (``access``, ``refresh``, ...).
+        expires_delta: Lifetime of the token from now.
+
+    Returns:
+        Encoded JWT string.
+    """
+    now = datetime.now(UTC)
+    expire = now + expires_delta
+    payload: dict[str, Any] = {
+        **claims,
+        "type": token_type,
+        "iss": settings.security.jwt_issuer,
+        "aud": settings.security.jwt_audience,
+        "iat": int(now.timestamp()),
+        "exp": int(expire.timestamp()),
+    }
+    return jwt.encode(
+        payload,
+        settings.security.secret_key,
+        algorithm=settings.security.jwt_algorithm,
+    )
 
 
 def create_access_token(
@@ -36,40 +71,67 @@ def create_access_token(
     Returns:
         Encoded JWT token string
     """
-    now = datetime.now(UTC)
-    if expires_delta:
-        expire = now + expires_delta
-    else:
-        expire = now + timedelta(minutes=settings.security.access_token_expires_minutes)
-
-    payload: JWTPayload = {
+    claims: dict[str, Any] = {
         "sub": data["sub"],
         "email": data.get("email"),
         "tid": data.get("tid"),
         "trol": data.get("trol"),
-        "type": "access",
-        "exp": int(expire.timestamp()),
-        "iat": int(now.timestamp()),
         "tfaPending": False,
         "tfaVerified": data.get("tfaVerified", False),
         "tfaMethod": data.get("tfaMethod"),
         "emailVerified": data.get("emailVerified"),
     }
-    encoded_jwt = jwt.encode(dict(payload), settings.security.secret_key, algorithm=settings.security.jwt_algorithm)
-    return encoded_jwt
+    if "jti" in data:
+        claims["jti"] = data["jti"]
+    if "tv" in data:
+        claims["tv"] = data["tv"]
+    return _encode_token(
+        claims,
+        token_type="access",
+        expires_delta=expires_delta or timedelta(minutes=settings.security.access_token_expires_minutes),
+    )
 
 
-def verify_token(token: str) -> JWTPayload:
-    """Verify and decode a JWT token."""
+def verify_token(token: str, expected_type: str | None = None) -> JWTPayload:
+    """Verify and decode a JWT token.
+
+    Verifies signature, expiration, and — because every token minted by this
+    module carries them — the ``iss`` and ``aud`` claims, binding the token to
+    this deployment.
+
+    Args:
+        token: Encoded JWT string.
+        expected_type: If given, the token's ``type`` claim must equal this
+            value or ``InvalidTokenError`` is raised. Lets reset/verification
+            flows assert token purpose at decode time instead of relying solely
+            on downstream checks.
+
+    Returns:
+        Decoded JWT payload.
+
+    Raises:
+        ExpiredTokenError: Token signature has expired.
+        InvalidTokenError: Signature, issuer, audience, or type is invalid.
+    """
     from .exceptions import ExpiredTokenError, InvalidTokenError
 
     try:
-        payload = jwt.decode(token, settings.security.secret_key, algorithms=[settings.security.jwt_algorithm])
-        return payload  # type: ignore[no-any-return]
+        payload = jwt.decode(
+            token,
+            settings.security.secret_key,
+            algorithms=[settings.security.jwt_algorithm],
+            audience=settings.security.jwt_audience,
+            issuer=settings.security.jwt_issuer,
+        )
     except jwt.ExpiredSignatureError:
-        raise ExpiredTokenError()
+        raise ExpiredTokenError() from None
     except jwt.InvalidTokenError:
+        raise InvalidTokenError() from None
+
+    if expected_type is not None and payload.get("type") != expected_type:
         raise InvalidTokenError()
+
+    return cast(JWTPayload, payload)
 
 
 def create_refresh_token(data: CreateRefreshTokenOptions) -> str:
@@ -82,46 +144,38 @@ def create_refresh_token(data: CreateRefreshTokenOptions) -> str:
     Returns:
         Encoded JWT token string
     """
-    now = datetime.now(UTC)
-    expire = now + timedelta(days=settings.security.refresh_token_expires_days)
-
-    payload: JWTPayload = {
+    claims: dict[str, Any] = {
         "sub": data["sub"],
         "email": data.get("email"),
-        "type": "refresh",
-        "exp": int(expire.timestamp()),
-        "iat": int(now.timestamp()),
         "tfaVerified": data.get("tfaVerified", False),
         "tfaMethod": data.get("tfaMethod"),
         "emailVerified": data.get("emailVerified"),
         # NOTE: tid/trol are NOT preserved in refresh token (security)
     }
-    encoded_jwt = jwt.encode(dict(payload), settings.security.secret_key, algorithm=settings.security.jwt_algorithm)
-    return encoded_jwt
+    if "jti" in data:
+        claims["jti"] = data["jti"]
+    if "tv" in data:
+        claims["tv"] = data["tv"]
+    return _encode_token(
+        claims,
+        token_type="refresh",
+        expires_delta=timedelta(days=settings.security.refresh_token_expires_days),
+    )
 
 
 def create_password_reset_token(data: dict[str, str]) -> str:
     """Create a JWT password reset token with 1-hour expiration."""
-    now = datetime.now(UTC)
-    expire = now + timedelta(hours=settings.security.password_reset_token_expires_hours)
-    to_encode = {
-        **data,
-        "exp": int(expire.timestamp()),
-        "type": "password_reset",
-        "iat": int(now.timestamp()),
-    }
-    encoded_jwt = jwt.encode(to_encode, settings.security.secret_key, algorithm=settings.security.jwt_algorithm)
-    return encoded_jwt
+    return _encode_token(
+        dict(data),
+        token_type="password_reset",
+        expires_delta=timedelta(hours=settings.security.password_reset_token_expires_hours),
+    )
 
 
 def create_email_verification_token(data: dict[str, str]) -> str:
     """Create a JWT token for email verification."""
-    now = datetime.now(UTC)
-    expire = now + timedelta(hours=settings.security.email_verification_token_expires_hours)
-    payload = {
-        **data,
-        "exp": int(expire.timestamp()),
-        "type": "email_verification",
-        "iat": int(now.timestamp()),
-    }
-    return jwt.encode(payload, settings.security.secret_key, algorithm=settings.security.jwt_algorithm)
+    return _encode_token(
+        dict(data),
+        token_type="email_verification",
+        expires_delta=timedelta(hours=settings.security.email_verification_token_expires_hours),
+    )

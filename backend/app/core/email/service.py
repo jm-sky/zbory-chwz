@@ -7,10 +7,12 @@ from typing import TYPE_CHECKING
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.core.config import EmailSettings, settings
-from .i18n import SupportedLocale, DEFAULT_LOCALE, get_translations
+
+from .i18n import DEFAULT_LOCALE, SupportedLocale, get_translations
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
+
     from .adapter import EmailAdapter
 
 logger = logging.getLogger(__name__)
@@ -31,11 +33,14 @@ class EmailService:
         """
         self.adapter = adapter
         self.templates_dir = Path(__file__).parent / "templates"
-        self.jinja_env = Environment(loader=FileSystemLoader(str(self.templates_dir)), autoescape=select_autoescape(["html", "xml"]))
-        # Primary color from frontend: oklch(0.646 0.222 41.116) converted to hex for email compatibility
-        self.primary_color = "#D97757"
+        self.jinja_env = Environment(
+            loader=FileSystemLoader(str(self.templates_dir)),
+            autoescape=select_autoescape(["html", "xml"]),
+        )
+        # Primary color from frontend: oklch(0.63 0.22 245) - blue-500, matches --primary in src/css/style.css
+        self.primary_color = "#3b82f6"
 
-    def _render_translation(self, translations: dict, key: str, context: dict) -> str:
+    def _render_translation(self, translations: dict[str, object], key: str, context: dict[str, object]) -> str:
         """Render a translation string with context variables.
 
         Args:
@@ -48,7 +53,7 @@ class EmailService:
         """
         # Navigate through nested keys (e.g., "welcome.subject")
         keys = key.split(".")
-        value = translations
+        value: object = translations
         for k in keys:
             if isinstance(value, dict):
                 value = value.get(k)
@@ -58,11 +63,16 @@ class EmailService:
         if not isinstance(value, str):
             return key  # Value is not a string, return key
 
-        # Render with Jinja2 to support variables in translations
+        # Render with Jinja2 to support variables in translations. autoescape=True so
+        # variables interpolated here (e.g. {{ email }}) are escaped, and Markup(...) so
+        # the literal HTML tags in the translation string (e.g. <strong>) aren't
+        # re-escaped when this return value is inserted into the outer, autoescaping
+        # template via translate().
         from jinja2 import Template
+        from markupsafe import Markup
 
-        template = Template(value)
-        return template.render(**context)
+        template = Template(value, autoescape=True)
+        return Markup(template.render(**context))
 
     async def send_email(
         self,
@@ -118,8 +128,10 @@ class EmailService:
                 context_with_defaults["locale"] = locale or DEFAULT_LOCALE
 
                 # Add helper function for translations in templates
-                def translate(key: str, **kwargs: dict) -> str:
+                # Note: translations is guaranteed to be a dict here
+                def translate(key: str, **kwargs: object) -> str:
                     """Helper function for translations in templates."""
+                    assert translations is not None
                     return self._render_translation(translations, key, {**context_with_defaults, **kwargs})
 
                 context_with_defaults["translate"] = translate
@@ -133,27 +145,32 @@ class EmailService:
             # Generate text version (simple strip of HTML tags)
             text_body = self._html_to_text(html_body)
 
-            # Check if adapter supports audit parameters
-            # (AuditEmailAdapter has these params, standard adapters don't)
-            send_params = {
-                "to": to,
-                "subject": subject,
-                "html_body": html_body,
-                "text_body": text_body,
-                "from_email": from_email,
-            }
-
-            # Add audit parameters if adapter supports them
-            if hasattr(self.adapter, "repository"):
-                # This is an AuditEmailAdapter
-                send_params["template_name"] = template_name
-                send_params["template_context"] = context
-                send_params["user_id"] = user_id
-                send_params["related_entity_type"] = related_entity_type
-                send_params["related_entity_id"] = related_entity_id
-
             # Send via adapter
-            return await self.adapter.send_email(**send_params)
+            # Add audit parameters if adapter supports them (AuditEmailAdapter)
+            if hasattr(self.adapter, "repository"):
+                # This is an AuditEmailAdapter - call with all params
+                # Use type: ignore since AuditEmailAdapter extends base signature
+                return await self.adapter.send_email(  # type: ignore[call-arg]
+                    to=to,
+                    subject=subject,
+                    html_body=html_body,
+                    text_body=text_body,
+                    from_email=from_email,
+                    template_name=template_name,
+                    template_context=context,
+                    user_id=user_id,
+                    related_entity_type=related_entity_type,
+                    related_entity_id=related_entity_id,
+                )
+            else:
+                # Standard adapter
+                return await self.adapter.send_email(
+                    to=to,
+                    subject=subject,
+                    html_body=html_body,
+                    text_body=text_body,
+                    from_email=from_email,
+                )
 
         except Exception as e:
             logger.error(f"Failed to send email: {e}", exc_info=True)
@@ -397,10 +414,8 @@ def get_email_service() -> EmailService:
     """
     from .adapter import EmailAdapter
     from .file_adapter import FileEmailAdapter
-    from .smtp_adapter import SMTPEmailAdapter
     from .retry_smtp_adapter import RetrySMTPAdapter
-    from .audit_adapter import AuditEmailAdapter
-    from app.core.database import get_db
+    from .smtp_adapter import SMTPEmailAdapter
 
     # Get email settings from config
     email_settings: EmailSettings | None = getattr(settings, "email", None)
@@ -464,11 +479,10 @@ def get_email_service_with_audit(
         EmailService instance with audit support if enabled
     """
     from .adapter import EmailAdapter
-    from .file_adapter import FileEmailAdapter
-    from .smtp_adapter import SMTPEmailAdapter
-    from .retry_smtp_adapter import RetrySMTPAdapter
     from .audit_adapter import AuditEmailAdapter
-    from sqlalchemy.ext.asyncio import AsyncSession
+    from .file_adapter import FileEmailAdapter
+    from .retry_smtp_adapter import RetrySMTPAdapter
+    from .smtp_adapter import SMTPEmailAdapter
 
     # Get email settings from config
     email_settings: EmailSettings | None = getattr(settings, "email", None)

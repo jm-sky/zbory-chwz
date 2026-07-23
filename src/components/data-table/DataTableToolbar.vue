@@ -8,7 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
+import SearchInput from '@/components/ui/input/SearchInput.vue'
 import type { Table } from '@tanstack/vue-table'
 
 interface Props {
@@ -26,15 +26,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const globalFilter = defineModel<string>('globalFilter', { default: '' })
 
-const handleGlobalFilterChange = (value: string) => {
-  globalFilter.value = value
-}
-
 const { t } = useI18n()
 
 const handleColumnVisibilityChange = (columnId: string, visible: boolean) => {
   // Update column visibility through table state - this will trigger onColumnVisibilityChange
-  const currentState = props.table.getState().columnVisibility || {}
+  const currentState = props.table.getState().columnVisibility ?? {}
   const newState = {
     ...currentState,
     [columnId]: visible,
@@ -97,35 +93,45 @@ const getColumnHeaderText = (column: ReturnType<Table<TData>['getColumn']>): str
 </script>
 
 <template>
-  <div v-if="enableFiltering || enableColumnVisibility" class="flex items-center gap-4 py-4">
-    <!-- Global Filter Input -->
-    <Input
-      v-if="enableFiltering"
-      :model-value="globalFilter"
-      :placeholder="searchPlaceholder"
-      class="max-w-sm"
-      @update:model-value="(value: string | number) => handleGlobalFilterChange(String(value))"
-    />
+  <div v-if="enableFiltering || enableColumnVisibility" class="space-y-4">
+    <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+      <!-- Global Filter Input -->
+      <SearchInput
+        v-if="enableFiltering"
+        id="data-table-search"
+        v-model="globalFilter"
+        name="data-table-search"
+        :placeholder="searchPlaceholder"
+        class="max-w-sm"
+      />
 
-    <!-- Column Visibility Toggle -->
-    <DropdownMenu v-if="enableColumnVisibility">
-      <DropdownMenuTrigger as-child>
-        <Button variant="outline" class="ml-auto shrink-0">
-          {{ t('common.columns') }}
-          <ChevronDown class="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuCheckboxItem
-          v-for="column in table.getAllColumns().filter((column) => column.getCanHide())"
-          :key="column.id"
-          class="capitalize"
-          :model-value="column.getIsVisible()"
-          @update:model-value="(value: boolean) => handleColumnVisibilityChange(column.id, value)"
-        >
-          {{ getColumnHeaderText(column) }}
-        </DropdownMenuCheckboxItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <slot name="filters" />
+
+      <!-- Column Visibility Toggle -->
+      <DropdownMenu v-if="enableColumnVisibility">
+        <DropdownMenuTrigger as-child>
+          <Button variant="outline" class="ml-auto shrink-0">
+            {{ t('common.columns') }}
+            <ChevronDown class="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuCheckboxItem
+            v-for="column in table.getAllColumns().filter((column) => column.getCanHide())"
+            :key="column.id"
+            class="capitalize"
+            :model-value="column.getIsVisible()"
+            @update:model-value="(value: boolean) => handleColumnVisibilityChange(column.id, value)"
+          >
+            {{ getColumnHeaderText(column) }}
+          </DropdownMenuCheckboxItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+
+    <!-- Filter Badges -->
+    <div v-if="$slots['toolbar-badges']" class="flex flex-wrap items-center gap-2">
+      <slot name="toolbar-badges" />
+    </div>
   </div>
 </template>

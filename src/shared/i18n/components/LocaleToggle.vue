@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useUpdateSettings } from '@/modules/settings/composables/useSettings'
 import { useLocale } from '../composables/useLocale'
@@ -7,6 +9,7 @@ import type { SupportedLocale } from '@/shared/config/config'
 
 const { nextLocale, currentLocale } = useLocale()
 const updateMutation = useUpdateSettings()
+const { t } = useI18n()
 
 const toggleLocale = async () => {
   const currentIndex = SUPPORTED_LOCALES.indexOf(currentLocale.value)
@@ -17,12 +20,21 @@ const toggleLocale = async () => {
     await updateMutation.mutateAsync({ locale: newLocale })
   }
 }
+
+const tooltipText = computed(() => {
+  return t('common.toggleLanguage', { locale: nextLocale.value.code.toUpperCase() })
+})
+
+const ariaLabel = computed(() => {
+  return t('common.toggleLanguage', { locale: nextLocale.value.code.toUpperCase() })
+})
 </script>
 
 <template>
   <Button
+    v-tooltip.bottom="tooltipText"
     variant="ghost"
-    :aria-label="`Switch language to ${nextLocale.code.toUpperCase()}`"
+    :aria-label="ariaLabel"
     :disabled="updateMutation.isPending.value"
     class="w-12"
     @click="toggleLocale"

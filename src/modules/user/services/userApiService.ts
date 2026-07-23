@@ -10,11 +10,37 @@ interface UserResponse {
   email: string
   name: string
   role?: string
+  isAdmin?: boolean
+  isOwner?: boolean
+  isPremium?: boolean
   isActive?: boolean
   isEmailVerified?: boolean
   avatarUrl?: string
   createdAt: string
   updatedAt: string
+  features?: {
+    ai: {
+      enabled: boolean
+      limit: number | null
+    }
+    storage: {
+      limit: number
+    }
+  }
+}
+
+/**
+ * Backend API response type for public user profile
+ */
+interface PublicUserResponse {
+  id: string
+  name: string
+  avatarUrl?: string
+  isAdmin: boolean
+  isOwner?: boolean
+  isPremium?: boolean
+  email?: string
+  emailPublic: boolean
 }
 
 /**
@@ -34,11 +60,16 @@ class UserApiService {
    * Update current user profile
    */
   async updateUser(data: IUpdateUserDto): Promise<IUser> {
-    console.log('userApiService.updateUser called with data:', data)
-    console.log('Making PATCH request to /users/me')
     const response = await apiClient.patch<UserResponse>('/users/me', data)
-    console.log('API response received:', response.data)
     return this.mapToIUser(response.data)
+  }
+
+  /**
+   * Get public user profile by user ID
+   */
+  async getPublicUser(userId: string): Promise<IUser> {
+    const response = await apiClient.get<PublicUserResponse>(`/users/${userId}/public`)
+    return this.mapPublicUserToIUser(response.data)
   }
 
   /**
@@ -50,8 +81,30 @@ class UserApiService {
       name: response.name,
       email: response.email,
       avatarUrl: response.avatarUrl,
+      isAdmin: response.isAdmin ?? response.role === 'admin',
+      isOwner: response.isOwner ?? response.role === 'owner',
+      isPremium: response.isPremium ?? response.role === 'premium',
       createdAt: response.createdAt,
       updatedAt: response.updatedAt,
+      features: response.features,
+    }
+  }
+
+  /**
+   * Map backend PublicUserResponse to frontend IUser
+   */
+  private mapPublicUserToIUser(response: PublicUserResponse): IUser {
+    return {
+      id: response.id,
+      name: response.name,
+      email: response.email || '',
+      avatarUrl: response.avatarUrl,
+      isAdmin: response.isAdmin,
+      isOwner: response.isOwner,
+      isPremium: response.isPremium,
+      emailPublic: response.emailPublic,
+      createdAt: '', // Not provided in public profile
+      updatedAt: '', // Not provided in public profile
     }
   }
 }

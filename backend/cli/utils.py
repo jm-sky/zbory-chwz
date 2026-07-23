@@ -64,16 +64,24 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
     return True, ""
 
 
-def format_user_role(is_admin: bool) -> str:
+def format_user_role(is_admin: bool = False, is_owner: bool = False, is_premium: bool = False) -> str:
     """Format user role for display with color.
 
     Args:
         is_admin: Whether user is admin
+        is_owner: Whether user is owner
+        is_premium: Whether user is premium
 
     Returns:
         str: Formatted role string with Rich markup
     """
-    return "[yellow]Admin[/yellow]" if is_admin else "[dim]User[/dim]"
+    if is_owner:
+        return "[bold magenta]Owner[/bold magenta]"
+    if is_admin:
+        return "[yellow]Admin[/yellow]"
+    if is_premium:
+        return "[cyan]Premium[/cyan]"
+    return "[dim]User[/dim]"
 
 
 def format_user_status(is_active: bool) -> str:

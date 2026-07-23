@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T = unknown">
-import { CheckIcon, ChevronsUpDownIcon } from 'lucide-vue-next'
+import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,9 +34,11 @@ const props = withDefaults(defineProps<{
   searchPlaceholder?: string
   creatable?: boolean
   createLabel?: string
+  clearable?: boolean
 }>(), {
   creatable: false,
   createLabel: 'Add',
+  clearable: false,
 })
 
 const open = defineModel<boolean>('open', { default: false })
@@ -65,19 +67,33 @@ function onItemSelect(option: ComboBoxOption) {
 
 <template>
   <Popover v-model:open="open">
-    <PopoverTrigger as-child>
-      <Button
-        variant="outline"
-        role="combobox"
-        :aria-expanded="open"
-        :class="cn('w-full justify-between font-normal', props.class)"
+    <div class="relative">
+      <PopoverTrigger as-child>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          :aria-expanded="open"
+          :class="cn('w-full justify-between font-normal', props.class)"
+        >
+          <slot v-if="value" name="value">
+            {{ displayValue ?? placeholder }}
+          </slot>
+          <span v-else>
+            {{ displayValue ?? placeholder }}
+          </span>
+          <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <button
+        v-if="clearable && value"
+        type="button"
+        class="cursor-pointer opacity-50 absolute top-1/2 right-10 -translate-y-1/2"
+        @click.stop.prevent.capture="value = ''"
       >
-        <span>
-          {{ displayValue ?? placeholder }}
-        </span>
-        <ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-      </Button>
-    </PopoverTrigger>
+        <XIcon class="size-4 shrink-0" />
+      </button>
+    </div>
     <PopoverContent :class="cn('w-[300px] p-0', popoverContentClass)">
       <Command>
         <CommandInput

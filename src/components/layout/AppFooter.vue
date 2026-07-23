@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import HoverLink from '@/components/ui/hover-link/HoverLink.vue'
+import { PublicRouteNames } from '@/router/publicRoutes'
 import { useAppVersion } from '@/shared/composables/useAppVersion'
 import { config } from '@/shared/config/config'
 import HoverLinkExternal from '../ui/hover-link/HoverLinkExternal.vue'
 import GithubIcon from '../ui/icons/GithubIcon.vue'
+import RecaptchaNotice from './RecaptchaNotice.vue'
 
 const { t } = useI18n()
 
@@ -21,27 +23,44 @@ const { version, buildDate } = useAppVersion()
           <HoverLinkExternal :href="config.contact.companyWebsite">
             {{ config.contact.companyName }}
           </HoverLinkExternal>
-          <span class="ml-2 text-xs opacity-70">
-            v{{ version }} – {{ buildDate }}
+        </div>
+        <div class="text-sm">
+          <HoverLink :to="{ name: PublicRouteNames.landing }">
+            {{ config.app.name }}
+          </HoverLink>
+          <span v-tooltip="buildDate" class="ml-2 text-xs opacity-70">
+            v{{ version }}
           </span>
         </div>
 
         <nav class="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm">
-          <HoverLink to="/cookies">
+          <HoverLink :to="{ name: PublicRouteNames.about }">
+            {{ t('common.pages.about', 'About') }}
+          </HoverLink>
+          <HoverLink :to="{ name: PublicRouteNames.cookies }">
             {{ t('footer.cookies', 'Informacja o ciasteczkach') }}
           </HoverLink>
-          <HoverLink to="/privacy">
+          <HoverLink :to="{ name: PublicRouteNames.privacy }">
             {{ t('footer.privacy', 'Polityka prywatności') }}
           </HoverLink>
-          <HoverLink to="/contact">
+          <HoverLink :to="{ name: PublicRouteNames.terms }">
+            {{ t('footer.terms', 'Regulamin') }}
+          </HoverLink>
+          <HoverLink :to="{ name: PublicRouteNames.contact }">
             {{ t('footer.contact', 'Kontakt') }}
           </HoverLink>
-          <HoverLinkExternal href="https://github.com" class="inline-flex items-center gap-1">
+          <HoverLinkExternal
+            v-if="config.app.githubUrl"
+            :title="t('footer.github', 'GitHub')"
+            :href="config.app.githubUrl"
+            class="inline-flex items-center gap-1"
+          >
             <GithubIcon class="size-4" />
-            {{ t('footer.github', 'GitHub') }}
           </HoverLinkExternal>
         </nav>
       </div>
+
+      <RecaptchaNotice />
     </div>
   </footer>
 </template>

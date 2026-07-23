@@ -42,7 +42,7 @@ export function loadRecaptchaScript(): Promise<void> {
 
 /**
  * Execute reCAPTCHA and get token
- * 
+ *
  * Note: reCAPTCHA tokens expire after ~2 minutes and are single-use.
  * Generate tokens immediately before making API calls.
  */
@@ -77,8 +77,7 @@ export async function executeRecaptcha(action: string): Promise<string | null> {
     }
 
     return token
-  }
-  catch (error) {
+  } catch (error) {
     console.error('[reCAPTCHA] Execution failed:', error)
     return null
   }

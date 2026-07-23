@@ -1,23 +1,13 @@
 <script setup lang="ts">
-import { LogIn, UserPlus } from 'lucide-vue-next'
+import { LogIn } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import Alert from '@/components/ui/alert/Alert.vue'
 import AlertDescription from '@/components/ui/alert/AlertDescription.vue'
 import AlertTitle from '@/components/ui/alert/AlertTitle.vue'
-import { Button } from '@/components/ui/button'
-import { AuthRouteNames } from '@/modules/auth/config/routes'
+import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
+import { AuthRoutePaths } from '@/modules/auth/config/routes'
 
 const { t } = useI18n()
-const router = useRouter()
-
-const handleLogin = () => {
-  router.push({ name: AuthRouteNames.login })
-}
-
-const handleRegister = () => {
-  router.push({ name: AuthRouteNames.register })
-}
 </script>
 
 <template>
@@ -28,23 +18,14 @@ const handleRegister = () => {
     <AlertDescription class="space-y-3 justify-center">
       <p>{{ t('user.profile.auth_required_message') }}</p>
       <div class="w-full flex flex-col sm:flex-row items-center justify-center gap-2">
-        <Button
+        <ButtonLink
           size="sm"
           class="w-full sm:w-auto"
-          @click="handleLogin"
+          :to="AuthRoutePaths.login"
         >
           <LogIn class="size-4" />
           {{ t('user.profile.login_button') }}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          class="w-full sm:w-auto text-foreground"
-          @click="handleRegister"
-        >
-          <UserPlus class="size-4" />
-          {{ t('user.profile.register_button') }}
-        </Button>
+        </ButtonLink>
       </div>
     </AlertDescription>
   </Alert>

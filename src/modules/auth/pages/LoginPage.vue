@@ -25,15 +25,6 @@ const { authService } = defineProps<{
     </template>
 
     <GuestLayoutCard :title="t('auth.sign_in_to_account')">
-      <template #header-description>
-        <p class="mt-2 text-center text-sm text-muted-foreground">
-          {{ t('auth.links.or_create_account') }}
-          <RouterLink to="/auth/register" class="font-medium text-primary hover:underline">
-            {{ t('auth.links.create_new_account') }}
-          </RouterLink>
-        </p>
-      </template>
-
       <LoginForm :auth-service :default-email />
 
       <template #footer>

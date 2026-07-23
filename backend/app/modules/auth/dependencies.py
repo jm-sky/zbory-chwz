@@ -1,70 +1,94 @@
 """FastAPI dependencies for authentication."""
 
-from typing import Annotated, Any, Union
+import logging
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .service import AuthService
-from .types.repository import UserRepositoryInterface
+from app.core.auth.dependencies import get_token_blacklist_service
+from app.core.auth.token_blacklist import TokenBlacklistService
+
 from .auth_utils import verify_token
-from .exceptions import EmailNotVerifiedError, ExpiredTokenError, InvalidTokenError, InactiveUserError
+from .exceptions import (
+    EmailNotVerifiedError,
+    ExpiredTokenError,
+    InactiveUserError,
+    InvalidTokenError,
+)
 from .models import User
 from .repositories import get_user_repository
+from .service import AuthService
+from .types.repository import UserRepositoryInterface
+
+logger = logging.getLogger(__name__)
 
 # HTTP Bearer security scheme
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 # Try to use 2FA-enabled auth service if available
 HAS_2FA = False
 try:
-    from app.modules.two_factor.auth_integration import AuthServiceWith2FA, get_auth_service_with_2fa
     from app.modules.two_factor.repositories import get_two_factor_repository
-    from app.modules.two_factor.types.repository import TwoFactorRepositoryInterface
 
     HAS_2FA = True
-except (ImportError, Exception):
+except ImportError:
     # Fallback to regular auth service - 2FA not available
     pass
 
 
 def get_auth_service(
     user_repository: Annotated[UserRepositoryInterface, Depends(get_user_repository)],
-    two_factor_repository: Any = Depends(lambda: None) if not HAS_2FA else Depends(get_two_factor_repository),
-) -> Union[AuthService, Any]:
-    """Get auth service with 2FA support if available."""
+    blacklist_service: Annotated[TokenBlacklistService, Depends(get_token_blacklist_service)],
+    two_factor_repository: Any = (Depends(lambda: None) if not HAS_2FA else Depends(get_two_factor_repository)),
+) -> AuthService:
+    """Get auth service with 2FA support if available.
+
+    Returns ``AuthServiceWith2FA`` (a subclass of ``AuthService``) when the 2FA
+    module is installed, otherwise a plain ``AuthService`` — both satisfy the
+    ``AuthService`` interface, so callers stay type-safe.
+    """
     if HAS_2FA:
         from app.modules.two_factor.auth_integration import get_auth_service_with_2fa
 
         service = get_auth_service_with_2fa(
             user_repository=user_repository,
             two_factor_repository=two_factor_repository,
+            blacklist_service=blacklist_service,
         )
-        # Debug logging
-        import logging
-
-        logger = logging.getLogger(__name__)
-        logger.info(f"Created auth service: {type(service).__name__} (2FA enabled: True)")
+        logger.debug(f"Created auth service: {type(service).__name__} (2FA enabled: True)")
         return service
     else:
-        import logging
-
-        logger = logging.getLogger(__name__)
         logger.debug("Using regular AuthService (2FA not available)")
-        return AuthService(user_repository)
+        return AuthService(
+            user_repository=user_repository,
+            token_blacklist_service=blacklist_service,
+            two_factor_repository=two_factor_repository,
+        )
 
 
 async def _verify_user_token(
     token: str,
     user_repository: UserRepositoryInterface,
+    blacklist_service: TokenBlacklistService,
     two_factor_repository: Any = None,
 ) -> User:
     """
     Verify JWT token and return authenticated user.
 
     SECURITY: Enforces 2FA verification if user has 2FA enabled.
+    SECURITY: Checks if token is blacklisted (revoked after logout or account deletion).
     """
     try:
+        # SECURITY: Check if token is blacklisted
+        if await blacklist_service.is_blacklisted(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         payload = verify_token(token)
 
         # Verify token type
@@ -101,6 +125,24 @@ async def _verify_user_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        # Check token version (DB fallback — works even when Redis is down)
+        token_version = payload.get("tv", 0)
+        if token_version != user.tokenVersion:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Check JTI blacklist (Redis fast-path)
+        token_jti = payload.get("jti")
+        if token_jti and await blacklist_service.is_jti_blacklisted(token_jti):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         # Check if user is active
         if not user.isActive:
             raise InactiveUserError("User account is inactive")
@@ -132,9 +174,6 @@ async def _verify_user_token(
                 pass
             except Exception as e:
                 # If 2FA check fails, log but don't break the request
-                import logging
-
-                logger = logging.getLogger(__name__)
                 logger.warning(f"2FA verification check failed: {e}", exc_info=True)
                 # In production, you might want to be more strict here
 
@@ -145,39 +184,148 @@ async def _verify_user_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
     except InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
     except InactiveUserError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
-        )
+        ) from None
     except EmailNotVerifiedError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email verification required",
-        )
+        ) from None
 
 
 # Create get_current_user function with consistent signature
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     user_repository: Annotated[UserRepositoryInterface, Depends(get_user_repository)],
-    two_factor_repository: Any = Depends(lambda: None) if not HAS_2FA else Depends(get_two_factor_repository),
+    blacklist_service: Annotated[TokenBlacklistService, Depends(get_token_blacklist_service)],
+    two_factor_repository: Any = (Depends(lambda: None) if not HAS_2FA else Depends(get_two_factor_repository)),
 ) -> User:
-    """Get current user with optional 2FA verification check."""
+    """Get current user with optional 2FA verification check and blacklist validation."""
     token = credentials.credentials
     if HAS_2FA and two_factor_repository is not None:
-        return await _verify_user_token(token, user_repository, two_factor_repository)
+        return await _verify_user_token(token, user_repository, blacklist_service, two_factor_repository)
     else:
-        return await _verify_user_token(token, user_repository, None)
+        return await _verify_user_token(token, user_repository, blacklist_service, None)
+
+
+def get_current_token(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+) -> str:
+    """Extract JWT token from Authorization header.
+
+    Args:
+        credentials: HTTP Bearer credentials
+
+    Returns:
+        JWT token string (without "Bearer " prefix)
+    """
+    return credentials.credentials
+
+
+async def require_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """
+    Dependency to require admin privileges.
+
+    Raises:
+        HTTPException: If user is not an admin
+    """
+    if not current_user.isAdmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )
+    return current_user
+
+
+async def require_owner(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """
+    Dependency to require owner privileges.
+
+    Raises:
+        HTTPException: If user is not an owner
+    """
+    if not current_user.isOwner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Owner privileges required",
+        )
+    return current_user
+
+
+async def require_admin_or_owner(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """
+    Dependency to require admin or owner privileges.
+
+    Raises:
+        HTTPException: If user is neither admin nor owner
+    """
+    if not (current_user.isAdmin or current_user.isOwner):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin or Owner privileges required",
+        )
+    return current_user
+
+
+async def require_premium_or_higher(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """
+    Dependency to require premium user or higher privileges.
+
+    Premium or higher means: Premium User, Administrator, or Owner.
+    Regular User role does not have access.
+
+    Raises:
+        HTTPException: If user is a regular user (not premium/admin/owner)
+    """
+    if not (current_user.isPremium or current_user.isAdmin or current_user.isOwner):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium, Admin, or Owner privileges required",
+        )
+    return current_user
+
+
+async def get_optional_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(optional_security)],
+    user_repository: Annotated[UserRepositoryInterface, Depends(get_user_repository)],
+    blacklist_service: Annotated[TokenBlacklistService, Depends(get_token_blacklist_service)],
+    two_factor_repository: Any = (Depends(lambda: None) if not HAS_2FA else Depends(get_two_factor_repository)),
+) -> User | None:
+    """Return the authenticated user when a valid Bearer token is present, else None."""
+    if credentials is None:
+        return None
+    try:
+        token = credentials.credentials
+        if HAS_2FA and two_factor_repository is not None:
+            return await _verify_user_token(token, user_repository, blacklist_service, two_factor_repository)
+        return await _verify_user_token(token, user_repository, blacklist_service, None)
+    except HTTPException:
+        return None
 
 
 # Type alias for dependency injection
 CurrentUser = Annotated[User, Depends(get_current_user)]
+OptionalCurrentUser = Annotated[User | None, Depends(get_optional_current_user)]
+AdminUser = Annotated[User, Depends(require_admin)]
+OwnerUser = Annotated[User, Depends(require_owner)]
+AdminOrOwnerUser = Annotated[User, Depends(require_admin_or_owner)]
+PremiumOrHigherUser = Annotated[User, Depends(require_premium_or_higher)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]

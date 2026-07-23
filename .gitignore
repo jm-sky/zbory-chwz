@@ -8,11 +8,14 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.pnpm-store
 .DS_Store
 dist
 dist-ssr
 coverage
 *.local
+CLAUDE.local.md
+AGENTS.local.md
 
 # Editor directories and files
 .vscode/*
@@ -36,3 +39,6 @@ coverage
 # Vitest
 __screenshots__/
 .env
+backend/backups/
+.backups/
+test-results/

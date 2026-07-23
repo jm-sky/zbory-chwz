@@ -1,7 +1,17 @@
 import { useBackend } from '@/shared/composables/useBackend'
-import { CORE_SETTINGS_STORAGE_KEY, JWT_STORE_KEY, LOCALE_STORAGE_KEY, SETTINGS_STORAGE_KEY, type SupportedLocale } from '@/shared/config/config'
+import { config, CORE_SETTINGS_STORAGE_KEY, JWT_STORE_KEY, LOCALE_STORAGE_KEY, SETTINGS_STORAGE_KEY, type SupportedLocale } from '@/shared/config/config'
+import { SUPPORTED_LOCALES } from '@/shared/i18n/config/i18n'
 import type { ISettingsService, Settings, UpdateSettingsData } from '../types/settings.type'
 import { settingsApiService } from './settingsApiService'
+
+function resolveStoredLocale(settingsLocale?: SupportedLocale): SupportedLocale {
+  const localeFromStorage = localStorage.getItem(LOCALE_STORAGE_KEY)
+  if (localeFromStorage && SUPPORTED_LOCALES.includes(localeFromStorage as SupportedLocale)) {
+    return localeFromStorage as SupportedLocale
+  }
+
+  return settingsLocale ?? config.i18n.defaultLocale
+}
 
 /**
  * Settings Service (LocalStorage implementation)
@@ -51,7 +61,7 @@ class SettingsLocalService implements ISettingsService {
         settings = migrated
         // Save to new location
         this.saveToStorage({
-          locale: migrated.locale ?? 'en',
+          locale: migrated.locale ?? config.i18n.defaultLocale,
           darkMode: migrated.darkMode ?? false,
           defaultContainersPublic: false,
           profilePublic: false,
@@ -60,11 +70,7 @@ class SettingsLocalService implements ISettingsService {
       }
     }
 
-    // LOCALE_STORAGE_KEY is always the source of truth for locale
-    const localeFromStorage = localStorage.getItem(LOCALE_STORAGE_KEY)
-    const locale: SupportedLocale = (localeFromStorage && (localeFromStorage === 'en' || localeFromStorage === 'pl'))
-      ? localeFromStorage as SupportedLocale
-      : (settings.locale ?? 'en')
+    const locale = resolveStoredLocale(settings.locale)
 
     return Promise.resolve({
       locale,
@@ -72,6 +78,7 @@ class SettingsLocalService implements ISettingsService {
       defaultContainersPublic: settings.defaultContainersPublic ?? false,
       profilePublic: settings.profilePublic ?? false,
       emailPublic: settings.emailPublic ?? false,
+      imageProcessingMode: settings.imageProcessingMode ?? 'balanced',
     })
   }
 
@@ -87,6 +94,7 @@ class SettingsLocalService implements ISettingsService {
       darkMode: data.darkMode ?? current.darkMode,
       defaultContainersPublic: data.defaultContainersPublic ?? current.defaultContainersPublic,
       profilePublic: data.profilePublic ?? current.profilePublic,
+      imageProcessingMode: data.imageProcessingMode !== undefined ? data.imageProcessingMode : current.imageProcessingMode,
       emailPublic: data.emailPublic ?? current.emailPublic,
     }
 
@@ -111,6 +119,7 @@ class SettingsLocalService implements ISettingsService {
           defaultContainersPublic: settings.defaultContainersPublic ?? false,
           profilePublic: settings.profilePublic ?? false,
           emailPublic: settings.emailPublic ?? false,
+          imageProcessingMode: settings.imageProcessingMode ?? 'balanced',
         }))
       return Promise.resolve()
     } catch (error) {
@@ -209,11 +218,7 @@ export class SettingsServiceStatic {
       }
     }
 
-    // LOCALE_STORAGE_KEY is always the source of truth for locale
-    const localeFromStorage = localStorage.getItem(LOCALE_STORAGE_KEY)
-    const locale: SupportedLocale = (localeFromStorage && (localeFromStorage === 'en' || localeFromStorage === 'pl'))
-      ? localeFromStorage as SupportedLocale
-      : (settings.locale ?? 'en')
+    const locale = resolveStoredLocale(settings.locale)
 
     return {
       locale,

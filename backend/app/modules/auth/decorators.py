@@ -1,7 +1,8 @@
 """Custom decorators for authentication, rate limiting, and validation."""
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from fastapi import Depends, HTTPException, status
 
@@ -55,7 +56,9 @@ def rate_limit(limit: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]
     return decorator
 
 
-def recaptcha_protected(action: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def recaptcha_protected(
+    action: str,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator for endpoints requiring reCAPTCHA verification.
 
@@ -89,6 +92,7 @@ def recaptcha_protected(action: str) -> Callable[[Callable[..., Any]], Callable[
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             import logging
+
             from app.core.recaptcha import RecaptchaError, verify_recaptcha
 
             logger = logging.getLogger(__name__)
@@ -121,7 +125,10 @@ def recaptcha_protected(action: str) -> Callable[[Callable[..., Any]], Callable[
                 # If reCAPTCHA is enabled, token is required
                 if not token:
                     logger.error(f"reCAPTCHA token missing for action: {action}")
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="reCAPTCHA token is required")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="reCAPTCHA token is required",
+                    )
 
                 try:
                     logger.info(f"Calling verify_recaptcha for action: {action}")
@@ -129,7 +136,10 @@ def recaptcha_protected(action: str) -> Callable[[Callable[..., Any]], Callable[
                     logger.info(f"reCAPTCHA verification passed for action: {action}")
                 except RecaptchaError as e:
                     logger.error(f"reCAPTCHA verification failed for action {action}: {str(e)}")
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"reCAPTCHA verification failed: {str(e)}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"reCAPTCHA verification failed: {str(e)}",
+                    ) from e
             else:
                 logger.debug(f"reCAPTCHA disabled, skipping verification for action: {action}")
 

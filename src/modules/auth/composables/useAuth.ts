@@ -24,6 +24,7 @@ import type {
 /**
  * Hook for fetching current user data
  * Automatically refetches when token changes
+ * Uses placeholderData from authStore to avoid blocking critical path
  */
 export function useCurrentUser(service?: IAuthService) {
   const authStore = useAuthStore()
@@ -35,6 +36,11 @@ export function useCurrentUser(service?: IAuthService) {
     enabled: !!authStore.token, // Only fetch if user is authenticated
     staleTime: config.query.staleTime,
     retry: authRetryFunction,
+    // Use cached user data from store as placeholder to avoid blocking critical path
+    // Query will still execute in background, but component can render immediately
+    placeholderData: authStore.user ?? undefined,
+    // Don't refetch on mount if we have cached data (unless stale)
+    refetchOnMount: !authStore.user,
   })
 }
 
@@ -84,15 +90,9 @@ export function useLogin(service?: IAuthService) {
         if (!data.requiresEmailVerification) {
           await queryClient.invalidateQueries({ queryKey: authQueryKeys.me() })
 
-          // Check if data migration should be prompted (localStorage -> API)
-          // This is done asynchronously and doesn't block login
-          try {
-            const { checkAndOpen } = await import('@/modules/gear/composables/useDataMigrationModal').then(m => m.useDataMigrationModal())
-            checkAndOpen()
-          } catch (error) {
-            // Silently fail if migration module is not available
-            console.debug('Migration check skipped:', error)
-          }
+          // Data migration from gear module has been removed
+          // This block is kept for reference but no longer executes
+          // TODO: Implement congregation data migration if needed in the future
         }
       }
       // If 2FA is required, don't set user or invalidate queries yet

@@ -3,9 +3,9 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gear-stack-backend"
-version = "0.1.0"
-description = "Gear Stack API Backend"
+name = "zbory-chwz-backend"
+version = "1.0.0"
+description = "Zbory CHWZ API Backend"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -68,6 +68,15 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 follow_imports = "normal"
+ignore_missing_imports = true
+exclude = [
+    "migrations/",
+    "tests/",
+]
+
+
+[[tool.mypy.overrides]]
+module = ["aioboto3.*", "botocore.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

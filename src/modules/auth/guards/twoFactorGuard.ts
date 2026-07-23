@@ -1,7 +1,7 @@
-import { AuthRoutePaths } from '@/modules/auth/config/routes'
 // modules/auth/guards/twoFactorGuard.ts
 import { requiresTwoFactorVerification } from '@/modules/auth/lib/jwtDecoder'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import { PublicRoutePaths } from '@/router/publicRoutes'
 import type { NavigationGuardNext, RouteLocationNormalized, Router } from 'vue-router'
 
 const TWO_FACTOR_VERIFY_ROUTE = '/auth/2fa/verify'
@@ -66,9 +66,9 @@ export function twoFactorGuard(
       return
     }
 
-    // If accessing verify page but 2FA is already verified, redirect to dashboard
+    // If accessing verify page but 2FA is already verified, redirect to landing page
     if (to.path === TWO_FACTOR_VERIFY_ROUTE) {
-      next({ path: AuthRoutePaths.dashboard })
+      next({ path: PublicRoutePaths.landing })
       return
     }
   }

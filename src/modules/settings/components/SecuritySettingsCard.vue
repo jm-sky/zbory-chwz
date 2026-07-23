@@ -19,6 +19,7 @@ import {
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { useTwoFactorStatus, useUpdatePreferredMethod } from '@/modules/auth/composables/useTwoFactor'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import { useHandleError } from '@/shared/composables/useHandleError'
 import type { ITwoFactorService } from '@/modules/auth/types/twoFactor.type'
 
 const props = defineProps<{
@@ -29,6 +30,7 @@ const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const { isAuthenticated } = useAuth()
+const { handleError } = useHandleError()
 
 const { data: twoFactorStatus, isLoading } = useTwoFactorStatus(props.service, {
   enabled: isAuthenticated.value,
@@ -67,8 +69,8 @@ const selectedMethod = computed({
         toast.success(t('settings.security.preferred_method.saved'))
       })
       .catch((error: unknown) => {
-        toast.error(t('settings.security.preferred_method.error'))
         console.error('Failed to update preferred method:', error)
+        handleError(error)
       })
   },
 })

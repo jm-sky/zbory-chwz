@@ -43,13 +43,12 @@ const buttonProps: Omit<ButtonProps, 'as'> = {
 </script>
 
 <template>
-  <RouterLink
-    v-bind="linkProps"
-    class="inline-block"
-  >
+  <RouterLink v-slot="{ href, navigate }" v-bind="linkProps" custom>
     <Button
       v-bind="buttonProps"
-      as="span"
+      as="a"
+      :href="href"
+      @click="navigate"
     >
       <slot />
     </Button>

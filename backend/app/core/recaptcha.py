@@ -52,7 +52,7 @@ async def verify_recaptcha(token: str, action: str = "submit") -> dict[str, Any]
             logger.info(f"reCAPTCHA score: {result['score']}")
         except RecaptchaError as e:
             logger.warning(f"reCAPTCHA failed: {e}")
-            raise HTTPException(status_code=400, detail="Bot detected")
+            raise HTTPException(status_code=400, detail="Bot detected") from e
     """
     # Log reCAPTCHA configuration
     logger.info(f"reCAPTCHA verification called - enabled: {settings.recaptcha.enabled}, action: {action}")
@@ -118,10 +118,10 @@ async def verify_recaptcha(token: str, action: str = "submit") -> dict[str, Any]
 
     except httpx.HTTPError as e:
         logger.error(f"reCAPTCHA HTTP error: {e}")
-        raise RecaptchaError(f"reCAPTCHA service error: {e}")
+        raise RecaptchaError(f"reCAPTCHA service error: {e}") from e
     except RecaptchaError:
         # Re-raise RecaptchaError as is
         raise
     except Exception as e:
         logger.error(f"reCAPTCHA verification error: {e}")
-        raise RecaptchaError(f"reCAPTCHA verification error: {e}")
+        raise RecaptchaError(f"reCAPTCHA verification error: {e}") from e

@@ -14,22 +14,38 @@ from fastapi import Depends, HTTPException, status
 
 from app.modules.auth.dependencies import get_current_user as auth_get_current_user
 from app.modules.auth.models import User as AuthUser
+
 from .models import User
 
 
 def _map_auth_user(auth_user: AuthUser) -> User:
+    # Determine role from auth user flags
+    if getattr(auth_user, "isOwner", False):
+        role = "owner"
+    elif getattr(auth_user, "isAdmin", False):
+        role = "admin"
+    elif getattr(auth_user, "isPremium", False):
+        role = "premium"
+    else:
+        role = "user"
+
     return User(
         id=auth_user.id,
         email=auth_user.email,
         name=auth_user.name,
-        role="admin" if getattr(auth_user, "isAdmin", False) else "user",
+        role=role,
         isActive=auth_user.isActive,
+        isAdmin=getattr(auth_user, "isAdmin", False),
+        isOwner=getattr(auth_user, "isOwner", False),
+        isPremium=getattr(auth_user, "isPremium", False),
         createdAt=auth_user.createdAt,
         updatedAt=auth_user.createdAt,
     )
 
 
-async def get_current_user(auth_user: Annotated[AuthUser, Depends(auth_get_current_user)]) -> User:
+async def get_current_user(
+    auth_user: Annotated[AuthUser, Depends(auth_get_current_user)],
+) -> User:
     """Bridge auth module user dependency with users module model."""
     if auth_user is None:
         raise HTTPException(
@@ -39,7 +55,9 @@ async def get_current_user(auth_user: Annotated[AuthUser, Depends(auth_get_curre
     return _map_auth_user(auth_user)
 
 
-async def require_admin(current_user: Annotated[User, Depends(get_current_user)]) -> User:
+async def require_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
     """
     Require the current user to have admin role.
 

@@ -8,6 +8,8 @@ export interface User {
   avatarUrl?: string
   isActive: boolean
   isAdmin: boolean
+  isOwner: boolean
+  isPremium: boolean
   isEmailVerified: boolean
   emailVerifiedAt?: TDateTime | null
   createdAt: TDateTime

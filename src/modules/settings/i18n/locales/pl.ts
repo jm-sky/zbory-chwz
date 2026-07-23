@@ -1,8 +1,14 @@
 export const settingsPl = {
   settings: {
+    common: {
+      save: 'Zapisz',
+      add: 'Dodaj',
+      edit: 'Edytuj',
+      cancel: 'Anuluj',
+    },
     page: {
       title: 'Ustawienia',
-      subtitle: 'Zarządzaj preferencjami i własnymi kategoriami',
+      subtitle: 'Zarządzaj preferencjami konta i ustawieniami bezpieczeństwa',
       save: 'Zapisz',
       error_prefix: 'Błąd ładowania ustawień',
       sections: {
@@ -31,8 +37,8 @@ export const settingsPl = {
           },
         },
         defaultContainersPublic: {
-          label: 'Nowe kontenery domyślnie publiczne',
-          subtitle: 'Po włączeniu, nowo utworzone kontenery będą domyślnie publiczne',
+          label: 'Nowe zbiory domyślnie publiczne',
+          subtitle: 'Po włączeniu nowo utworzone zbiory będą domyślnie publiczne',
         },
         profilePublic: {
           label: 'Udostępnij profil publicznie',
@@ -60,7 +66,7 @@ export const settingsPl = {
         title: 'Klucze dostępu',
         enabled: 'Włączone',
         disabled: 'Nie skonfigurowane',
-        count: 'Nie zarejestrowano kluczy dostępu | Zarejestrowano {count} klucz dostępu | Zarejestrowano {count} klucze dostępu',
+        count: '{count} kluczy dostępu | {count} klucz dostępu | {count} klucze dostępu | {count} kluczy dostępu',
       },
       preferred_method: {
         title: 'Preferowana metoda 2FA',
@@ -77,9 +83,10 @@ export const settingsPl = {
       },
     },
     preferences: {
-      title: 'Preferencje Sprzętu',
-      description: 'Zarządzaj preferencjami i ustawieniami dotyczącymi sprzętu',
+      title: 'Preferencje aplikacji',
+      description: 'Zarządzaj preferencjami i ustawieniami aplikacji',
       save: 'Zapisz',
+      saved: 'Zapisano',
       preferredWeightUnit: {
         label: 'Preferowana Jednostka Wagi',
         subtitle: 'Domyślna jednostka wyświetlania wag w całej aplikacji',
@@ -89,6 +96,25 @@ export const settingsPl = {
           kg: 'Kilogramy (kg)',
           oz: 'Uncje (oz)',
           lb: 'Funty (lb)',
+          'auto-g-kg': 'Auto (g/kg)',
+          'auto-oz-lb': 'Auto (oz/lb)',
+        },
+      },
+      defaultCurrency: {
+        label: 'Domyślna Waluta',
+        subtitle: 'Domyślna waluta dla wartości pieniężnych w aplikacji',
+        placeholder: 'Wybierz walutę',
+      },
+      imageProcessingMode: {
+        label: 'Tryb Przetwarzania Obrazków',
+        subtitle: 'Wybierz sposób przetwarzania przesyłanych obrazków (zmiana rozmiaru i kompresja)',
+        options: {
+          highQuality: 'Wysoka Jakość',
+          highQualityDescription: 'Maksymalny rozmiar: 2560x2560px, jakość JPEG: 95%. Najlepsza jakość, większy rozmiar pliku.',
+          balanced: 'Zbalansowany',
+          balancedDescription: 'Maksymalny rozmiar: 1200x1200px, jakość JPEG: 90%. Dobra równowaga między jakością a rozmiarem pliku.',
+          storageSaver: 'Oszczędny',
+          storageSaverDescription: 'Maksymalny rozmiar: 800x800px, jakość JPEG: 80%. Mniejszy rozmiar pliku, niższa jakość.',
         },
       },
     },
@@ -101,6 +127,7 @@ export const settingsPl = {
       cancel: 'Anuluj',
       deleteConfirm: 'Czy na pewno chcesz usunąć tę kategorię?',
       valuePlaceholder: 'Nazwa kategorii',
+      valueRequired: 'Nazwa kategorii jest wymagana',
       empty: 'Brak własnych kategorii. Dodaj pierwszą powyżej.',
     },
     containerTypes: {
@@ -112,6 +139,7 @@ export const settingsPl = {
       cancel: 'Anuluj',
       deleteConfirm: 'Czy na pewno chcesz usunąć ten typ kontenera?',
       valuePlaceholder: 'Nazwa typu kontenera',
+      valueRequired: 'Nazwa typu kontenera jest wymagana',
       empty: 'Brak własnych typów kontenerów. Dodaj pierwszy powyżej.',
     },
     brands: {
@@ -123,14 +151,37 @@ export const settingsPl = {
       cancel: 'Anuluj',
       deleteConfirm: 'Czy na pewno chcesz usunąć tę markę?',
       valuePlaceholder: 'Nazwa marki',
+      valueRequired: 'Nazwa marki jest wymagana',
       empty: 'Brak własnych marek. Dodaj pierwszą powyżej.',
+    },
+    oauth: {
+      title: 'Połączenia OAuth',
+      description: 'Zarządzaj powiązanymi kontami OAuth (Google, Facebook itp.)',
+      login_required: 'Zaloguj się, aby zarządzać połączeniami OAuth.',
+      no_connections: 'Brak powiązanych kont OAuth.',
+      providers: {
+        google: 'Google',
+        facebook: 'Facebook',
+      },
+      connection: {
+        linked: 'Połączone',
+        deleted: 'Połączenie OAuth zostało usunięte',
+        confirm_delete: 'Czy na pewno chcesz usunąć połączenie z {provider}?',
+      },
+    },
+    storage: {
+      title: 'Użycie Miejsca',
+      description: 'Zobacz użycie i limity miejsca na pliki',
+      used: 'Użyto',
+      usagePercentage: 'Użycie',
+      error: 'Nie można załadować informacji o miejscu',
     },
     delete_account: {
       title: 'Usuń Konto',
       description: 'Trwale usuń swoje konto i wszystkie powiązane dane',
       warning_title: 'Ostrzeżenie: Ta akcja nie może być cofnięta',
       warning_1: 'Wszystkie Twoje dane zostaną trwale usunięte',
-      warning_2: 'Utracisz dostęp do wszystkich swoich kontenerów i przedmiotów',
+      warning_2: 'Utracisz dostęp do zborów, grup i innych danych powiązanych z kontem',
       warning_3: 'Ta akcja nie może być odwrócona',
       button: 'Usuń Konto',
       modal: {

@@ -11,13 +11,14 @@ import { Input } from '@/components/ui/input'
 import GuestLayoutCentered from '@/layouts/GuestLayoutCentered.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { forgotPasswordSchema } from '@/modules/auth/validation/forgotPassword.schema'
+import { useHandleError } from '@/shared/composables/useHandleError'
 import { useRecaptcha } from '@/shared/composables/useRecaptcha'
-import { isValidationError } from '@/shared/utils/typeGuards'
 import type { ForgotPasswordData } from '@/modules/auth/types/user.type'
 
 const { t } = useI18n()
 const { forgotPassword, isForgotPasswordLoading } = useAuth()
 const { getToken } = useRecaptcha()
+const { handleError } = useHandleError()
 
 const { handleSubmit, setErrors } = useForm({
   validationSchema: toTypedSchema(forgotPasswordSchema),
@@ -38,14 +39,9 @@ const onSubmit = handleSubmit(async (values: ForgotPasswordData) => {
       recaptchaToken,
     })
     successMessage.value = response.message
-  } catch (err: unknown) {
-    if (isValidationError(err)) {
-      setErrors(err.response.data.errors)
-    } else {
-      // TODO: add toast/sonner notification from shadcn-vue
-      // toast.error('Unexpected error occurred in forgot password process')
-      console.error('Forgot password error:', err)
-    }
+  } catch (error: unknown) {
+    console.error('Forgot password error:', error)
+    handleError(error, { setErrors })
   }
 })
 </script>

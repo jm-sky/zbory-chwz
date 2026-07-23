@@ -30,6 +30,35 @@ cp .env.example .env
 # Edit .env and update with your configuration
 ```
 
+### Environment Variables
+
+#### Sentry Error Monitoring (Optional)
+
+Sentry integration is **optional** and disabled by default. To enable:
+
+```bash
+# Enable Sentry
+SENTRY_ENABLED=true
+
+# Required: Your Sentry DSN (get it from Sentry dashboard)
+SENTRY_DSN=https://your-key@your-org.ingest.sentry.io/project-id
+
+# Optional: Environment name (defaults to APP_ENVIRONMENT)
+SENTRY_ENVIRONMENT=production
+
+# Optional: Release version (defaults to APP_VERSION)
+SENTRY_RELEASE=v2.11.0
+
+# Optional: Performance monitoring sample rate (0.0-1.0, default: 1.0)
+# Use lower values (e.g., 0.1) in production to reduce overhead
+SENTRY_TRACES_SAMPLE_RATE=1.0
+
+# Optional: Profiling sample rate (0.0-1.0, default: 1.0)
+SENTRY_PROFILES_SAMPLE_RATE=1.0
+```
+
+**Note:** If `SENTRY_ENABLED=false` or `SENTRY_DSN` is not set, Sentry will not be initialized and the application will run normally without error monitoring.
+
 5. Initialize the database:
 ```bash
 # Run migrations if using Alembic
@@ -129,6 +158,29 @@ Key environment variables (see `.env` file):
 - `CORS_METHODS`: Allowed HTTP methods (JSON array format: `["GET","POST"]` or `["*"]` for all)
 - `CORS_HEADERS`: Allowed HTTP headers (JSON array format: `["*"]` for all)
 - `ENVIRONMENT`: Environment (development/production)
+
+### Storage Configuration
+
+- `STORAGE_TYPE`: Storage backend type (`local` or `s3`, default: `local`)
+- `STORAGE_BASE_URL`: Base URL for serving uploaded files (e.g., `http://localhost:8000`)
+- `STORAGE_LOCAL_PATH`: Local storage base path (default: `./uploads`)
+- `STORAGE_MAX_FILE_SIZE`: Maximum file size in bytes for regular users (default: `20971520` = 20 MB)
+- `STORAGE_MAX_FILE_SIZE_ADMIN`: Maximum file size in bytes for administrators (default: `52428800` = 50 MB)
+- `STORAGE_MAX_FILES_PER_ITEM`: Maximum number of images per item (default: `10`)
+- `STORAGE_ALLOWED_MIME_TYPES`: Allowed MIME types (JSON array format: `["image/jpeg","image/png","image/webp","image/gif"]`)
+- `STORAGE_ENABLE_PROCESSING`: Enable auto-resize and optimization (default: `true`)
+- `STORAGE_MAX_WIDTH`: Maximum image width for processing (default: `1920`)
+- `STORAGE_MAX_HEIGHT`: Maximum image height for processing (default: `1920`)
+- `STORAGE_JPEG_QUALITY`: JPEG compression quality 1-100 (default: `85`)
+- `STORAGE_CONVERT_TO_WEBP`: Convert images to WebP format (default: `false`)
+
+**S3 Storage Configuration** (if `STORAGE_TYPE=s3`):
+- `STORAGE_S3_BUCKET`: S3 bucket name
+- `STORAGE_S3_ACCESS_KEY`: S3 access key ID
+- `STORAGE_S3_SECRET_KEY`: S3 secret access key
+- `STORAGE_S3_REGION`: S3 region (default: `us-east-1`)
+- `STORAGE_S3_ENDPOINT_URL`: S3 endpoint URL (for S3-compatible services like MinIO). Used for internal operations (upload, download, delete).
+- `STORAGE_S3_PUBLIC_ENDPOINT_URL`: Public S3 endpoint URL for generating accessible URLs (e.g., `http://localhost:9000` for MinIO in Docker). If not set, uses `STORAGE_S3_ENDPOINT_URL`. Useful when MinIO is in Docker and internal endpoint (`http://minio:9000`) is not accessible from browser.
 
 ### Email Configuration
 

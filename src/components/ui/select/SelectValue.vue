@@ -10,6 +10,8 @@ const props = defineProps<SelectValueProps>()
     data-slot="select-value"
     v-bind="props"
   >
-    <slot />
+    <template #default="{ selectedLabel, modelValue }">
+      <slot :selected-label :model-value />
+    </template>
   </SelectValue>
 </template>

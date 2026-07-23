@@ -12,3 +12,7 @@ export type ValidationError = AxiosError<ValidationErrorResponse> & {
 export function isValidationError(err: unknown): err is ValidationError {
   return isAxiosError(err) && err.response?.status === HttpStatusCode.UnprocessableEntity && !!err.response.data?.errors
 }
+
+export function isUnauthorizedFormError(err: unknown): err is ValidationError {
+  return isAxiosError(err) && err.response?.status === HttpStatusCode.Unauthorized && !!err.response.data?.errors
+}

@@ -1,6 +1,5 @@
 """Validators for user module."""
 
-import re
 from urllib.parse import urlparse
 
 # Allowed avatar URL providers

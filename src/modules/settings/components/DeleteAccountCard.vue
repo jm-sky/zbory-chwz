@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRoutePaths } from '@/modules/auth/config/routes'
+import { useHandleError } from '@/shared/composables/useHandleError'
 import type { IAuthService } from '@/modules/auth/types/auth.type'
 
 const props = defineProps<{
@@ -20,6 +21,7 @@ const props = defineProps<{
 const router = useRouter()
 const { t } = useI18n()
 const { deleteAccount, isDeletingAccount } = useAuth(props.authService)
+const { handleError } = useHandleError()
 
 const isDeleteModalOpen = ref(false)
 const confirmationText = ref('')
@@ -43,7 +45,7 @@ const handleDeleteAccount = async () => {
     }, 1000)
   } catch (error: unknown) {
     console.error('Delete account error:', error)
-    toast.error(t('settings.delete_account.modal.errors.generic'))
+    handleError(error, { fallbackMessage: t('settings.delete_account.modal.errors.generic') })
   }
 }
 
@@ -62,7 +64,7 @@ const resetDeleteModal = () => {
             <Trash2 class="size-4 text-destructive" />
           </div>
           <div class="flex-1 space-y-1">
-            <h2 class="text-lg font-semibold text-destructive">
+            <h2 id="delete-account" class="text-lg font-semibold text-destructive">
               {{ t('settings.delete_account.title') }}
             </h2>
             <p class="text-sm text-muted-foreground">
@@ -150,7 +152,7 @@ const resetDeleteModal = () => {
             <div class="flex items-start space-x-2">
               <Checkbox
                 id="confirm-delete"
-                v-model:checked="isConfirmed"
+                v-model="isConfirmed"
                 class="mt-1"
               />
               <Label

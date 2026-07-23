@@ -1,0 +1,43 @@
+export const groupsEn = {
+  groups: {
+    list: {
+      title: 'People groups',
+      subtitle: 'Organizational structures independent of a single congregation',
+      create: 'New group',
+      createTitle: 'New group',
+      created: 'Group created',
+      empty: 'No groups',
+      memberCount: '{count} people',
+    },
+    detail: {
+      title: 'Group',
+      back: 'Back to groups',
+      members: 'Members',
+      noMembers: 'No members',
+      addMember: 'Add person',
+      memberAdded: 'Member added',
+      memberRemoved: 'Removed from group',
+      removeMemberConfirm: 'Remove this person from the group?',
+      editTitle: 'Edit group',
+      updated: 'Changes saved',
+      deleteConfirm: 'Delete this group?',
+      deleted: 'Group deleted',
+    },
+    fields: {
+      name: 'Name',
+      description: 'Description',
+      visibility: 'Visibility',
+      firstName: 'First name',
+      lastName: 'Last name',
+      email: 'Email',
+      phone: 'Phone',
+      roleLabel: 'Role in group',
+      roleLabelPlaceholder: 'e.g. Chairperson',
+    },
+    visibility: {
+      public: 'Public',
+      authenticated: 'Logged in',
+      private: 'Private',
+    },
+  },
+}

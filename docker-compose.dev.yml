@@ -1,0 +1,119 @@
+name: zbory-chwz
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:17-alpine
+    container_name: zbory-chwz-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-backend}
+      - POSTGRES_USER=${POSTGRES_USER:-backend}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-zbory-chwz-db-secret}
+    volumes:
+      - zbory_chwz_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${DB_FORWARD_PORT:-5433}:5432"  # Only localhost access
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-backend}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - zbory-chwz-network
+
+  # Redis (for token blacklist and challenge storage)
+  redis:
+    image: redis:8-alpine
+    container_name: zbory-chwz-redis
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-zbory-chwz-redis-secret}
+    ports:
+      - "127.0.0.1:${REDIS_FORWARD_PORT:-6380}:6379"  # Only localhost access
+    volumes:
+      - zbory_chwz_redis_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-zbory-chwz-redis-secret}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli -a $${REDIS_PASSWORD:-zbory-chwz-redis-secret} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - zbory-chwz-network
+
+  # Application (Development Mode)
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    image: zbory-chwz-backend:dev
+    container_name: zbory-chwz-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      # Secrets and app config live here. Do not re-list them under environment:
+      # with ${VAR} — empty host interpolation would override env_file values.
+      - ./backend/.env
+    environment:
+      # Docker-network overrides only (compose interpolation uses root .env + defaults)
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PROJECT_NAME=${PROJECT_NAME:-zbory-chwz}
+      - APP_PORT=${APP_PORT:-8000}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-backend}:${POSTGRES_PASSWORD:-zbory-chwz-db-secret}@db:5432/${POSTGRES_DB:-backend}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-zbory-chwz-redis-secret}@redis:6379/0
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    ports:
+      - "127.0.0.1:${APP_PORT:-8001}:8000"  # Only localhost access (Caddy proxy)
+    volumes:
+      # Mount source code for hot reload (paths relative to repo root)
+      # Using :delegated for better performance on WSL2/macOS
+      - ./backend/app:/app/app:rw,delegated
+      - ./backend/scripts:/app/scripts:rw,delegated
+      - ./backend/tests:/app/tests:rw,delegated
+      - ./backend/migrations:/app/migrations:rw,delegated
+      - ./backend/main.py:/app/main.py:rw,delegated
+      - ./backend/cli:/app/cli:ro,delegated
+      - ./backend/cli.py:/app/cli.py:ro,delegated
+      - ./backend/pyproject.toml:/app/pyproject.toml:ro,delegated
+      - ./backend/images:/app/images:ro,delegated
+      # Mount uploads directory for persistent file storage
+      - zbory_chwz_uploads:/app/uploads
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - zbory-chwz-network
+
+networks:
+  zbory-chwz-network:
+    name: zbory-chwz-network
+
+volumes:
+  zbory_chwz_postgres_data:
+    name: zbory_chwz_postgres_data
+  zbory_chwz_redis_data:
+    name: zbory_chwz_redis_data
+  zbory_chwz_uploads:
+    name: zbory_chwz_uploads

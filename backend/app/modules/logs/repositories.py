@@ -10,16 +10,15 @@ import logging
 from datetime import UTC, datetime
 
 from fastapi import Depends
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.common.id_utils import generate_id
 from app.common.search import SearchMixin
+from app.core.database import get_db
 
-from .models import Log
 from .db_models import LogDB, LogLevel
-
+from .models import Log
 
 logger = logging.getLogger(__name__)
 
@@ -44,13 +43,34 @@ class LogRepository(SearchMixin):
         self._search_columns = [LogDB.message, LogDB.module, LogDB.function]
         self._case_sensitive = False
 
-    async def create_log(self, level: LogLevel, message: str, module: str | None = None, function: str | None = None, user_id: str | None = None, request_id: str | None = None, traceback: str | None = None, extra_data: str | None = None) -> Log:
+    async def create_log(
+        self,
+        level: LogLevel,
+        message: str,
+        module: str | None = None,
+        function: str | None = None,
+        user_id: str | None = None,
+        request_id: str | None = None,
+        traceback: str | None = None,
+        extra_data: str | None = None,
+    ) -> Log:
         """Create a new log entry in database."""
         # Generate new ID using centralized helper
         log_id = generate_id()
 
         # Create LogDB instance
-        log_db = LogDB(id=log_id, level=level.value, message=message, module=module, function=function, user_id=user_id, request_id=request_id, traceback=traceback, extra_data=extra_data, created_at=datetime.now(UTC))
+        log_db = LogDB(
+            id=log_id,
+            level=level.value,
+            message=message,
+            module=module,
+            function=function,
+            user_id=user_id,
+            request_id=request_id,
+            traceback=traceback,
+            extra_data=extra_data,
+            created_at=datetime.now(UTC),
+        )
 
         self.db.add(log_db)
         await self.db.commit()
@@ -137,7 +157,12 @@ class LogRepository(SearchMixin):
 
     async def get_error_logs(self, skip: int = 0, limit: int = 100, user_id: str | None = None) -> list[Log]:
         """Get only ERROR and CRITICAL level logs."""
-        stmt = select(LogDB).where(or_(LogDB.level == LogLevel.ERROR.value, LogDB.level == LogLevel.CRITICAL.value))
+        stmt = select(LogDB).where(
+            or_(
+                LogDB.level == LogLevel.ERROR.value,
+                LogDB.level == LogLevel.CRITICAL.value,
+            )
+        )
 
         if user_id:
             stmt = stmt.where(LogDB.user_id == user_id)
@@ -149,7 +174,14 @@ class LogRepository(SearchMixin):
 
         return [Log.model_validate(log_db) for log_db in logs_db]
 
-    async def count_logs(self, level: LogLevel | None = None, user_id: str | None = None, start_date: datetime | None = None, end_date: datetime | None = None, search: str | None = None) -> int:
+    async def count_logs(
+        self,
+        level: LogLevel | None = None,
+        user_id: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        search: str | None = None,
+    ) -> int:
         """Count logs with optional filters and search.
 
         Args:

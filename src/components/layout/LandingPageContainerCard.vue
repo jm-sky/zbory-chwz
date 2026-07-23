@@ -9,7 +9,7 @@ defineProps<{
 <template>
   <RouterLink
     :to
-    class="cursor-pointer bg-background rounded-lg border p-4 text-center hover:scale-101 hover:shadow-lg transition-all duration-300"
+    class="cursor-pointer bg-background rounded-lg border p-4 text-center hover:scale-102 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
   >
     <div class="text-3xl font-bold text-primary mb-2">
       {{ containersCount }}

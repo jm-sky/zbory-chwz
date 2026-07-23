@@ -1,8 +1,14 @@
 export const settingsEn = {
   settings: {
+    common: {
+      save: 'Save',
+      add: 'Add',
+      edit: 'Edit',
+      cancel: 'Cancel',
+    },
     page: {
       title: 'Settings',
-      subtitle: 'Manage your preferences and custom categories',
+      subtitle: 'Manage your account preferences and security settings',
       save: 'Save',
       error_prefix: 'Error loading settings',
       sections: {
@@ -31,8 +37,8 @@ export const settingsEn = {
           },
         },
         defaultContainersPublic: {
-          label: 'New Containers Default to Public',
-          subtitle: 'When enabled, newly created containers will be public by default',
+          label: 'New congregations default to public',
+          subtitle: 'When enabled, newly created congregations will be public by default',
         },
         profilePublic: {
           label: 'Make Profile Public',
@@ -77,9 +83,10 @@ export const settingsEn = {
       },
     },
     preferences: {
-      title: 'Gear Preferences',
-      description: 'Manage your gear-specific preferences and settings',
+      title: 'Application preferences',
+      description: 'Manage your application preferences and settings',
       save: 'Save',
+      saved: 'Saved',
       preferredWeightUnit: {
         label: 'Preferred Weight Unit',
         subtitle: 'Default unit for displaying weights throughout the application',
@@ -89,6 +96,25 @@ export const settingsEn = {
           kg: 'Kilograms (kg)',
           oz: 'Ounces (oz)',
           lb: 'Pounds (lb)',
+          'auto-g-kg': 'Auto (g/kg)',
+          'auto-oz-lb': 'Auto (oz/lb)',
+        },
+      },
+      defaultCurrency: {
+        label: 'Default Currency',
+        subtitle: 'Default currency for monetary values in the application',
+        placeholder: 'Select a currency',
+      },
+      imageProcessingMode: {
+        label: 'Image Processing Mode',
+        subtitle: 'Choose how uploaded images are processed (resized and compressed)',
+        options: {
+          highQuality: 'High Quality',
+          highQualityDescription: 'Maximum size: 2560x2560px, JPEG quality: 95%. Best quality, larger file size.',
+          balanced: 'Balanced',
+          balancedDescription: 'Maximum size: 1200x1200px, JPEG quality: 90%. Good balance between quality and file size.',
+          storageSaver: 'Storage Saver',
+          storageSaverDescription: 'Maximum size: 800x800px, JPEG quality: 80%. Smaller file size, lower quality.',
         },
       },
     },
@@ -101,6 +127,7 @@ export const settingsEn = {
       cancel: 'Cancel',
       deleteConfirm: 'Are you sure you want to delete this category?',
       valuePlaceholder: 'Category name',
+      valueRequired: 'Category name is required',
       empty: 'No custom categories yet. Add your first one above.',
     },
     containerTypes: {
@@ -112,6 +139,7 @@ export const settingsEn = {
       cancel: 'Cancel',
       deleteConfirm: 'Are you sure you want to delete this container type?',
       valuePlaceholder: 'Container type name',
+      valueRequired: 'Container type name is required',
       empty: 'No custom container types yet. Add your first one above.',
     },
     brands: {
@@ -123,14 +151,37 @@ export const settingsEn = {
       cancel: 'Cancel',
       deleteConfirm: 'Are you sure you want to delete this brand?',
       valuePlaceholder: 'Brand name',
+      valueRequired: 'Brand name is required',
       empty: 'No custom brands yet. Add your first one above.',
+    },
+    oauth: {
+      title: 'OAuth Connections',
+      description: 'Manage linked OAuth accounts (Google, Facebook, etc.)',
+      login_required: 'Please log in to manage OAuth connections.',
+      no_connections: 'No linked OAuth accounts.',
+      providers: {
+        google: 'Google',
+        facebook: 'Facebook',
+      },
+      connection: {
+        linked: 'Connected',
+        deleted: 'OAuth connection has been removed',
+        confirm_delete: 'Are you sure you want to remove the connection to {provider}?',
+      },
+    },
+    storage: {
+      title: 'Storage Usage',
+      description: 'View your file storage usage and limits',
+      used: 'Used',
+      usagePercentage: 'Usage',
+      error: 'Unable to load storage information',
     },
     delete_account: {
       title: 'Delete Account',
       description: 'Permanently delete your account and all associated data',
       warning_title: 'Warning: This action cannot be undone',
       warning_1: 'All your data will be permanently deleted',
-      warning_2: 'You will lose access to all your containers and items',
+      warning_2: 'You will lose access to congregations, groups, and other data linked to your account',
       warning_3: 'This action cannot be reversed',
       button: 'Delete Account',
       modal: {

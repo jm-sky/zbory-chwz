@@ -19,19 +19,42 @@ Each migration has two files:
 - **Description**: Adds `email_audit_log` table for tracking sent emails
 - **Model**: `app.common.models.EmailAuditLog`
 
-### 001.5_create_users_table
+### 002_create_users_table
 - **Created**: 2025-01-27
-- **Description**: Creates `users` table for authentication (required before gear tables)
+- **Description**: Creates `users` table for authentication
 - **Model**: `app.modules.auth.db_models.UserDB`
 
-### 002_add_gear_tables
-- **Created**: 2025-11-19
-- **Description**: Adds `gear_containers` and `gear_items` tables for gear management
-- **Models**: `app.modules.gear.db_models.GearContainerDB`, `app.modules.gear.db_models.GearItemDB`
-
-### 003_add_missing_gear_fields
+### 012_add_oauth_fields
 - **Created**: 2025-XX-XX
-- **Description**: Adds missing fields to gear tables (hide_when_nested, weight, weight_unit, etc.)
+- **Description**: Adds OAuth fields to users table
+
+### 014_add_public_profile_and_email_settings
+- **Created**: 2025-XX-XX
+- **Description**: Adds public profile and email settings to users
+
+### 023_add_image_processing_mode_to_user_settings
+- **Created**: 2025-XX-XX
+- **Description**: Adds image processing mode to user settings
+
+### 024_add_preferred_2fa_method_to_user_settings
+- **Created**: 2025-XX-XX
+- **Description**: Adds preferred 2FA method to user settings
+
+### 025_add_owner_and_premium_roles
+- **Created**: 2025-XX-XX
+- **Description**: Adds owner and premium role flags to users
+
+### 028_add_oauth_connections_table
+- **Created**: 2025-XX-XX
+- **Description**: Creates OAuth connections table
+
+### 033_add_feature_limits_table
+- **Created**: 2025-XX-XX
+- **Description**: Creates feature limits table for account limits
+
+### 034_add_status_to_tenants
+- **Created**: 2025-XX-XX
+- **Description**: Adds status column to tenants table for draft/published status
 
 ## Usage
 
@@ -121,9 +144,15 @@ python cli.py db migrate-status
 |---------|------------|------------------------------------|--------|
 | 000     | 2025-01-XX | Create schema_migrations table     | ✓      |
 | 001     | 2025-11-13 | Add email_audit_log table          | ✓      |
-| 001.5   | 2025-01-27 | Create users table                 | ✓      |
-| 002     | 2025-11-19 | Add gear tables                    | ✓      |
-| 003     | 2025-01-27 | Add missing gear fields            | ✓      |
+| 002     | 2025-01-27 | Create users table                 | ✓      |
+| 012     | 2025-XX-XX | Add OAuth fields                   | ✓      |
+| 014     | 2025-XX-XX | Add public profile and email settings | ✓      |
+| 023     | 2025-XX-XX | Add image processing mode          | ✓      |
+| 024     | 2025-XX-XX | Add preferred 2FA method          | ✓      |
+| 025     | 2025-XX-XX | Add owner and premium roles        | ✓      |
+| 028     | 2025-XX-XX | Add OAuth connections table        | ✓      |
+| 033     | 2025-XX-XX | Add feature limits table           | ✓      |
+| 034     | 2025-XX-XX | Add status column to tenants       | ✓      |
 
 ## Future: Setting Up Alembic
 

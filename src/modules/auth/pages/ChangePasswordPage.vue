@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { changePasswordSchema } from '@/modules/auth/validation/changePassword.schema'
-import { isValidationError } from '@/shared/utils/typeGuards'
+import { useHandleError } from '@/shared/composables/useHandleError'
 import type { ChangePasswordData } from '@/modules/auth/types/user.type'
 
 const { t } = useI18n()
 const { changePassword, isChangePasswordLoading } = useAuth()
+const { handleError } = useHandleError()
 
 const { handleSubmit, setErrors, resetForm } = useForm({
   validationSchema: toTypedSchema(changePasswordSchema),
@@ -31,14 +32,9 @@ const onSubmit = handleSubmit(async (values: ChangePasswordData) => {
     const response = await changePassword(values)
     successMessage.value = response.message
     resetForm()
-  } catch (err: unknown) {
-    if (isValidationError(err)) {
-      setErrors(err.response.data.errors)
-    } else {
-      // TODO: add toast/sonner notification from shadcn-vue
-      // toast.error('Unexpected error occurred in change password process')
-      console.error('Change password error:', err)
-    }
+  } catch (error: unknown) {
+    console.error('Change password error:', error)
+    handleError(error, { setErrors })
   }
 })
 </script>

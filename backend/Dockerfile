@@ -41,6 +41,15 @@ ENV PYTHONUNBUFFERED=1
 # Set working directory
 WORKDIR /app
 
+# Install system dependencies
+# libmagic1 is required for python-magic (MIME type detection)
+# libjpeg-dev, zlib1g-dev are recommended for Pillow image processing
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmagic1 \
+    libjpeg-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create a non-privileged user
 ARG UID=10001
 RUN adduser \

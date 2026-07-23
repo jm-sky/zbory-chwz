@@ -41,16 +41,27 @@ class UserLogin(BaseModel):
 
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=100)
-    recaptchaToken: str | None = Field(default=None, description="reCAPTCHA token (optional, only checked if RECAPTCHA_ENABLED=true)")
+    recaptchaToken: str | None = Field(
+        default=None,
+        description="reCAPTCHA token (optional, only checked if RECAPTCHA_ENABLED=true)",
+    )
 
 
 class UserRegister(BaseModel):
     """User registration request schema with camelCase."""
 
     email: EmailStr
-    password: str = Field(..., min_length=8, max_length=100, description="Password must contain uppercase, lowercase, digit, and special character")
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=100,
+        description="Password must contain uppercase, lowercase, digit, and special character",
+    )
     name: str = Field(..., min_length=1, max_length=100)
-    recaptchaToken: str | None = Field(default=None, description="reCAPTCHA token (optional, only checked if RECAPTCHA_ENABLED=true)")
+    recaptchaToken: str | None = Field(
+        default=None,
+        description="reCAPTCHA token (optional, only checked if RECAPTCHA_ENABLED=true)",
+    )
 
     @field_validator("password")
     @classmethod
@@ -81,6 +92,9 @@ class UserResponse(BaseModel):
     email: EmailStr
     name: str
     isActive: bool
+    isAdmin: bool
+    isOwner: bool = False
+    isPremium: bool = False
     isEmailVerified: bool
     emailVerifiedAt: datetime | None = None
     avatarUrl: str | None = None
@@ -110,14 +124,22 @@ class ForgotPasswordRequest(BaseModel):
     """Forgot password request schema."""
 
     email: EmailStr
-    recaptchaToken: str | None = Field(default=None, description="reCAPTCHA token (optional, only checked if RECAPTCHA_ENABLED=true)")
+    recaptchaToken: str | None = Field(
+        default=None,
+        description="reCAPTCHA token (optional, only checked if RECAPTCHA_ENABLED=true)",
+    )
 
 
 class ResetPasswordRequest(BaseModel):
     """Reset password request schema."""
 
     token: str = Field(..., min_length=1)
-    newPassword: str = Field(..., min_length=8, max_length=100, description="Password must contain uppercase, lowercase, digit, and special character")
+    newPassword: str = Field(
+        ...,
+        min_length=8,
+        max_length=100,
+        description="Password must contain uppercase, lowercase, digit, and special character",
+    )
 
     @field_validator("newPassword")
     @classmethod
@@ -130,7 +152,12 @@ class ChangePasswordRequest(BaseModel):
     """Change password request schema for authenticated users."""
 
     currentPassword: str = Field(..., min_length=1, max_length=100)
-    newPassword: str = Field(..., min_length=8, max_length=100, description="Password must contain uppercase, lowercase, digit, and special character")
+    newPassword: str = Field(
+        ...,
+        min_length=8,
+        max_length=100,
+        description="Password must contain uppercase, lowercase, digit, and special character",
+    )
 
     @field_validator("newPassword")
     @classmethod
@@ -142,7 +169,12 @@ class ChangePasswordRequest(BaseModel):
 class DeleteAccountRequest(BaseModel):
     """Delete account request schema."""
 
-    password: str | None = Field(None, min_length=1, max_length=100, description="Current password for confirmation (optional but recommended)")
+    password: str | None = Field(
+        None,
+        min_length=1,
+        max_length=100,
+        description="Current password for confirmation (optional but recommended)",
+    )
     confirmation: str = Field(..., min_length=1, description="Confirmation phrase like 'DELETE' or user email")
 
 
@@ -191,3 +223,21 @@ class OAuthCallbackResponse(BaseModel):
     tokenType: str = "bearer"
     expiresIn: int
     requiresEmailVerification: bool = False  # OAuth emails are pre-verified
+
+
+class OAuthConnectionResponse(BaseModel):
+    """Response schema for OAuth connection."""
+
+    id: str
+    provider: str
+    providerId: str
+    email: str | None = None
+    name: str | None = None
+    avatarUrl: str | None = None
+    createdAt: datetime
+
+
+class OAuthConnectionsListResponse(BaseModel):
+    """Response schema for list of OAuth connections."""
+
+    connections: list[OAuthConnectionResponse]

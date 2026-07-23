@@ -57,8 +57,6 @@ export const userService = () => {
   const { shouldUseAPI } = useBackend()
   const localService = new UserLocalService()
 
-  console.log('userService factory: shouldUseAPI =', shouldUseAPI.value)
-
   if (shouldUseAPI.value) {
     // Wrap API service to sync localStorage as backup
     return {
@@ -78,7 +76,6 @@ export const userService = () => {
         }
       },
       async updateUser(data: IUpdateUserDto): Promise<IUser> {
-        console.log('userService.updateUser: Using API service')
         try {
           // API call - API has priority
           const user = await userApiService.updateUser(data)

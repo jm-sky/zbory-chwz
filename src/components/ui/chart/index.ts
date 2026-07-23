@@ -1,4 +1,5 @@
 import { createContext } from 'reka-ui'
+import { defineAsyncComponent } from 'vue'
 import type { Component, Ref } from 'vue'
 
 export { default as ChartContainer } from './ChartContainer.vue'
@@ -26,4 +27,7 @@ interface ChartContextProps {
 
 export const [useChart, provideChartContext] = createContext<ChartContextProps>('Chart')
 
-export { VisCrosshair as ChartCrosshair, VisTooltip as ChartTooltip } from '@unovis/vue'
+// Lazy load @unovis/vue components to avoid loading the entire library when not needed
+// These should be imported dynamically in components that use them
+export const ChartCrosshair = defineAsyncComponent(() => import('@unovis/vue').then(m => m.VisCrosshair))
+export const ChartTooltip = defineAsyncComponent(() => import('@unovis/vue').then(m => m.VisTooltip))

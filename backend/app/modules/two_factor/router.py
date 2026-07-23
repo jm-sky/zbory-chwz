@@ -1,28 +1,34 @@
 """FastAPI router for TOTP setup (Phase 1 & 2)."""
 
-from typing import Any, cast
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from app.core.auth.dependencies import get_token_blacklist_service
+from app.core.auth.token_blacklist import TokenBlacklistService
 from app.core.limiter import rate_limit
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.auth.repositories import get_user_repository
 from app.modules.auth.types.repository import UserRepositoryInterface
+
+from .auth_utils import verify_two_factor_token
 from .repositories import get_two_factor_repository
 from .schemas import (
     BackupCodesResponse,
+    CompletePasskeyAuthenticationRequest,
     CompletePasskeyRegistrationRequest,
     DisableTotpRequest,
+    InitiatePasskeyAuthenticationRequest,
     InitiatePasskeyRegistrationRequest,
-    InitiateTotpRequest,
+    PasskeyListResponse,
     PasskeyRegistrationInitiateResponse,
     PasskeyResponse,
-    PasskeyListResponse,
     RegenerateBackupCodesRequest,
     TotpInitiateResponse,
     TotpStatusResponse,
     TwoFactorStatusResponse,
     TwoFactorVerifyResponse,
+    UpdatePreferredMethodRequest,
     VerifyTotpLoginRequest,
     VerifyTotpSetupRequest,
     VerifyTotpSetupResponse,
@@ -30,11 +36,46 @@ from .schemas import (
 )
 from .service import TwoFactorService
 
-router = APIRouter(prefix="/two-factor", tags=["Two-Factor Authentication"])
+router = APIRouter(tags=["Two-Factor Authentication"])
 
 
-def get_service(repo: Any = Depends(get_two_factor_repository)) -> TwoFactorService:
-    return TwoFactorService(repository=repo)
+async def get_service(
+    repo: Any = Depends(get_two_factor_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
+    blacklist_service: TokenBlacklistService = Depends(get_token_blacklist_service),
+) -> TwoFactorService:
+    """Get TwoFactorService with Redis challenge store.
+
+    user_repo/blacklist_service are required by verify_totp_login and
+    complete_passkey_authentication to mint full-claim login tokens (see
+    TwoFactorService._issue_login_tokens).
+    """
+    challenge_store = None
+    try:
+        # Try to get Redis-based challenge store
+        from app.core.config import settings
+        from app.core.redis import get_redis_client
+
+        from .challenge_store import WebAuthnChallengeStore
+
+        redis_client = await get_redis_client()
+        challenge_store = WebAuthnChallengeStore(
+            redis_client=redis_client,
+            key_prefix=settings.redis.webauthn_challenge_prefix,
+            default_ttl=settings.redis.webauthn_challenge_ttl,
+        )
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to initialize challenge store: {e}. WebAuthn will work without server-side challenge storage (INSECURE)")
+
+    return TwoFactorService(
+        repository=repo,
+        challenge_store=challenge_store,
+        user_repository=user_repo,
+        token_blacklist_service=blacklist_service,
+    )
 
 
 @router.post("/totp/initiate", response_model=TotpInitiateResponse)
@@ -62,7 +103,7 @@ async def verify_totp_setup(
         result = await service.verify_totp_setup(setup_token=body.setupToken, code=body.code)
         return VerifyTotpSetupResponse(**result)
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.get("/totp/status", response_model=TotpStatusResponse)
@@ -96,9 +137,9 @@ async def regenerate_backup_codes(
         )
         return BackupCodesResponse(**result) if isinstance(result, dict) else result
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.post("/totp/disable")
@@ -119,9 +160,9 @@ async def disable_totp(
             user_repository=user_repo,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.post("/totp/verify-login", response_model=TwoFactorVerifyResponse)
@@ -152,7 +193,7 @@ async def verify_totp_login(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=str(exc),
-            )
+            ) from exc
 
     return await _verify_with_rate_limit()  # type: ignore[no-any-return]
 
@@ -204,7 +245,7 @@ async def complete_passkey_registration(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
-        )
+        ) from exc
 
 
 @router.get("/webauthn/passkeys", response_model=PasskeyListResponse)
@@ -285,58 +326,75 @@ async def delete_passkey(
     try:
         await service.delete_passkey(passkey_id=passkey_id, user_id=current_user.id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
 @router.post("/webauthn/authenticate/initiate")
 @rate_limit("5/minute")
 async def initiate_passkey_authentication(
     request: Request,
-    current_user: CurrentUser,
+    body: InitiatePasskeyAuthenticationRequest,
     service: TwoFactorService = Depends(get_service),
 ) -> dict[str, Any]:
-    """Initiate passkey authentication for the current user."""
+    """Initiate passkey authentication during login.
+
+    Public endpoint (no CurrentUser): the caller only holds a 2FA-pending
+    token at this point, not a full session — CurrentUser would 401 here.
+    """
     _ = request  # required by slowapi rate limiting
     try:
-        return await service.initiate_passkey_authentication(user_id=current_user.id)
+        payload = verify_two_factor_token(body.twoFactorToken)
+        return await service.initiate_passkey_authentication(user_id=payload["sub"])
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.post("/webauthn/authenticate/complete", response_model=TwoFactorVerifyResponse)
 @rate_limit("5/minute")
 async def complete_passkey_authentication(
     request: Request,
-    body: dict[str, Any],  # CompletePasskeyAuthenticationRequest
-    current_user: CurrentUser,
+    body: CompletePasskeyAuthenticationRequest,
     service: TwoFactorService = Depends(get_service),
 ) -> TwoFactorVerifyResponse:
-    """Complete passkey authentication."""
+    """Complete passkey authentication during login and return JWT tokens.
+
+    Public endpoint (no CurrentUser), mirroring /totp/verify-login.
+    """
     _ = request  # required by slowapi rate limiting
     try:
+        payload = verify_two_factor_token(body.twoFactorToken)
         result = await service.complete_passkey_authentication(
-            challenge_token=body.get("challengeToken", ""),
-            credential_json=body.get("credential", {}),
-            challenge_data=body.get("_challenge_data"),
+            challenge_token=body.challengeToken,
+            credential_json=body.credential,
+            expected_user_id=payload["sub"],
         )
         return TwoFactorVerifyResponse(**result)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.patch("/preferred-method")
 @rate_limit("10/minute")
 async def update_preferred_method(
     request: Request,
-    body: dict[str, str],  # UpdatePreferredMethodRequest
+    body: UpdatePreferredMethodRequest,
     current_user: CurrentUser,
     service: TwoFactorService = Depends(get_service),
 ) -> dict[str, str]:
     """Update user's preferred 2FA method."""
     _ = request  # required by slowapi rate limiting
     try:
-        method = body.get("method", "")
-        await service.update_preferred_method(user_id=current_user.id, method=method)
-        return {"message": f"Preferred 2FA method updated to {method}"}
+        method = body.preferredMethod
+        if method is not None:
+            await service.update_preferred_method(user_id=current_user.id, method=method)
+            return {"message": f"Preferred 2FA method updated to {method}"}
+        else:
+            # Clear preference (set to None)
+            await service.update_preferred_method(user_id=current_user.id, method=None)
+            return {"message": "Preferred 2FA method cleared"}
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

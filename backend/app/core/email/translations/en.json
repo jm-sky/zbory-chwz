@@ -18,7 +18,8 @@
     "verify_button": "Verify email address",
     "copy_link": "If the button does not work, copy and paste this link into your browser:",
     "expires": "This link is valid for the next {{ expires_hours }} hours.",
-    "ignore": "If you did not create an account, you can ignore this email."
+    "ignore": "If you did not create an account, you can ignore this email.",
+    "resend_success": "If the email exists, a new verification link has been sent"
   },
   "password_reset": {
     "title": "Password Reset - {{ app_name }}",
@@ -33,7 +34,8 @@
     "expires_in": "This link will expire in {{ expires_hours }} hour(s)",
     "didnt_request": "If you didn't request this password reset, please ignore this email",
     "unchanged": "Your password will remain unchanged if you don't click the link",
-    "concerns": "If you have any concerns about your account security, please contact support immediately."
+    "concerns": "If you have any concerns about your account security, please contact support immediately.",
+    "request_success": "If the email exists, a password reset link has been sent"
   },
   "password_changed": {
     "title": "Password Changed - {{ app_name }}",

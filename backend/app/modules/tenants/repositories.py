@@ -10,8 +10,8 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.common.id_utils import generate_id
+from app.core.database import get_db
 from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
 
 logger = logging.getLogger(__name__)
@@ -24,22 +24,50 @@ class TenantRepository:
         self.db = db
 
     async def list_for_user(self, user_id: str) -> list[tuple[TenantDB, TenantMembershipDB]]:
-        stmt = select(TenantDB, TenantMembershipDB).join(TenantMembershipDB, TenantMembershipDB.tenant_id == TenantDB.id).where(TenantMembershipDB.user_id == user_id).order_by(TenantDB.created_at)
+        stmt = (
+            select(TenantDB, TenantMembershipDB)
+            .join(TenantMembershipDB, TenantMembershipDB.tenant_id == TenantDB.id)
+            .where(
+                TenantMembershipDB.user_id == user_id,
+                TenantDB.deleted_at.is_(None),
+            )
+            .order_by(TenantDB.created_at)
+        )
         result = await self.db.execute(stmt)
         rows = result.all()
         return [(row[0], row[1]) for row in rows]
 
-    async def list_all(self) -> list[TenantDB]:
+    async def list_all(self, *, include_deleted: bool = False) -> list[TenantDB]:
         stmt = select(TenantDB).order_by(TenantDB.created_at)
+        if not include_deleted:
+            stmt = stmt.where(TenantDB.deleted_at.is_(None))
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_tenant(self, *, name: str, description: str | None, owner_user_id: str) -> tuple[TenantDB, TenantMembershipDB]:
+    async def list_published(self) -> list[TenantDB]:
+        """List only tenants with status 'published'.
+
+        Note: This is temporary - status should be on congregation/address level in the future.
+        Keeping this for backward compatibility until congregation/address module is implemented.
+        """
+        stmt = (
+            select(TenantDB)
+            .where(
+                TenantDB.status == "published",
+                TenantDB.deleted_at.is_(None),
+            )
+            .order_by(TenantDB.created_at)
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def create_tenant(self, *, name: str, description: str | None, owner_user_id: str, status: str = "draft") -> tuple[TenantDB, TenantMembershipDB]:
         tenant_id = generate_id()
         tenant = TenantDB(
             id=tenant_id,
             name=name,
             description=description,
+            status=status,
             owner_id=owner_user_id,
         )
         membership = TenantMembershipDB(
@@ -75,9 +103,30 @@ class TenantRepository:
         await self.db.refresh(membership)
         return membership
 
-    async def get_tenant(self, tenant_id: str) -> TenantDB | None:
-        result = await self.db.execute(select(TenantDB).where(TenantDB.id == tenant_id))
+    async def get_tenant(self, tenant_id: str, *, include_deleted: bool = False) -> TenantDB | None:
+        stmt = select(TenantDB).where(TenantDB.id == tenant_id)
+        if not include_deleted:
+            stmt = stmt.where(TenantDB.deleted_at.is_(None))
+        result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def soft_delete_tenant(self, tenant: TenantDB) -> TenantDB:
+        """Retire a congregation without erasing it.
+
+        A hard delete violates the tenant_memberships FK and cascades churches,
+        addresses and service times away.
+        """
+        tenant.deleted_at = datetime.now(UTC)
+        tenant.status = "draft"
+        await self.db.commit()
+        await self.db.refresh(tenant)
+        return tenant
+
+    async def restore_tenant(self, tenant: TenantDB) -> TenantDB:
+        tenant.deleted_at = None
+        await self.db.commit()
+        await self.db.refresh(tenant)
+        return tenant
 
 
 def get_tenant_repository(db: AsyncSession = Depends(get_db)) -> TenantRepository:

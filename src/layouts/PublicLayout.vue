@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import LogoText from '@/components/ui/LogoText.vue'
+import { PublicRouteNames } from '@/router/publicRoutes'
 import DarkModeToggle from '@/shared/components/DarkModeToggle.vue'
 import LocaleToggle from '@/shared/i18n/components/LocaleToggle.vue'
 
@@ -12,7 +13,7 @@ import LocaleToggle from '@/shared/i18n/components/LocaleToggle.vue'
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
-            <RouterLink to="/" class="text-xl font-bold text-card-foreground">
+            <RouterLink :to="{ name: PublicRouteNames.landing }" class="text-xl font-bold text-card-foreground">
               <LogoText />
             </RouterLink>
           </div>
@@ -23,12 +24,6 @@ import LocaleToggle from '@/shared/i18n/components/LocaleToggle.vue'
               class="text-sm text-foreground hover:text-primary"
             >
               Zaloguj się
-            </RouterLink>
-            <RouterLink
-              to="/auth/register"
-              class="text-sm bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/80"
-            >
-              Zarejestruj się
             </RouterLink>
             <LocaleToggle />
             <DarkModeToggle />

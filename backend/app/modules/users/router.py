@@ -7,6 +7,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.modules.admin.authorization import enforce_user_mutation_permissions
+from app.modules.auth.repositories import UserRepository as AuthUserRepository
+from app.modules.auth.repositories import (
+    get_user_repository as get_auth_user_repository,
+)
 from app.modules.settings.db_models import UserSettingsDB
 
 from .dependencies import AdminUser, CurrentUser
@@ -15,7 +20,6 @@ from .repositories import UserRepository, get_user_repository
 from .schemas import (
     MessageResponse,
     PublicUserResponse,
-    UserCreate,
     UserListResponse,
     UserProfileUpdate,
     UserResponse,
@@ -25,21 +29,12 @@ from .schemas import (
 # Create router
 router = APIRouter()
 
-
-@router.post(
-    "/",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Create new user",
-    description="Create a new user (admin only)",
-)
-async def create_user(user_data: UserCreate, _: AdminUser, repo: Annotated[UserRepository, Depends(get_user_repository)]) -> UserResponse:
-    """Create a new user."""
-    try:
-        user = await repo.create_user(email=user_data.email, name=user_data.name, role=user_data.role)
-        return UserResponse(**user.to_response())
-    except UserAlreadyExistsError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+# Note: there is intentionally no POST "/" (create user) endpoint here.
+# User creation requires password handling and is only done through the
+# auth module's registration endpoint (POST /auth/register). A previous
+# version of this endpoint called UserRepository.create_user(), which
+# unconditionally raised NotImplementedError — it was dead, untested code
+# that always 500'd.
 
 
 @router.get(
@@ -79,9 +74,15 @@ async def list_users(
     summary="Get current user",
     description="Get currently authenticated user information",
 )
-async def get_current_user_info(current_user: CurrentUser) -> UserResponse:
+async def get_current_user_info(
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> UserResponse:
     """Get current user information."""
-    return UserResponse(**current_user.to_response())
+    # Get user response data
+    user_data = current_user.to_response()
+
+    return UserResponse(**user_data)
 
 
 @router.patch(
@@ -95,10 +96,12 @@ async def update_current_user_profile(
     current_user: CurrentUser,
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> UserResponse:
-    """Update current user's profile details."""
+    """Update current user's profile details.
+
+    Note: Email updates are not allowed for security reasons.
+    """
     updated_user = await repo.update_user(
         user_id=current_user.id,
-        email=user_data.email,
         name=user_data.name,
         avatar_url=user_data.avatarUrl,
     )
@@ -115,7 +118,7 @@ async def update_current_user_profile(
 )
 async def get_public_user_profile(
     user_id: str,
-    repo: Annotated[UserRepository, Depends(get_user_repository)],
+    auth_repo: Annotated[AuthUserRepository, Depends(get_auth_user_repository)],
     db: AsyncSession = Depends(get_db),
 ) -> PublicUserResponse:
     """Get public user profile.
@@ -128,9 +131,9 @@ async def get_public_user_profile(
     - Profile is public AND
     - User's emailPublic setting is True
     """
-    # Get user
-    user = await repo.get_user_by_id(user_id)
-    if not user:
+    # Get user directly from auth repository to access all role fields
+    auth_user = await auth_repo.get_user_by_id(user_id)
+    if not auth_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
 
     # Check if profile is public
@@ -144,19 +147,17 @@ async def get_public_user_profile(
             detail="This user profile is not public",
         )
 
-    # Build public response
-    response_data = {
-        "id": user.id,
-        "name": user.name,
-        "avatarUrl": user.avatarUrl,
-        "emailPublic": settings.is_public_email,
-    }
-
-    # Only include email if user has emailPublic enabled
-    if settings.is_public_email:
-        response_data["email"] = user.email
-
-    return PublicUserResponse(**response_data)
+    # Build public response - AuthUser has all role fields (isAdmin, isOwner, isPremium)
+    return PublicUserResponse(
+        id=auth_user.id,
+        name=auth_user.name,
+        avatarUrl=auth_user.avatarUrl,
+        isAdmin=auth_user.isAdmin,
+        isOwner=auth_user.isOwner,
+        isPremium=auth_user.isPremium,
+        email=auth_user.email if settings.is_public_email else None,
+        emailPublic=settings.is_public_email,
+    )
 
 
 @router.get(
@@ -165,7 +166,11 @@ async def get_public_user_profile(
     summary="Get user by ID",
     description="Get a specific user by their ID",
 )
-async def get_user(user_id: str, _: AdminUser, repo: Annotated[UserRepository, Depends(get_user_repository)]) -> UserResponse:
+async def get_user(
+    user_id: str,
+    _: AdminUser,
+    repo: Annotated[UserRepository, Depends(get_user_repository)],
+) -> UserResponse:
     """Get user by ID."""
     user = await repo.get_user_by_id(user_id)
     if not user:
@@ -179,8 +184,33 @@ async def get_user(user_id: str, _: AdminUser, repo: Annotated[UserRepository, D
     summary="Update user",
     description="Update user information (admin only)",
 )
-async def update_user(user_id: str, user_data: UserUpdate, _: AdminUser, repo: Annotated[UserRepository, Depends(get_user_repository)]) -> UserResponse:
+async def update_user(
+    user_id: str,
+    user_data: UserUpdate,
+    current_user: AdminUser,
+    repo: Annotated[UserRepository, Depends(get_user_repository)],
+    auth_repo: Annotated[AuthUserRepository, Depends(get_auth_user_repository)],
+) -> UserResponse:
     """Update user information."""
+    target_user = await auth_repo.get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User {user_id} not found",
+        )
+    enforce_user_mutation_permissions(
+        # This module's own User model uses a single `role` string (not the
+        # auth module's independent isAdmin/isOwner booleans) — "owner" is
+        # treated as admin-plus, matching how AdminService's role mapping
+        # already collapses isOwner=True to role="owner" regardless of isAdmin.
+        actor_is_admin=current_user.role in ("admin", "owner"),
+        actor_is_owner=current_user.role == "owner",
+        target_email=target_user.email,
+        target_is_owner=target_user.isOwner,
+        target_is_admin=target_user.isAdmin,
+        new_role=user_data.role,
+        new_is_owner=user_data.isOwner,
+    )
     try:
         user = await repo.update_user(
             user_id=user_id,
@@ -205,8 +235,24 @@ async def update_user(user_id: str, user_data: UserUpdate, _: AdminUser, repo: A
     summary="Delete user",
     description="Soft delete user (set isActive to false)",
 )
-async def delete_user(user_id: str, _: AdminUser, repo: Annotated[UserRepository, Depends(get_user_repository)]) -> MessageResponse:
+async def delete_user(
+    user_id: str,
+    current_user: AdminUser,
+    repo: Annotated[UserRepository, Depends(get_user_repository)],
+    auth_repo: Annotated[AuthUserRepository, Depends(get_auth_user_repository)],
+) -> MessageResponse:
     """Soft delete user."""
+    target_user = await auth_repo.get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
+    enforce_user_mutation_permissions(
+        actor_is_admin=current_user.role in ("admin", "owner"),
+        actor_is_owner=current_user.role == "owner",
+        target_email=target_user.email,
+        target_is_owner=target_user.isOwner,
+        target_is_admin=target_user.isAdmin,
+        is_delete=True,
+    )
     success = await repo.delete_user(user_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
@@ -219,8 +265,25 @@ async def delete_user(user_id: str, _: AdminUser, repo: Annotated[UserRepository
     summary="Permanently delete user",
     description="Permanently delete user from the system (admin only)",
 )
-async def hard_delete_user(user_id: str, _: AdminUser, repo: Annotated[UserRepository, Depends(get_user_repository)]) -> MessageResponse:
+async def hard_delete_user(
+    user_id: str,
+    current_user: AdminUser,
+    repo: Annotated[UserRepository, Depends(get_user_repository)],
+    auth_repo: Annotated[AuthUserRepository, Depends(get_auth_user_repository)],
+) -> MessageResponse:
     """Permanently delete user."""
+    target_user = await auth_repo.get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")
+    enforce_user_mutation_permissions(
+        actor_is_admin=current_user.role in ("admin", "owner"),
+        actor_is_owner=current_user.role == "owner",
+        target_email=target_user.email,
+        target_is_owner=target_user.isOwner,
+        target_is_admin=target_user.isAdmin,
+        is_delete=True,
+        is_hard_delete=True,
+    )
     success = await repo.hard_delete_user(user_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found")

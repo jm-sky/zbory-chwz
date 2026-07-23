@@ -1,16 +1,18 @@
 <script setup lang="ts">
+import { RotateCwIcon } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import Alert from '@/components/ui/alert/Alert.vue'
-import AlertTitle from '@/components/ui/alert/AlertTitle.vue'
+import AlertDescription from '@/components/ui/alert/AlertDescription.vue'
 import { Button } from '@/components/ui/button'
+import ButtonLink from '@/components/ui/button-link/ButtonLink.vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import GuestLayoutCentered from '@/layouts/GuestLayoutCentered.vue'
 import { useAuth } from '@/modules/auth/composables/useAuth'
-import { AuthRouteNames, AuthRoutePaths } from '@/modules/auth/config/routes'
+import { AuthRoutePaths } from '@/modules/auth/config/routes'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 
 type VerificationStatus = 'idle' | 'success' | 'error'
@@ -30,6 +32,7 @@ const emailInput = ref<string>('')
 const redirectTimeout = ref<number | null>(null)
 
 const token = computed(() => typeof route.query.token === 'string' ? route.query.token : null)
+const isVerified = computed(() => verificationStatus.value === 'success')
 
 const existingEmail = computed(() => {
   if (typeof route.query.email === 'string') {
@@ -57,7 +60,7 @@ async function handleVerify(currentToken: string) {
     message.value = t('auth.verify_email.success')
     toast.success(t('auth.verify_email.success'))
     redirectTimeout.value = setTimeout(() => {
-      router.push(AuthRoutePaths.dashboard)
+      router.push(AuthRoutePaths.login)
     }, REDIRECT_TIMEOUT)
   } catch (error) {
     verificationStatus.value = 'error'
@@ -80,14 +83,6 @@ async function handleResend() {
     console.error('[VerifyEmailPage] resend error', error)
     toast.error(t('errors.generic'))
   }
-}
-
-function goToLogin() {
-  router.push({ name: AuthRouteNames.login })
-}
-
-function goToDashboard() {
-  router.push(AuthRoutePaths.dashboard)
 }
 
 onBeforeUnmount(() => {
@@ -116,24 +111,24 @@ onBeforeUnmount(() => {
 
       <div v-else class="space-y-4">
         <Alert v-if="message" variant="success">
-          <AlertTitle>
+          <AlertDescription>
             {{ message }}
-          </AlertTitle>
+          </AlertDescription>
         </Alert>
         <Alert v-if="verificationError" variant="destructive">
-          <AlertTitle>
+          <AlertDescription>
             {{ verificationError }}
-          </AlertTitle>
+          </AlertDescription>
         </Alert>
         <Alert v-else-if="!token" variant="info">
-          <AlertTitle>
+          <AlertDescription>
             {{ t('auth.verify_email.instructions') }}
-          </AlertTitle>
+          </AlertDescription>
         </Alert>
       </div>
 
       <div class="space-y-6">
-        <div class="space-y-2 text-left">
+        <div v-if="!isVerified" class="space-y-2 text-left">
           <Label for="email">
             {{ t('auth.verify_email.resend_label') }}
           </Label>
@@ -149,31 +144,39 @@ onBeforeUnmount(() => {
           </p>
         </div>
 
+        <div v-if="isVerified" class="flex flex-col items-center justify-center gap-3">
+          <RotateCwIcon class="size-8 animate-spin opacity-50" />
+          <p class="text-xs text-muted-foreground">
+            {{ t('auth.verify_email.redirecting_to_login') }}
+          </p>
+        </div>
+
         <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Button
             type="button"
             variant="default"
             :loading="isResendingVerification"
+            :disabled="isVerified || isResendingVerification"
             @click="handleResend"
           >
             {{ t('auth.verify_email.resend_button') }}
           </Button>
-          <Button
-            v-if="verificationStatus === 'success'"
+          <ButtonLink
+            v-if="isVerified"
             type="button"
             variant="outline"
-            @click="goToDashboard"
+            :to="AuthRoutePaths.login"
           >
-            {{ t('auth.verify_email.go_to_app') }}
-          </Button>
-          <Button
+            {{ t('auth.verify_email.back_to_login') }}
+          </ButtonLink>
+          <ButtonLink
             v-else
             type="button"
             variant="outline"
-            @click="goToLogin"
+            :to="AuthRoutePaths.login"
           >
             {{ t('auth.verify_email.back_to_login') }}
-          </Button>
+          </ButtonLink>
         </div>
       </div>
     </div>

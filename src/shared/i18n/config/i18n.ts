@@ -4,13 +4,16 @@ import { createI18n } from 'vue-i18n'
 import { config, LOCALE_STORAGE_KEY, type SupportedLocale } from '@/shared/config/config'
 import en from '../locales/en'
 import pl from '../locales/pl'
+import ru from '../locales/ru'
+import { getPolishPluralizationRule } from './getPolishPluralizationRule'
 import type { I18n, I18nOptions } from 'vue-i18n'
 
-export const SUPPORTED_LOCALES: SupportedLocale[] = ['en', 'pl']
+export const SUPPORTED_LOCALES: SupportedLocale[] = ['en', 'pl', 'ru']
 
 export const LOCALE_LABELS: Record<SupportedLocale, string> = {
   en: 'English',
   pl: 'Polski',
+  ru: 'Русский',
 }
 
 /**
@@ -65,6 +68,11 @@ export const defaultI18nOptions: I18nOptions<{ message: typeof en }> = {
   messages: {
     en,
     pl,
+    ru,
+  },
+  // In Composition API mode (legacy: false), use 'pluralRules' instead of 'pluralizationRules'
+  pluralRules: {
+    pl: getPolishPluralizationRule,
   },
   globalInjection: true,
   missingWarn: import.meta.env.DEV,

@@ -1,21 +1,35 @@
 <script setup lang="ts">
 import { Moon, Sun } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useUpdateSettings } from '@/modules/settings/composables/useSettings'
 import { useDarkMode } from '../composables/useDarkMode'
 
 const { isDark } = useDarkMode()
 const updateMutation = useUpdateSettings()
+const { t } = useI18n()
 
 const toggle = async () => {
   await updateMutation.mutateAsync({ darkMode: !isDark.value })
 }
+
+const tooltipText = computed(() => {
+  const mode = isDark.value ? t('common.lightMode') : t('common.darkMode')
+  return t('common.toggleDarkMode', { mode })
+})
+
+const ariaLabel = computed(() => {
+  const mode = isDark.value ? t('common.lightMode') : t('common.darkMode')
+  return t('common.toggleDarkMode', { mode })
+})
 </script>
 
 <template>
   <Button
+    v-tooltip.bottom="tooltipText"
     variant="ghost"
-    :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+    :aria-label="ariaLabel"
     :disabled="updateMutation.isPending.value"
     class="min-w-10"
     @click="toggle"

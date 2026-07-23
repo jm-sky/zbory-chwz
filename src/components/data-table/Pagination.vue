@@ -5,6 +5,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-vue-next'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,6 +22,8 @@ interface Props {
   pageSizeOptions?: number[]
 }
 
+const { t } = useI18n()
+
 const props = withDefaults(defineProps<Props>(), {
   pageSizeOptions: () => [10, 20, 30, 40, 50, 100, 500],
 })
@@ -30,17 +33,15 @@ const emit = defineEmits<{
   'update:pageSize': [pageSize: number]
 }>()
 
-const totalPages = Math.ceil(props.total / props.pageSize)
-const canPreviousPage = props.page > 1
-const canNextPage = props.page < totalPages
+const totalPages = computed<number>(() => Math.ceil(props.total / props.pageSize))
+const canPreviousPage = computed<boolean>(() => props.page > 1)
+const canNextPage = computed<boolean>(() => props.page < totalPages.value)
 
 const goToPage = (page: number) => {
-  if (page >= 1 && page <= totalPages) {
+  if (page >= 1 && page <= totalPages.value) {
     emit('update:page', page)
   }
 }
-
-const { t } = useI18n()
 
 const setPageSize = (size: number) => {
   emit('update:pageSize', size)
@@ -54,14 +55,18 @@ const setPageSize = (size: number) => {
     <div class="flex-1 text-sm text-muted-foreground">
       {{ t('common.pagination.totalRows', { total }) }}
     </div>
-    <div class="flex items-center flex-wrap gap-2 md:gap-0 space-x-6 lg:space-x-8">
-      <div class="flex items-center space-x-2">
+    <div class="flex items-center justify-center md:justify-start flex-wrap gap-2 md:gap-x-6 lg:gap-x-8">
+      <div class="flex items-center gap-x-2">
         <p class="text-sm font-medium">
           {{ t('common.pagination.rowsPerPage') }}
         </p>
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
-            <Button variant="outline" class="h-8 w-[70px]">
+            <Button
+              variant="outline"
+              class="h-8 w-[70px]"
+              :aria-label="t('common.pagination.rowsPerPageValue', { count: pageSize })"
+            >
               {{ pageSize }}
             </Button>
           </DropdownMenuTrigger>

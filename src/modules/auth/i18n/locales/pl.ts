@@ -30,7 +30,7 @@ export const authPl = {
     back_to_login: 'Powrót do logowania',
     reset_token: 'Token resetowania',
     reset_code: 'Kod resetowania',
-    email_placeholder: 'twoj.email@example.com',
+    email_placeholder: 'Twój adres email',
     password_requirements: 'Hasło musi mieć co najmniej 8 znaków',
     token_placeholder: 'Wprowadź token z emaila',
     enter_new_password: 'Wprowadź nowe hasło',
@@ -85,8 +85,15 @@ export const authPl = {
       verification_success: 'Weryfikacja pomyślna',
       verify_button: 'Zweryfikuj',
       no_methods_configured: 'Brak skonfigurowanych metod 2FA',
+      setup: {
+        title: 'Konfiguracja uwierzytelniania dwuskładnikowego',
+      },
+      verify: {
+        title: 'Uwierzytelnianie dwuskładnikowe',
+      },
       totp: {
         title: 'Aplikacja uwierzytelniająca (TOTP)',
+        tab_label: 'TOTP',
         description: 'Użyj aplikacji uwierzytelniającej takiej jak Google Authenticator lub Authy',
         setup: 'Skonfiguruj aplikację uwierzytelniającą',
         cancel: 'Anuluj',
@@ -120,6 +127,7 @@ export const authPl = {
       },
       webauthn: {
         title: 'Klucze dostępu',
+        tab_label: 'Klucze dostępu',
         description: 'Użyj uwierzytelniania biometrycznego lub kluczy bezpieczeństwa',
         register: 'Zarejestruj klucz dostępu',
         register_title: 'Dodaj nowy klucz dostępu',
@@ -161,10 +169,20 @@ export const authPl = {
       email_required: 'Adres email jest wymagany, aby ponownie wysłać link.',
       invalid_or_expired: 'Link weryfikacyjny jest nieprawidłowy lub wygasł. Poproś o nowy poniżej.',
       success: 'Adres email został pomyślnie zweryfikowany.',
+      redirecting_to_dashboard: 'Przekierowywanie do panelu...',
+      redirecting_to_login: 'Przekierowywanie do logowania...',
+    },
+    pages: {
+      login: 'Logowanie',
+      register: 'Rejestracja',
+      verifyEmail: 'Weryfikacja email',
+      oauthCallback: 'OAuth Callback',
     },
     oauth: {
       button: {
         continue_with_google: 'Google',
+        continue_with_facebook: 'Facebook',
+        continue_with_github: 'GitHub',
         redirecting: 'Przekierowywanie...',
       },
       or_continue_with: 'Lub kontynuuj z',

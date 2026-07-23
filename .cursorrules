@@ -1,4 +1,36 @@
-# Cursor Rules for Gear Stack
+# Cursor Rules for Zbory CHWZ
+
+## Docker Safety Rule
+
+**CRITICAL:** **NEVER run Docker commands if the project directory name starts with underscore (e.g., `_zbory-chwz-dev`)**
+
+- Underscore prefix indicates a development directory on the production server
+- Running Docker in such directories can cause conflicts with production services
+- If the current working directory starts with `_`, do not execute any `docker` or `docker-compose` commands
+
+**Docker Compose Project Naming:**
+- Use `COMPOSE_PROJECT_NAME=zbory-chwz` in `backend/.env`
+- Prevents conflicts with other projects (e.g., gear-stack) on the same VPS
+
+## Project Architecture
+
+**Multi-tenant Architecture:**
+- Client-side: Settings, preferences (localStorage)
+- Server-side: Backend API (auth, user profiles, congregations, admin, AI models)
+- API proxy: `/api/*` → backend (configured in vite.config.ts)
+
+**Modules:** auth, user, settings, admin, ai, stats
+
+**State Management:**
+- Pinia → client-side state (settings, user preferences)
+- TanStack Query → server state (auth, congregations, AI, admin)
+
+## Roadmap Docs
+
+- **docs/ROADMAP.md**: główny indeks roadmap – zawsze sprawdź go najpierw, żeby znaleźć właściwy plik/sekcję.
+- **docs/ROADMAP_OFFLINE.md**: funkcje działające wyłącznie na localStorage (offline-first). Używaj przy pracach nad funkcjami bez backendu/DB/auth.
+- **docs/ROADMAP_ONLINE.md**: funkcje wymagające backendu/DB/autoryzacji. Używaj przy pracach nad funkcjami serwerowymi lub multi-user.
+- **Zasada:** przy nowych funkcjach / zmianach zachowania najpierw znajdź odpowiednią sekcję w roadmap, respektuj status (✅/🚧/🔄) i linki do szczegółowych planów w `docs/plans/` lub analiz w `docs/reviews/`.
 
 ## Question vs. Action Protocol
 
@@ -13,9 +45,15 @@
 - ❌ User: "Does X support Y?" → You: *starts coding*
 - ✅ User: "Does X support Y?" → You: "No. Would you like me to add it?"
 
+**When user asks "Może lepiej...?" or "Should we...?" or similar questions:**
+- ✅ Answer the question first
+- ✅ Explain pros/cons if relevant
+- ✅ Ask: "Would you like me to implement this change?"
+- ❌ DO NOT start coding immediately
+
 ## Reka-ui / shadcn-vue Checkbox
 
-**CRITICAL:** In Reka-ui (shadcn-vue), Checkbox uses standard `v-model`, **NOT** `v-model:checked`.
+**CRITICAL:** In Reka-ui (shadcn-vue), Checkbox uses `model-value` / `v-model`, **NOT** `checked` / `v-model:checked`.
 
 ✅ **Correct usage:**
 ```vue
@@ -24,27 +62,138 @@ const checked = ref(true)
 </script>
 
 <template>
+  <!-- Preferred: v-model -->
   <Checkbox v-model="checked" />
+  
+  <!-- Alternative: explicit model-value binding -->
+  <Checkbox :model-value="checked" @update:model-value="checked = $event" />
 </template>
 ```
 
 ❌ **Incorrect usage:**
 ```vue
-<!-- DOES NOT WORK -->
+<!-- DOES NOT WORK - Checkbox doesn't use 'checked' prop -->
 <Checkbox v-model:checked="checked" />
 <Checkbox :checked="checked" @update:checked="..." />
 ```
 
 **Notes:**
+- Checkbox in Reka-ui uses `modelValue` prop and `@update:model-value` event under the hood
+- Use `v-model` for simple cases (preferred)
+- Use `:model-value` and `@update:model-value` when you need explicit control (e.g., in loops with toggle functions)
 - `v-model:checked` only works with `defineModel()` (as in `ContainersFilters.vue`)
-- For regular `ref`, use standard `v-model`
-- Checkbox in Reka-ui uses `modelValue` and `@update:model-value` under the hood
+- For regular `ref`, use standard `v-model` or `:model-value` / `@update:model-value`
+
+## Icons
+
+**Icon Usage:**
+- Use `lucide-vue-next` icons directly
+- Import icons as needed: `import { User, Settings } from 'lucide-vue-next'`
+- Use consistent icon sizes: `class="size-4"` for small icons, `size-6` for medium, etc.
+
+## TypeScript Conventions
+
+**Union Types:**
+- ✅ Create dedicated union types instead of inline definitions
+- ✅ Use: `type Status = 'pending' | 'active' | 'completed'`
+- ❌ Avoid: `status: 'pending' | 'active' | 'completed'` (inline)
+
+**Import Alias:**
+- Always use `@/` alias for absolute imports from `src/`
+- ✅ Use: `import { useUserStore } from '@/modules/user/store'`
+- ❌ Avoid: `import { useUserStore } from '../../modules/user/store'`
+
+**Type Definitions:**
+- All types in module-specific `types/` directories
+- Prefer interfaces for object shapes, types for unions/primitives
+
+## Code Style & ESLint
+
+**ESLint Configuration:**
+- No semicolons (`;` at end of lines)
+- Single quotes (`'` not `"`)
+- Import sorting: alphabetical with groups (external → internal)
+- Self-closing tags required: `<Component />`
+- Max 3 attributes per line (single-line), 1 per line (multi-line)
+- Unused variables starting with `_` are allowed
 
 ## General Guidelines
 
 - Always use `v-model` for Checkbox components with regular `ref` variables
 - Use `v-model:checked` only when using `defineModel()` in component props
-- When in doubt, check existing usage in `ContainersFilters.vue` or `columns-full.ts`
+- When in doubt, check existing usage in similar components
+
+## Code Formatting
+
+**Control Flow Keywords:**
+- **No line breaks before `else`, `catch`, `finally`** - Keep control flow keywords on the same line as closing brace
+- ✅ **Correct:** `} else {`, `} catch (error) {`, `} finally {`
+- ❌ **Avoid:** Line breaks before these keywords
+
+Example:
+```typescript
+// ✅ Correct
+try {
+  doSomething()
+} catch (error) {
+  handleError(error)
+}
+
+if (condition) {
+  doX()
+} else {
+  doY()
+}
+
+// ❌ Incorrect
+try {
+  doSomething()
+}
+catch (error) {
+  handleError(error)
+}
+
+if (condition) {
+  doX()
+}
+else {
+  doY()
+}
+```
+
+## Vue 3.5+ Best Practices
+
+**v-model with defineModel:**
+- ✅ Use: `const open = defineModel<boolean>('open', { required: true })`
+- ❌ Avoid: `defineProps<{ open: boolean }>()` + `emit('update:open')`
+- Benefits: Simpler syntax, automatic reactivity, less boilerplate
+
+**Reactive Destructured Props:**
+- Destructured props are reactive in Vue 3.5+ (no need for `toRefs`)
+- ✅ Use: `const { congregation } = defineProps<{ congregation: ICongregation }>()`
+- Props can be used directly in computed/watch without losing reactivity
+
+**Prop Shortcuts:**
+- When passing a prop with the same name as the variable
+- ✅ Use: `<Dialog :open />` instead of `<Dialog :open="open" />`
+
+**TypeScript Generics:**
+- Always provide explicit types for `ref<T>`, `computed<T>`, `reactive<T>`
+- ✅ Use: `const count = ref<number>(0)`, `const label = computed<string>(() => ...)`
+- ❌ Avoid: `const count = ref(0)` (implicit types)
+
+**Declaration Order in `<script setup>`:**
+1. Composables (e.g., `useI18n()`, `useRouter()`)
+2. `defineProps()`
+3. `defineModel()`
+4. `defineEmits()`
+5. Computed properties and reactive state
+6. Functions and methods
+
+**Routing:**
+- Use route helper functions from `routes.ts` instead of hardcoded paths
+- ✅ Use: `CongregationRoutePath.Detail(congregationId)` or route helper functions from module routes
+- ❌ Avoid: `` `/congregations/${congregationId}` `` (hardcoded paths)
 
 ## TailwindCSS Best Practices
 
@@ -66,4 +215,88 @@ const checked = ref(true)
 - Add desktop variants using Tailwind breakpoint prefixes (eg. `sm:`)
 - Example: `text-sm sm:text-base lg:text-lg` (small on mobile, base on tablet, large on desktop)
 - Consider spacing, typography, layout, and visibility across breakpoints
+
+## Testing
+
+**Commands:**
+```bash
+pnpm test              # Watch mode
+pnpm test:ui           # Vitest UI
+pnpm test:run          # CI mode
+pnpm test:coverage     # Coverage report
+```
+
+**Test Framework:** vitest + happy-dom
+**E2E:** @playwright/test
+
+## API Integration
+
+**Axios Client:**
+- Use `apiClient` from `@/shared/services/apiClient`
+- Auth interceptor handles JWT tokens automatically
+- Error interceptor handles global error handling
+
+**TanStack Query Pattern:**
+```typescript
+const { data, isLoading } = useQuery({
+  queryKey: ['resource', id],
+  queryFn: () => apiClient.get(`/resource/${id}`),
+  staleTime: 5 * 60 * 1000, // 5 minutes
+})
+```
+
+**Authentication:**
+- WebAuthn/passkeys via @simplewebauthn/browser
+- JWT tokens with auto-refresh (useTokenRefreshStore)
+- Route guards: auth guard, admin guard
+
+## Service Layer Pattern
+
+**Business Logic Separation:**
+- Stores: CRUD + persistence (simple operations)
+- Services: Business logic, validation, calculations
+
+✅ **Correct:**
+```typescript
+// Service handles business logic
+const congregation = await congregationService.getById(id)
+// Store persists data (if client-side)
+settingsStore.updateSettings(settings)
+```
+
+❌ **Avoid:**
+```typescript
+// Don't put business logic in stores or components
+congregationStore.calculateAndValidate(congregationId)
+```
+
+## Internationalization (i18n)
+
+**Translation Keys:**
+- Use `t()` from `useI18n()` composable
+- Keys: `moduleName.section.key` (e.g., `congregations.list.title`, `admin.users.title`)
+- Module translations in `src/modules/{module}/i18n/locales/{lang}.ts`
+
+**Locale Management:**
+- Persisted in localStorage
+- Use `useLocale()` composable for switching
+- Supported languages: Polish (pl), English (en)
+
+## FastAPI Dependencies (Backend)
+
+**CRITICAL:** Annotated dependencies (`AdminUser`, `CurrentUser`) must be used as function parameters, NOT in `dependencies=[Depends(...)]`.
+
+✅ **Correct:**
+```python
+@router.post("/endpoint")
+async def endpoint(current_user: AdminUser):
+    ...
+```
+
+❌ **Incorrect:**
+```python
+@router.post("/endpoint", dependencies=[Depends(AdminUser)])
+async def endpoint():
+    ...
+```
 

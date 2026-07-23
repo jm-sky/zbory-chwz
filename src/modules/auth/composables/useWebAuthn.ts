@@ -2,26 +2,12 @@ import { startAuthentication, startRegistration } from '@simplewebauthn/browser'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 // modules/auth/composables/useWebAuthn.ts
 import { twoFactorService } from '@/modules/auth/services/twoFactorService'
+import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { twoFactorQueryKeys } from './useTwoFactor'
-import type { PublicKeyCredentialDescriptorJSON } from '@simplewebauthn/browser'
 import type {
   ITwoFactorService,
   WebAuthnRegisterRequest,
 } from '@/modules/auth/types/twoFactor.type'
-
-function toBase64(buffer: ArrayBuffer | BufferSource): string {
-  if (buffer instanceof ArrayBuffer) {
-    return arrayBufferToBase64(buffer)
-  }
-  return arrayBufferToBase64(buffer.buffer)
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  let binary = ''
-  const bytes = new Uint8Array(buffer)
-  for (const byte of bytes) binary += String.fromCharCode(byte)
-  return btoa(binary)
-}
 
 
 /**
@@ -39,33 +25,15 @@ export function useRegisterPasskey(service?: ITwoFactorService) {
 
       // Step 2: Start WebAuthn registration ceremony
       const credential = await startRegistration({
-        optionsJSON: {
-          rp: registerResponse.credentialCreationOptions.rp,
-          user: {
-            id: toBase64(registerResponse.credentialCreationOptions.user.id),
-            name: registerResponse.credentialCreationOptions.user.name,
-            displayName: registerResponse.credentialCreationOptions.user.displayName,
-          },
-          challenge: toBase64(registerResponse.credentialCreationOptions.challenge),
-          pubKeyCredParams: registerResponse.credentialCreationOptions.pubKeyCredParams.map(param => ({
-            type: param.type,
-            alg: param.alg,
-          })),
-          timeout: registerResponse.credentialCreationOptions.timeout,
-          excludeCredentials: registerResponse.credentialCreationOptions.excludeCredentials?.map((cred): PublicKeyCredentialDescriptorJSON => ({
-            id: toBase64(cred.id),
-            type: 'public-key' as const,
-            transports: cred.transports,
-          })),
-          authenticatorSelection: registerResponse.credentialCreationOptions.authenticatorSelection,
-          // hints: registerResponse.credentialCreationOptions.hints,
-          attestation: registerResponse.credentialCreationOptions.attestation,
-          // attestationFormats: registerResponse.credentialCreationOptions.attestationFormats,
-          extensions: registerResponse.credentialCreationOptions.extensions,
-        }
+        optionsJSON: registerResponse.options,
       })
+
       // Step 3: Complete registration with backend
-      return await svc.completePasskeyRegistration(request.name, credential as unknown as PublicKeyCredential)
+      return await svc.completePasskeyRegistration(
+        request.name,
+        registerResponse.registrationToken,
+        credential
+      )
     },
     onSuccess: async () => {
       // Invalidate all 2FA queries to refresh status and passkey list
@@ -78,26 +46,44 @@ export function useRegisterPasskey(service?: ITwoFactorService) {
  * Hook for verifying with a passkey during login
  */
 export function useVerifyPasskey(service?: ITwoFactorService) {
+  const queryClient = useQueryClient()
+  const authStore = useAuthStore()
+
   return useMutation({
     mutationFn: async () => {
       const svc = service ?? twoFactorService
+      const twoFactorToken = authStore.twoFactorToken
+      if (!twoFactorToken) {
+        throw new Error('No pending 2FA token — start from the login form')
+      }
 
       // Step 1: Get verification options from backend
-      const verifyResponse = await svc.verifyPasskey()
+      const verifyResponse = await svc.verifyPasskey(twoFactorToken)
 
       // Step 2: Start WebAuthn authentication ceremony
       const credential = await startAuthentication({
-        optionsJSON: {
-          extensions: verifyResponse.credentialRequestOptions.extensions,
-          rpId: verifyResponse.credentialRequestOptions.rpId,
-          timeout: verifyResponse.credentialRequestOptions.timeout,
-          userVerification: verifyResponse.credentialRequestOptions.userVerification,
-          challenge: verifyResponse.challenge,
-        }
+        optionsJSON: verifyResponse.options,
       })
 
       // Step 3: Complete verification with backend
-      return await svc.completePasskeyVerification(credential as unknown as PublicKeyCredential)
+      return await svc.completePasskeyVerification(
+        twoFactorToken,
+        verifyResponse.challengeToken,
+        credential
+      )
+    },
+    onSuccess: async (data) => {
+      if (data.verified && data.accessToken) {
+        // Store the access token and refresh token
+        authStore.setToken(data.accessToken)
+        if (data.refreshToken) {
+          authStore.setRefreshToken(data.refreshToken)
+        }
+        // Clear 2FA token
+        authStore.clearTwoFactorToken()
+        // Invalidate all 2FA queries to refresh status
+        await queryClient.invalidateQueries({ queryKey: twoFactorQueryKeys.all })
+      }
     },
   })
 }

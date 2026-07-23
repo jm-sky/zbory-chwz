@@ -11,7 +11,6 @@ from .db_models import LogLevel
 from .models import Log
 from .repositories import LogRepository
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +25,16 @@ class LogService:
         """
         self.log_repository = log_repository
 
-    async def log_error(self, message: str, exception: Exception | None = None, module: str | None = None, function: str | None = None, user_id: str | None = None, request_id: str | None = None, extra_data: str | None = None) -> Log:
+    async def log_error(
+        self,
+        message: str,
+        exception: Exception | None = None,
+        module: str | None = None,
+        function: str | None = None,
+        user_id: str | None = None,
+        request_id: str | None = None,
+        extra_data: str | None = None,
+    ) -> Log:
         """Log an error with optional exception traceback.
 
         Args:
@@ -45,9 +53,26 @@ class LogService:
         if exception:
             traceback_str = "".join(tb.format_exception(type(exception), exception, exception.__traceback__))
 
-        return await self.log_repository.create_log(level=LogLevel.ERROR, message=message, module=module, function=function, user_id=user_id, request_id=request_id, traceback=traceback_str, extra_data=extra_data)
+        return await self.log_repository.create_log(
+            level=LogLevel.ERROR,
+            message=message,
+            module=module,
+            function=function,
+            user_id=user_id,
+            request_id=request_id,
+            traceback=traceback_str,
+            extra_data=extra_data,
+        )
 
-    async def log_warning(self, message: str, module: str | None = None, function: str | None = None, user_id: str | None = None, request_id: str | None = None, extra_data: str | None = None) -> Log:
+    async def log_warning(
+        self,
+        message: str,
+        module: str | None = None,
+        function: str | None = None,
+        user_id: str | None = None,
+        request_id: str | None = None,
+        extra_data: str | None = None,
+    ) -> Log:
         """Log a warning message.
 
         Args:
@@ -61,9 +86,25 @@ class LogService:
         Returns:
             Created log entry
         """
-        return await self.log_repository.create_log(level=LogLevel.WARNING, message=message, module=module, function=function, user_id=user_id, request_id=request_id, extra_data=extra_data)
+        return await self.log_repository.create_log(
+            level=LogLevel.WARNING,
+            message=message,
+            module=module,
+            function=function,
+            user_id=user_id,
+            request_id=request_id,
+            extra_data=extra_data,
+        )
 
-    async def log_info(self, message: str, module: str | None = None, function: str | None = None, user_id: str | None = None, request_id: str | None = None, extra_data: str | None = None) -> Log:
+    async def log_info(
+        self,
+        message: str,
+        module: str | None = None,
+        function: str | None = None,
+        user_id: str | None = None,
+        request_id: str | None = None,
+        extra_data: str | None = None,
+    ) -> Log:
         """Log an informational message.
 
         Args:
@@ -77,7 +118,15 @@ class LogService:
         Returns:
             Created log entry
         """
-        return await self.log_repository.create_log(level=LogLevel.INFO, message=message, module=module, function=function, user_id=user_id, request_id=request_id, extra_data=extra_data)
+        return await self.log_repository.create_log(
+            level=LogLevel.INFO,
+            message=message,
+            module=module,
+            function=function,
+            user_id=user_id,
+            request_id=request_id,
+            extra_data=extra_data,
+        )
 
     async def get_recent_errors(self, limit: int = 50, user_id: str | None = None) -> list[Log]:
         """Get recent error logs.
@@ -111,7 +160,7 @@ class LogService:
         Returns:
             Number of deleted logs
         """
-        from datetime import timedelta, UTC
+        from datetime import UTC, timedelta
 
         cutoff_date = datetime.now(UTC) - timedelta(days=days)
         deleted_count = await self.log_repository.delete_old_logs(cutoff_date)

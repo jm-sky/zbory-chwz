@@ -5,15 +5,15 @@ including errors, warnings, and informational messages.
 """
 
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 
-from sqlalchemy import DateTime, String, Text, Index
+from sqlalchemy import DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 
 
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     """Log level enumeration."""
 
     DEBUG = "DEBUG"
@@ -53,7 +53,12 @@ class LogDB(Base):
     request_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     traceback: Mapped[str | None] = mapped_column(Text, nullable=True)
     extra_data: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+        index=True,
+    )
 
     # Composite indexes for common queries
     __table_args__ = (

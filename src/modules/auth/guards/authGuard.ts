@@ -44,11 +44,20 @@ export async function authGuard(
 
   // Try to refetch user data if we have token but no user data
   // BUT: Skip this if user is in 2FA flow (has twoFactorToken but no token)
-  // AND: Only do this for routes that require auth (to avoid unnecessary API calls)
+  // Fetch user for all routes when token exists to restore session on page load
   const isIn2FAFlow = !!authStore.twoFactorToken && !hasToken
-  if (hasToken && !hasUser && !isIn2FAFlow && requiresAuth) {
+  if (hasToken && !hasUser && !isIn2FAFlow) {
     try {
-      const user = await authService.getCurrentUser()
+      // Add timeout to prevent hanging forever
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('User fetch timeout')), 5000)
+      })
+
+      const user = await Promise.race([
+        authService.getCurrentUser(),
+        timeoutPromise
+      ])
+
       // Map avatarUrl from backend to avatar in frontend
       authStore.setUser({
         ...user,

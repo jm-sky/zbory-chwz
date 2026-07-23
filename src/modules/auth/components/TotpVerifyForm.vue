@@ -7,7 +7,6 @@ import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { PinInput, PinInputGroup, PinInputSlot } from '@/components/ui/pin-input'
-import { useAuth } from '@/modules/auth/composables/useAuth'
 import { useVerifyTotpLogin } from '@/modules/auth/composables/useTotp'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { totpVerifySchema } from '@/modules/auth/validation/totp.schema'
@@ -23,7 +22,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { logout } = useAuth()
 const authStore = useAuthStore()
 const twoFactorToken = computed(() => authStore.twoFactorToken)
 
@@ -129,15 +127,6 @@ const handlePinInput = (value: number[]) => {
       :loading="isVerifying"
     >
       {{ t('auth.two_factor.verify_button') }}
-    </Button>
-
-    <Button
-      type="button"
-      variant="outline"
-      class="w-full"
-      @click="logout"
-    >
-      {{ t('auth.logout') }}
     </Button>
   </form>
 </template>
