@@ -27,8 +27,9 @@ export function useOAuth() {
     error.value = null
 
     try {
+      // CSRF `state` is persisted server-side (oauth_state_store) and verified
+      // on callback — do not mirror it into sessionStorage (clear-text storage).
       const response = await authService.getOAuthAuthUrl(provider)
-      sessionStorage.setItem('oauth_state', response.state)
       window.location.href = response.authUrl
     }
     catch (err) {

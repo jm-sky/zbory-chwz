@@ -54,18 +54,7 @@ onMounted(async () => {
       return
     }
 
-    // Verify state parameter for CSRF protection
-    const storedState = sessionStorage.getItem('oauth_state')
-    if (!storedState || storedState !== state) {
-      error.value = t('auth.oauth.callback.invalid_state')
-      setTimeout(() => {
-        router.push(AuthRoutePaths.login)
-      }, 2000)
-      return
-    }
-
-    // Clear stored state
-    sessionStorage.removeItem('oauth_state')
+    // CSRF `state` is verified server-side (oauth_state_store) on the callback API.
 
     // Get reCAPTCHA token if enabled
     const recaptchaToken = await getToken('oauth_callback')
