@@ -79,9 +79,8 @@ onMounted(async () => {
 
     const authResponse = response as AuthResponse
 
-    // Success - set auth data and redirect
+    // Success - set auth data and redirect (refresh token is an HttpOnly cookie)
     authStore.setToken(authResponse.accessToken)
-    authStore.setRefreshToken(authResponse.refreshToken)
     // Map avatarUrl from backend to avatar in frontend
     authStore.setUser({
       ...authResponse.user,

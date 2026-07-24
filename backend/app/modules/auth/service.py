@@ -199,6 +199,12 @@ class AuthService:
             if not user_id:
                 raise InvalidTokenError("Invalid token payload")
 
+            # Reject if the session behind this refresh token was revoked
+            # (e.g. logout revokes the jti shared by the access+refresh pair)
+            jti = payload.get("jti")
+            if jti and self.token_blacklist_service and await self.token_blacklist_service.is_jti_blacklisted(jti):
+                raise InvalidTokenError("Session has been revoked")
+
             # Verify user exists
             user = await self.user_repository.get_user_by_id(user_id)
             if not user or not user.isActive:

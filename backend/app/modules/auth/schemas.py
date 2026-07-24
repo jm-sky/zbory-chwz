@@ -79,12 +79,6 @@ class TokenResponse(BaseModel):
     expiresIn: int  # seconds
 
 
-class TokenRefresh(BaseModel):
-    """Token refresh request schema."""
-
-    refreshToken: str
-
-
 class UserResponse(BaseModel):
     """User response schema with camelCase."""
 

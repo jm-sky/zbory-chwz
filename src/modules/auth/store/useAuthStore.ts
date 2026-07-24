@@ -2,17 +2,18 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useUserStore } from '@/modules/user/store/useUserStore'
-import { JWT_STORE_KEY } from '@/shared/config/config'
 import { setSentryUser } from '@/shared/services/sentry'
 import type { User } from '@/modules/auth/types/user.type'
 
 const TWO_FACTOR_TOKEN_KEY = 'vbr_2fa_token'
-const REFRESH_TOKEN_KEY = 'vbr_refresh_token'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  const token = ref<string | null>(localStorage.getItem(JWT_STORE_KEY))
-  const refreshToken = ref<string | null>(localStorage.getItem(REFRESH_TOKEN_KEY))
+  // In-memory only — the refresh token lives in an HttpOnly cookie the SPA
+  // never sees, and the access token is no longer persisted to localStorage
+  // (XSS hardening). Session survives reload via a silent refresh on boot,
+  // see useAuthBootstrap.
+  const token = ref<string | null>(null)
   const twoFactorToken = ref<string | null>(localStorage.getItem(TWO_FACTOR_TOKEN_KEY))
   const twoFactorMethods = ref<string[]>([]) // Available 2FA methods from login response
   const preferredTwoFactorMethod = ref<string | null>(null) // Preferred method from login response
@@ -22,11 +23,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const setToken = (newToken: string) => {
     token.value = newToken
-    if (newToken) {
-      localStorage.setItem(JWT_STORE_KEY, newToken)
-    } else {
-      localStorage.removeItem(JWT_STORE_KEY)
-    }
     // Clear 2FA token when access token is set (2FA verification completed)
     if (newToken) {
       clearTwoFactorToken()
@@ -77,23 +73,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const setRefreshToken = (newRefreshToken: string | null) => {
-    refreshToken.value = newRefreshToken
-    if (newRefreshToken) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken)
-    } else {
-      localStorage.removeItem(REFRESH_TOKEN_KEY)
-    }
-  }
-
   const clearToken = () => {
     token.value = null
-    localStorage.removeItem(JWT_STORE_KEY)
-  }
-
-  const clearRefreshToken = () => {
-    refreshToken.value = null
-    localStorage.removeItem(REFRESH_TOKEN_KEY)
   }
 
   const clearTwoFactorToken = () => {
@@ -110,7 +91,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = () => {
     clearToken()
-    clearRefreshToken()
     clearTwoFactorToken()
     clearUser()
     // Clear Sentry user context on logout
@@ -120,16 +100,13 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     token,
-    refreshToken,
     twoFactorToken,
     twoFactorMethods,
     preferredTwoFactorMethod,
     isAuthenticated,
     isTwoFactorPending,
     setToken,
-    setRefreshToken,
     clearToken,
-    clearRefreshToken,
     setTwoFactorToken,
     clearTwoFactorToken,
     setUser,

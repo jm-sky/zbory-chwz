@@ -64,9 +64,8 @@ export function useLogin(service?: IAuthService) {
         )
         // Don't set access token - user needs to complete 2FA first
       } else if ('accessToken' in response) {
-        // Normal login response - set access token and refresh token
+        // Normal login response - set access token (refresh token is an HttpOnly cookie)
         authStore.setToken(response.accessToken)
-        authStore.setRefreshToken(response.refreshToken)
         // Set user from login response (map avatarUrl to avatar)
         if (response.user) {
           authStore.setUser({

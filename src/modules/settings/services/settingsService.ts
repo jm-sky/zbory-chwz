@@ -1,5 +1,6 @@
+import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useBackend } from '@/shared/composables/useBackend'
-import { config, CORE_SETTINGS_STORAGE_KEY, JWT_STORE_KEY, LOCALE_STORAGE_KEY, SETTINGS_STORAGE_KEY, type SupportedLocale } from '@/shared/config/config'
+import { config, CORE_SETTINGS_STORAGE_KEY, LOCALE_STORAGE_KEY, SETTINGS_STORAGE_KEY, type SupportedLocale } from '@/shared/config/config'
 import { SUPPORTED_LOCALES } from '@/shared/i18n/config/i18n'
 import type { ISettingsService, Settings, UpdateSettingsData } from '../types/settings.type'
 import { settingsApiService } from './settingsApiService'
@@ -144,8 +145,8 @@ class SettingsService implements ISettingsService {
   }
 
   private get isAuthenticated(): boolean {
-    // Check if user has a token (simple check, no need to decode)
-    return !!localStorage.getItem(JWT_STORE_KEY)
+    // Check if user has an in-memory access token (simple check, no need to decode)
+    return !!useAuthStore().token
   }
 
   async getSettings(): Promise<Settings> {

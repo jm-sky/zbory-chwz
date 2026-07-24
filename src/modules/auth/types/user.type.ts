@@ -51,7 +51,6 @@ export interface ChangePasswordData {
 export interface AuthResponse {
   user: User
   accessToken: string
-  refreshToken: string
   tokenType: string
   expiresIn: number
   requiresEmailVerification: boolean
@@ -70,7 +69,6 @@ export type LoginResponse = AuthResponse | TwoFactorRequiredResponse
 
 export interface RefreshTokenResponse {
   accessToken: string
-  refreshToken: string
   tokenType: string
   expiresIn: number
 }

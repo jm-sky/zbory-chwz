@@ -6,6 +6,7 @@ import { vTooltip } from 'floating-vue'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import { i18n } from '@/i18n'
+import { bootstrapAuth } from '@/modules/auth/composables/useAuthBootstrap'
 import App from './App.vue'
 import router from './router'
 import { config } from './shared/config/config'
@@ -54,6 +55,12 @@ setHtmlLangAttribute(i18n)
 
 // Setup global error handler for chunk loading errors
 setupChunkLoadErrorHandler(i18n)
+
+// Kick off the silent session restore (from the HttpOnly refresh cookie) as
+// early as possible, in parallel with mounting. authGuard awaits the same
+// memoized promise before evaluating requiresAuth on the first navigation —
+// see useAuthBootstrap.ts for why that has to happen in the guard, not here.
+bootstrapAuth()
 
 app.mount('#app')
 

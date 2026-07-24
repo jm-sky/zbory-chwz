@@ -4,7 +4,7 @@ export interface IAuthService {
   login(credentials: LoginCredentials): Promise<LoginResponse>
   register(credentials: RegisterCredentials): Promise<RegisterResponse>
   logout(): Promise<void>
-  refreshAccessToken(refreshToken: string): Promise<RefreshTokenResponse>
+  refreshAccessToken(): Promise<RefreshTokenResponse>
   forgotPassword(data: ForgotPasswordData): Promise<MessageResponse>
   resetPassword(data: ResetPasswordData): Promise<MessageResponse>
   changePassword(data: ChangePasswordData): Promise<MessageResponse>

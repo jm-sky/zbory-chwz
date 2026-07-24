@@ -1,7 +1,7 @@
 // shared/composables/useBackend.ts
 import { computed } from 'vue'
+import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { config } from '@/shared/config/config'
-import { JWT_STORE_KEY } from '@/shared/config/config'
 
 /**
  * Composable to check if backend is enabled and if user is authenticated
@@ -25,10 +25,10 @@ export function useBackend() {
   
   /**
    * Check if user has authentication token
-   * Simple check - just verifies token exists in localStorage
+   * Simple check - just verifies the in-memory access token exists
    */
   const isAuthenticated = computed(() => {
-    return !!localStorage.getItem(JWT_STORE_KEY)
+    return !!useAuthStore().token
   })
   
   /**
@@ -46,4 +46,3 @@ export function useBackend() {
     shouldUseAPI,
   }
 }
-

@@ -273,6 +273,45 @@ class TestRefreshAccessToken:
         with pytest.raises(InvalidTokenError):
             await auth_service.refresh_access_token(refresh_token)
 
+    @pytest.mark.asyncio
+    async def test_refresh_access_token_rejects_revoked_session(self, mock_repository: AsyncMock, sample_user: User) -> None:
+        """A refresh token whose session jti was revoked (e.g. via logout)
+        must not be usable to mint a new token pair.
+
+        Regression test: refresh_access_token never consulted the JTI
+        blacklist, so revoking a session on logout didn't actually stop the
+        refresh token (which shares the same jti) from minting new tokens.
+        """
+        from app.modules.auth.auth_utils import create_refresh_token
+
+        mock_blacklist = AsyncMock()
+        mock_blacklist.is_jti_blacklisted.return_value = True
+        service = AuthService(user_repository=mock_repository, token_blacklist_service=mock_blacklist)
+
+        refresh_token = create_refresh_token(data={"sub": "user123", "email": "test@example.com", "jti": "revoked-jti"})
+        mock_repository.get_user_by_id.return_value = sample_user
+
+        with pytest.raises(InvalidTokenError, match="revoked"):
+            await service.refresh_access_token(refresh_token)
+
+        mock_blacklist.is_jti_blacklisted.assert_awaited_once_with("revoked-jti")
+
+    @pytest.mark.asyncio
+    async def test_refresh_access_token_allows_non_revoked_session(self, mock_repository: AsyncMock, sample_user: User) -> None:
+        """A refresh token whose jti is not blacklisted still refreshes normally."""
+        from app.modules.auth.auth_utils import create_refresh_token
+
+        mock_blacklist = AsyncMock()
+        mock_blacklist.is_jti_blacklisted.return_value = False
+        service = AuthService(user_repository=mock_repository, token_blacklist_service=mock_blacklist)
+
+        refresh_token = create_refresh_token(data={"sub": "user123", "email": "test@example.com", "jti": "active-jti"})
+        mock_repository.get_user_by_id.return_value = sample_user
+
+        result = await service.refresh_access_token(refresh_token)
+
+        assert "accessToken" in result
+
 
 class TestPasswordReset:
     """Tests for password reset functionality."""

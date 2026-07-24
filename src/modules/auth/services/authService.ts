@@ -31,8 +31,10 @@ class AuthService implements IAuthService {
     await apiClient.post('/auth/logout')
   }
 
-  async refreshAccessToken(refreshToken: string): Promise<RefreshTokenResponse> {
-    const response = await apiClient.post<RefreshTokenResponse>('/auth/refresh', { refreshToken })
+  async refreshAccessToken(): Promise<RefreshTokenResponse> {
+    // No body — the refresh token is sent automatically as an HttpOnly cookie
+    // (apiClient has withCredentials: true).
+    const response = await apiClient.post<RefreshTokenResponse>('/auth/refresh')
     return response.data
   }
 

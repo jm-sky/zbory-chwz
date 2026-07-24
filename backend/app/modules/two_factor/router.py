@@ -2,11 +2,12 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.core.auth.dependencies import get_token_blacklist_service
 from app.core.auth.token_blacklist import TokenBlacklistService
 from app.core.limiter import rate_limit
+from app.modules.auth.cookies import set_refresh_cookie
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.auth.repositories import get_user_repository
 from app.modules.auth.types.repository import UserRepositoryInterface
@@ -165,17 +166,23 @@ async def disable_totp(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
-@router.post("/totp/verify-login", response_model=TwoFactorVerifyResponse)
+@router.post(
+    "/totp/verify-login",
+    response_model=TwoFactorVerifyResponse,
+    response_model_exclude={"refreshToken"},
+)
 @rate_limit("5/minute")
 async def verify_totp_login(
     body: VerifyTotpLoginRequest,
     request: Request,
+    response: Response,
     service: TwoFactorService = Depends(get_service),
 ) -> TwoFactorVerifyResponse:
     """Verify TOTP code during login and return JWT tokens.
 
     This endpoint is public (no auth required) as it's part of the login flow.
-    Rate limiting is applied both globally and per-user.
+    Rate limiting is applied both globally and per-user. The refresh token is
+    never returned in the body — it's set as an HttpOnly cookie.
     """
     from .decorators import require_2fa_rate_limit
 
@@ -188,7 +195,10 @@ async def verify_totp_login(
                 code=body.code,
             )
             # Service always returns dict, convert to response model
-            return TwoFactorVerifyResponse(**result_dict)
+            verify_response = TwoFactorVerifyResponse(**result_dict)
+            if verify_response.refreshToken:
+                set_refresh_cookie(response, verify_response.refreshToken)
+            return verify_response
         except Exception as exc:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -351,16 +361,23 @@ async def initiate_passkey_authentication(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
-@router.post("/webauthn/authenticate/complete", response_model=TwoFactorVerifyResponse)
+@router.post(
+    "/webauthn/authenticate/complete",
+    response_model=TwoFactorVerifyResponse,
+    response_model_exclude={"refreshToken"},
+)
 @rate_limit("5/minute")
 async def complete_passkey_authentication(
     request: Request,
+    response: Response,
     body: CompletePasskeyAuthenticationRequest,
     service: TwoFactorService = Depends(get_service),
 ) -> TwoFactorVerifyResponse:
     """Complete passkey authentication during login and return JWT tokens.
 
-    Public endpoint (no CurrentUser), mirroring /totp/verify-login.
+    Public endpoint (no CurrentUser), mirroring /totp/verify-login. The
+    refresh token is never returned in the body — it's set as an HttpOnly
+    cookie.
     """
     _ = request  # required by slowapi rate limiting
     try:
@@ -370,7 +387,10 @@ async def complete_passkey_authentication(
             credential_json=body.credential,
             expected_user_id=payload["sub"],
         )
-        return TwoFactorVerifyResponse(**result)
+        verify_response = TwoFactorVerifyResponse(**result)
+        if verify_response.refreshToken:
+            set_refresh_cookie(response, verify_response.refreshToken)
+        return verify_response
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     except Exception as exc:

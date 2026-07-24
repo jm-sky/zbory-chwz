@@ -50,77 +50,45 @@ export async function errorResponseInterceptor(error: AxiosError) {
   ) {
     const authStore = useAuthStore()
     const refreshStore = useTokenRefreshStore()
-    const refreshToken = authStore.refreshToken
 
-    // If we have a refresh token, try to refresh the access token
-    if (refreshToken) {
-      // If already refreshing, queue this request
-      if (refreshStore.isRefreshing) {
-        return new Promise((resolve, reject) => {
-          refreshStore.addToQueue({ resolve, reject })
+    // The refresh token lives in an HttpOnly cookie the SPA can't inspect,
+    // so we can't know upfront whether a session exists — just attempt the
+    // refresh and let the backend say no.
+    // If already refreshing, queue this request
+    if (refreshStore.isRefreshing) {
+      return new Promise((resolve, reject) => {
+        refreshStore.addToQueue({ resolve, reject })
+      })
+        .then(() => {
+          // Retry with new token (auth interceptor will add the new token automatically)
+          return apiClient(originalRequest)
         })
-          .then(() => {
-            // Retry with new token (auth interceptor will add the new token automatically)
-            return apiClient(originalRequest)
-          })
-          .catch((err) => {
-            return Promise.reject(err)
-          })
-      }
+        .catch((err) => {
+          return Promise.reject(err)
+        })
+    }
 
-      // Mark that we're refreshing
-      originalRequest._retry = true
-      refreshStore.setRefreshing(true)
+    // Mark that we're refreshing
+    originalRequest._retry = true
+    refreshStore.setRefreshing(true)
 
-      try {
-        // Try to refresh the access token
-        const response = await authService.refreshAccessToken(refreshToken)
+    try {
+      // Try to refresh the access token (cookie sent automatically via withCredentials)
+      const response = await authService.refreshAccessToken()
 
-        // Update tokens in store
-        authStore.setToken(response.accessToken)
-        authStore.setRefreshToken(response.refreshToken)
+      // Update access token in store
+      authStore.setToken(response.accessToken)
 
-        // Process queued requests (they will be retried with new token via auth interceptor)
-        refreshStore.processQueue(null)
+      // Process queued requests (they will be retried with new token via auth interceptor)
+      refreshStore.processQueue(null)
 
-        // Retry the original request with new token (auth interceptor will add it)
-        return apiClient(originalRequest)
-      } catch (refreshError) {
-        // Refresh failed - clear tokens, process queue with error, and show login modal
-        refreshStore.processQueue(refreshError as Error)
-        authStore.clearToken()
-        authStore.clearRefreshToken()
-        authStore.clearUser()
-
-        // Only open login modal if not on auth page and not an auth request
-        if (!isOnAuthPage && !isAuthRequest) {
-          const loginModal = useLoginModal()
-          loginModal.open({
-            onSuccess: async () => {
-              try {
-                // After successful login, retry the original request
-                // Auth interceptor will add the new token automatically
-                originalRequest._retry = false // Reset retry flag for new attempt
-                return await apiClient(originalRequest)
-              } catch (retryError) {
-                console.error('Failed to retry request after re-authentication', retryError)
-                throw retryError
-              }
-            },
-          })
-        }
-
-        return Promise.reject(refreshError)
-      } finally {
-        refreshStore.setRefreshing(false)
-      }
-    } else {
-      // No refresh token - clear auth data, clear queue, and show login modal
+      // Retry the original request with new token (auth interceptor will add it)
+      return apiClient(originalRequest)
+    } catch (refreshError) {
+      // Refresh failed - clear tokens, process queue with error, and show login modal
+      refreshStore.processQueue(refreshError as Error)
       authStore.clearToken()
       authStore.clearUser()
-
-      // Clear the failed queue since we can't proceed without refresh token
-      refreshStore.processQueue(new Error('No refresh token available'))
 
       // Only open login modal if not on auth page and not an auth request
       if (!isOnAuthPage && !isAuthRequest) {
@@ -130,7 +98,7 @@ export async function errorResponseInterceptor(error: AxiosError) {
             try {
               // After successful login, retry the original request
               // Auth interceptor will add the new token automatically
-              originalRequest._retry = false // Reset retry flag
+              originalRequest._retry = false // Reset retry flag for new attempt
               return await apiClient(originalRequest)
             } catch (retryError) {
               console.error('Failed to retry request after re-authentication', retryError)
@@ -140,12 +108,12 @@ export async function errorResponseInterceptor(error: AxiosError) {
         })
       }
 
-      // Reject the original request
-      return Promise.reject(new Error('Authentication required'))
+      return Promise.reject(refreshError)
+    } finally {
+      refreshStore.setRefreshing(false)
     }
   }
 
   // Pass error through for local handling
   return Promise.reject(error)
 }
-

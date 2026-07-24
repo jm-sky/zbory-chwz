@@ -74,7 +74,6 @@ export interface TwoFactorVerifyResponse {
   verified: boolean
   method: 'totp' | 'webauthn'
   accessToken: string // New access token with tfaVerified=true in payload
-  refreshToken?: string
   tokenType?: string // Usually "Bearer"
   expiresIn?: number // Token expiration time in seconds
 }

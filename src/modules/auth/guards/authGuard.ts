@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { isAxiosError } from 'axios'
+import { bootstrapAuth } from '@/modules/auth/composables/useAuthBootstrap'
 import { AuthRouteNames } from '@/modules/auth/config/routes'
 import { authService } from '@/modules/auth/services/authService'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
@@ -26,6 +27,10 @@ export async function authGuard(
     next()
     return
   }
+
+  // Restore the session from the HttpOnly refresh cookie before evaluating
+  // auth requirements. Memoized — a no-op after the first navigation.
+  await bootstrapAuth()
 
   const requiresAuth = to.matched.some(r => r.meta.requiresAuth)
   const requiresGuest = to.matched.some(r => r.meta.requiresGuest)

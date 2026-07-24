@@ -17,7 +17,7 @@ To disable rate limiting (NOT recommended):
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.pii import mask_email
@@ -27,6 +27,7 @@ from app.core.database import get_db
 from app.core.email.i18n import determine_email_locale, get_translations
 
 from .auth_utils import verify_token
+from .cookies import REFRESH_COOKIE_NAME, clear_refresh_cookie, set_refresh_cookie
 from .decorators import rate_limit, recaptcha_protected
 from .dependencies import AuthServiceDep, CurrentUser, get_current_token
 from .exceptions import (
@@ -49,7 +50,6 @@ from .schemas import (
     OAuthConnectionsListResponse,
     ResendEmailVerificationRequest,
     ResetPasswordRequest,
-    TokenRefresh,
     UserLogin,
     UserRegister,
     UserResponse,
@@ -126,18 +126,21 @@ async def register(
 
 @router.post(
     "/login",
+    response_model=LoginResponseType,
+    response_model_exclude={"refreshToken"},
     summary="Login user",
     description="Authenticate user and return JWT tokens or 2FA challenge",
     tags=["Authentication"],
 )
 @rate_limit("10/minute")  # CRITICAL: Prevent brute force attacks
 @recaptcha_protected("login")  # Disabled by default, enable via RECAPTCHA_ENABLED=true
-async def login(credentials: UserLogin, auth_service: AuthServiceDep, request: Request) -> LoginResponseType:
+async def login(credentials: UserLogin, auth_service: AuthServiceDep, request: Request, response: Response) -> LoginResponseType:
     """
     Login user and return tokens or 2FA challenge.
 
     If user has 2FA enabled, returns TwoFactorRequiredResponse.
-    Otherwise, returns LoginResponse with tokens.
+    Otherwise, returns LoginResponse with tokens. The refresh token is never
+    returned in the body — it's set as an HttpOnly cookie.
 
     Security features:
     - ✅ Rate limiting: 10 requests/minute (enabled - CRITICAL)
@@ -155,6 +158,7 @@ async def login(credentials: UserLogin, auth_service: AuthServiceDep, request: R
             logger.info("Login response: TwoFactorRequiredResponse (2FA required)")
         elif hasattr(result, "accessToken"):
             logger.info("Login response: LoginResponse (normal login, no 2FA)")
+            set_refresh_cookie(response, result.refreshToken)
         else:
             logger.warning(f"Login response: Unknown type: {type(result)}")
 
@@ -171,20 +175,32 @@ async def login(credentials: UserLogin, auth_service: AuthServiceDep, request: R
     "/refresh",
     response_model=dict,
     summary="Refresh access token",
-    description="Get new access token using refresh token",
+    description="Get new access token using the HttpOnly refresh token cookie",
     tags=["Authentication"],
 )
 @rate_limit("20/minute")  # Prevent token refresh abuse
-async def refresh_token(token_data: TokenRefresh, auth_service: AuthServiceDep, request: Request) -> dict:
+async def refresh_token(auth_service: AuthServiceDep, request: Request, response: Response) -> dict:
     """
-    Refresh access token.
+    Refresh access token using the refresh token cookie.
+
+    Rotates the refresh token on every call: a fresh HttpOnly cookie is set
+    and the old session is superseded.
 
     Security features:
     - ✅ Rate limiting: 20 requests/minute (enabled)
-    - 💡 Recommendation: Consider implementing refresh token rotation
+    - ✅ Refresh token rotation (new refresh token + jti issued every call)
     """
+    refresh_token_value = request.cookies.get(REFRESH_COOKIE_NAME)
+    if not refresh_token_value:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     try:
-        return await auth_service.refresh_access_token(token_data.refreshToken)
+        result = await auth_service.refresh_access_token(refresh_token_value)
+        set_refresh_cookie(response, str(result.pop("refreshToken")))
+        return result
     except InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -204,6 +220,7 @@ async def logout(
     current_user: CurrentUser,
     token: Annotated[str, Depends(get_current_token)],
     blacklist: Annotated[TokenBlacklistService, Depends(get_token_blacklist_service)],
+    response: Response,
 ) -> MessageResponse:
     """
     Logout current user by blacklisting the access token.
@@ -211,10 +228,12 @@ async def logout(
     Security features:
     - ✅ Authentication required (JWT token via CurrentUser)
     - ✅ Token invalidation (blacklisted in Redis)
+    - ✅ Refresh token cookie cleared; the session's jti (shared by the
+      access and refresh token) is revoked, so a copy of the refresh token
+      cookie can no longer be used at /auth/refresh either.
 
     Note:
         The token is blacklisted until its natural expiration.
-        Client should also delete refresh token.
     """
     # Verify and extract payload to get expiration and JTI
     payload = verify_token(token)
@@ -233,7 +252,9 @@ async def logout(
         reason="logout",
     )
 
-    # Revoke session by JTI (removes from active sessions sorted set)
+    # Revoke session by JTI (removes from active sessions sorted set).
+    # The refresh token minted alongside this access token shares the same
+    # jti, so this also blocks that refresh token at /auth/refresh.
     jti = payload.get("jti")
     if jti:
         await blacklist.revoke_session(
@@ -242,6 +263,8 @@ async def logout(
             expires_at=expires_at,
             reason="logout",
         )
+
+    clear_refresh_cookie(response)
 
     return MessageResponse(message="Logged out successfully")
 
@@ -545,6 +568,8 @@ async def get_oauth_auth_url(request_data: OAuthAuthUrlRequest, request: Request
 
 @router.post(
     "/oauth/callback/{provider}",
+    response_model=LoginResponseType,
+    response_model_exclude={"refreshToken"},
     summary="OAuth callback handler",
     description="Handle OAuth callback and login/register user",
     tags=["Authentication", "OAuth"],
@@ -556,6 +581,7 @@ async def oauth_callback(
     callback_data: OAuthCallbackRequest,
     auth_service: AuthServiceDep,
     request: Request,
+    response: Response,
 ) -> LoginResponseType:
     """
     Handle OAuth callback and authenticate user.
@@ -592,6 +618,8 @@ async def oauth_callback(
         user_info_dict = user_info.model_dump()
         result = await auth_service.login_with_oauth(provider, user_info_dict)
         logger.info("OAuth callback: login_with_oauth completed successfully")
+        if hasattr(result, "accessToken"):
+            set_refresh_cookie(response, result.refreshToken)
         return result
 
     except Exception as e:

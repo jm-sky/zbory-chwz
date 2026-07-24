@@ -74,11 +74,8 @@ export function useVerifyPasskey(service?: ITwoFactorService) {
     },
     onSuccess: async (data) => {
       if (data.verified && data.accessToken) {
-        // Store the access token and refresh token
+        // Store the access token (refresh token is an HttpOnly cookie)
         authStore.setToken(data.accessToken)
-        if (data.refreshToken) {
-          authStore.setRefreshToken(data.refreshToken)
-        }
         // Clear 2FA token
         authStore.clearTwoFactorToken()
         // Invalidate all 2FA queries to refresh status
