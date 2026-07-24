@@ -39,6 +39,7 @@ AGENTS.local.md
 # Vitest
 __screenshots__/
 .env
-backend/backups/
+# Database backups (local dumps — .backups/ at repo root; do not use backups/)
 .backups/
+backend/backups/
 test-results/
