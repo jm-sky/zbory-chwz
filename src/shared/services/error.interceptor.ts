@@ -41,6 +41,7 @@ export async function errorResponseInterceptor(error: AxiosError) {
   const AUTH_PREFIX = `${AUTH_BASE_PATH}/`
   const isOnAuthPage = typeof window !== 'undefined' && window.location.pathname.startsWith(AUTH_PREFIX)
   const isAuthRequest = originalRequest?.url?.includes(AUTH_PREFIX) || false
+  const isRefreshRequest = originalRequest?.url?.includes('/auth/refresh') || false
 
   // Handle 401 Unauthorized errors
   if (
@@ -50,6 +51,19 @@ export async function errorResponseInterceptor(error: AxiosError) {
   ) {
     const authStore = useAuthStore()
     const refreshStore = useTokenRefreshStore()
+
+    // The refresh call itself failed (no valid session) — retrying it via
+    // another refresh call would deadlock: this call sets isRefreshing and
+    // awaits a second refresh call, which then queues behind isRefreshing
+    // instead of running, and the queue is only drained from this call's own
+    // catch block once it settles. Fail closed immediately instead.
+    if (isRefreshRequest) {
+      refreshStore.processQueue(error)
+      refreshStore.setRefreshing(false)
+      authStore.clearToken()
+      authStore.clearUser()
+      return Promise.reject(error)
+    }
 
     // The refresh token lives in an HttpOnly cookie the SPA can't inspect,
     // so we can't know upfront whether a session exists — just attempt the
