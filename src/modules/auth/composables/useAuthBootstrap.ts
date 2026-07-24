@@ -2,6 +2,7 @@
 import { authService } from '@/modules/auth/services/authService'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { config } from '@/shared/config/config'
+import { ensureCsrfToken } from '@/shared/services/csrf'
 
 /**
  * Silently restores a session on app boot from the HttpOnly refresh cookie.
@@ -21,6 +22,13 @@ let bootstrapPromise: Promise<void> | null = null
 async function performBootstrap(): Promise<void> {
   if (!config.backend.enabled) {
     return
+  }
+
+  // CSRF cookie must exist before POST /auth/refresh (double-submit).
+  try {
+    await ensureCsrfToken()
+  } catch {
+    // Proceed — refresh will fail closed if CSRF cannot be obtained.
   }
 
   const authStore = useAuthStore()

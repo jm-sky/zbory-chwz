@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.convert_empty_strings_middleware import (
     ConvertEmptyStringsToNoneMiddleware,
 )
+from app.core.csrf import CSRFMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 
 
@@ -19,6 +20,7 @@ def setup_middleware(app: FastAPI) -> None:
     - Security Headers: Always enabled (CSP, X-Frame-Options, HSTS in production, etc.)
     - CORS: Always enabled with configurable origins (CORS_ORIGINS env var)
     - Trusted Host: Enabled in production with configurable hosts (ALLOWED_HOSTS env var)
+    - CSRF: Double-submit cookie for unsafe methods (exempts Stripe webhooks)
 
     Args:
         app: FastAPI application instance
@@ -54,5 +56,6 @@ def setup_middleware(app: FastAPI) -> None:
     # Similar to Laravel's ConvertEmptyStringsToNull middleware
     app.add_middleware(ConvertEmptyStringsToNoneMiddleware)
 
-    # Add other custom middleware here
-    # Example: Request logging, rate limiting, etc.
+    # CSRF double-submit (cookie + X-CSRF-Token). Added last → outermost on request.
+    # Stripe webhooks are exempt (see WEBHOOK_PATHS). Safe methods skip validation.
+    app.add_middleware(CSRFMiddleware)
