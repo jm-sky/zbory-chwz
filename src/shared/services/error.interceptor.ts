@@ -39,9 +39,27 @@ export async function errorResponseInterceptor(error: AxiosError) {
   // Check if we're on an auth page or if the request is to an auth endpoint
   // Don't show login modal if user is already on login page
   const AUTH_PREFIX = `${AUTH_BASE_PATH}/`
+  const PUBLIC_AUTH_ENDPOINTS = [
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/refresh',
+    '/email/verify',
+    '/email/resend',
+    '/oauth/',
+  ]
   const isOnAuthPage = typeof window !== 'undefined' && window.location.pathname.startsWith(AUTH_PREFIX)
-  const isAuthRequest = originalRequest?.url?.includes(AUTH_PREFIX) || false
-  const isRefreshRequest = originalRequest?.url?.includes('/auth/refresh') || false
+  const requestUrl = originalRequest?.url ?? ''
+  const isPublicAuthRequest = PUBLIC_AUTH_ENDPOINTS.some((endpoint) => {
+    return requestUrl.includes(`${AUTH_BASE_PATH}${endpoint}`)
+  })
+
+  // For auth requests (login, register, etc.), pass the error through
+  // so the form can handle it with field-level validation errors
+  if (isPublicAuthRequest && error.response?.status === HttpStatusCode.Unauthorized) {
+    return Promise.reject(error)
+  }
 
   // Handle 401 Unauthorized errors
   if (
@@ -51,19 +69,6 @@ export async function errorResponseInterceptor(error: AxiosError) {
   ) {
     const authStore = useAuthStore()
     const refreshStore = useTokenRefreshStore()
-
-    // The refresh call itself failed (no valid session) — retrying it via
-    // another refresh call would deadlock: this call sets isRefreshing and
-    // awaits a second refresh call, which then queues behind isRefreshing
-    // instead of running, and the queue is only drained from this call's own
-    // catch block once it settles. Fail closed immediately instead.
-    if (isRefreshRequest) {
-      refreshStore.processQueue(error)
-      refreshStore.setRefreshing(false)
-      authStore.clearToken()
-      authStore.clearUser()
-      return Promise.reject(error)
-    }
 
     // The refresh token lives in an HttpOnly cookie the SPA can't inspect,
     // so we can't know upfront whether a session exists — just attempt the
@@ -105,7 +110,7 @@ export async function errorResponseInterceptor(error: AxiosError) {
       authStore.clearUser()
 
       // Only open login modal if not on auth page and not an auth request
-      if (!isOnAuthPage && !isAuthRequest) {
+      if (!isOnAuthPage && !isPublicAuthRequest) {
         const loginModal = useLoginModal()
         loginModal.open({
           onSuccess: async () => {
