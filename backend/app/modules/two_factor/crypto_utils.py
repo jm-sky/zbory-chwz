@@ -86,14 +86,19 @@ def generate_backup_codes(count: int = 10) -> tuple[list[str], list[str]]:
     return plain_codes, hashed_codes
 
 
-def verify_backup_code(code: str, hashed_codes: list[str], used_codes: list[str]) -> bool:
-    """Verify that a backup code exists and has not been used."""
+def _normalize_backup_code(code: str) -> str:
+    """Normalize a user-submitted backup code to its canonical dashed form."""
 
     normalized = code.replace(" ", "").replace("-", "").upper()
     if len(normalized) == 12:
         normalized = f"{normalized[0:4]}-{normalized[4:8]}-{normalized[8:12]}"
+    return normalized
 
-    code_hash = hashlib.sha256(normalized.encode()).hexdigest()
+
+def verify_backup_code(code: str, hashed_codes: list[str], used_codes: list[str]) -> bool:
+    """Verify that a backup code exists and has not been used."""
+
+    code_hash = hashlib.sha256(_normalize_backup_code(code).encode()).hexdigest()
     if code_hash not in hashed_codes:
         return False
     if code_hash in used_codes:
@@ -104,7 +109,7 @@ def verify_backup_code(code: str, hashed_codes: list[str], used_codes: list[str]
 def mark_backup_code_used(code: str, used_codes: list[str]) -> list[str]:
     """Append backup code hash to used list if not present."""
 
-    code_hash = hashlib.sha256(code.encode()).hexdigest()
+    code_hash = hashlib.sha256(_normalize_backup_code(code).encode()).hexdigest()
     if code_hash not in used_codes:
         used_codes.append(code_hash)
     return used_codes

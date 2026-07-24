@@ -33,6 +33,16 @@ def test_backup_codes_generation_and_verification() -> None:
     assert verify_backup_code(plain[0], hashed, used) is False
 
 
+def test_backup_code_marked_used_regardless_of_submitted_form() -> None:
+    plain, hashed = generate_backup_codes(count=1)
+    non_canonical = plain[0].replace("-", "").lower()
+
+    assert verify_backup_code(non_canonical, hashed, []) is True
+    used = mark_backup_code_used(non_canonical, [])
+    assert verify_backup_code(plain[0], hashed, used) is False
+    assert verify_backup_code(non_canonical, hashed, used) is False
+
+
 def test_totp_generation_and_verification() -> None:
     secret = generate_totp_secret()
     totp = pyotp.TOTP(secret)
