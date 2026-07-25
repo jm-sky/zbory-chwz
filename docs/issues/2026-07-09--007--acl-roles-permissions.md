@@ -41,8 +41,16 @@ Rozbicie na zadania: [acl-implementation-tasks.md](../plans/2026-07-25--acl-impl
 - **`finances.manage` — później.** Nie w tej serii; string zarezerwowany, żadna rola go nie dostaje.
   „Diakon-skarbnik” obsługuje na razie sam typ służby (`diakon_skarbnik`).
 - **ACL jedynym źródłem prawdy.** `tenant_memberships` przestaje dawać prawo zapisu; zostaje jako
-  infrastruktura tenantów. Migracja `owner`/`admin` → rola `pastor` w zasięgu `church`, plus CLI
-  `acl migrate-memberships --dry-run` do przejrzenia przed odpaleniem i shadow log po przełączeniu.
+  infrastruktura tenantów.
+- **Przejście przez seed, nie przez migrację z zabezpieczeniami.** Baza nie ma realnych aktywnych
+  użytkowników — jest konto właściciela i 29 zborów z seedera, każdy z jednym membershipem `owner`.
+  Nie ma kogo odciąć od danych, więc odpada heurystyka dla membershipów `member`, dry-run jako
+  bramka i shadow log; enforcement przełączamy w jednym kroku. Seeder nadaje rolę `pastor` przy
+  tworzeniu membershipu, plus jedna idempotentna migracja dla grantów spoza seedera.
+- **Seed biskupów** (Jawdyk → `community`, Bijak / Romanowski / Poręba → rejony) — plan ich
+  wymieniał, `seed_data.py` nigdy nie zaimplementował. Bez tego wiersze macierzy testów „biskup
+  regionalny w rejonie / poza rejonem" nie mają w devie żadnych danych. **Dolny Śląsk celowo bez
+  biskupa regionalnego** — żywy test fallbacku przez zasięg `community`.
 - **`deny` wygrywa w całym łańcuchu zasięgów** — nie da się od-blokować węższym `allow`.
   Świadome uproszczenie na rzecz przewidywalności.
 - **Fallback biskupa naczelnego nie wymaga kodu** — rola na zasięgu `community` jest przodkiem

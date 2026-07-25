@@ -296,29 +296,60 @@ Model wchodzi od razu, żeby nie przepisywać resolvera, gdy wyjątki będą pot
 
 ---
 
-## 9. Migracja `tenant_memberships` → ACL
+## 9. Przejście na ACL — seed zamiast migracji z zabezpieczeniami
 
 **Decyzja:** ACL jest jedynym źródłem prawdy o uprawnieniach. Członkostwo w tenancie przestaje
 dawać prawo zapisu i zostaje wyłącznie jako infrastruktura tenantów (lista „moje zbory", billing).
 
-Ryzyko jest realne — dziś to jedyna ścieżka dostępu pastorów do własnych zborów. Sekwencja
-minimalizująca szansę odcięcia kogoś od jego danych:
+### Stan bazy przesądza o kształcie przejścia
 
-1. **Migracja danych, idempotentna:**
-   - membership `owner` / `admin` na tenancie mającym zbór → rola `pastor` w zasięgu `church`;
-   - membership `member` → rola `pastor` **tylko** jeśli ta osoba ma w tym zborze
-     `service_assignment` o typie pasterskim (`seed_data.PASTOR_SERVICE_SLUGS`); w przeciwnym razie
-     brak nadania — dostęp czytelniczy zostaje przez widoczność;
-   - nadania migracyjne mają `source_assignment_id = NULL` (nie pochodzą ze służby, więc nie mogą
-     zniknąć przy jej usunięciu).
-2. **`python -m cli acl migrate-memberships --dry-run`** — raport „kto co dostanie / kto straci
-   dostęp" do przejrzenia przez człowieka **przed** puszczeniem migracji. Bez tego kroku migracji
-   nie odpalamy na produkcji.
-3. **Przełączenie enforcement:** `verify_tenant_access` (`tenants/access.py`) i
+Baza **nie ma realnych aktywnych użytkowników** — jest konto właściciela projektu i dane z seedera
+(`backend/app/seeders/congregations.py`, `backend/cli/commands/db.py`):
+
+| | |
+|---|---|
+| Zborów | 29 |
+| Konta | po jednym na zbór, `is_active = True`, `hashed_password = NULL` (logowanie tylko przez reset/OAuth) |
+| Membershipy | po jednym `role = "owner"` na zbór |
+| Przypisania służb na zasięgu `church` | po jednym na zbór (`service_contact`) |
+| Przypisania biskupów na `community` / `region` | **brak** |
+
+Nie ma więc kogo odciąć od danych. Odpada cała warstwa ochronna, którą wymagałaby migracja
+produkcyjna: heurystyka „member + służba pasterska", dry-run jako bramka przed odpaleniem, shadow
+log przez okres przejściowy. Przełączenie enforcement idzie **w jednym kroku**.
+
+### Sekwencja
+
+1. **Seeder nadaje role ACL.** `_seed_congregations` (`cli/commands/db.py:498`, wołany przez
+   `python -m cli db seed congregations`) przy tworzeniu membershipu `owner` nadaje od razu rolę
+   `pastor` w zasięgu `church`. Idempotentnie, jak reszta seedera (ponowne uruchomienie niczego
+   nie duplikuje).
+2. **Seed biskupów** (nowość — plan ich wymieniał, `seed_data.py` nigdy nie zaimplementował):
+   `persons` + `service_assignments` + odpowiadające role ACL. Wszystkie cztery osoby mają już
+   konta z seedera zborów, więc `person.user_id` podpina się do istniejących userów:
+
+   | Osoba | E-mail (istniejące konto) | Służba | Zasięg |
+   |---|---|---|---|
+   | Roman Jawdyk | `roman.jawdyk@chwz.org.pl` | `biskup_naczelny` | `community` (CHWZ) |
+   | Leszek Bijak | `bellux@op.pl` | `biskup_regionu` | `region` Centralny |
+   | Jacek Romanowski | `jacek.romanowski@chwz.org.pl` | `biskup_regionu` | `region` Północno-Wschodni |
+   | Andrzej Poręba | `pandre@poczta.onet.pl` | `biskup_regionu` | `region` Górny Śląsk |
+
+   **Dolny Śląsk zostaje bez biskupa regionalnego — celowo.** To żywy przypadek testowy fallbacku
+   przez zasięg `community` (§2): biskup naczelny ma tam działać bez żadnego kodu fallbacku.
+3. **Migracja idempotentna** dla grantów spoza seedera: membership `owner` / `admin` na tenancie
+   mającym zbór → rola `pastor` w zasięgu `church`, z `source_assignment_id = NULL` (nadanie nie
+   pochodzi ze służby, więc nie znika przy jej usunięciu). Bez obsługi `member` — takie wiersze
+   tworzy wyłącznie `_ensure_tenant_membership` przy zakładaniu konta ze służby i nie niosą
+   uprawnień.
+4. **Przełączenie enforcement:** `verify_tenant_access` (`tenants/access.py`) i
    `_verify_church_access` (`churches/router.py:34`) przechodzą na `PermissionService`.
-4. **Shadow log:** każde żądanie odrzucone przez ACL, które przeszłoby po staremu (membership),
-   loguje `acl.shadow_deny` z `user_id`, `church_id`, `permission`. Nie zmienia decyzji — daje ops
-   sygnał, że migracja kogoś pominęła. Do usunięcia po tygodniu czystych logów.
+
+### Efekt uboczny: macierz testów dostaje dane
+
+Bez seeda biskupów wiersze „biskup regionalny w rejonie" i „poza rejonem" (§11) nie mają w devie
+żadnych danych — trzeba by je składać ręcznie w każdym teście. Po seedzie sprawdzenie jest wprost:
+biskup Centralnego sięga do zborów Warszawy i Łodzi, nie sięga do Zabrza (`seed_data.CITY_REGION_MAP`).
 
 ---
 

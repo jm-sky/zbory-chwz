@@ -122,26 +122,37 @@ z działającym cache'em; test inwalidacji po nadaniu roli.
 
 ## Faza B — enforcement
 
-### T6 · Migracja `tenant_memberships` → ACL + CLI
+### T6 · Seed ACL (zbory + biskupi) i migracja grantów
 
-**Pliki:** `backend/migrations/079_membership_to_acl.py` (nowy),
-`backend/cli/commands/acl.py` (nowy), `backend/cli/__init__.py`
+**Pliki:** `backend/cli/commands/db.py`, `backend/app/modules/churches/seed_data.py`,
+`backend/migrations/079_membership_to_acl.py` (nowy)
 
-- Migracja wg architektury §9: `owner` / `admin` → rola `pastor` w zasięgu `church`;
-  `member` → `pastor` **tylko** przy pasterskim `service_assignment` w tym zborze
-  (`seed_data.PASTOR_SERVICE_SLUGS`). Nadania migracyjne z `source_assignment_id = NULL`.
-  Idempotentna.
-- CLI `python -m cli acl migrate-memberships [--dry-run]` — nowe `typer.Typer()` zarejestrowane
-  w `cli/__init__.py` obok `db_app` / `tenants_app` (linie 22–26). Dry-run wypisuje: kto dostanie
-  rolę, kto straci dostęp mimo członkostwa, ile zborów bez rejonu.
-- Migracja **nie** przełącza enforcement — to T7.
+Baza nie ma realnych użytkowników — tylko konto właściciela i seed (architektura §9). Dlatego
+zamiast migracji z zabezpieczeniami: seed nadający role od razu + jedna mała migracja dla reszty.
 
-**Done gdy:** dwukrotne uruchomienie nie tworzy duplikatów; dry-run nic nie zapisuje; raport
-zgadza się z tym, co robi tryb właściwy.
+- **Seeder ACL-aware:** `_seed_congregations` (`cli/commands/db.py:498`, wołany przez
+  `python -m cli db seed congregations`) przy tworzeniu membershipu `owner` nadaje rolę `pastor`
+  w zasięgu `church`. Idempotentnie, jak reszta seedera.
+- **Seed biskupów** — `persons` + `service_assignments` + role ACL wg tabeli z architektury §9.
+  Cztery osoby mają już konta z seedera zborów, więc `person.user_id` podpina się po e-mailu:
+  Jawdyk → `biskup_naczelny` na `community`; Bijak → Centralny, Romanowski → Północno-Wschodni,
+  Poręba → Górny Śląsk na `region`.
+  **Dolny Śląsk celowo bez biskupa regionalnego** — żywy test fallbacku przez zasięg `community`.
+- **Migracja 079** dla grantów spoza seedera: membership `owner` / `admin` na tenancie mającym
+  zbór → `pastor` w zasięgu `church`, `source_assignment_id = NULL`. Bez obsługi `member`.
+  Idempotentna. **Nie** przełącza enforcement — to T7.
+- CLI `python -m cli acl migrate-memberships [--dry-run]` — **opcjonalne** narzędzie diagnostyczne
+  („kto ma jakie granty"), nie warunek odpalenia migracji. Jeśli powstaje, to jako nowe
+  `typer.Typer()` zarejestrowane w `cli/__init__.py` obok `db_app` / `tenants_app` (linie 22–26).
+
+**Done gdy:** po `python -m cli db seed congregations` na czystej bazie każdy z 29 zborów ma jedno
+nadanie `pastor@church`; biskup regionalny Centralnego ma dostęp do zborów Warszawy i Łodzi i nie
+ma do Zabrza (`seed_data.CITY_REGION_MAP`); zbory Dolnego Śląska są dostępne dla biskupa naczelnego
+mimo braku biskupa regionalnego; dwukrotne uruchomienie seedera i migracji nie tworzy duplikatów.
 
 ---
 
-### T7 · Przełączenie autoryzacji na ACL + shadow log
+### T7 · Przełączenie autoryzacji na ACL
 
 **Pliki:** `backend/app/modules/tenants/access.py`, `backend/app/modules/churches/router.py`,
 `backend/app/modules/congregations/router.py`, `backend/app/modules/tenants/router.py`,
@@ -151,8 +162,8 @@ zgadza się z tym, co robi tryb właściwy.
   przez `PermissionService` zamiast sprawdzać członkostwo.
 - Wszystkie zapisy zborowe za `RequirePermission`: placówki → `branch.manage`, przypisania służb →
   wg T8, adres / godziny / profil → `church.edit`, usunięcie zboru → `church.delete`.
-- **Shadow log:** żądanie odrzucone przez ACL, które przeszłoby po staremu (membership), loguje
-  `acl.shadow_deny` z `user_id`, `church_id`, `permission`. Nie zmienia decyzji.
+- Przełączenie **w jednym kroku**, bez okresu przejściowego i bez shadow logu — po T6 wszystkie
+  konta w bazie mają nadania ACL, więc nie ma czego obserwować (architektura §9).
 - `AclService.has_pastoral_access` (`acl_service.py:39`) zastąpiony przez
   `resolve(user, "church.view_pastoral", church)`; wywołania w `tenants/router.py` i
   `congregations/router.py:65` przepięte. `AclService` znika, gdy nie zostaną wywołania.
@@ -209,11 +220,12 @@ tylko dla biskupa naczelnego/admina; po `move_region` biskup nowego rejonu ma do
 - Mapowanie z #008: `address.status` `published` / `published_unverified` → `public`;
   `draft` / `need_verification` → `hidden`. Zbory bez adresu → `hidden`.
 - **To musi wejść przed T11.** `churches.visibility` ma default `hidden` (`db_models.py:59`) —
-  przełączenie filtra publicznej listy bez backfillu wyczyści publiczny katalog zborów.
+  przełączenie filtra publicznej listy bez backfillu opróżni publiczny katalog zborów.
 - Migracja wypisuje liczby przed i po.
 
 **Done gdy:** liczba zborów `visibility = 'public'` po migracji równa się liczbie zborów zwracanych
-dziś przez `GET /congregations/detailed`.
+dziś przez `GET /congregations/detailed`. Na danych z seedera to **29** (28 × `published_unverified`
++ 1 × `published`, `app/seeders/congregations.py`) — liczba sprawdzalna wprost, nie szacunek.
 
 ---
 
