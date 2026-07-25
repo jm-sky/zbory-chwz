@@ -378,6 +378,8 @@ class ChurchRepository:
         church: ChurchDB,
     ) -> str | None:
         """Return the ACL role to grant, or None. Rejects invalid grants."""
+        if not payload.createAccount and payload.suggestedRole is None:
+            return None
         role_name = payload.suggestedRole or (service_type.suggested_role if service_type else None)
         if not role_name or role_name not in PASTORAL_ROLE_NAMES:
             return None
@@ -454,7 +456,8 @@ class ChurchRepository:
                 community_id=church.community_id,
             )
 
-            await self._resolve_grant_role(payload, service_type, actor, permission_service, church)
+            if payload.createAccount or payload.suggestedRole is not None:
+                await self._resolve_grant_role(payload, service_type, actor, permission_service, church)
 
         person = await self._resolve_person(payload)
 
