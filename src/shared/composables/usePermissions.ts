@@ -1,7 +1,24 @@
+import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useUserStore } from '@/modules/user/store/useUserStore'
+import { apiClient } from '@/shared/services/apiClient'
 import type { User } from '@/modules/auth/types/user.type'
+
+type PermissionScope = {
+  scopeType: string
+  scopeId: string
+  permissions: string[]
+}
+
+type MePermissionsResponse = {
+  isAdmin: boolean
+  isOwner: boolean
+  scopes: PermissionScope[]
+}
+
+const PERMISSIONS_QUERY_KEY = ['me', 'permissions'] as const
+const PERMISSIONS_STALE_MS = 5 * 60 * 1000
 
 /**
  * Composable for centralized permission logic.
@@ -10,6 +27,16 @@ import type { User } from '@/modules/auth/types/user.type'
 export function usePermissions() {
   const authStore = useAuthStore()
   const userStore = useUserStore()
+
+  const { data: serverPermissions } = useQuery({
+    queryKey: PERMISSIONS_QUERY_KEY,
+    queryFn: async (): Promise<MePermissionsResponse> => {
+      const { data } = await apiClient.get<MePermissionsResponse>('/churches/me/permissions')
+      return data
+    },
+    enabled: computed(() => authStore.isAuthenticated),
+    staleTime: PERMISSIONS_STALE_MS,
+  })
 
   /**
    * Get current user from authStore or userStore
@@ -82,6 +109,24 @@ export function usePermissions() {
     return 'User'
   })
 
+  const can = (permission: string, churchId?: string): boolean => {
+    if (isAdmin.value || isOwner.value) {
+      return true
+    }
+    const payload = serverPermissions.value
+    if (!payload) {
+      return false
+    }
+    if (!churchId) {
+      return payload.scopes.some(scope => scope.permissions.includes(permission))
+    }
+    return payload.scopes.some(
+      scope => scope.scopeType === 'church'
+        && scope.scopeId === churchId
+        && scope.permissions.includes(permission),
+    )
+  }
+
   return {
     user,
     isAdmin,
@@ -91,5 +136,6 @@ export function usePermissions() {
     canUsePremiumFeatures,
     isAuthenticated,
     userRole,
+    can,
   }
 }

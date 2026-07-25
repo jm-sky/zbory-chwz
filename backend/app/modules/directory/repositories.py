@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.common.id_utils import generate_id
 from app.core.database import get_db
 from app.modules.auth.models import User
-from app.modules.churches.acl_models import UserRoleAssignmentDB
+from app.modules.churches.permission_service import PermissionService
 from app.modules.churches.db_models import (
     ChurchDB,
     PersonDB,
@@ -38,41 +38,24 @@ class DirectoryRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_allowed_church_ids(self, user: User) -> set[str] | None:
-        """Church ids the user may access contacts from.
+    async def get_allowed_church_ids(
+        self,
+        user: User,
+        permission: str = "church.view",
+        *,
+        permission_service: PermissionService | None = None,
+    ) -> set[str] | None:
+        """Church ids the user may access for a given permission.
 
-        ``None`` means unrestricted (admin/owner). An empty set means the
-        user holds no ACL role at all and must be denied access.
+        ``None`` means unrestricted (admin/owner).
         """
+        if permission_service is not None:
+            return await permission_service.allowed_church_ids(user, permission)
+
         if user.isAdmin or user.isOwner:
             return None
 
-        result = await self.db.execute(select(UserRoleAssignmentDB.scope_type, UserRoleAssignmentDB.scope_id).where(UserRoleAssignmentDB.user_id == user.id))
-        rows = result.all()
-        if not rows:
-            return set()
-
-        church_ids: set[str] = set()
-        region_ids: set[str] = set()
-        community_ids: set[str] = set()
-        for scope_type, scope_id in rows:
-            if scope_type == "church":
-                church_ids.add(scope_id)
-            elif scope_type == "region":
-                region_ids.add(scope_id)
-            elif scope_type == "community":
-                community_ids.add(scope_id)
-
-        if region_ids or community_ids:
-            conditions = []
-            if region_ids:
-                conditions.append(ChurchDB.region_id.in_(region_ids))
-            if community_ids:
-                conditions.append(ChurchDB.community_id.in_(community_ids))
-            wider = await self.db.execute(select(ChurchDB.id).where(or_(*conditions)))
-            church_ids.update(row[0] for row in wider.all())
-
-        return church_ids
+        return set()
 
     async def list_available_regions(self, allowed_church_ids: set[str] | None) -> list[RegionDB]:
         stmt = select(RegionDB)

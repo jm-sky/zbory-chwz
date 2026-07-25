@@ -12,7 +12,7 @@ from app.modules.sharing.schemas import (
     ShareLinkResponse,
 )
 from app.modules.sharing.service import ShareLinkService, get_share_link_service
-from app.modules.tenants.access import verify_tenant_access
+from app.modules.tenants.access import TenantAccessChecker, get_tenant_access_checker
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 
 router = APIRouter(prefix="/congregations", tags=["Sharing"])
@@ -32,10 +32,11 @@ async def create_share_link(
     payload: ShareLinkCreateRequest,
     current_user: CurrentUser,
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
     service: Annotated[ShareLinkService, Depends(get_share_link_service)],
 ) -> ShareLinkResponse:
     """Create an anonymous, time-limited share link for a congregation."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     share_link = await service.create_share_link(
         tenant_id=tenant_id,
@@ -52,10 +53,11 @@ async def list_share_links(
     tenant_id: str,
     current_user: CurrentUser,
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
     service: Annotated[ShareLinkService, Depends(get_share_link_service)],
 ) -> ShareLinkListResponse:
     """List active (non-revoked) share links for a congregation."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     links = await service.repository.list_active_for_tenant(tenant_id)
     return ShareLinkListResponse(
@@ -69,10 +71,11 @@ async def revoke_share_link(
     link_id: str,
     current_user: CurrentUser,
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
     service: Annotated[ShareLinkService, Depends(get_share_link_service)],
 ) -> None:
     """Revoke a share link, taking effect immediately."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     share_link = await service.repository.get_by_id(link_id, tenant_id)
     if share_link is None:

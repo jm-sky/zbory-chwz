@@ -27,6 +27,7 @@ import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import PersonLinkedBadge from '@/shared/components/PersonLinkedBadge.vue'
 import PersonSuggestionsList from '@/shared/components/PersonSuggestionsList.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
+import { usePermissions } from '@/shared/composables/usePermissions'
 import { usePersonAutocomplete } from '@/shared/composables/usePersonAutocomplete'
 import { formatPhoneNumber } from '@/shared/utils/formatPhone'
 import type { IServiceAssignment, IServiceType } from '../types/church.types'
@@ -54,6 +55,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+const { can } = usePermissions()
 const { handleError } = useHandleError()
 const queryClient = useQueryClient()
 
@@ -112,7 +114,7 @@ const isPastorType = computed(() =>
 const showAccountRoleSelect = computed(() => createAccount.value)
 
 const canGrantElevatedRoles = computed<boolean>(
-  () => !!(authStore.user?.isAdmin || authStore.user?.isOwner),
+  () => !!(authStore.user?.isAdmin || authStore.user?.isOwner || can('services.manage', churchId)),
 )
 
 const roleOptions = computed<Array<'none' | ChurchAclRole>>(() => {

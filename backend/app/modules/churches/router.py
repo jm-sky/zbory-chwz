@@ -6,14 +6,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.modules.auth.decorators import rate_limit
 from app.modules.auth.dependencies import CurrentUser
-from app.modules.churches.acl_service import AclService, get_acl_service
+from app.modules.churches.acl_seed import Permission
 from app.modules.churches.db_models import ServiceAssignmentDB
+from app.modules.churches.permission_service import PermissionService, get_permission_service
+from app.modules.churches.provisioning import provision_church_for_tenant
 from app.modules.churches.repositories import ChurchRepository, get_church_repository
 from app.modules.churches.schemas import (
     BranchCreateRequest,
     BranchResponse,
     BranchUpdateRequest,
+    ChurchCreateRequest,
+    ChurchCreateResponse,
+    ChurchMoveRegionRequest,
     ChurchResponse,
+    ChurchVisibilityUpdateRequest,
+    MePermissionsResponse,
     PersonResponse,
     PersonSearchResponse,
     RegionResponse,
@@ -31,22 +38,27 @@ from app.modules.tenants.repositories import TenantRepository, get_tenant_reposi
 router = APIRouter(prefix="/churches", tags=["Churches"])
 
 
-async def _verify_church_access(
+async def _require_church(
     church_id: str,
+    permission: str,
     current_user: CurrentUser,
     church_repo: ChurchRepository,
-    tenant_repo: TenantRepository,
+    permission_service: PermissionService,
 ) -> None:
-    await church_repo.ensure_church_access(church_id)
+    church = await church_repo.get_church_by_id(church_id)
+    if not church:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Church not found")
+    if not await permission_service.resolve(current_user, permission, ("church", church_id)):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
-    if current_user.isAdmin or current_user.isOwner:
-        return
 
-    memberships = await tenant_repo.list_for_user(current_user.id)
-    if any(m.tenant_id == church_id for _, m in memberships):
-        return
-
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+@router.get("/me/permissions", response_model=MePermissionsResponse)
+async def get_my_permissions(
+    current_user: CurrentUser,
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
+) -> MePermissionsResponse:
+    payload = await permission_service.permissions_for_user(current_user)
+    return MePermissionsResponse.model_validate(payload)
 
 
 @router.get("/service-types", response_model=list[ServiceTypeResponse])
@@ -76,25 +88,62 @@ async def search_persons(
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
     directory_repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
-    acl_service: Annotated[AclService, Depends(get_acl_service)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
     q: str = Query(min_length=1),
 ) -> PersonSearchResponse:
-    """Search persons, scoped to churches the caller has ACL access to.
+    if not await permission_service.has_anywhere(current_user, Permission.SERVICES_MANAGE):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
-    Admins/owners get an unrestricted search (allowed_church_ids=None).
-    Everyone else must additionally hold `services.manage` in some scope —
-    this is a database of names/emails/phones across churches, not something
-    any ACL role (e.g. plain pastoral access) should unlock. Holders of the
-    permission are then limited to their church/region/community scope, same
-    as /people-directory/persons.
-    """
-    if not (current_user.isAdmin or current_user.isOwner):
-        if not await acl_service.has_permission(current_user.id, "services.manage"):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
-    allowed_church_ids = await directory_repo.get_allowed_church_ids(current_user)
+    allowed_church_ids = await directory_repo.get_allowed_church_ids(
+        current_user,
+        Permission.SERVICES_MANAGE,
+        permission_service=permission_service,
+    )
     persons = await repo.search_persons(q, allowed_church_ids)
     return PersonSearchResponse(persons=[PersonResponse.model_validate(p) for p in persons])
+
+
+@router.post("", response_model=ChurchCreateResponse, status_code=status.HTTP_201_CREATED)
+async def create_church(
+    payload: ChurchCreateRequest,
+    current_user: CurrentUser,
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
+    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
+) -> ChurchCreateResponse:
+    if not await permission_service.has_anywhere(current_user, Permission.CHURCH_CREATE):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    region_id, warning = await church_repo.resolve_create_region(
+        current_user,
+        permission_service,
+        payload.regionId,
+    )
+
+    tenant, _membership = await tenant_repo.create_tenant(
+        name=payload.name,
+        description=payload.description,
+        owner_user_id=current_user.id,
+    )
+    church = await provision_church_for_tenant(church_repo.db, tenant)
+    if region_id:
+        church.region_id = region_id
+
+    from app.modules.churches.bishop_seed import ensure_pastor_acl_for_owner
+
+    await ensure_pastor_acl_for_owner(
+        church_repo.db,
+        user_id=current_user.id,
+        church_id=church.id,
+    )
+    await church_repo.db.commit()
+
+    return ChurchCreateResponse(
+        id=church.id,
+        name=church.name,
+        regionId=church.region_id,
+        warning=warning,
+    )
 
 
 @router.get("/{church_id}", response_model=ChurchResponse)
@@ -102,10 +151,40 @@ async def get_church(
     church_id: str,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> ChurchResponse:
-    await _verify_church_access(church_id, current_user, repo, tenant_repo)
+    await _require_church(church_id, Permission.CHURCH_VIEW, current_user, repo, permission_service)
     church = await repo.ensure_church_access(church_id)
+    return ChurchResponse.model_validate(church)
+
+
+@router.patch("/{church_id}/visibility", response_model=ChurchResponse)
+async def update_church_visibility(
+    church_id: str,
+    payload: ChurchVisibilityUpdateRequest,
+    current_user: CurrentUser,
+    repo: Annotated[ChurchRepository, Depends(get_church_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
+) -> ChurchResponse:
+    await _require_church(church_id, Permission.CHURCH_PUBLISH, current_user, repo, permission_service)
+    church = await repo.update_visibility(church_id, payload.visibility)
+    if not church:
+        raise HTTPException(status_code=404, detail="Church not found")
+    return ChurchResponse.model_validate(church)
+
+
+@router.patch("/{church_id}/region", response_model=ChurchResponse)
+async def move_church_region(
+    church_id: str,
+    payload: ChurchMoveRegionRequest,
+    current_user: CurrentUser,
+    repo: Annotated[ChurchRepository, Depends(get_church_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
+) -> ChurchResponse:
+    await _require_church(church_id, Permission.CHURCH_MOVE_REGION, current_user, repo, permission_service)
+    church = await repo.move_region(church_id, payload.regionId, permission_service.cache)
+    if not church:
+        raise HTTPException(status_code=404, detail="Church not found")
     return ChurchResponse.model_validate(church)
 
 
@@ -114,9 +193,9 @@ async def list_branches(
     church_id: str,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> list[BranchResponse]:
-    await _verify_church_access(church_id, current_user, repo, tenant_repo)
+    await _require_church(church_id, Permission.CHURCH_VIEW, current_user, repo, permission_service)
     branches = await repo.list_branches(church_id)
     return [BranchResponse.model_validate(b) for b in branches]
 
@@ -131,9 +210,9 @@ async def create_branch(
     payload: BranchCreateRequest,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> BranchResponse:
-    await _verify_church_access(church_id, current_user, repo, tenant_repo)
+    await _require_church(church_id, Permission.BRANCH_MANAGE, current_user, repo, permission_service)
     branch = await repo.create_branch(church_id, payload)
     return BranchResponse.model_validate(branch)
 
@@ -145,9 +224,9 @@ async def update_branch(
     payload: BranchUpdateRequest,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> BranchResponse:
-    await _verify_church_access(church_id, current_user, repo, tenant_repo)
+    await _require_church(church_id, Permission.BRANCH_MANAGE, current_user, repo, permission_service)
     branch = await repo.update_branch(church_id, branch_id, payload)
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
@@ -160,9 +239,9 @@ async def delete_branch(
     branch_id: str,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> None:
-    await _verify_church_access(church_id, current_user, repo, tenant_repo)
+    await _require_church(church_id, Permission.BRANCH_MANAGE, current_user, repo, permission_service)
     if not await repo.delete_branch(church_id, branch_id):
         raise HTTPException(status_code=404, detail="Branch not found")
 
@@ -179,9 +258,9 @@ async def list_service_assignments(
     church_id: str,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> list[ServiceAssignmentResponse]:
-    await _verify_church_access(church_id, current_user, repo, tenant_repo)
+    await _require_church(church_id, Permission.CHURCH_VIEW, current_user, repo, permission_service)
     assignments = await repo.list_service_assignments("church", church_id)
     return [_assignment_response(a) for a in assignments]
 
@@ -196,14 +275,15 @@ async def create_service_assignment(
     payload: ServiceAssignmentCreateRequest,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> ServiceAssignmentResponse:
-    await _verify_church_access(church_id, current_user, repo, tenant_repo)
+    await _require_church(church_id, Permission.PEOPLE_MANAGE, current_user, repo, permission_service)
     assignment = await repo.create_service_assignment(
         "church",
         church_id,
         payload,
-        can_grant_elevated_roles=current_user.isAdmin or current_user.isOwner,
+        actor=current_user,
+        permission_service=permission_service,
     )
     return _assignment_response(assignment)
 
@@ -218,10 +298,17 @@ async def update_service_assignment(
     payload: ServiceAssignmentUpdateRequest,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> ServiceAssignmentResponse:
-    await _verify_church_access(church_id, current_user, repo, tenant_repo)
-    assignment = await repo.update_service_assignment("church", church_id, assignment_id, payload)
+    await _require_church(church_id, Permission.PEOPLE_MANAGE, current_user, repo, permission_service)
+    assignment = await repo.update_service_assignment(
+        "church",
+        church_id,
+        assignment_id,
+        payload,
+        actor=current_user,
+        permission_service=permission_service,
+    )
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
     return _assignment_response(assignment)
@@ -236,8 +323,8 @@ async def delete_service_assignment(
     assignment_id: str,
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> None:
-    await _verify_church_access(church_id, current_user, repo, tenant_repo)
+    await _require_church(church_id, Permission.PEOPLE_MANAGE, current_user, repo, permission_service)
     if not await repo.delete_service_assignment("church", church_id, assignment_id):
         raise HTTPException(status_code=404, detail="Assignment not found")
