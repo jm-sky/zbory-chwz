@@ -15,6 +15,7 @@ from sqlalchemy import delete, select
 
 from app.common.id_utils import generate_id
 from app.core.database import AsyncSessionLocal
+from app.modules.auth.db_models import UserDB  # noqa: F401 — register users for FK resolution
 from app.modules.churches.acl_models import RoleDB, UserRoleAssignmentDB
 from app.modules.churches.db_models import ChurchDB
 from app.modules.tenants.db_models import TenantMembershipDB
