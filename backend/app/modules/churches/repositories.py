@@ -16,7 +16,10 @@ from app.common.id_utils import generate_id
 from app.core.database import get_db
 from app.modules.auth.auth_utils import get_password_hash
 from app.modules.auth.db_models import UserDB
-from app.modules.churches.acl_models import UserRoleAssignmentDB
+from app.modules.auth.models import User
+from app.modules.churches.acl_seed import Permission
+from app.modules.churches.acl_grant_rules import assert_can_assign_service_type, assert_can_grant_role
+from app.modules.churches.acl_models import UserPermissionDB, UserRoleAssignmentDB
 from app.modules.churches.acl_seed import (
     ELEVATED_ROLE_NAMES,
     PASTORAL_ROLE_NAMES,
@@ -35,6 +38,7 @@ from app.modules.churches.person_search import (
     SEARCH_CANDIDATE_CAP,
     person_matches_query,
 )
+from app.modules.churches.permission_service import PermissionService
 from app.modules.churches.schemas import (
     BranchCreateRequest,
     BranchUpdateRequest,
@@ -275,7 +279,8 @@ class ChurchRepository:
         payload: ServiceAssignmentCreateRequest,
         service_type: ServiceTypeDB | None,
         church: ChurchDB,
-        can_grant_elevated_roles: bool,
+        actor: User | None,
+        permission_service: PermissionService | None,
     ) -> None:
         if person.user_id:
             return
@@ -310,7 +315,19 @@ class ChurchRepository:
         person.user_id = user_db.id
         await self._ensure_tenant_membership(church.tenant_id, user_db.id)
 
-        role_name = self._resolve_grant_role(payload, service_type, can_grant_elevated_roles)
+        role_name = None
+        if actor and permission_service:
+            role_name = await self._resolve_grant_role(
+                payload,
+                service_type,
+                actor,
+                permission_service,
+                church,
+            )
+        elif payload.suggestedRole or (service_type.suggested_role if service_type else None):
+            role_name = payload.suggestedRole or (service_type.suggested_role if service_type else None)
+            if role_name and role_name not in PASTORAL_ROLE_NAMES:
+                role_name = None
         if not role_name:
             return
 
@@ -352,21 +369,40 @@ class ChurchRepository:
         )
         await self.db.flush()
 
-    @staticmethod
-    def _resolve_grant_role(
+    async def _resolve_grant_role(
+        self,
         payload: ServiceAssignmentCreateRequest,
         service_type: ServiceTypeDB | None,
-        can_grant_elevated_roles: bool,
+        actor: User,
+        permission_service: PermissionService,
+        church: ChurchDB,
     ) -> str | None:
-        """Return the ACL role to grant, or None. Rejects elevated grants."""
+        """Return the ACL role to grant, or None. Rejects invalid grants."""
+        if not payload.createAccount and payload.suggestedRole is None:
+            return None
         role_name = payload.suggestedRole or (service_type.suggested_role if service_type else None)
         if not role_name or role_name not in PASTORAL_ROLE_NAMES:
             return None
-        if role_name in ELEVATED_ROLE_NAMES and not can_grant_elevated_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Only admins may grant the '{role_name}' role",
-            )
+
+        grant_scope = resolve_acl_scope(
+            role_name,
+            church_id=church.id,
+            community_id=church.community_id,
+            region_id=church.region_id,
+        )
+        if not grant_scope:
+            if role_name in ELEVATED_ROLE_NAMES:
+                grant_scope = ("community", church.community_id)
+            else:
+                grant_scope = ("church", church.id)
+
+        await assert_can_grant_role(
+            permission_service,
+            actor,
+            role_name,
+            grant_scope,
+            community_id=church.community_id,
+        )
         return role_name
 
     async def _ensure_tenant_membership(self, tenant_id: str, user_id: str) -> None:
@@ -394,7 +430,8 @@ class ChurchRepository:
         scope_id: str,
         payload: ServiceAssignmentCreateRequest,
         *,
-        can_grant_elevated_roles: bool = False,
+        actor: User | None = None,
+        permission_service: PermissionService | None = None,
     ) -> ServiceAssignmentDB:
         if not payload.serviceTypeId and not payload.customServiceName:
             raise HTTPException(
@@ -408,10 +445,19 @@ class ChurchRepository:
             if not service_type:
                 raise HTTPException(status_code=404, detail="Service type not found")
 
-        # Reject an elevated role grant before anything is written.
-        self._resolve_grant_role(payload, service_type, can_grant_elevated_roles)
-
         church = await self.ensure_church_access(scope_id)
+
+        if actor and permission_service:
+            await assert_can_assign_service_type(
+                permission_service,
+                actor,
+                ("church", church.id),
+                service_type,
+                community_id=church.community_id,
+            )
+
+            if payload.createAccount or payload.suggestedRole is not None:
+                await self._resolve_grant_role(payload, service_type, actor, permission_service, church)
 
         person = await self._resolve_person(payload)
 
@@ -442,7 +488,8 @@ class ChurchRepository:
             payload,
             service_type,
             church,
-            can_grant_elevated_roles,
+            actor,
+            permission_service,
         )
         await self.db.commit()
         await self.db.refresh(assignment)
@@ -462,6 +509,9 @@ class ChurchRepository:
         scope_id: str,
         assignment_id: str,
         payload: ServiceAssignmentUpdateRequest,
+        *,
+        actor: User | None = None,
+        permission_service: PermissionService | None = None,
     ) -> ServiceAssignmentDB | None:
         result = await self.db.execute(
             select(ServiceAssignmentDB)
@@ -475,6 +525,20 @@ class ChurchRepository:
         assignment = result.scalar_one_or_none()
         if not assignment:
             return None
+
+        church = await self.ensure_church_access(scope_id)
+        if actor and permission_service and payload.serviceTypeId is not None:
+            old_type = await self.get_service_type(assignment.service_type_id) if assignment.service_type_id else None
+            new_type = await self.get_service_type(payload.serviceTypeId)
+            for service_type in (old_type, new_type):
+                if service_type:
+                    await assert_can_assign_service_type(
+                        permission_service,
+                        actor,
+                        ("church", church.id),
+                        service_type,
+                        community_id=church.community_id,
+                    )
 
         if payload.serviceTypeId is not None:
             assignment.service_type_id = payload.serviceTypeId
@@ -527,6 +591,7 @@ class ChurchRepository:
         assignment = result.scalar_one_or_none()
         if not assignment:
             return False
+        await self.db.execute(delete(UserPermissionDB).where(UserPermissionDB.source_assignment_id == assignment_id))
         await self.db.execute(delete(UserRoleAssignmentDB).where(UserRoleAssignmentDB.source_assignment_id == assignment_id))
         await self.db.delete(assignment)
         await self.db.commit()
@@ -537,6 +602,68 @@ class ChurchRepository:
         if not church:
             raise HTTPException(status_code=404, detail="Church not found")
         return church
+
+    async def update_visibility(self, church_id: str, visibility: str) -> ChurchDB | None:
+        church = await self.get_church_by_id(church_id)
+        if not church:
+            return None
+        church.visibility = visibility
+        await self.db.commit()
+        await self.db.refresh(church)
+        return church
+
+    async def move_region(
+        self,
+        church_id: str,
+        region_id: str,
+        cache: "PermissionCache | None",
+    ) -> ChurchDB | None:
+        from app.modules.churches.permission_cache import PermissionCache
+
+        church = await self.get_church_by_id(church_id)
+        if not church:
+            return None
+        region = await self.db.get(RegionDB, region_id)
+        if not region:
+            raise HTTPException(status_code=404, detail="Region not found")
+        church.region_id = region_id
+        await self.db.commit()
+        await self.db.refresh(church)
+        if cache:
+            await cache.bump_epoch()
+        return church
+
+    async def resolve_create_region(
+        self,
+        actor: User,
+        permission_service: PermissionService,
+        requested_region_id: str | None,
+    ) -> tuple[str | None, str | None]:
+        warning: str | None = None
+        if actor.isAdmin or actor.isOwner:
+            return requested_region_id, ("Church created without region — assign a region for regional bishop access" if not requested_region_id else None)
+
+        allowed_regions = await permission_service.allowed_church_ids(actor, Permission.CHURCH_CREATE.value)
+        _ = allowed_regions
+
+        regions = await self.list_regions()
+        for region in regions:
+            if await permission_service.resolve(
+                actor,
+                Permission.CHURCH_CREATE,
+                ("region", region.id),
+            ):
+                if requested_region_id and requested_region_id != region.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Regional bishops may only create churches in their own region",
+                    )
+                return region.id, None
+
+        if await permission_service.has_anywhere(actor, Permission.CHURCH_CREATE):
+            return requested_region_id, warning
+
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     async def list_public_card_assignments(self, church_id: str) -> list[ServiceAssignmentDB]:
         result = await self.db.execute(

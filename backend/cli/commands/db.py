@@ -652,6 +652,19 @@ async def _seed_congregations(db: "AsyncSession") -> None:
             )
             console.print(f"[cyan]    Created service contact: {service_contact.get('name')} " f"({service_contact.get('title')})[/cyan]")
 
+        from app.modules.churches.bishop_seed import ensure_pastor_acl_for_owner
+
+        await ensure_pastor_acl_for_owner(
+            db,
+            user_id=owner.id,
+            church_id=tenant_id,
+        )
+
+    from app.modules.churches.bishop_seed import seed_bishops
+
+    bishops = await seed_bishops(db)
+    console.print(f"[cyan]  Bishop seed: {bishops} new service assignment(s)[/cyan]")
+
     await db.commit()
     console.print(f"[bold green]✓ Created {created_count}, updated {updated_count} congregations[/bold green]")
 

@@ -30,13 +30,15 @@ from app.modules.congregations.schemas import (
     ChangeLogFieldChange,
     ChangeLogResponse,
     CongregationFullResponse,
+    CongregationUpdateRequest,
+    CongregationUpdateResponse,
     GeocodeRequest,
     GeocodeResponse,
     ServiceTimeCreateRequest,
     ServiceTimeResponse,
     ServiceTimeUpdateRequest,
 )
-from app.modules.tenants.access import verify_tenant_access
+from app.modules.tenants.access import TenantAccessChecker, get_tenant_access_checker
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 
 router = APIRouter(prefix="/congregations", tags=["Congregations"])
@@ -45,7 +47,7 @@ router = APIRouter(prefix="/congregations", tags=["Congregations"])
 async def _verify_change_log_access(
     tenant_id: str,
     current_user: User,
-    tenant_repo: TenantRepository,
+    access: TenantAccessChecker,
     acl_service: AclService,
 ) -> None:
     """Admins, tenant members (the classic access route pastors already use
@@ -53,14 +55,13 @@ async def _verify_change_log_access(
     to this church (covers regional/national bishops with no direct tenant
     membership) can see the change history. Everyone else gets 403."""
     try:
-        await verify_tenant_access(tenant_id, current_user, tenant_repo)
+        await access.verify(tenant_id, current_user)
         return
     except HTTPException as exc:
         if exc.status_code != status.HTTP_403_FORBIDDEN:
             raise
 
-    # ChurchDB.id == tenant_id by construction (see churches/provisioning.py).
-    if await acl_service.has_pastoral_access(current_user.id, tenant_id):
+    if await acl_service.has_pastoral_access(current_user, tenant_id):
         return
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
@@ -124,6 +125,54 @@ async def _log_address_changes(
     )
 
 
+@router.patch(
+    "/{tenant_id}",
+    response_model=CongregationUpdateResponse,
+    summary="Update congregation basic info",
+    description="Update name/description/status; open to tenant members (not just admins).",
+)
+async def update_congregation(
+    tenant_id: str,
+    payload: CongregationUpdateRequest,
+    current_user: CurrentUser,
+    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
+) -> CongregationUpdateResponse:
+    """Update congregation (any tenant member or admin/owner)."""
+    await access.verify(tenant_id, current_user)
+
+    tenant = await tenant_repo.get_tenant(tenant_id)
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tenant {tenant_id} not found",
+        )
+
+    if payload.name is not None:
+        tenant.name = payload.name
+    if payload.description is not None:
+        tenant.description = payload.description
+    if payload.status is not None:
+        tenant.status = payload.status
+
+    await tenant_repo.db.commit()
+    await tenant_repo.db.refresh(tenant)
+
+    role: str | None = None
+    if not (current_user.isAdmin or current_user.isOwner):
+        memberships = await tenant_repo.list_for_user(current_user.id)
+        role = next((membership.role for membership_tenant, membership in memberships if membership_tenant.id == tenant_id), None)
+
+    return CongregationUpdateResponse(
+        id=tenant.id,
+        name=tenant.name,
+        description=tenant.description,
+        status=tenant.status,
+        role=role,
+        createdAt=tenant.created_at,
+    )
+
+
 # Address endpoints
 @router.get("/{tenant_id}/address", response_model=AddressResponse)
 async def get_address(
@@ -131,9 +180,10 @@ async def get_address(
     current_user: CurrentUser,
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> AddressResponse:
     """Get address for a congregation."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     address = await repo.get_address_by_tenant_id(tenant_id)
     if not address:
@@ -175,9 +225,10 @@ async def create_address(
     current_user: CurrentUser,
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> AddressResponse:
     """Create or update address for a congregation."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     before = _address_snapshot(await repo.get_address_by_tenant_id(tenant_id))
 
@@ -227,9 +278,10 @@ async def update_address(
     current_user: CurrentUser,
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> AddressResponse:
     """Update address for a congregation."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     address = await repo.get_address_by_tenant_id(tenant_id)
     if not address:
@@ -310,6 +362,7 @@ async def geocode_congregation_address(
     current_user: CurrentUser,
     request: Request,
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> GeocodeResponse:
     """Preview coordinates for an address without saving them.
 
@@ -317,7 +370,7 @@ async def geocode_congregation_address(
     POST/PATCH .../address call (with the resulting latitude/longitude in the
     payload), so nothing is persisted just from looking up a suggestion.
     """
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     result = await geocode_address(
         street=payload.street,
@@ -343,9 +396,10 @@ async def delete_address(
     current_user: CurrentUser,
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> None:
     """Delete address for a congregation."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     await repo.delete_address(tenant_id)
 
@@ -357,9 +411,10 @@ async def get_service_times(
     current_user: CurrentUser,
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> list[ServiceTimeResponse]:
     """Get all service times for a congregation."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     service_times = await repo.get_service_times_by_tenant_id(tenant_id)
     return [
@@ -387,9 +442,10 @@ async def create_service_time(
     current_user: CurrentUser,
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> ServiceTimeResponse:
     """Create a service time for a congregation."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     service_time = await repo.create_service_time(
         tenant_id=tenant_id,
@@ -418,11 +474,12 @@ async def update_service_time(
     current_user: CurrentUser,
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> ServiceTimeResponse:
     """Update a service time. Fields omitted from the request body are left
     unchanged; a field explicitly included (even as null, for `description`)
     is applied as given."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     service_time = await repo.get_service_time_by_id(tenant_id, service_time_id)
     if not service_time:
@@ -467,9 +524,10 @@ async def delete_service_time(
     current_user: CurrentUser,
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> None:
     """Delete a service time."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     if not await repo.delete_service_time(tenant_id, service_time_id):
         raise HTTPException(
@@ -485,9 +543,10 @@ async def get_full_congregation(
     current_user: CurrentUser,
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
 ) -> CongregationFullResponse:
     """Get full congregation data including address and service times."""
-    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+    await access.verify(tenant_id, current_user)
 
     address = await repo.get_address_by_tenant_id(tenant_id)
     service_times = await repo.get_service_times_by_tenant_id(tenant_id)
@@ -548,7 +607,7 @@ async def get_change_log(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
 ) -> ChangeLogResponse:
-    await _verify_change_log_access(tenant_id, current_user, tenant_repo, acl_service)
+    await _verify_change_log_access(tenant_id, current_user, access, acl_service)
 
     rows = await repo.get_change_log(tenant_id, skip=skip, limit=limit)
     total = await repo.count_change_log_batches(tenant_id)

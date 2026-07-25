@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.auth.models import User
 from app.modules.churches.db_models import PersonDB
+from app.modules.churches.permission_service import PermissionService, get_permission_service
 from app.modules.directory.db_models import PersonChangeLogDB
 from app.modules.directory.repositories import (
     Affiliation,
@@ -33,8 +34,16 @@ from app.modules.groups.repositories import GroupRepository, get_group_repositor
 router = APIRouter(prefix="/people-directory", tags=["People Directory"])
 
 
-async def _require_access(current_user: User, repo: DirectoryRepository) -> set[str] | None:
-    allowed = await repo.get_allowed_church_ids(current_user)
+async def _require_access(
+    current_user: User,
+    repo: DirectoryRepository,
+    permission_service: PermissionService,
+) -> set[str] | None:
+    allowed = await repo.get_allowed_church_ids(
+        current_user,
+        "people.manage",
+        permission_service=permission_service,
+    )
     if allowed is not None and not allowed:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -92,8 +101,9 @@ async def get_filters(
     current_user: CurrentUser,
     repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
     group_repo: Annotated[GroupRepository, Depends(get_group_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> DirectoryFiltersResponse:
-    allowed = await _require_access(current_user, repo)
+    allowed = await _require_access(current_user, repo, permission_service)
 
     regions = await repo.list_available_regions(allowed)
     service_types = await repo.list_service_types()
@@ -111,11 +121,12 @@ async def get_filters(
 async def export_persons(
     current_user: CurrentUser,
     repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
     regionIds: Annotated[list[str], Query()] = [],  # noqa: B006
     serviceTypeIds: Annotated[list[str], Query()] = [],  # noqa: B006
     groupIds: Annotated[list[str], Query()] = [],  # noqa: B006
 ) -> DirectoryExportResponse:
-    allowed = await _require_access(current_user, repo)
+    allowed = await _require_access(current_user, repo, permission_service)
 
     persons = await repo.export_persons(
         allowed,
@@ -131,9 +142,10 @@ async def export_persons(
 async def list_persons(
     current_user: CurrentUser,
     repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
     q: str | None = Query(default=None),
 ) -> PersonListResponse:
-    allowed = await _require_access(current_user, repo)
+    allowed = await _require_access(current_user, repo, permission_service)
 
     persons = await repo.list_persons(allowed, query=q)
     affiliations = await repo.get_affiliations([p.id for p in persons])
@@ -155,8 +167,9 @@ async def get_person(
     person_id: str,
     current_user: CurrentUser,
     repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> PersonBrowseResponse:
-    allowed = await _require_access(current_user, repo)
+    allowed = await _require_access(current_user, repo, permission_service)
     person = await _get_person_in_scope(person_id, allowed, repo)
 
     affiliations = await repo.get_affiliations([person_id])
@@ -169,8 +182,9 @@ async def update_person(
     payload: PersonUpdateRequest,
     current_user: CurrentUser,
     repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> PersonBrowseResponse:
-    allowed = await _require_access(current_user, repo)
+    allowed = await _require_access(current_user, repo, permission_service)
     await _get_person_in_scope(person_id, allowed, repo)
 
     person = await repo.update_person(person_id, payload, actor_label=current_user.name, actor_user_id=current_user.id)
@@ -191,10 +205,11 @@ async def get_person_change_log(
     person_id: str,
     current_user: CurrentUser,
     repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
 ) -> PersonChangeLogResponse:
-    allowed = await _require_access(current_user, repo)
+    allowed = await _require_access(current_user, repo, permission_service)
     await _get_person_in_scope(person_id, allowed, repo)
 
     rows = await repo.get_change_log(person_id, skip=skip, limit=limit)
@@ -207,6 +222,7 @@ async def merge_persons(
     payload: PersonMergeRequest,
     current_user: CurrentUser,
     repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
+    permission_service: Annotated[PermissionService, Depends(get_permission_service)],
 ) -> PersonBrowseResponse:
     if payload.keepPersonId == payload.mergePersonId:
         raise HTTPException(
@@ -214,7 +230,7 @@ async def merge_persons(
             detail="Cannot merge a person into themself",
         )
 
-    allowed = await _require_access(current_user, repo)
+    allowed = await _require_access(current_user, repo, permission_service)
     await _get_person_in_scope(payload.keepPersonId, allowed, repo)
     await _get_person_in_scope(payload.mergePersonId, allowed, repo)
 

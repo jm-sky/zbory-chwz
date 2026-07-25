@@ -42,10 +42,24 @@ Congregations use opaque UUIDs. Public discovery needs human-readable URLs with 
 - `city_slug` may change when address city changes
 - City shortcuts required on MVP
 
-## Open questions
+## Decisions (2026-07-25)
 
-- 301 vs 302 for legacy aliases? (recommend **301** permanent)
-- Short-name alias at root `/:short` if globally unique? (defer — city-scoped first)
+- **301 dla aliasów `legacy`** — przekierowanie jest trwałe (zbór faktycznie zmienił miasto),
+  a 301 przenosi sygnał SEO na nowy URL. 302 zostawiłoby ranking na martwej ścieżce.
+- **Alias `short_name` w roocie (`/:short`) — odłożony.** Najpierw warianty w zasięgu miasta;
+  root to ta sama przestrzeń nazw co `/:cityAlias`, więc dokładanie tam drugiego typu aliasu
+  mnoży kolizje z trasami aplikacji przy zerowym zysku na MVP.
+
+## Stan (2026-07-25) — odłożone
+
+**Blokowane przez [#007](./2026-07-09--007--acl-roles-permissions.md)** (strony publiczne muszą
+filtrować treść przez widoczność opartą o `PermissionService`) i przez backfill `churches.visibility`
+z [#008](./2026-07-09--008--visibility-layer.md) — bez niego publiczny resolve zwracałby 404 dla
+wszystkich zborów.
+
+Zrobione: tabele `church_slug_aliases` i `city_aliases` (migracja 056), `slug_utils.py`, backfill
+aliasów kanonicznych. Brak: `GET /public/churches/resolve`, `GET /public/churches`, trasy frontu,
+obsługa 301, `<link rel="canonical">`.
 
 ## Notes
 

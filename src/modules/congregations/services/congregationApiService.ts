@@ -122,7 +122,7 @@ class CongregationApiService {
    * Update congregation (requires tenant membership or admin/owner role)
    */
   async updateCongregation(id: string, data: IUpdateCongregationRequest): Promise<void> {
-    await apiClient.patch(`/admin/tenants/${id}`, data)
+    await apiClient.patch(`/congregations/${id}`, data)
   }
 
   /**

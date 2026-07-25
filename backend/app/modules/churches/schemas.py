@@ -131,3 +131,36 @@ class ServiceAssignmentResponse(BaseModel):
 
 class PersonSearchResponse(BaseModel):
     persons: list[PersonResponse]
+
+
+class ChurchVisibilityUpdateRequest(BaseModel):
+    visibility: VisibilityLevel
+
+
+class ChurchMoveRegionRequest(BaseModel):
+    regionId: str = Field(validation_alias="regionId")
+
+
+class ChurchCreateRequest(BaseModel):
+    name: str
+    description: str | None = None
+    regionId: str | None = Field(default=None, validation_alias="regionId")
+
+
+class ChurchCreateResponse(BaseModel):
+    id: str
+    name: str
+    regionId: str | None = None
+    warning: str | None = None
+
+
+class PermissionScopeResponse(BaseModel):
+    scopeType: str
+    scopeId: str
+    permissions: list[str]
+
+
+class MePermissionsResponse(BaseModel):
+    isAdmin: bool
+    isOwner: bool
+    scopes: list[PermissionScopeResponse]

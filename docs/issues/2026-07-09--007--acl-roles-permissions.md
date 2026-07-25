@@ -29,7 +29,44 @@ ACL must reflect **explicitly chosen** permissions when creating account — not
 - Pastor ACL before `is_active`
 - **`lider_mlodziezowy`:** `suggested_role_id = NULL` — brak domyślnej roli; tylko służba organizacyjna
 
-## Open questions
+## Decisions (2026-07-25)
 
-- MVP permission picker: roles only, or roles + individual permissions?
-- `finances.manage` — Phase 2 or later?
+Pełne uzasadnienia: [acl-architecture.md](../plans/2026-07-25--acl-architecture.md).
+Rozbicie na zadania: [acl-implementation-tasks.md](../plans/2026-07-25--acl-implementation-tasks.md) (T1–T9).
+
+- **Picker uprawnień na MVP: tylko role.** Tabela `user_permissions` (allow/deny) wchodzi
+  **od razu do modelu i resolvera**, ale UI przy „Utwórz konto” pokazuje wyłącznie wybór roli.
+  Wyjątki nadaje admin (na start przez CLI). Dzięki temu późniejsze włączenie wyjątków w UI nie
+  wymaga migracji ani przepisania rozwiązywania uprawnień.
+- **`finances.manage` — później.** Nie w tej serii; string zarezerwowany, żadna rola go nie dostaje.
+  „Diakon-skarbnik” obsługuje na razie sam typ służby (`diakon_skarbnik`).
+- **ACL jedynym źródłem prawdy.** `tenant_memberships` przestaje dawać prawo zapisu; zostaje jako
+  infrastruktura tenantów.
+- **Przejście przez seed, nie przez migrację z zabezpieczeniami.** Baza nie ma realnych aktywnych
+  użytkowników — jest konto właściciela i 29 zborów z seedera, każdy z jednym membershipem `owner`.
+  Nie ma kogo odciąć od danych, więc odpada heurystyka dla membershipów `member`, dry-run jako
+  bramka i shadow log; enforcement przełączamy w jednym kroku. Seeder nadaje rolę `pastor` przy
+  tworzeniu membershipu, plus jedna idempotentna migracja dla grantów spoza seedera.
+- **Seed biskupów** (Jawdyk → `community`, Bijak / Romanowski / Poręba → rejony) — plan ich
+  wymieniał, `seed_data.py` nigdy nie zaimplementował. Bez tego wiersze macierzy testów „biskup
+  regionalny w rejonie / poza rejonem" nie mają w devie żadnych danych. **Dolny Śląsk celowo bez
+  biskupa regionalnego** — żywy test fallbacku przez zasięg `community`.
+- **`deny` wygrywa w całym łańcuchu zasięgów** — nie da się od-blokować węższym `allow`.
+  Świadome uproszczenie na rzecz przewidywalności.
+- **Fallback biskupa naczelnego nie wymaga kodu** — rola na zasięgu `community` jest przodkiem
+  każdego rejonu, więc chodzenie po łańcuchu obsługuje rejon bez `biskup_regionu` samo.
+- **Dwa nowe uprawnienia:** `church.view_pastoral` (zastępuje dopasowanie po nazwach ról
+  w `AclService.has_pastoral_access`) i `church.publish` (nadane też pastorowi — odpowiada za dane
+  własnego zboru; decyzja odwracalna seedem).
+- **Nadawanie ról:** zasada podzbioru (nie nadasz uprawnień, których sam nie masz w tym zasięgu)
+  + `services.manage` w zasięgu nadania + twarda bramka admin/owner na `bishop` i `regional_bishop`.
+  Zastępuje doraźne `can_grant_elevated_roles` z `repositories.py:356`.
+- **Diakon nie przypisze służby pasterskiej:** wymagane uprawnienie zależy od
+  `service_types.suggested_role` — `bishop`/`regional_bishop` → `services.manage` na `community`,
+  `pastor` → `services.manage`, reszta → `people.manage`.
+
+## Stan (2026-07-25)
+
+Zrobione: tabele ACL (migracja 059), seed ról, punktowe bramki na `persons/search` i `POST /tenants`
+(commit `8b2f32f`). Brak: `PermissionService`, `user_permissions`, enforcement na zapisach,
+governance API.

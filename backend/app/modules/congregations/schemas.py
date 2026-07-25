@@ -42,6 +42,21 @@ def validate_iban(value: str | None) -> str | None:
     return normalized
 
 
+class CongregationUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=512)
+    status: str | None = Field(default=None, max_length=32)
+
+
+class CongregationUpdateResponse(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    status: str | None = None
+    role: str | None = None
+    createdAt: datetime
+
+
 class AddressResponse(BaseModel):
     id: str
     tenant_id: str

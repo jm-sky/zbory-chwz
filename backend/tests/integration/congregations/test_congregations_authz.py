@@ -28,6 +28,7 @@ from app.modules.auth.db_models import UserDB
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
 from app.modules.churches.acl_models import UserRoleAssignmentDB
+from app.modules.churches.acl_seed import ensure_acl_roles
 from app.modules.churches.db_models import (
     ChurchDB,
     CommunityDB,
@@ -117,6 +118,18 @@ async def _seed(session: AsyncSession) -> dict[str, str]:
 
     # The member belongs to church A only.
     session.add(TenantMembershipDB(tenant_id=CHURCH_A, user_id=MEMBER_ID, role="member"))
+
+    roles = await ensure_acl_roles(session)
+    pastor_role = roles["pastor"]
+    session.add(
+        UserRoleAssignmentDB(
+            id=generate_id(),
+            user_id=MEMBER_ID,
+            role_id=pastor_role.id,
+            scope_type="church",
+            scope_id=CHURCH_A,
+        )
+    )
 
     # An assignment living in church B — the cross-church PATCH target.
     person_b = PersonDB(id=generate_id(), first_name="Bogdan", last_name="B")
@@ -386,6 +399,50 @@ async def test_list_service_assignments_sorted_by_sort_order(ctx) -> None:
     names = [" ".join(p for p in (a["person"]["firstName"], a["person"]["lastName"]) if p) for a in response.json()]
     assert names[0] == "First Person"
     assert names[1] == "Second Person"
+
+
+@pytest.mark.asyncio
+async def test_member_can_patch_own_congregation(ctx) -> None:
+    client, _, login, _ = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_A}",
+        json={"name": "Zbor A Renamed", "description": "Nowy opis"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "Zbor A Renamed"
+    assert body["description"] == "Nowy opis"
+
+
+@pytest.mark.asyncio
+async def test_member_cannot_patch_other_congregation(ctx) -> None:
+    client, _, login, _ = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_B}",
+        json={"name": "Hacked"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.parametrize("target_status", ["draft", "published", "published_unverified", "need_verification"])
+@pytest.mark.asyncio
+async def test_member_can_set_any_status_on_own_congregation(ctx, target_status: str) -> None:
+    client, _, login, _ = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_A}",
+        json={"status": target_status},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == target_status
 
 
 @pytest.mark.asyncio
