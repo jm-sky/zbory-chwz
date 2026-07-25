@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.modules.auth.decorators import rate_limit
 from app.modules.auth.dependencies import CurrentUser, OptionalCurrentUser
+from app.modules.auth.models import User
 from app.modules.churches.acl_service import AclService, get_acl_service
 from app.modules.churches.repositories import ChurchRepository, get_church_repository
 from app.modules.churches.visibility import VisibilityService
@@ -146,7 +147,7 @@ async def create_tenant(
     `church.create` permission alongside the admin/owner bypass.
     """
     if not (current_user.isAdmin or current_user.isOwner):
-        if not await acl_service.has_permission(current_user.id, "church.create"):
+        if not await acl_service.has_permission(current_user, "church.create"):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     tenant, membership = await repo.create_tenant(
@@ -194,7 +195,7 @@ async def _build_published_congregations(
     is_authenticated: bool,
     has_pastoral_access: bool = False,
     acl_service: AclService | None = None,
-    current_user_id: str | None = None,
+    current_user: User | None = None,
     membership_roles: dict[str, str] | None = None,
 ) -> list[PublicCongregationResponse]:
     """Build the published-congregations-with-branches list shared by the public
@@ -202,14 +203,18 @@ async def _build_published_congregations(
 
     ``has_pastoral_access`` is the ceiling granted by an anonymous share link
     (uniform for every congregation in the list). When ``acl_service`` and
-    ``current_user_id`` are given instead (the logged-in listing), pastoral
+    ``current_user`` is given instead (the logged-in listing), pastoral
     access is recomputed per congregation from the viewer's real ACL — a
     regional bishop may have it for some churches and not others.
     """
     all_tenants = await repo.list_all()
-    addresses = await congregation_repo.get_addresses_by_status(PUBLIC_ADDRESS_STATUSES)
+    published: list[TenantDB] = []
+    for tenant in all_tenants:
+        church = await church_repo.get_church_by_id(tenant.id)
+        if church and church.visibility == "public":
+            published.append(tenant)
 
-    published = [tenant for tenant in all_tenants if tenant.id in addresses]
+    addresses = await congregation_repo.get_addresses_by_status(PUBLIC_ADDRESS_STATUSES)
     tenant_ids = [tenant.id for tenant in published]
 
     service_times_by_tenant = await congregation_repo.get_service_times_for_tenants(tenant_ids)
@@ -218,12 +223,12 @@ async def _build_published_congregations(
 
     congregations: list[PublicCongregationResponse] = []
     for tenant in published:
-        address = addresses[tenant.id]
+        address = addresses.get(tenant.id)
         service_times = [{"day": st.day, "time": st.time, "description": st.description} for st in service_times_by_tenant.get(tenant.id, [])[:MAX_PUBLIC_SERVICE_TIMES]]
 
         tenant_has_pastoral_access = has_pastoral_access
-        if acl_service is not None and current_user_id is not None:
-            tenant_has_pastoral_access = await acl_service.has_pastoral_access(current_user_id, tenant.id)
+        if acl_service is not None and current_user is not None:
+            tenant_has_pastoral_access = await acl_service.has_pastoral_access(current_user, tenant.id)
 
         card_contacts = [
             PublicCardContact(
@@ -321,7 +326,7 @@ async def list_congregations_detailed(
         church_repo,
         is_authenticated=is_authenticated,
         acl_service=acl_service,
-        current_user_id=current_user.id if current_user is not None else None,
+        current_user=current_user,
         membership_roles=membership_roles,
     )
     all_tenants = await repo.list_all()
@@ -392,7 +397,7 @@ async def get_congregation_detail(
         )
     is_member = is_admin or membership_role is not None
 
-    has_pastoral_access = await acl_service.has_pastoral_access(current_user.id, tenant_id) if current_user is not None else False
+    has_pastoral_access = await acl_service.has_pastoral_access(current_user, tenant_id) if current_user is not None else False
 
     return await _build_congregation_detail(
         tenant,

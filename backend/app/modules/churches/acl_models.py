@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
@@ -16,6 +16,9 @@ class RoleDB(Base):
     scope_type: Mapped[str] = mapped_column(String(32), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
+    permissions: Mapped[list["RolePermissionDB"]] = relationship(back_populates="role")
+    assignments: Mapped[list["UserRoleAssignmentDB"]] = relationship(back_populates="role")
+
 
 class RolePermissionDB(Base):
     __tablename__ = "role_permissions"
@@ -24,6 +27,39 @@ class RolePermissionDB(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     role_id: Mapped[str] = mapped_column(String(36), ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
     permission: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    role: Mapped["RoleDB"] = relationship(back_populates="permissions")
+
+
+class UserPermissionDB(Base):
+    __tablename__ = "user_permissions"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "scope_type",
+            "scope_id",
+            "permission",
+            name="uq_user_permissions_scope",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    scope_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    scope_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    permission: Mapped[str] = mapped_column(String(64), nullable=False)
+    effect: Mapped[str] = mapped_column(String(8), nullable=False)
+    source_assignment_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("service_assignments.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    created_by: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
 
 class UserRoleAssignmentDB(Base):
@@ -49,3 +85,5 @@ class UserRoleAssignmentDB(Base):
         nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+
+    role: Mapped["RoleDB"] = relationship(back_populates="assignments")

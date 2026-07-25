@@ -45,15 +45,14 @@ class TenantRepository:
         return list(result.scalars().all())
 
     async def list_published(self) -> list[TenantDB]:
-        """List only tenants with status 'published'.
+        """List tenants whose church row is publicly visible."""
+        from app.modules.churches.db_models import ChurchDB
 
-        Note: This is temporary - status should be on congregation/address level in the future.
-        Keeping this for backward compatibility until congregation/address module is implemented.
-        """
         stmt = (
             select(TenantDB)
+            .join(ChurchDB, ChurchDB.id == TenantDB.id)
             .where(
-                TenantDB.status == "published",
+                ChurchDB.visibility == "public",
                 TenantDB.deleted_at.is_(None),
             )
             .order_by(TenantDB.created_at)

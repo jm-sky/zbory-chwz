@@ -28,6 +28,7 @@ from app.modules.auth.db_models import UserDB
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
 from app.modules.churches.acl_models import UserRoleAssignmentDB
+from app.modules.churches.acl_seed import ensure_acl_roles
 from app.modules.churches.db_models import (
     ChurchDB,
     CommunityDB,
@@ -117,6 +118,18 @@ async def _seed(session: AsyncSession) -> dict[str, str]:
 
     # The member belongs to church A only.
     session.add(TenantMembershipDB(tenant_id=CHURCH_A, user_id=MEMBER_ID, role="member"))
+
+    roles = await ensure_acl_roles(session)
+    pastor_role = roles["pastor"]
+    session.add(
+        UserRoleAssignmentDB(
+            id=generate_id(),
+            user_id=MEMBER_ID,
+            role_id=pastor_role.id,
+            scope_type="church",
+            scope_id=CHURCH_A,
+        )
+    )
 
     # An assignment living in church B — the cross-church PATCH target.
     person_b = PersonDB(id=generate_id(), first_name="Bogdan", last_name="B")
