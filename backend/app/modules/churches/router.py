@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.modules.auth.decorators import rate_limit
 from app.modules.auth.dependencies import CurrentUser
+from app.modules.churches.acl_service import AclService, get_acl_service
 from app.modules.churches.db_models import ServiceAssignmentDB
 from app.modules.churches.repositories import ChurchRepository, get_church_repository
 from app.modules.churches.schemas import (
@@ -75,14 +76,22 @@ async def search_persons(
     current_user: CurrentUser,
     repo: Annotated[ChurchRepository, Depends(get_church_repository)],
     directory_repo: Annotated[DirectoryRepository, Depends(get_directory_repository)],
+    acl_service: Annotated[AclService, Depends(get_acl_service)],
     q: str = Query(min_length=1),
 ) -> PersonSearchResponse:
     """Search persons, scoped to churches the caller has ACL access to.
 
-    Admins/owners get an unrestricted search (allowed_church_ids=None); everyone
-    else is limited to their church/region/community scope, same as
-    /people-directory/persons.
+    Admins/owners get an unrestricted search (allowed_church_ids=None).
+    Everyone else must additionally hold `services.manage` in some scope —
+    this is a database of names/emails/phones across churches, not something
+    any ACL role (e.g. plain pastoral access) should unlock. Holders of the
+    permission are then limited to their church/region/community scope, same
+    as /people-directory/persons.
     """
+    if not (current_user.isAdmin or current_user.isOwner):
+        if not await acl_service.has_permission(current_user.id, "services.manage"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
     allowed_church_ids = await directory_repo.get_allowed_church_ids(current_user)
     persons = await repo.search_persons(q, allowed_church_ids)
     return PersonSearchResponse(persons=[PersonResponse.model_validate(p) for p in persons])

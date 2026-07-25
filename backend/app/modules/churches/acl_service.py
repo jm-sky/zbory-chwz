@@ -7,7 +7,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.modules.churches.acl_models import RoleDB, UserRoleAssignmentDB
+from app.modules.churches.acl_models import RoleDB, RolePermissionDB, UserRoleAssignmentDB
 from app.modules.churches.acl_seed import PASTORAL_ROLE_NAMES
 from app.modules.churches.db_models import ChurchDB
 
@@ -15,6 +15,26 @@ from app.modules.churches.db_models import ChurchDB
 class AclService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def has_permission(self, user_id: str, permission: str) -> bool:
+        """Whether the user holds `permission` via any role assignment, in any scope.
+
+        Unlike `has_pastoral_access`, this isn't tied to a specific church —
+        it answers "does this user hold this permission anywhere", which is
+        what gates access to cross-tenant endpoints (e.g. global person
+        search, tenant creation).
+        """
+        result = await self.db.execute(
+            select(UserRoleAssignmentDB.id)
+            .join(RoleDB, RoleDB.id == UserRoleAssignmentDB.role_id)
+            .join(RolePermissionDB, RolePermissionDB.role_id == RoleDB.id)
+            .where(
+                UserRoleAssignmentDB.user_id == user_id,
+                RolePermissionDB.permission == permission,
+            )
+            .limit(1)
+        )
+        return result.scalar_one_or_none() is not None
 
     async def has_pastoral_access(self, user_id: str, church_id: str) -> bool:
         church = await self._get_church(church_id)

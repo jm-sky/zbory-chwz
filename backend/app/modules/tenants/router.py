@@ -15,7 +15,7 @@ from app.modules.congregations.repositories import (
     get_congregation_repository,
 )
 from app.modules.sharing.service import ShareLinkService, get_share_link_service
-from app.modules.tenants.db_models import TenantDB
+from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
 from app.modules.tenants.repositories import TenantRepository, get_tenant_repository
 from app.modules.tenants.schemas import (
     CongregationBranchSummary,
@@ -137,7 +137,18 @@ async def create_tenant(
     payload: TenantCreateRequest,
     current_user: CurrentUser,
     repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+    acl_service: Annotated[AclService, Depends(get_acl_service)],
 ) -> TenantResponse:
+    """Create a tenant (congregation).
+
+    Governance reserves founding a new congregation for bishops and global
+    admins/owners — not any logged-in account — so this requires the
+    `church.create` permission alongside the admin/owner bypass.
+    """
+    if not (current_user.isAdmin or current_user.isOwner):
+        if not await acl_service.has_permission(current_user.id, "church.create"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
     tenant, membership = await repo.create_tenant(
         name=payload.name,
         description=payload.description,
@@ -182,9 +193,19 @@ async def _build_published_congregations(
     *,
     is_authenticated: bool,
     has_pastoral_access: bool = False,
+    acl_service: AclService | None = None,
+    current_user_id: str | None = None,
+    membership_roles: dict[str, str] | None = None,
 ) -> list[PublicCongregationResponse]:
     """Build the published-congregations-with-branches list shared by the public
-    detailed listing and the anonymous all-congregations share-link viewer."""
+    detailed listing and the anonymous all-congregations share-link viewer.
+
+    ``has_pastoral_access`` is the ceiling granted by an anonymous share link
+    (uniform for every congregation in the list). When ``acl_service`` and
+    ``current_user_id`` are given instead (the logged-in listing), pastoral
+    access is recomputed per congregation from the viewer's real ACL — a
+    regional bishop may have it for some churches and not others.
+    """
     all_tenants = await repo.list_all()
     addresses = await congregation_repo.get_addresses_by_status(PUBLIC_ADDRESS_STATUSES)
 
@@ -200,12 +221,16 @@ async def _build_published_congregations(
         address = addresses[tenant.id]
         service_times = [{"day": st.day, "time": st.time, "description": st.description} for st in service_times_by_tenant.get(tenant.id, [])[:MAX_PUBLIC_SERVICE_TIMES]]
 
+        tenant_has_pastoral_access = has_pastoral_access
+        if acl_service is not None and current_user_id is not None:
+            tenant_has_pastoral_access = await acl_service.has_pastoral_access(current_user_id, tenant.id)
+
         card_contacts = [
             PublicCardContact(
                 **church_repo.to_public_card_contact(
                     assignment,
                     is_authenticated=is_authenticated,
-                    has_pastoral_access=has_pastoral_access,
+                    has_pastoral_access=tenant_has_pastoral_access,
                 )
             )
             for assignment in assignments_by_church.get(tenant.id, [])
@@ -220,6 +245,7 @@ async def _build_published_congregations(
                 status=address.status,
                 createdAt=tenant.created_at,
                 type="church",
+                role=(membership_roles or {}).get(tenant.id),
                 city=address.city,
                 street=address.street,
                 postal_code=address.postal_code,
@@ -267,6 +293,7 @@ async def list_congregations_detailed(
     repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
     congregation_repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
     church_repo: Annotated[ChurchRepository, Depends(get_church_repository)],
+    acl_service: Annotated[AclService, Depends(get_acl_service)],
     current_user: OptionalCurrentUser,
 ) -> PublicCongregationListResponse:
     """Public endpoint to list published congregations with detailed info (address, service times, contact).
@@ -277,20 +304,39 @@ async def list_congregations_detailed(
 
     A congregation's church row shares its id with the tenant (see
     `churches.provisioning`), so tenant ids double as church ids here.
+
+    Reflects the viewer's real authentication/ACL state (guest vs logged-in
+    vs pastoral access), and their tenant-membership `role` on each entry, so
+    the frontend can offer "Edit" only where the viewer can actually manage.
     """
-    congregations = await _build_published_congregations(repo, congregation_repo, church_repo, is_authenticated=False)
+    is_authenticated = current_user is not None
+    is_admin = current_user is not None and (current_user.isAdmin or current_user.isOwner)
+
+    memberships = await repo.list_for_user(current_user.id) if (current_user is not None and not is_admin) else []
+    membership_roles = {tenant.id: membership.role for tenant, membership in memberships}
+
+    congregations = await _build_published_congregations(
+        repo,
+        congregation_repo,
+        church_repo,
+        is_authenticated=is_authenticated,
+        acl_service=acl_service,
+        current_user_id=current_user.id if current_user is not None else None,
+        membership_roles=membership_roles,
+    )
     all_tenants = await repo.list_all()
     published_ids = {congregation.id for congregation in congregations}
 
     if current_user is not None:
-        if current_user.isAdmin or current_user.isOwner:
-            draft_tenants = [tenant for tenant in all_tenants if tenant.id not in published_ids]
+        draft_pairs: list[tuple[TenantDB, TenantMembershipDB | None]]
+        if is_admin:
+            draft_pairs = [(tenant, None) for tenant in all_tenants if tenant.id not in published_ids]
         else:
-            draft_tenants = [tenant for tenant, _membership in await repo.list_for_user(current_user.id) if tenant.id not in published_ids]
+            draft_pairs = [(tenant, membership) for tenant, membership in memberships if tenant.id not in published_ids]
 
-        if draft_tenants:
+        if draft_pairs:
             draft_addresses = await congregation_repo.get_addresses_by_status(("draft",))
-            for tenant in draft_tenants:
+            for tenant, membership in draft_pairs:
                 address = draft_addresses.get(tenant.id)
                 congregations.append(
                     PublicCongregationResponse(
@@ -300,6 +346,7 @@ async def list_congregations_detailed(
                         status="draft",
                         createdAt=tenant.created_at,
                         type="church",
+                        role=membership.role if membership else None,
                         city=address.city if address else None,
                         street=address.street if address else None,
                         postal_code=address.postal_code if address else None,
