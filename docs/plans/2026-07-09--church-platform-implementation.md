@@ -9,6 +9,13 @@
 
 > **Note:** Reviewed 2026-07-09 — see [Design review](#design-review-2026-07-09) for gaps, risks, and suggestions.
 
+> **Aktualizacja 2026-07-25:** dla **Fazy 2 (ACL)** i **Fazy 3 (widoczność)** źródłem prawdy jest
+> [acl-architecture.md](./2026-07-25--acl-architecture.md) — rozstrzyga algorytm rozwiązywania
+> uprawnień, reguły nadawania ról, `user_permissions` i migrację `tenant_memberships` → ACL.
+> Rozbicie na zadania: [acl-implementation-tasks.md](./2026-07-25--acl-implementation-tasks.md).
+> Sekcja „2. Służby, People i ACL" poniżej opisuje stan zamierzeń z 2026-07-09 i została w tych
+> punktach zastąpiona.
+
 ## Goal
 
 Build a multi-community church platform where:
@@ -496,6 +503,17 @@ Phase 1 (model) ──┬──► Phase 2 (ACL) ──► Phase 5 (governance U
 
 ## Implementation phases
 
+### Status faz (2026-07-25)
+
+| Faza | Status | Uwagi |
+|------|--------|-------|
+| 0 — Design review | `done` | decyzje potwierdzone; diagram canvas nadal opcjonalny |
+| 1 — Model danych i migracje | `done` | dowieziona w [#019](../issues/2026-07-09--019--church-phase-1-hierarchy.md), migracje 056–059; brakuje tylko UI wyszukiwarki osób → [#010](../issues/2026-07-09--010--church-governance-actions.md) |
+| 2 — ACL engine | `in progress` | tabele i seed ról są; `PermissionService`, `user_permissions`, enforcement i governance API — nie. Plan: [acl-implementation-tasks.md](./2026-07-25--acl-implementation-tasks.md) T1–T9 |
+| 3 — Widoczność | `in progress` | enum, `VisibilityService` i widoczność kontaktów są; publiczna lista dalej filtruje `tenant.status`. Plan: T10–T12 |
+| 4 — Publiczne URL-e | `planned` | tabele aliasów i backfill są, brak resolve'a i stron publicznych |
+| 5 — Governance UI | `planned` | blokowane przez Fazę 2 |
+
 ### Phase 0 — Design review (no code)
 
 - [x] Confirm terminology: keep `tenants` + `tenant_id` for backward compat; single CHWZ tenant; churches as hierarchy under community/region
@@ -610,3 +628,4 @@ Phase 1 (model) ──┬──► Phase 2 (ACL) ──► Phase 5 (governance U
 | 2026-07-09 | Służby (`service_types` + `service_assignments`); ACL sync; senior = typ służby; pastor ACL przed aktywacją |
 | 2026-07-09 | `persons` entity; służba ≠ uprawnienia; „Inna”; wybór istniejącej osoby — [church-people-and-services.md](./2026-07-09--church-people-and-services.md) |
 | 2026-07-09 | `lider_mlodziezowy`: brak domyślnej roli ACL (`suggested_role_id` NULL) |
+| 2026-07-25 | Status faz zweryfikowany wobec kodu; Faza 2 i 3 przeniesione do [acl-architecture.md](./2026-07-25--acl-architecture.md) + [acl-implementation-tasks.md](./2026-07-25--acl-implementation-tasks.md); ACL jedynym źródłem prawdy (koniec autoryzacji przez `tenant_memberships`) |

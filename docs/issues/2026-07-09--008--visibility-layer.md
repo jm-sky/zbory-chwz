@@ -58,3 +58,28 @@ Current public list (`GET /congregations/detailed`) filters by `address.status i
 
 - `pastors` visibility = users with ACL from bishop/pastor/diacon service types (not plain authenticated)
 - `published_unverified` stays as workflow badge alongside `visibility = public`
+
+## Decisions (2026-07-25)
+
+Kontekst: [acl-architecture.md §10](../plans/2026-07-25--acl-architecture.md) · zadania T10–T12
+w [acl-implementation-tasks.md](../plans/2026-07-25--acl-implementation-tasks.md).
+
+- **Backfill `churches.visibility` MUSI poprzedzić przełączenie filtra publicznej listy.**
+  Kolumna ma dziś default `hidden` (`churches/db_models.py:59`), a lista publiczna filtruje po
+  `tenant.status` (`tenants/repositories.py:48`). Przełączenie filtra bez wcześniejszego backfillu
+  **wyczyści publiczny katalog zborów.** Backfill idzie osobną migracją, z liczbami przed i po;
+  kryterium akceptacji: liczba zborów `public` == dzisiejsza liczba pozycji w `GET /congregations/detailed`.
+- **`pastors` liczone uprawnieniem, nie nazwą roli.** Zamiast `PASTORAL_ROLE_NAMES`
+  (`acl_seed.py:11`) — `resolve(user, "church.view_pastoral", church)`. Jedna implementacja
+  chodzenia po zasięgach, zestaw uprawnionych zmieniany seedem zamiast edycją kodu.
+- **Publikacja za uprawnieniem `church.publish`** (`PATCH /churches/{id}/visibility`), nadanym
+  rolom `pastor`, `regional_bishop`, `bishop`.
+- **`address.status` zostaje** jako workflow redakcyjny — niezależny od widoczności.
+
+## Stan (2026-07-25)
+
+Zrobione: enum widoczności (`churches/visibility.py`, migracja 058), `VisibilityService`,
+widoczność per pole na przypisaniach służb, renderowanie karty zboru wg widoczności
+([#036](./2026-07-09--036--card-visibility-rendering.md)), rozróżnienie gość / zalogowany / pastor
+w `GET /congregations/detailed` (commit `8b2f32f`, SEC-6).
+Brak: filtr publicznej listy po `churches.visibility`, backfill kolumny, endpoint publikacji.
