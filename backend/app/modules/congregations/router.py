@@ -30,6 +30,8 @@ from app.modules.congregations.schemas import (
     ChangeLogFieldChange,
     ChangeLogResponse,
     CongregationFullResponse,
+    CongregationUpdateRequest,
+    CongregationUpdateResponse,
     GeocodeRequest,
     GeocodeResponse,
     ServiceTimeCreateRequest,
@@ -121,6 +123,53 @@ async def _log_address_changes(
         source="admin_manual",
         actor_label=current_user.name,
         actor_user_id=current_user.id,
+    )
+
+
+@router.patch(
+    "/{tenant_id}",
+    response_model=CongregationUpdateResponse,
+    summary="Update congregation basic info",
+    description="Update name/description/status; open to tenant members (not just admins).",
+)
+async def update_congregation(
+    tenant_id: str,
+    payload: CongregationUpdateRequest,
+    current_user: CurrentUser,
+    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
+) -> CongregationUpdateResponse:
+    """Update congregation (any tenant member or admin/owner)."""
+    await verify_tenant_access(tenant_id, current_user, tenant_repo)
+
+    tenant = await tenant_repo.get_tenant(tenant_id)
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tenant {tenant_id} not found",
+        )
+
+    if payload.name is not None:
+        tenant.name = payload.name
+    if payload.description is not None:
+        tenant.description = payload.description
+    if payload.status is not None:
+        tenant.status = payload.status
+
+    await tenant_repo.db.commit()
+    await tenant_repo.db.refresh(tenant)
+
+    role: str | None = None
+    if not (current_user.isAdmin or current_user.isOwner):
+        memberships = await tenant_repo.list_for_user(current_user.id)
+        role = next((membership.role for membership_tenant, membership in memberships if membership_tenant.id == tenant_id), None)
+
+    return CongregationUpdateResponse(
+        id=tenant.id,
+        name=tenant.name,
+        description=tenant.description,
+        status=tenant.status,
+        role=role,
+        createdAt=tenant.created_at,
     )
 
 

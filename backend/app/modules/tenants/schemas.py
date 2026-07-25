@@ -70,6 +70,9 @@ class PublicCongregationResponse(BaseModel):
     createdAt: datetime
     # "church" for a congregation, "branch" for a placówka belonging to one
     type: Literal["church", "branch"] = "church"
+    # The viewer's tenant-membership role, if any (None for admins/owners,
+    # who are granted management access separately on the frontend).
+    role: str | None = None
     # Set on branches: the id and name of the congregation they belong to
     parent_id: str | None = None
     parent_name: str | None = None

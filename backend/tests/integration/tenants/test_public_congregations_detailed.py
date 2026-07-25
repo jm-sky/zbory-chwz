@@ -18,9 +18,11 @@ os.environ.setdefault("DATABASE_MAX_OVERFLOW", "0")
 from app.common.id_utils import generate_id
 from app.core.database import Base, get_db
 from app.modules.auth.db_models import UserDB
+from app.modules.auth.dependencies import get_optional_current_user
+from app.modules.auth.models import User
 from app.modules.churches.db_models import PersonDB, ServiceAssignmentDB, ServiceTypeDB
 from app.modules.congregations.db_models import CongregationAddressDB
-from app.modules.tenants.db_models import TenantDB
+from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
 from main import app
 
 
@@ -353,3 +355,89 @@ async def test_card_contacts_respect_manual_sort_order(
     assert len(congregations) == 1
     names = [c["name"] for c in congregations[0]["card_contacts"]]
     assert names == ["Anna Diacon", "Jan Pastor"]
+
+
+@pytest.mark.asyncio
+async def test_guest_does_not_see_authenticated_level_email(
+    async_client: AsyncClient,
+) -> None:
+    """Regression for SEC-6: is_authenticated must stay False for a real guest."""
+    response = await async_client.get("/api/congregations/detailed")
+    assert response.status_code == 200
+
+    congregation = response.json()["congregations"][0]
+    assert congregation["card_contacts"][1]["email"] is None
+
+
+@pytest.mark.asyncio
+async def test_logged_in_non_member_sees_authenticated_level_email(
+    async_client: AsyncClient,
+) -> None:
+    """Regression for SEC-6: /detailed hardcoded is_authenticated=False even
+    for a real logged-in viewer, so `authenticated`-level fields never showed."""
+    app.dependency_overrides[get_optional_current_user] = lambda: User(
+        id=generate_id(),
+        email="viewer@example.com",
+        name="Viewer",
+        createdAt=datetime.now(UTC),
+    )
+
+    response = await async_client.get("/api/congregations/detailed")
+    assert response.status_code == 200
+
+    congregation = response.json()["congregations"][0]
+    assert congregation["card_contacts"][1]["email"] == "anna@example.com"
+    assert congregation["role"] is None
+
+
+@pytest_asyncio.fixture
+async def member_role_ctx():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def override_get_db():
+        async with session_factory() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    member_id = generate_id()
+    async with session_factory() as session:
+        tenant_id = await _seed_public_congregation(session)
+        session.add(UserDB(id=member_id, email="pastor@example.com", name="Pastor"))
+        session.add(TenantMembershipDB(tenant_id=tenant_id, user_id=member_id, role="pastor"))
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client, member_id
+
+    app.dependency_overrides.clear()
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_member_sees_own_role_on_detailed_list(member_role_ctx) -> None:
+    """Regression for #016: the viewer's membership role must be on the list
+    response so the frontend's canManageCongregation() dropdown can show up."""
+    client, member_id = member_role_ctx
+
+    app.dependency_overrides[get_optional_current_user] = lambda: User(
+        id=member_id,
+        email="pastor@example.com",
+        name="Pastor",
+        createdAt=datetime.now(UTC),
+    )
+
+    response = await client.get("/api/congregations/detailed")
+    assert response.status_code == 200
+    congregation = response.json()["congregations"][0]
+    assert congregation["role"] == "pastor"

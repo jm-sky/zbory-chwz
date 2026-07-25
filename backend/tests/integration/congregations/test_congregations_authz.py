@@ -389,6 +389,50 @@ async def test_list_service_assignments_sorted_by_sort_order(ctx) -> None:
 
 
 @pytest.mark.asyncio
+async def test_member_can_patch_own_congregation(ctx) -> None:
+    client, _, login, _ = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_A}",
+        json={"name": "Zbor A Renamed", "description": "Nowy opis"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "Zbor A Renamed"
+    assert body["description"] == "Nowy opis"
+
+
+@pytest.mark.asyncio
+async def test_member_cannot_patch_other_congregation(ctx) -> None:
+    client, _, login, _ = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_B}",
+        json={"name": "Hacked"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.parametrize("target_status", ["draft", "published", "published_unverified", "need_verification"])
+@pytest.mark.asyncio
+async def test_member_can_set_any_status_on_own_congregation(ctx, target_status: str) -> None:
+    client, _, login, _ = ctx
+    login(_api_user(MEMBER_ID))
+
+    response = await client.patch(
+        f"/api/congregations/{CHURCH_A}",
+        json={"status": target_status},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == target_status
+
+
+@pytest.mark.asyncio
 async def test_patch_service_assignment_sort_order(ctx) -> None:
     client, ids, login, _ = ctx
     login(_api_user(MEMBER_ID))
