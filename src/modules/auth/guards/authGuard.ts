@@ -4,6 +4,7 @@ import { bootstrapAuth } from '@/modules/auth/composables/useAuthBootstrap'
 import { AuthRouteNames } from '@/modules/auth/config/routes'
 import { authService } from '@/modules/auth/services/authService'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import { PublicRouteNames } from '@/router/publicRoutes'
 import { config } from '@/shared/config/config'
 // modules/auth/guards/authGuard.ts
 import type { NavigationGuardNext, RouteLocationNormalized, Router } from 'vue-router'
@@ -106,7 +107,7 @@ export async function authGuard(
   }
 
   if (requiresGuest && isAuthenticated) {
-    next({ name: 'home' }); return
+    next({ name: PublicRouteNames.landing }); return
   }
 
   // Allow navigation

@@ -38,6 +38,7 @@ from .exceptions import (
     UserNotFoundError,
 )
 from .schemas import (
+    AcceptInviteRequest,
     ChangePasswordRequest,
     DeleteAccountRequest,
     EmailVerificationRequest,
@@ -345,6 +346,33 @@ async def reset_password(request_data: ResetPasswordRequest, auth_service: AuthS
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset token",
+        ) from None
+
+
+@router.post(
+    "/accept-invite",
+    response_model=MessageResponse,
+    summary="Accept governance invite",
+    description="Set password and activate account using invite token",
+    tags=["Authentication"],
+)
+@rate_limit("5/minute")  # Prevent token brute force
+async def accept_invite(request_data: AcceptInviteRequest, auth_service: AuthServiceDep, request: Request) -> MessageResponse:
+    """
+    Accept a governance invite with token.
+
+    Security features:
+    - ✅ Rate limiting: 5 requests/minute (enabled)
+    - ✅ Token is single-use (overwritten on re-invite) and time-limited
+    - ✅ ACL untouched — accepting an invite proves inbox control, not a role
+    """
+    try:
+        await auth_service.accept_invite(request_data.token, request_data.password)
+        return MessageResponse(message="Invitation accepted, account activated")
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired invite token",
         ) from None
 
 

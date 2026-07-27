@@ -5,9 +5,14 @@ import { useUserStore } from '@/modules/user/store/useUserStore'
 import { apiClient } from '@/shared/services/apiClient'
 import type { User } from '@/modules/auth/types/user.type'
 
-type PermissionScope = {
+export interface PermissionScope {
   scopeType: string
   scopeId: string
+  permissions: string[]
+}
+
+type ChurchPermissions = {
+  churchId: string
   permissions: string[]
 }
 
@@ -15,6 +20,7 @@ type MePermissionsResponse = {
   isAdmin: boolean
   isOwner: boolean
   scopes: PermissionScope[]
+  churches: ChurchPermissions[]
 }
 
 const PERMISSIONS_QUERY_KEY = ['me', 'permissions'] as const
@@ -120,11 +126,32 @@ export function usePermissions() {
     if (!churchId) {
       return payload.scopes.some(scope => scope.permissions.includes(permission))
     }
-    return payload.scopes.some(
-      scope => scope.scopeType === 'church'
-        && scope.scopeId === churchId
-        && scope.permissions.includes(permission),
+    return payload.churches.some(
+      church => church.churchId === churchId && church.permissions.includes(permission),
     )
+  }
+
+  /**
+   * Scopes (community/region/church/branch) where the user holds `services.manage` —
+   * the set they're allowed to grant roles or manage governance in (G6).
+   */
+  const manageableScopes = computed<PermissionScope[]>(() => {
+    return serverPermissions.value?.scopes.filter(scope => scope.permissions.includes('services.manage')) ?? []
+  })
+
+  /**
+   * Whether the user holds `permission` at this *exact* scope (community/region/church/
+   * branch) — not "anywhere in the chain" like `can()` without a churchId. Used to disable
+   * exception toggles for permissions the caller doesn't themselves hold there (G9/G10
+   * subset rule, UX-only — the API is the real authority).
+   */
+  const canInScope = (permission: string, scopeType: string, scopeId: string): boolean => {
+    if (isAdmin.value || isOwner.value) {
+      return true
+    }
+    return serverPermissions.value?.scopes.some(
+      scope => scope.scopeType === scopeType && scope.scopeId === scopeId && scope.permissions.includes(permission),
+    ) ?? false
   }
 
   return {
@@ -137,5 +164,7 @@ export function usePermissions() {
     isAuthenticated,
     userRole,
     can,
+    manageableScopes,
+    canInScope,
   }
 }

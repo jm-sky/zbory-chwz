@@ -2,6 +2,8 @@ import { apiClient } from '@/shared/services/apiClient'
 import type {
   IBranch,
   IBranchCreateRequest,
+  IGrantableRole,
+  IInviteResponse,
   IPerson,
   IServiceAssignment,
   IServiceAssignmentCreateRequest,
@@ -12,6 +14,18 @@ import type {
 class ChurchApiService {
   async listServiceTypes(): Promise<IServiceType[]> {
     const { data } = await apiClient.get<IServiceType[]>('/churches/service-types')
+    return data
+  }
+
+  async listGrantableRoles(scopeType: string, scopeId: string): Promise<IGrantableRole[]> {
+    const { data } = await apiClient.get<IGrantableRole[]>('/churches/grantable-roles', {
+      params: { scopeType, scopeId },
+    })
+    return data
+  }
+
+  async listRoles(): Promise<IGrantableRole[]> {
+    const { data } = await apiClient.get<IGrantableRole[]>('/churches/roles')
     return data
   }
 
@@ -69,6 +83,13 @@ class ChurchApiService {
 
   async deleteServiceAssignment(churchId: string, assignmentId: string): Promise<void> {
     await apiClient.delete(`/churches/${churchId}/service-assignments/${assignmentId}`)
+  }
+
+  async inviteServiceAssignment(churchId: string, assignmentId: string): Promise<IInviteResponse> {
+    const { data } = await apiClient.post<IInviteResponse>(
+      `/churches/${churchId}/service-assignments/${assignmentId}/invite`,
+    )
+    return data
   }
 }
 

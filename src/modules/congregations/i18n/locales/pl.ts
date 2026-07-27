@@ -284,8 +284,18 @@ export const congregationsPl = {
         diacon: 'Diakon',
         bishop: 'Biskup',
         regional_bishop: 'Biskup regionalny',
+        branch_responsible: 'Odpowiedzialny za placówkę',
       },
       noServiceTypes: 'Brak typów służb w bazie. Uruchom: python -m cli db churches-backfill',
+      accountStatus: {
+        none: 'Brak konta',
+        invited: 'Zaproszono',
+        expired: 'Zaproszenie wygasło',
+        active: 'Aktywne',
+      },
+      sendInvite: 'Wyślij zaproszenie',
+      resendInvite: 'Ponów zaproszenie',
+      inviteSent: 'Zaproszenie wysłane',
     },
     changeHistory: {
       title: 'Historia zmian',

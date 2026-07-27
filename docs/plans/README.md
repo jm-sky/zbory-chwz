@@ -15,6 +15,7 @@ Plany implementacji funkcji i większych zmian.
 | [2026-07-09--church-platform-implementation.md](2026-07-09--church-platform-implementation.md) | **Implementacja** platformy zborów (fazy 0–5) | `in progress` |
 | [2026-07-25--acl-architecture.md](2026-07-25--acl-architecture.md) | **Architektura ACL** — rozwiązywanie uprawnień, role, wyjątki, widoczność (źródło prawdy dla faz 2–3) | `planned` |
 | [2026-07-25--acl-implementation-tasks.md](2026-07-25--acl-implementation-tasks.md) | ACL — plan implementacji T1–T12 (#007, #008) | `planned` |
+| [2026-07-27--governance-ui-tasks.md](2026-07-27--governance-ui-tasks.md) | **Governance UI** — invite flow, ekran nadawania ról, picker wyjątków `user_permissions`, audit log ACL (#010, Faza 5) | `done` |
 | [2026-07-09--church-assignment-visibility.md](2026-07-09--church-assignment-visibility.md) | Widoczność służb na karcie zboru (tel/e-mail) | `done` |
 | [2026-07-09--people-groups.md](2026-07-09--people-groups.md) | Grupy ludzi — struktury organizacyjne | `in progress` |
 | [2026-07-09--mailing-lists.md](2026-07-09--mailing-lists.md) | Eksport adresów e-mail (filtr + kopiowanie, bez wysyłki) + przeglądarka wszystkich osób (podgląd/edycja/scalanie duplikatów) | `done` |

@@ -75,6 +75,14 @@ export const authRu = {
       subtitle: 'Введите новый пароль ниже',
       back_to_login: 'Вернуться к входу',
     },
+    accept_invite_page: {
+      title: 'Настройте свой аккаунт',
+      subtitle: 'Установите пароль ниже, чтобы активировать аккаунт.',
+      submit_button: 'Активировать аккаунт',
+      success: 'Ваш аккаунт активирован. Перенаправление на страницу входа...',
+      invalid_or_expired: 'Эта ссылка-приглашение недействительна или истекла. Попросите пригласившего вас отправить новую.',
+      back_to_login: 'Вернуться к входу',
+    },
     change_password_page: {
       title: 'Изменить пароль',
       subtitle: 'Обновите пароль вашей учётной записи',
@@ -176,6 +184,7 @@ export const authRu = {
       login: 'Вход',
       register: 'Регистрация',
       verifyEmail: 'Подтверждение email',
+      acceptInvite: 'Принятие приглашения',
       oauthCallback: 'OAuth Callback',
     },
     oauth: {

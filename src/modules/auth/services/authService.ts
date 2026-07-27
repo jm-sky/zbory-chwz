@@ -2,6 +2,7 @@
 import { apiClient } from '@/shared/services/apiClient'
 import type { IAuthService } from '@/modules/auth/types/auth.type'
 import type {
+  AcceptInviteData,
   ChangePasswordData,
   ForgotPasswordData,
   LoginCredentials,
@@ -45,6 +46,14 @@ class AuthService implements IAuthService {
 
   async resetPassword(data: ResetPasswordData): Promise<MessageResponse> {
     const response = await apiClient.post<MessageResponse>('/auth/reset-password', data)
+    return response.data
+  }
+
+  async acceptInvite(data: AcceptInviteData): Promise<MessageResponse> {
+    const response = await apiClient.post<MessageResponse>('/auth/accept-invite', {
+      token: data.token,
+      password: data.password,
+    })
     return response.data
   }
 

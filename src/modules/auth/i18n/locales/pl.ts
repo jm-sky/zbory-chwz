@@ -75,6 +75,14 @@ export const authPl = {
       subtitle: 'Wprowadź nowe hasło poniżej',
       back_to_login: 'Powrót do logowania',
     },
+    accept_invite_page: {
+      title: 'Skonfiguruj swoje konto',
+      subtitle: 'Ustaw hasło poniżej, aby aktywować konto.',
+      submit_button: 'Aktywuj konto',
+      success: 'Twoje konto zostało aktywowane. Przekierowanie do logowania...',
+      invalid_or_expired: 'Ten link zaproszenia jest nieprawidłowy lub wygasł. Poproś osobę, która Cię zaprosiła, o wysłanie nowego.',
+      back_to_login: 'Powrót do logowania',
+    },
     change_password_page: {
       title: 'Zmień hasło',
       subtitle: 'Zaktualizuj hasło do swojego konta',
@@ -176,6 +184,7 @@ export const authPl = {
       login: 'Logowanie',
       register: 'Rejestracja',
       verifyEmail: 'Weryfikacja email',
+      acceptInvite: 'Akceptacja zaproszenia',
       oauthCallback: 'OAuth Callback',
     },
     oauth: {

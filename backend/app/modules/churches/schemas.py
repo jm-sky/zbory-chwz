@@ -6,7 +6,15 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 VisibilityLevel = Literal["hidden", "public", "authenticated", "pastors"]
-ChurchAclRole = Literal["bishop", "regional_bishop", "pastor", "diacon"]
+ChurchAclRole = Literal["bishop", "regional_bishop", "pastor", "diacon", "branch_responsible"]
+AccountStatus = Literal["none", "invited", "expired", "active"]
+
+
+class AccountState(BaseModel):
+    userId: str
+    status: AccountStatus
+    invitedAt: datetime | None = None
+    invitationExpiresAt: datetime | None = None
 
 
 class RegionResponse(BaseModel):
@@ -127,6 +135,7 @@ class ServiceAssignmentResponse(BaseModel):
     createdAt: datetime = Field(validation_alias="created_at")
     person: PersonResponse | None = None
     serviceType: ServiceTypeResponse | None = Field(default=None, validation_alias="service_type")
+    account: AccountState | None = None
 
 
 class PersonSearchResponse(BaseModel):
@@ -160,7 +169,24 @@ class PermissionScopeResponse(BaseModel):
     permissions: list[str]
 
 
+class ChurchPermissionsResponse(BaseModel):
+    churchId: str
+    permissions: list[str]
+
+
 class MePermissionsResponse(BaseModel):
     isAdmin: bool
     isOwner: bool
     scopes: list[PermissionScopeResponse]
+    churches: list[ChurchPermissionsResponse] = []
+
+
+class GrantableRoleResponse(BaseModel):
+    name: str
+    scopeType: str
+    permissions: list[str]
+
+
+class InviteResponse(BaseModel):
+    invitedAt: datetime
+    invitationExpiresAt: datetime

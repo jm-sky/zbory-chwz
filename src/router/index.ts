@@ -4,6 +4,7 @@ import { i18n } from '@/i18n'
 import { protectAdminRoutes } from '@/modules/admin/guards/adminGuard'
 import { protectRoutes } from '@/modules/auth/guards/authGuard'
 import { config } from '@/shared/config/config'
+import { protectPermissionRoutes } from '@/shared/guards/permissionGuard'
 import { routes } from './routes'
 
 const router = createRouter({
@@ -41,6 +42,8 @@ const router = createRouter({
 protectRoutes(router)
 // Install admin guard (checks admin access after auth)
 protectAdminRoutes(router)
+// Install permission guard (checks meta.requiresPermission after auth/admin)
+protectPermissionRoutes(router)
 
 // Set page title on route change
 router.afterEach((to) => {

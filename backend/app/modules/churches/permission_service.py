@@ -67,11 +67,12 @@ class PermissionService:
         if user.isAdmin or user.isOwner:
             return None
 
-        result = await self.db.execute(select(ChurchDB.id))
-        all_ids = [row[0] for row in result.all()]
+        snapshot = await self._load_snapshot(user.id)
+        result = await self.db.execute(select(ChurchDB.id, ChurchDB.region_id, ChurchDB.community_id))
         allowed: set[str] = set()
-        for church_id in all_ids:
-            if await self.resolve(user, permission, ("church", church_id)):
+        for church_id, region_id, community_id in result.all():
+            chain = self._church_chain(church_id, region_id, community_id)
+            if permission in self._permissions_for_chain(snapshot, chain):
                 allowed.add(church_id)
         return allowed
 
@@ -81,6 +82,7 @@ class PermissionService:
                 "isAdmin": user.isAdmin,
                 "isOwner": user.isOwner,
                 "scopes": [],
+                "churches": [],
             }
 
         snapshot = await self._load_snapshot(user.id)
@@ -102,33 +104,66 @@ class PermissionService:
             for (st, sid), perms in sorted(scope_perms.items())
             if perms
         ]
+
+        church_result = await self.db.execute(select(ChurchDB.id, ChurchDB.region_id, ChurchDB.community_id))
+        churches = []
+        for church_id, region_id, community_id in church_result.all():
+            chain = self._church_chain(church_id, region_id, community_id)
+            perms = self._permissions_for_chain(snapshot, chain)
+            if perms:
+                churches.append({"churchId": church_id, "permissions": sorted(perms)})
+
         return {
             "isAdmin": False,
             "isOwner": False,
             "scopes": scopes,
+            "churches": churches,
         }
 
+    @staticmethod
+    def _church_chain(church_id: str, region_id: str | None, community_id: str) -> list[Scope]:
+        chain: list[Scope] = [("church", church_id)]
+        if region_id:
+            chain.append(("region", region_id))
+        chain.append(("community", community_id))
+        return chain
+
+    @staticmethod
+    def _permissions_for_chain(snapshot: UserGrantSnapshot, chain: list[Scope]) -> set[str]:
+        """Effective permissions across a scope chain: role grants and `allow` exceptions
+        union, minus any permission `deny`-ed anywhere in the chain (deny is global in the
+        chain, per architecture §2 — not "nearest wins")."""
+        denied: set[str] = set()
+        granted: set[str] = set()
+        for scope in chain:
+            granted |= snapshot.role_grants.get(scope, set())
+            for (scope_type, scope_id, perm), effect in snapshot.user_permissions.items():
+                if (scope_type, scope_id) != scope:
+                    continue
+                if effect == "deny":
+                    denied.add(perm)
+                elif effect == "allow":
+                    granted.add(perm)
+        return granted - denied
+
     async def role_permissions_in_scope(self, user: User, scope: Scope) -> set[str]:
+        """Permissions the user effectively holds *at* `scope`, inherited down the same chain
+        `resolve()` walks. Used by the subset rule (assert_can_grant_role, §5.1): a regional
+        bishop granted at ("region", r) must be recognized as holding church-level permissions
+        for churches in that region, not just grants placed exactly on ("church", church_id)."""
         if user.isAdmin or user.isOwner:
             return {p.value for p in Permission}
 
         snapshot = await self._load_snapshot(user.id)
-        perms = set(snapshot.role_grants.get(scope, set()))
-        for (st, sid, perm), effect in snapshot.user_permissions.items():
-            if (st, sid) != scope:
-                continue
-            if effect == "allow":
-                perms.add(perm)
-            elif effect == "deny":
-                perms.discard(perm)
-        return perms
+        chain = await self.scope_chain(scope[0], scope[1])
+        return self._permissions_for_chain(snapshot, chain)
 
     async def scope_chain(self, scope_type: str, scope_id: str) -> list[Scope]:
         if scope_type == "branch":
             branch = await self.db.get(BranchDB, scope_id)
             if not branch:
                 return []
-            return await self.scope_chain("church", branch.church_id)
+            return [("branch", branch.id), *await self.scope_chain("church", branch.church_id)]
 
         if scope_type == "church":
             church = await self.db.get(ChurchDB, scope_id)

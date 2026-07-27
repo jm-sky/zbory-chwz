@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ContactIcon, MailIcon, SettingsIcon, ShieldIcon, UserIcon, UsersIcon } from 'lucide-vue-next'
+import { ContactIcon, MailIcon, SettingsIcon, ShieldCheckIcon, ShieldIcon, UserIcon, UsersIcon } from 'lucide-vue-next'
 import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -10,6 +10,7 @@ import { AdminRoutePaths } from '@/modules/admin/routes'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRouteNames } from '@/modules/auth/config/routes'
 import { DirectoryRoutePaths } from '@/modules/directory/routes'
+import { GovernanceRoutePaths } from '@/modules/governance/routes'
 import { GroupsRoutePaths } from '@/modules/groups/routes'
 import { SettingsRoutePaths } from '@/modules/settings/routes'
 import { useUser } from '@/modules/user/composables/useUser'
@@ -23,7 +24,7 @@ import HoverLink from '../ui/hover-link/HoverLink.vue'
 const { t } = useI18n()
 const router = useRouter()
 const { profile } = useUser()
-const { canAccessAdminPanel } = usePermissions()
+const { canAccessAdminPanel, can } = usePermissions()
 const { logout, user: authUser } = useAuth()
 
 // Use auth user if backend is enabled, otherwise use profile from localStorage
@@ -33,6 +34,7 @@ interface Link {
   to: string
   label: string
   icon?: Component
+  hidden?: boolean
 }
 
 const coreLinks = computed<Link[]>(() => [
@@ -60,6 +62,12 @@ const coreLinks = computed<Link[]>(() => [
     to: DirectoryRoutePaths.persons,
     label: t('directory.persons.title', 'Przeglądarka osób'),
     icon: ContactIcon,
+  },
+  {
+    to: GovernanceRoutePaths.roles,
+    label: t('governance.nav.roles', 'Zarządzanie rolami'),
+    icon: ShieldCheckIcon,
+    hidden: !can('services.manage'),
   },
   {
     to: AdminRoutePaths.dashboard,

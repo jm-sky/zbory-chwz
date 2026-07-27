@@ -197,6 +197,11 @@ class SecuritySettings(BaseSettings):
         validation_alias="EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS",
         description="Email verification token expiration in hours",
     )
+    invite_token_expires_hours: int = Field(
+        default=168,
+        validation_alias="INVITE_TOKEN_EXPIRES_HOURS",
+        description="Governance invite token expiration in hours (default 1 week — invites go to pastors, not to the account owner, so a 1-hour reset-style TTL is too short)",
+    )
     superadmin_email: str | None = Field(
         default=None,
         validation_alias="SUPERADMIN_EMAIL",

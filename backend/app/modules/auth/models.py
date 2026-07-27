@@ -81,6 +81,10 @@ class User(BaseModel):
     oauthProviderId: str | None = None  # Provider's user ID
     avatarUrl: str | None = None  # Profile picture URL
     tokenVersion: int = 0
+    inviteToken: str | None = None
+    inviteTokenExpiry: datetime | None = None
+    invitedAt: datetime | None = None
+    invitedBy: str | None = None
 
     def verify_password(self, password: str) -> bool:
         """Verify password against stored hash."""
@@ -135,6 +139,50 @@ class User(BaseModel):
             return False
         except Exception as e:
             logger.error("Unexpected error validating reset token: %s", e, exc_info=True)
+            return False
+
+    def set_invite_token(self, token: str, expiry: datetime, *, invited_by: str | None, invited_at: datetime) -> None:
+        """Set governance invite token and expiry. Overwrites any previous invite token —
+        re-inviting is idempotent-by-replacement, invalidating the old link."""
+        self.inviteToken = token
+        self.inviteTokenExpiry = expiry
+        self.invitedBy = invited_by
+        self.invitedAt = invited_at
+
+    def clear_invite_token(self) -> None:
+        """Clear invite token after acceptance."""
+        self.inviteToken = None
+        self.inviteTokenExpiry = None
+
+    def is_invite_token_valid(self, token: str) -> bool:
+        """Check if invite token is valid and not expired using secure comparison."""
+        if not self.inviteToken:
+            return False
+
+        try:
+            payload = verify_token(token)
+
+            if payload.get("type") != "invite":
+                logger.debug("Invalid token type for invite acceptance")
+                return False
+
+            if not secrets.compare_digest(self.inviteToken, token):
+                logger.warning("Invite token mismatch for user %s", self.id)
+                return False
+
+            if payload.get("sub") != self.id:
+                logger.warning("User ID mismatch in invite token")
+                return False
+
+            return True
+        except ExpiredTokenError:
+            logger.debug("Invite token expired for user %s", self.id)
+            return False
+        except InvalidTokenError:
+            logger.debug("Invalid invite token for user %s", self.id)
+            return False
+        except Exception as e:
+            logger.error("Unexpected error validating invite token: %s", e, exc_info=True)
             return False
 
     def set_email_verification_token(self, token: str, sent_at: datetime) -> None:

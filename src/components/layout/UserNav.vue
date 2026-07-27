@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LogIn, LogOut, SettingsIcon, ShieldIcon, UserIcon } from 'lucide-vue-next'
+import { LogIn, LogOut, SettingsIcon, ShieldCheckIcon, ShieldIcon, UserIcon } from 'lucide-vue-next'
 import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { AdminRoutePaths } from '@/modules/admin/routes'
 import { useAuth } from '@/modules/auth/composables/useAuth'
 import { AuthRoutePaths } from '@/modules/auth/config/routes'
+import { GovernanceRoutePaths } from '@/modules/governance/routes'
 import { SettingsRoutePaths } from '@/modules/settings/routes'
 import { UserRoutePaths } from '@/modules/user/routes'
 import { generateGravatarUrl, GRAVATAR_BASE_URL } from '@/modules/user/utils/generateGravatarUrl'
@@ -44,7 +45,7 @@ export interface UserNavProps {
 
 const { t } = useI18n()
 const { isAuthenticated } = useAuth()
-const { canAccessAdminPanel } = usePermissions()
+const { canAccessAdminPanel, can } = usePermissions()
 
 const props = defineProps<UserNavProps>()
 
@@ -68,6 +69,12 @@ const defaultCoreLinks = computed<Link[]>(() => [
     label: t('admin.dashboard.title', 'Admin Dashboard'),
     icon: ShieldIcon,
     hidden: !canAccessAdminPanel.value,
+  },
+  {
+    to: GovernanceRoutePaths.roles,
+    label: t('governance.nav.roles', 'Zarządzanie rolami'),
+    icon: ShieldCheckIcon,
+    hidden: !can('services.manage'),
   }
 ])
 

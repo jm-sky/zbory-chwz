@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{% if t %}{{ translate('invitation.title') }}{% else %}You've Been Invited - {{ app_name }}{% endif %}{% endblock %}
+
+{% block content %}
+<h1>{% if t %}{{ translate('invitation.heading') }}{% else %}You've Been Invited{% endif %}</h1>
+<p>{% if t %}{{ translate('invitation.hello') }}{% else %}Hello {{ name }},{% endif %}</p>
+<p>{% if t %}{{ translate('invitation.received') }}{% else %}You've been invited to set up your account for <strong>{{ email }}</strong>.{% endif %}</p>
+<p>{% if t %}{{ translate('invitation.click_button') }}{% else %}Click the button below to set your password and activate your account:{% endif %}</p>
+<a href="{{ invite_link }}" class="button">{% if t %}{{ translate('invitation.accept_button') }}{% else %}Accept Invitation{% endif %}</a>
+<p>{% if t %}{{ translate('invitation.copy_link') }}{% else %}Or copy and paste this link into your browser:{% endif %}</p>
+<p><code>{{ invite_link }}</code></p>
+
+<div class="warning-box">
+  <strong>{% if t %}{{ translate('invitation.important') }}{% else %}⚠️ Important:{% endif %}</strong>
+  <ul>
+    <li>{% if t %}{{ translate('invitation.expires_in') }}{% else %}This link will expire in {{ expires_hours }} hour(s){% endif %}</li>
+    <li>{% if t %}{{ translate('invitation.didnt_expect') }}{% else %}If you didn't expect this invitation, please ignore this email{% endif %}</li>
+  </ul>
+</div>
+
+<p>{% if t %}{{ translate('invitation.concerns') }}{% else %}If you have any concerns about this invitation, please contact support.{% endif %}</p>
+{% endblock %}

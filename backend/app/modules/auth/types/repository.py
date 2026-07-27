@@ -106,6 +106,19 @@ class UserRepositoryInterface(ABC):
         ...
 
     @abstractmethod
+    async def accept_invite_with_token(self, token: str, new_password: str) -> User | None:
+        """Accept a governance invite: set password, activate account, clear invite token.
+
+        Args:
+            token: Invite token (JWT)
+            new_password: New plain text password
+
+        Returns:
+            The updated user if the token was valid, None otherwise
+        """
+        ...
+
+    @abstractmethod
     async def change_password(self, user_id: str, current_password: str, new_password: str) -> bool:
         """Change user password after verifying current password.
 

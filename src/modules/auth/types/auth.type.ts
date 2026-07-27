@@ -1,4 +1,4 @@
-import type { ChangePasswordData, ForgotPasswordData, LoginCredentials, LoginResponse, MessageResponse, RefreshTokenResponse, RegisterCredentials, RegisterResponse, ResetPasswordData, User } from './user.type'
+import type { AcceptInviteData, ChangePasswordData, ForgotPasswordData, LoginCredentials, LoginResponse, MessageResponse, RefreshTokenResponse, RegisterCredentials, RegisterResponse, ResetPasswordData, User } from './user.type'
 
 export interface IAuthService {
   login(credentials: LoginCredentials): Promise<LoginResponse>
@@ -7,6 +7,7 @@ export interface IAuthService {
   refreshAccessToken(): Promise<RefreshTokenResponse>
   forgotPassword(data: ForgotPasswordData): Promise<MessageResponse>
   resetPassword(data: ResetPasswordData): Promise<MessageResponse>
+  acceptInvite(data: AcceptInviteData): Promise<MessageResponse>
   changePassword(data: ChangePasswordData): Promise<MessageResponse>
   getCurrentUser(): Promise<User>
   deleteAccount(confirmation: string, password?: string): Promise<MessageResponse>

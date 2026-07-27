@@ -321,6 +321,52 @@ class EmailService:
             translations=translations,
         )
 
+    async def send_invitation_email(
+        self,
+        to: str,
+        name: str,
+        invite_token: str,
+        user_id: str | None = None,
+        locale: SupportedLocale | None = None,
+        translations: dict | None = None,
+    ) -> bool:
+        """Send a governance invite email (accept-invite / set-password flow, G2).
+
+        Args:
+            to: Recipient email address
+            name: Invited person's name
+            invite_token: Invite token (never exposed via the API — only ever emailed)
+            user_id: User ID for audit logging (optional)
+            locale: Locale for translations (optional)
+            translations: Translations dictionary (optional, loaded automatically if locale provided)
+
+        Returns:
+            True if email sent successfully
+        """
+        invite_link = f"{settings.frontend_url}/accept-invite?token={invite_token}"
+        context = {
+            "name": name,
+            "email": to,
+            "invite_link": invite_link,
+            "token": invite_token,
+            "expires_hours": settings.security.invite_token_expires_hours,
+        }
+        subject = f"You've been invited - {settings.app.display_name}"
+        if translations:
+            subject = "translation:invitation.subject"
+
+        return await self.send_email(
+            to=to,
+            subject=subject,
+            template_name="invitation",
+            context=context,
+            user_id=user_id,
+            related_entity_type="user" if user_id else None,
+            related_entity_id=user_id,
+            locale=locale,
+            translations=translations,
+        )
+
     async def send_password_changed_email(
         self,
         to: str,

@@ -78,6 +78,10 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             oauthProviderId=user_db.oauth_provider_id,
             avatarUrl=user_db.avatar_url,
             tokenVersion=user_db.token_version,
+            inviteToken=user_db.invite_token,
+            inviteTokenExpiry=user_db.invite_token_expiry,
+            invitedAt=user_db.invited_at,
+            invitedBy=user_db.invited_by,
         )
 
     async def create_user(
@@ -229,6 +233,10 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
         user_db.email_verification_sent_at = user.emailVerificationSentAt
         user_db.email_verified_at = user.emailVerifiedAt
         user_db.avatar_url = user.avatarUrl
+        user_db.invite_token = user.inviteToken
+        user_db.invite_token_expiry = user.inviteTokenExpiry
+        user_db.invited_at = user.invitedAt
+        user_db.invited_by = user.invitedBy
 
         await self.db.commit()
         await self.db.refresh(user_db)
@@ -271,6 +279,35 @@ class UserRepository(SearchMixin, UserRepositoryInterface):
             return True
 
         return False
+
+    async def accept_invite_with_token(self, token: str, new_password: str) -> User | None:
+        """Accept a governance invite: set password and activate the account.
+
+        ACL is deliberately untouched here — invite acceptance proves control of the
+        inbox, not a governance role. Roles are granted separately (service assignment /
+        G5 role-assignment endpoints) per the 2026-07-09 decision "Pastor ACL before
+        is_active".
+        """
+        stmt = select(UserDB).where(UserDB.invite_token == token)
+        result = await self.db.execute(stmt)
+        user_db = result.scalar_one_or_none()
+
+        if not user_db:
+            return None
+
+        user = self._map_user(user_db)
+
+        if not user.is_invite_token_valid(token):
+            return None
+
+        user.set_password(new_password)
+        user.isActive = True
+        user.isEmailVerified = True
+        if not user.emailVerifiedAt:
+            user.emailVerifiedAt = datetime.now(UTC)
+        user.clear_invite_token()
+        await self.update_user(user)
+        return user
 
     async def change_password(self, user_id: str, current_password: str, new_password: str) -> bool:
         """Change user password after verifying current password."""

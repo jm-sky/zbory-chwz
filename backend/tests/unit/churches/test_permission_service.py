@@ -16,7 +16,7 @@ from app.core.database import Base
 from app.modules.auth.models import User
 from app.modules.churches.acl_models import UserPermissionDB, UserRoleAssignmentDB
 from app.modules.churches.acl_seed import Permission, ensure_acl_roles
-from app.modules.churches.db_models import ChurchDB, CommunityDB, RegionDB
+from app.modules.churches.db_models import BranchDB, ChurchDB, CommunityDB, RegionDB
 from app.modules.churches.permission_cache import PermissionCache
 from app.modules.churches.permission_service import PermissionService
 
@@ -132,3 +132,52 @@ async def test_regional_bishop_reaches_church_in_region(session: AsyncSession) -
 
     service = PermissionService(session, PermissionCache(None))
     assert await service.resolve(bishop, Permission.CHURCH_EDIT, ("church", church_id))
+
+
+@pytest.mark.asyncio
+async def test_branch_responsible_scoped_to_own_branch(session: AsyncSession) -> None:
+    now = datetime.now(UTC)
+    community_id = generate_id()
+    church_id = generate_id()
+    branch_id = generate_id()
+    other_branch_id = generate_id()
+
+    session.add_all(
+        [
+            CommunityDB(id=community_id, name="CHWZ", slug="chwz", created_at=now),
+            ChurchDB(
+                id=church_id,
+                community_id=community_id,
+                region_id=None,
+                tenant_id=church_id,
+                name="Zbor",
+                visibility="hidden",
+                created_at=now,
+            ),
+            BranchDB(id=branch_id, church_id=church_id, name="Placowka", slug="placowka", created_at=now),
+            BranchDB(
+                id=other_branch_id,
+                church_id=church_id,
+                name="Inna placowka",
+                slug="inna-placowka",
+                created_at=now,
+            ),
+        ]
+    )
+    await session.flush()
+    roles = await ensure_acl_roles(session)
+    user = _user("branch-responsible")
+    session.add(
+        UserRoleAssignmentDB(
+            id=generate_id(),
+            user_id=user.id,
+            role_id=roles["branch_responsible"].id,
+            scope_type="branch",
+            scope_id=branch_id,
+        )
+    )
+    await session.commit()
+
+    service = PermissionService(session, PermissionCache(None))
+    assert await service.resolve(user, Permission.BRANCH_MANAGE, ("branch", branch_id))
+    assert not await service.resolve(user, Permission.BRANCH_MANAGE, ("branch", other_branch_id))

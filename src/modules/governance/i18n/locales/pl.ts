@@ -1,0 +1,87 @@
+export const governancePl = {
+  governance: {
+    nav: {
+      roles: 'Zarządzanie rolami',
+    },
+    roles: {
+      title: 'Zarządzanie rolami',
+      subtitle: 'Nadawaj i odbieraj role ACL we wspólnocie, rejonach, zborach i placówkach.',
+      scopeLabel: 'Zasięg',
+      scopePlaceholder: 'Wybierz zasięg',
+      scopeType: {
+        community: 'Wspólnota',
+        region: 'Rejon',
+        church: 'Zbór',
+        branch: 'Placówka',
+      },
+      noScopes: 'Nie zarządzasz jeszcze żadnym zasięgiem.',
+      empty: 'Brak nadań ról w tym zasięgu',
+      add: 'Nadaj rolę',
+      addTitle: 'Nadaj rolę',
+      addDescription: 'Znajdź osobę z istniejącym kontem i wybierz rolę do nadania w tym zasięgu.',
+      grantSuccess: 'Rola nadana',
+      grantError: 'Nie udało się nadać roli',
+      revoke: 'Odbierz',
+      revokeConfirm: 'Czy na pewno chcesz odebrać tę rolę?',
+      revokeSuccess: 'Rola odebrana',
+      revokeError: 'Nie udało się odebrać roli',
+      revokeFromServiceAssignment: 'Ta rola pochodzi z przypisania służby — usuń przypisanie zamiast tego',
+      columns: {
+        person: 'Osoba',
+        role: 'Rola',
+        scope: 'Zasięg',
+        source: 'Źródło',
+        createdAt: 'Nadano',
+        actions: 'Akcje',
+      },
+      source: {
+        manual: 'Ręczne',
+        service: 'Ze służby',
+      },
+      personSearchLabel: 'Osoba',
+      personSearchPlaceholder: 'Szukaj po imieniu, nazwisku, emailu lub telefonie',
+      personNoAccount: 'Brak konta — nie można nadać roli',
+      roleLabel: 'Rola',
+      rolePlaceholder: 'Wybierz rolę',
+      noGrantableRoles: 'Nie możesz nadać żadnej roli w tym zasięgu',
+      loadError: 'Nie udało się wczytać nadań ról',
+    },
+    permissions: {
+      title: 'Uprawnienia użytkownika',
+      subtitle: 'Nadpisz pojedyncze uprawnienia dla tego użytkownika w tym zasięgu.',
+      wideScopeWarning: 'Wyjątek "odmów" w tym zasięgu wygrywa we wszystkich zborach poniżej — obowiązuje w całym łańcuchu.',
+      sourceLabel: 'Skąd:',
+      noSource: '—',
+      saveSuccess: 'Zapisano',
+      saveError: 'Nie udało się zapisać',
+      state: {
+        inherited: 'Dziedziczone',
+        allow: 'Zezwól',
+        deny: 'Odmów',
+      },
+    },
+    audit: {
+      title: 'Dziennik audytu',
+      empty: 'Brak zarejestrowanych zdarzeń',
+      loadError: 'Nie udało się pobrać dziennika audytu',
+      action: {
+        role: {
+          grant: 'Nadano rolę',
+          revoke: 'Odebrano rolę',
+        },
+        permission: {
+          set: 'Ustawiono wyjątek uprawnienia',
+          clear: 'Usunięto wyjątek uprawnienia',
+        },
+        invite: {
+          sent: 'Wysłano zaproszenie',
+          accepted: 'Zaproszenie zaakceptowane',
+        },
+        assignment: {
+          create: 'Utworzono przypisanie służby',
+          delete: 'Usunięto przypisanie służby',
+        },
+      },
+    },
+  },
+}

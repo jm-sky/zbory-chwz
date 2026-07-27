@@ -142,6 +142,24 @@ class ResetPasswordRequest(BaseModel):
         return validate_password_strength(v)
 
 
+class AcceptInviteRequest(BaseModel):
+    """Accept governance invite request schema."""
+
+    token: str = Field(..., min_length=1)
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=100,
+        description="Password must contain uppercase, lowercase, digit, and special character",
+    )
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """Validate password meets strength requirements."""
+        return validate_password_strength(v)
+
+
 class ChangePasswordRequest(BaseModel):
     """Change password request schema for authenticated users."""
 

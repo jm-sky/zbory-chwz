@@ -11,6 +11,7 @@ export const AuthRoutePaths = {
   register: import.meta.env.VITE_AUTH_REGISTER_PATH ?? `${AUTH_BASE_PATH}/register`,
   forgotPassword: import.meta.env.VITE_AUTH_FORGOT_PASSWORD_PATH ?? `${AUTH_BASE_PATH}/forgot-password`,
   resetPassword: import.meta.env.VITE_AUTH_RESET_PASSWORD_PATH ?? `${AUTH_BASE_PATH}/reset-password`,
+  acceptInvite: import.meta.env.VITE_AUTH_ACCEPT_INVITE_PATH ?? '/accept-invite',
   changePassword: import.meta.env.VITE_AUTH_CHANGE_PASSWORD_PATH ?? `${AUTH_BASE_PATH}/change-password`,
   twoFactorSetup: import.meta.env.VITE_AUTH_TWO_FACTOR_SETUP_PATH ?? `${AUTH_BASE_PATH}/2fa/setup`,
   twoFactorVerify: import.meta.env.VITE_AUTH_TWO_FACTOR_VERIFY_PATH ?? `${AUTH_BASE_PATH}/2fa/verify`,
@@ -25,6 +26,7 @@ export const AuthRouteNames = {
   register: 'Register',
   forgotPassword: 'ForgotPassword',
   resetPassword: 'ResetPassword',
+  acceptInvite: 'AcceptInvite',
   changePassword: 'ChangePassword',
   twoFactorSetup: 'TwoFactorSetup',
   twoFactorVerify: 'TwoFactorVerify',
@@ -57,6 +59,12 @@ export const authRoutes: RouteRecordRaw[] = [
     name: AuthRouteNames.resetPassword,
     component: () => import('@/modules/auth/pages/ResetPasswordPage.vue'),
     meta: { title: 'auth.reset_password_page.title' },
+  },
+  {
+    path: AuthRoutePaths.acceptInvite,
+    name: AuthRouteNames.acceptInvite,
+    component: () => import('@/modules/auth/pages/AcceptInvitePage.vue'),
+    meta: { layout: 'guest', title: 'auth.accept_invite_page.title' },
   },
   {
     path: AuthRoutePaths.changePassword,

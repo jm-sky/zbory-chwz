@@ -4,7 +4,9 @@ import logging
 import secrets
 from collections import defaultdict
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import case, delete, func, select
@@ -13,13 +15,14 @@ from sqlalchemy.orm import selectinload
 
 from app.common.crypto.encrypted_types import hmac_email, hmac_phone_digits
 from app.common.id_utils import generate_id
+from app.core.config import settings
 from app.core.database import get_db
-from app.modules.auth.auth_utils import get_password_hash
+from app.modules.auth.auth_utils import create_invite_token, get_password_hash
 from app.modules.auth.db_models import UserDB
 from app.modules.auth.models import User
 from app.modules.churches.acl_seed import Permission
 from app.modules.churches.acl_grant_rules import assert_can_assign_service_type, assert_can_grant_role
-from app.modules.churches.acl_models import UserPermissionDB, UserRoleAssignmentDB
+from app.modules.churches.acl_models import RoleDB, UserPermissionDB, UserRoleAssignmentDB
 from app.modules.churches.acl_seed import (
     ELEVATED_ROLE_NAMES,
     PASTORAL_ROLE_NAMES,
@@ -40,22 +43,100 @@ from app.modules.churches.person_search import (
 )
 from app.modules.churches.permission_service import PermissionService
 from app.modules.churches.schemas import (
+    AccountState,
+    AccountStatus,
     BranchCreateRequest,
     BranchUpdateRequest,
     ServiceAssignmentCreateRequest,
     ServiceAssignmentUpdateRequest,
 )
-from app.modules.churches.seed_data import PASTOR_SERVICE_SLUGS
 from app.modules.churches.slug_utils import church_slug
 from app.modules.churches.visibility import VisibilityService
+from app.modules.governance.audit_service import AclAuditService
+from app.modules.governance.db_models import AclAuditAction
 from app.modules.tenants.db_models import TenantMembershipDB
 
+if TYPE_CHECKING:
+    from app.modules.churches.permission_cache import PermissionCache
+
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class InviteResult:
+    """Concrete (non-Optional) values from invite_assignment_account — the ORM columns
+    backing these are nullable, but at the point this is returned they were all just set."""
+
+    user_id: str
+    name: str
+    email: str
+    token: str
+    invited_at: datetime
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
+class GrantedRole:
+    """A role grant written as a side effect of creating a service assignment
+    (_maybe_create_user_and_acl) — returned so the router can audit-log it (G8)."""
+
+    user_id: str
+    role_name: str
+
+
+@dataclass(frozen=True)
+class RevokedGrant:
+    """A role grant removed because its source service assignment was deleted (§5.3) —
+    returned so the router can audit-log one role.revoke entry per grant (G8)."""
+
+    user_id: str
+    role_name: str
+
+
+@dataclass(frozen=True)
+class DeleteAssignmentResult:
+    deleted: bool
+    revoked_roles: list[RevokedGrant]
+
+    def __bool__(self) -> bool:
+        """Preserves `if not await repo.delete_service_assignment(...)`-style call sites
+        that predate the richer return type (audit logging, G8) needing revoked_roles."""
+        return self.deleted
+
+
+def _account_state_from_user(user_db: UserDB) -> AccountState:
+    """Derive UI account status from raw columns (G3):
+    - active: account is usable today
+    - invited / expired: inactive, distinguished by whether the outstanding invite token
+      is still within its TTL
+    - none: inactive with no outstanding invite (never invited, or invited-and-accepted
+      followed by a separate deactivation — not expected in this flow, but not an error)
+    """
+    if user_db.is_active:
+        status: AccountStatus = "active"
+    elif user_db.invite_token:
+        now = datetime.now(UTC)
+        expiry = user_db.invite_token_expiry
+        # SQLite (unit tests) returns naive datetimes even for DateTime(timezone=True)
+        # columns; Postgres (prod) returns tz-aware ones. Normalize before comparing.
+        if expiry and expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=UTC)
+        status = "expired" if (expiry and expiry <= now) else "invited"
+    else:
+        status = "none"
+
+    return AccountState(
+        userId=user_db.id,
+        status=status,
+        invitedAt=user_db.invited_at,
+        invitationExpiresAt=user_db.invite_token_expiry,
+    )
 
 
 class ChurchRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.audit = AclAuditService(db)
 
     async def get_church_by_id(self, church_id: str) -> ChurchDB | None:
         result = await self.db.execute(select(ChurchDB).where(ChurchDB.id == church_id))
@@ -245,6 +326,98 @@ class ChurchRepository:
         )
         return list(result.scalars().all())
 
+    async def get_service_assignment(self, scope_type: str, scope_id: str, assignment_id: str) -> ServiceAssignmentDB | None:
+        result = await self.db.execute(
+            select(ServiceAssignmentDB)
+            .where(
+                ServiceAssignmentDB.id == assignment_id,
+                ServiceAssignmentDB.scope_type == scope_type,
+                ServiceAssignmentDB.scope_id == scope_id,
+            )
+            .options(
+                selectinload(ServiceAssignmentDB.person),
+                selectinload(ServiceAssignmentDB.service_type),
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_account_states(self, persons: Sequence[PersonDB]) -> dict[str, AccountState]:
+        """Account state per person_id, for persons that have a linked account. Persons
+        without a user_id are omitted — callers treat "not in dict" as no account (G3)."""
+        user_ids = {p.user_id for p in persons if p.user_id}
+        if not user_ids:
+            return {}
+
+        result = await self.db.execute(select(UserDB).where(UserDB.id.in_(user_ids)))
+        users_by_id = {u.id: u for u in result.scalars().all()}
+
+        states: dict[str, AccountState] = {}
+        for person in persons:
+            if not person.user_id:
+                continue
+            user_db = users_by_id.get(person.user_id)
+            if not user_db:
+                continue
+            states[person.id] = _account_state_from_user(user_db)
+        return states
+
+    async def invite_assignment_account(
+        self,
+        assignment: ServiceAssignmentDB,
+        *,
+        actor: User,
+    ) -> InviteResult:
+        """Generate/overwrite an invite token for the account linked to this assignment's
+        person. Idempotent: a second call for the same assignment silently invalidates the
+        previous invite token by overwriting it.
+
+        Raises HTTPException for preconditions the router can't check itself: no email on
+        file, or no account created yet (§010 — invite never silently creates one)."""
+        person = assignment.person
+        if not person or not person.email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Person has no email address on file",
+            )
+        if not person.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Create an account for this person first",
+            )
+
+        result = await self.db.execute(select(UserDB).where(UserDB.id == person.user_id))
+        user_db = result.scalar_one_or_none()
+        if not user_db:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Linked account not found")
+
+        token = create_invite_token(data={"sub": user_db.id})
+        now = datetime.now(UTC)
+        expires_at = now + timedelta(hours=settings.security.invite_token_expires_hours)
+        user_db.invite_token = token
+        user_db.invite_token_expiry = expires_at
+        user_db.invited_at = now
+        user_db.invited_by = actor.id
+
+        await self.audit.record(
+            actor=actor,
+            action=AclAuditAction.INVITE_SENT,
+            target_user_id=user_db.id,
+            target_label=user_db.name,
+            scope_type=assignment.scope_type,
+            scope_id=assignment.scope_id,
+        )
+
+        await self.db.commit()
+        await self.db.refresh(user_db)
+        return InviteResult(
+            user_id=user_db.id,
+            name=user_db.name,
+            email=person.email,
+            token=token,
+            invited_at=now,
+            expires_at=expires_at,
+        )
+
     async def _next_sort_order(self, scope_type: str, scope_id: str) -> int:
         result = await self.db.execute(
             select(func.coalesce(func.max(ServiceAssignmentDB.sort_order), -1)).where(
@@ -281,13 +454,15 @@ class ChurchRepository:
         church: ChurchDB,
         actor: User | None,
         permission_service: PermissionService | None,
-    ) -> None:
+    ) -> GrantedRole | None:
+        """Create a user/ACL grant for the assigned person if requested. Returns the granted
+        role (so callers can invalidate their cache entry and audit-log the grant), or None
+        when nothing changed."""
         if person.user_id:
-            return
+            return None
 
-        is_pastor = service_type and service_type.slug in PASTOR_SERVICE_SLUGS
         if not payload.createAccount:
-            return
+            return None
 
         if not person.email:
             raise HTTPException(
@@ -304,7 +479,11 @@ class ChurchRepository:
                 email=person.email.lower().strip(),
                 name=full_name,
                 hashed_password=get_password_hash(secrets.token_urlsafe(32)),
-                is_active=not is_pastor,
+                # Always inactive at creation — nobody knows this random password. The
+                # account is activated only by accepting a governance invite (G2), which
+                # proves control of the inbox. Previously this was `not is_pastor`, so
+                # non-pastor accounts looked "active" despite no one holding the password.
+                is_active=False,
                 is_admin=False,
                 created_at=datetime.now(UTC),
                 is_email_verified=False,
@@ -329,12 +508,12 @@ class ChurchRepository:
             if role_name and role_name not in PASTORAL_ROLE_NAMES:
                 role_name = None
         if not role_name:
-            return
+            return None
 
         roles_by_name = await ensure_acl_roles(self.db)
         role = roles_by_name.get(role_name)
         if not role:
-            return
+            return None
 
         scope = resolve_acl_scope(
             role_name,
@@ -343,7 +522,7 @@ class ChurchRepository:
             region_id=church.region_id,
         )
         if not scope:
-            return
+            return None
 
         scope_type, scope_id = scope
         existing_assignment = await self.db.execute(
@@ -355,7 +534,7 @@ class ChurchRepository:
             )
         )
         if existing_assignment.scalar_one_or_none():
-            return
+            return None
 
         self.db.add(
             UserRoleAssignmentDB(
@@ -367,7 +546,18 @@ class ChurchRepository:
                 source_assignment_id=assignment_id,
             )
         )
+        await self.audit.record(
+            actor=actor,
+            action=AclAuditAction.ROLE_GRANT,
+            target_user_id=user_db.id,
+            target_label=user_db.name,
+            scope_type=scope_type,
+            scope_id=scope_id,
+            role_name=role_name,
+            source="ui" if actor else "system",
+        )
         await self.db.flush()
+        return GrantedRole(user_id=user_db.id, role_name=role_name)
 
     async def _resolve_grant_role(
         self,
@@ -482,7 +672,7 @@ class ChurchRepository:
         self.db.add(assignment)
         await self.db.flush()
 
-        await self._maybe_create_user_and_acl(
+        granted_role = await self._maybe_create_user_and_acl(
             assignment.id,
             person,
             payload,
@@ -492,6 +682,8 @@ class ChurchRepository:
             permission_service,
         )
         await self.db.commit()
+        if permission_service and granted_role:
+            await permission_service.cache.invalidate_user(granted_role.user_id)
         await self.db.refresh(assignment)
         loaded = await self.db.execute(
             select(ServiceAssignmentDB)
@@ -580,7 +772,15 @@ class ChurchRepository:
         )
         return reloaded.scalar_one_or_none()
 
-    async def delete_service_assignment(self, scope_type: str, scope_id: str, assignment_id: str) -> bool:
+    async def delete_service_assignment(
+        self,
+        scope_type: str,
+        scope_id: str,
+        assignment_id: str,
+        *,
+        cache: "PermissionCache | None" = None,
+        actor: User | None = None,
+    ) -> DeleteAssignmentResult:
         result = await self.db.execute(
             select(ServiceAssignmentDB).where(
                 ServiceAssignmentDB.id == assignment_id,
@@ -590,12 +790,44 @@ class ChurchRepository:
         )
         assignment = result.scalar_one_or_none()
         if not assignment:
-            return False
+            return DeleteAssignmentResult(deleted=False, revoked_roles=[])
+
+        affected_user_ids: set[str] = set()
+        role_rows = await self.db.execute(
+            select(UserRoleAssignmentDB.user_id, RoleDB.name, UserDB.name).join(RoleDB, RoleDB.id == UserRoleAssignmentDB.role_id).join(UserDB, UserDB.id == UserRoleAssignmentDB.user_id).where(UserRoleAssignmentDB.source_assignment_id == assignment_id)
+        )
+        role_rows_all = role_rows.all()
+        revoked_roles = [RevokedGrant(user_id=row[0], role_name=row[1]) for row in role_rows_all]
+        revoked_user_names = {row[0]: row[2] for row in role_rows_all}
+        affected_user_ids.update(g.user_id for g in revoked_roles)
+        perm_rows = await self.db.execute(select(UserPermissionDB.user_id).where(UserPermissionDB.source_assignment_id == assignment_id))
+        affected_user_ids.update(row[0] for row in perm_rows.all())
+
         await self.db.execute(delete(UserPermissionDB).where(UserPermissionDB.source_assignment_id == assignment_id))
         await self.db.execute(delete(UserRoleAssignmentDB).where(UserRoleAssignmentDB.source_assignment_id == assignment_id))
         await self.db.delete(assignment)
+
+        batch_id = generate_id()
+        for grant in revoked_roles:
+            await self.audit.record(
+                actor=actor,
+                action=AclAuditAction.ROLE_REVOKE,
+                target_user_id=grant.user_id,
+                target_label=revoked_user_names.get(grant.user_id, grant.user_id),
+                scope_type=scope_type,
+                scope_id=scope_id,
+                role_name=grant.role_name,
+                source="ui" if actor else "system",
+                batch_id=batch_id,
+            )
+
         await self.db.commit()
-        return True
+
+        if cache:
+            for user_id in affected_user_ids:
+                await cache.invalidate_user(user_id)
+
+        return DeleteAssignmentResult(deleted=True, revoked_roles=revoked_roles)
 
     async def ensure_church_access(self, church_id: str) -> ChurchDB:
         church = await self.get_church_by_id(church_id)
@@ -618,8 +850,6 @@ class ChurchRepository:
         region_id: str,
         cache: "PermissionCache | None",
     ) -> ChurchDB | None:
-        from app.modules.churches.permission_cache import PermissionCache
-
         church = await self.get_church_by_id(church_id)
         if not church:
             return None

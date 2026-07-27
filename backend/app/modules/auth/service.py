@@ -320,6 +320,30 @@ class AuthService:
 
         return True
 
+    async def accept_invite(self, token: str, new_password: str) -> bool:
+        """
+        Accept a governance invite: set password and activate the account.
+
+        Args:
+            token: Invite token
+            new_password: New password
+
+        Returns:
+            True if the invite was accepted successfully
+
+        Raises:
+            InvalidTokenError: If token is invalid or expired
+        """
+        user = await self.user_repository.accept_invite_with_token(token, new_password)
+        if not user:
+            raise InvalidTokenError("Invalid or expired invite token")
+
+        await self.user_repository.increment_token_version(user.id)
+        if self.token_blacklist_service:
+            await self.token_blacklist_service.blacklist_all_user_tokens(user.id, reason="invite_accepted")
+
+        return True
+
     async def resend_email_verification(
         self,
         email: str,

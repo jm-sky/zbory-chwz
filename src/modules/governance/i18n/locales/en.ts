@@ -1,0 +1,87 @@
+export const governanceEn = {
+  governance: {
+    nav: {
+      roles: 'Role management',
+    },
+    roles: {
+      title: 'Role management',
+      subtitle: 'Grant and revoke ACL roles across communities, regions, churches, and branches.',
+      scopeLabel: 'Scope',
+      scopePlaceholder: 'Select a scope',
+      scopeType: {
+        community: 'Community',
+        region: 'Region',
+        church: 'Church',
+        branch: 'Branch',
+      },
+      noScopes: 'You do not manage any scope yet.',
+      empty: 'No role assignments in this scope',
+      add: 'Grant role',
+      addTitle: 'Grant a role',
+      addDescription: 'Search for a person with an existing account and pick a role to grant them in this scope.',
+      grantSuccess: 'Role granted',
+      grantError: 'Failed to grant role',
+      revoke: 'Revoke',
+      revokeConfirm: 'Are you sure you want to revoke this role?',
+      revokeSuccess: 'Role revoked',
+      revokeError: 'Failed to revoke role',
+      revokeFromServiceAssignment: 'This role comes from a service assignment — remove the assignment instead',
+      columns: {
+        person: 'Person',
+        role: 'Role',
+        scope: 'Scope',
+        source: 'Source',
+        createdAt: 'Granted at',
+        actions: 'Actions',
+      },
+      source: {
+        manual: 'Manual',
+        service: 'From service',
+      },
+      personSearchLabel: 'Person',
+      personSearchPlaceholder: 'Search by name, email or phone',
+      personNoAccount: 'No account — cannot be granted a role',
+      roleLabel: 'Role',
+      rolePlaceholder: 'Select role',
+      noGrantableRoles: 'You cannot grant any role in this scope',
+      loadError: 'Failed to load role assignments',
+    },
+    permissions: {
+      title: 'User permissions',
+      subtitle: 'Override individual permissions for this user in this scope.',
+      wideScopeWarning: 'A "deny" exception in this scope wins in every church below it — it applies across the whole chain.',
+      sourceLabel: 'From:',
+      noSource: '—',
+      saveSuccess: 'Saved',
+      saveError: 'Failed to save',
+      state: {
+        inherited: 'Inherited',
+        allow: 'Allow',
+        deny: 'Deny',
+      },
+    },
+    audit: {
+      title: 'Audit log',
+      empty: 'No recorded events',
+      loadError: 'Failed to load the audit log',
+      action: {
+        role: {
+          grant: 'Role granted',
+          revoke: 'Role revoked',
+        },
+        permission: {
+          set: 'Permission exception set',
+          clear: 'Permission exception cleared',
+        },
+        invite: {
+          sent: 'Invite sent',
+          accepted: 'Invite accepted',
+        },
+        assignment: {
+          create: 'Service assignment created',
+          delete: 'Service assignment deleted',
+        },
+      },
+    },
+  },
+}

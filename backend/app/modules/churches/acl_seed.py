@@ -45,6 +45,7 @@ ROLE_SEED: list[tuple[str, str, list[str]]] = [
             Permission.SERVICES_MANAGE,
             Permission.PEOPLE_MANAGE,
             Permission.BRANCH_MANAGE,
+            Permission.EVENTS_MANAGE,
         ],
     ),
     (
@@ -59,6 +60,7 @@ ROLE_SEED: list[tuple[str, str, list[str]]] = [
             Permission.SERVICES_MANAGE,
             Permission.PEOPLE_MANAGE,
             Permission.BRANCH_MANAGE,
+            Permission.EVENTS_MANAGE,
         ],
     ),
     (

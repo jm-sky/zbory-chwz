@@ -75,6 +75,14 @@ export const authEn = {
       subtitle: 'Enter your new password below',
       back_to_login: 'Back to Login',
     },
+    accept_invite_page: {
+      title: 'Set Up Your Account',
+      subtitle: 'Set a password below to activate your account.',
+      submit_button: 'Activate Account',
+      success: 'Your account has been activated. Redirecting to login...',
+      invalid_or_expired: 'This invitation link is invalid or has expired. Ask whoever invited you to send a new one.',
+      back_to_login: 'Back to Login',
+    },
     change_password_page: {
       title: 'Change Password',
       subtitle: 'Update your account password',
@@ -176,6 +184,7 @@ export const authEn = {
       login: 'Sign In',
       register: 'Sign Up',
       verifyEmail: 'Verify Email',
+      acceptInvite: 'Accept Invitation',
       oauthCallback: 'OAuth Callback',
     },
     oauth: {

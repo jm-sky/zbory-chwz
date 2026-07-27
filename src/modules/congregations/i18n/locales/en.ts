@@ -284,8 +284,18 @@ export const congregationsEn = {
         diacon: 'Deacon',
         bishop: 'Bishop',
         regional_bishop: 'Regional bishop',
+        branch_responsible: 'Branch responsible',
       },
       noServiceTypes: 'No service types in database. Run: python -m cli db churches-backfill',
+      accountStatus: {
+        none: 'No account',
+        invited: 'Invited',
+        expired: 'Invite expired',
+        active: 'Active',
+      },
+      sendInvite: 'Send invitation',
+      resendInvite: 'Resend invitation',
+      inviteSent: 'Invitation sent',
     },
     changeHistory: {
       title: 'Change history',

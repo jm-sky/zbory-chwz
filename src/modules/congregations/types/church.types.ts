@@ -1,5 +1,25 @@
 import type { ChurchAclRole, VisibilityLevel } from './visibility.types'
 
+export interface IGrantableRole {
+  name: ChurchAclRole
+  scopeType: string
+  permissions: string[]
+}
+
+export type AccountStatus = 'none' | 'invited' | 'expired' | 'active'
+
+export interface IAccountState {
+  userId: string
+  status: AccountStatus
+  invitedAt: string | null
+  invitationExpiresAt: string | null
+}
+
+export interface IInviteResponse {
+  invitedAt: string
+  invitationExpiresAt: string
+}
+
 export interface IServiceType {
   id: string
   slug: string
@@ -44,6 +64,7 @@ export interface IServiceAssignment {
   createdAt: string
   person: IPerson | null
   serviceType: IServiceType | null
+  account: IAccountState | null
 }
 
 export interface IBranchCreateRequest {

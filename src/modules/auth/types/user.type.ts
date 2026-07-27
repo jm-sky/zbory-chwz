@@ -42,6 +42,12 @@ export interface ResetPasswordData {
   passwordConfirmation: string
 }
 
+export interface AcceptInviteData {
+  token: string
+  password: string
+  passwordConfirmation: string
+}
+
 export interface ChangePasswordData {
   currentPassword: string
   password: string

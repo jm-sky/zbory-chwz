@@ -16,6 +16,7 @@ from app.modules.congregations.import_router import (
 from app.modules.congregations.router import router as congregations_router
 from app.modules.directory.router import router as directory_router
 from app.modules.google_contacts.router import router as google_contacts_router
+from app.modules.governance.router import router as governance_router
 from app.modules.groups.router import router as groups_router
 from app.modules.logs.router import router as logs_router
 from app.modules.settings.router import router as settings_router
@@ -82,6 +83,7 @@ api_router.include_router(congregations_import_router)  # Admin-only: AI-assiste
 api_router.include_router(sharing_router)  # Congregation share-link management (create/list/revoke)
 api_router.include_router(global_share_links_router)  # All-congregations share-link management (admin/owner only)
 api_router.include_router(churches_router)
+api_router.include_router(governance_router)
 api_router.include_router(groups_router)
 api_router.include_router(directory_router)
 api_router.include_router(google_contacts_router)

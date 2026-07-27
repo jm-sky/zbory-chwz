@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, Mail, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { Badge } from '@/components/ui/badge'
 import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import {
@@ -23,24 +24,22 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import PersonLinkedBadge from '@/shared/components/PersonLinkedBadge.vue'
 import PersonSuggestionsList from '@/shared/components/PersonSuggestionsList.vue'
 import { useHandleError } from '@/shared/composables/useHandleError'
 import { usePermissions } from '@/shared/composables/usePermissions'
 import { usePersonAutocomplete } from '@/shared/composables/usePersonAutocomplete'
 import { formatPhoneNumber } from '@/shared/utils/formatPhone'
-import type { IServiceAssignment, IServiceType } from '../types/church.types'
+import type { AccountStatus, IGrantableRole, IServiceAssignment, IServiceType } from '../types/church.types'
 import { churchApiService } from '../services/churchApiService'
 import {
-  CHURCH_ACL_ROLES,
   type ChurchAclRole,
   DEFAULT_EMAIL_VISIBILITY,
   DEFAULT_PHONE_VISIBILITY,
   DEFAULT_PROFILE_VISIBILITY,
-  ELEVATED_ACL_ROLES,
   type VisibilityLevel,
 } from '../types/visibility.types'
+import { accountBadgeVariant, canInviteAccount, isResendInvite } from '../utils/accountState'
 import { congregationKeys } from '../utils/congregationKeys'
 import ContactFieldWithVisibility from './ContactFieldWithVisibility.vue'
 import VisibilityLevelIconSelect from './VisibilityLevelIconSelect.vue'
@@ -54,15 +53,47 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const authStore = useAuthStore()
-const { can } = usePermissions()
 const { handleError } = useHandleError()
+const { can } = usePermissions()
 const queryClient = useQueryClient()
 
 const assignments = ref<IServiceAssignment[]>([])
 const serviceTypes = ref<IServiceType[]>([])
+const grantableRoles = ref<IGrantableRole[]>([])
 const loading = ref(true)
 const savingId = ref<string | null>(null)
+const invitingId = ref<string | null>(null)
+
+const canManagePeople = computed<boolean>(
+  () => can('people.manage', churchId) || can('services.manage', churchId),
+)
+
+function accountBadgeLabel(status: AccountStatus): string {
+  return t(`congregations.people.accountStatus.${status}`)
+}
+
+function canInvite(item: IServiceAssignment): boolean {
+  return canInviteAccount(item.account, canManagePeople.value)
+}
+
+function inviteButtonLabel(item: IServiceAssignment): string {
+  return isResendInvite(item.account)
+    ? t('congregations.people.resendInvite', 'Ponów zaproszenie')
+    : t('congregations.people.sendInvite', 'Wyślij zaproszenie')
+}
+
+async function sendInvite(item: IServiceAssignment) {
+  invitingId.value = item.id
+  try {
+    await churchApiService.inviteServiceAssignment(churchId, item.id)
+    toast.success(t('congregations.people.inviteSent', 'Zaproszenie wysłane'))
+    await load()
+  } catch (error) {
+    handleError(error)
+  } finally {
+    invitingId.value = null
+  }
+}
 
 watch(assignments, () => {
   emit('update:count', assignments.value.length)
@@ -113,16 +144,10 @@ const isPastorType = computed(() =>
 
 const showAccountRoleSelect = computed(() => createAccount.value)
 
-const canGrantElevatedRoles = computed<boolean>(
-  () => !!(authStore.user?.isAdmin || authStore.user?.isOwner || can('services.manage', churchId)),
-)
-
-const roleOptions = computed<Array<'none' | ChurchAclRole>>(() => {
-  const roles = canGrantElevatedRoles.value
-    ? CHURCH_ACL_ROLES
-    : CHURCH_ACL_ROLES.filter(role => !ELEVATED_ACL_ROLES.includes(role))
-  return ['none', ...roles]
-})
+const roleOptions = computed<Array<'none' | ChurchAclRole>>(() => [
+  'none',
+  ...grantableRoles.value.map(role => role.name),
+])
 
 const serviceTypesEmpty = computed(() => !loading.value && serviceTypes.value.length === 0)
 
@@ -184,12 +209,14 @@ function visibilityPayload(formData: ReturnType<typeof createEmptyForm>) {
 async function load() {
   loading.value = true
   try {
-    const [types, list] = await Promise.all([
+    const [types, list, roles] = await Promise.all([
       churchApiService.listServiceTypes(),
       churchApiService.listServiceAssignments(churchId),
+      churchApiService.listGrantableRoles('church', churchId),
     ])
     serviceTypes.value = types
     assignments.value = list
+    grantableRoles.value = roles
   } catch (error) {
     handleError(error)
   } finally {
@@ -409,6 +436,12 @@ onMounted(load)
               <p class="min-w-0 truncate font-medium">
                 {{ personLabel(item) }}
               </p>
+              <Badge
+                v-if="item.account"
+                :variant="accountBadgeVariant(item.account.status)"
+              >
+                {{ accountBadgeLabel(item.account.status) }}
+              </Badge>
               <VisibilityLevelIconSelect
                 :model-value="item.profileVisibility as VisibilityLevel"
                 :disabled="savingId === item.id"
@@ -478,6 +511,17 @@ onMounted(load)
             @click="moveAssignment(index, 'down')"
           >
             <ChevronDown class="size-4" />
+          </Button>
+          <Button
+            v-if="canInvite(item)"
+            type="button"
+            variant="ghost"
+            size="icon"
+            :disabled="invitingId === item.id"
+            :title="inviteButtonLabel(item)"
+            @click="sendInvite(item)"
+          >
+            <Mail class="size-4" />
           </Button>
           <Button
             type="button"

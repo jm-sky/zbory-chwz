@@ -10,6 +10,7 @@ import { adminEn, adminPl, adminRu } from '@/modules/admin/i18n'
 import { authEn, authPl, authRu } from '@/modules/auth/i18n'
 import { congregationsEn, congregationsPl } from '@/modules/congregations/i18n'
 import { directoryEn, directoryPl } from '@/modules/directory/i18n'
+import { governanceEn, governancePl } from '@/modules/governance/i18n'
 import { groupsEn, groupsPl } from '@/modules/groups/i18n'
 import { settingsEn, settingsPl, settingsRu } from '@/modules/settings/i18n'
 import { userEn, userPl, userRu } from '@/modules/user/i18n'
@@ -30,6 +31,7 @@ const en = {
   ...authEn,
   ...congregationsEn,
   ...directoryEn,
+  ...governanceEn,
   ...groupsEn,
   ...settingsEn,
   ...userEn,
@@ -40,6 +42,7 @@ const pl = {
   ...authPl,
   ...congregationsPl,
   ...directoryPl,
+  ...governancePl,
   ...groupsPl,
   ...settingsPl,
   ...userPl,

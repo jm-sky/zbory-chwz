@@ -359,6 +359,32 @@ class TestPasswordReset:
             await auth_service.reset_password("invalid_token", "new_password")
 
 
+class TestAcceptInvite:
+    """Tests for governance invite acceptance (G2)."""
+
+    @pytest.mark.asyncio
+    async def test_accept_invite_success(self, auth_service: AuthService, mock_repository: AsyncMock, sample_user: User) -> None:
+        """Accepting a valid invite activates the account and bumps token_version."""
+        mock_repository.accept_invite_with_token.return_value = sample_user
+        mock_repository.increment_token_version.return_value = 1
+
+        result = await auth_service.accept_invite("invite_token_123", "new_password")
+
+        assert result is True
+        mock_repository.accept_invite_with_token.assert_called_once_with("invite_token_123", "new_password")
+        mock_repository.increment_token_version.assert_called_once_with(sample_user.id)
+
+    @pytest.mark.asyncio
+    async def test_accept_invite_invalid_token(self, auth_service: AuthService, mock_repository: AsyncMock) -> None:
+        """An invalid/expired/already-used invite token raises InvalidTokenError."""
+        mock_repository.accept_invite_with_token.return_value = None
+
+        with pytest.raises(InvalidTokenError, match="Invalid or expired invite token"):
+            await auth_service.accept_invite("invalid_token", "new_password")
+
+        mock_repository.increment_token_version.assert_not_called()
+
+
 class TestChangePassword:
     """Tests for password change functionality."""
 

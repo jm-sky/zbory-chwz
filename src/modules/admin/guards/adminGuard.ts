@@ -1,5 +1,6 @@
  
 import { AuthRouteNames } from '@/modules/auth/config/routes'
+import { PublicRouteNames } from '@/router/publicRoutes'
 import { usePermissions } from '@/shared/composables/usePermissions'
 import { config } from '@/shared/config/config'
 import type { NavigationGuardNext, RouteLocationNormalized, Router } from 'vue-router'
@@ -37,7 +38,7 @@ export async function adminGuard(
   // authGuard runs before this and ensures user data is loaded
   if (!canAccessAdminPanel.value) {
     // Redirect to dashboard or home if not admin/owner
-    next({ name: 'home' })
+    next({ name: PublicRouteNames.landing })
     return
   }
 

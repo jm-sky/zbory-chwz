@@ -179,3 +179,12 @@ def create_email_verification_token(data: dict[str, str]) -> str:
         token_type="email_verification",
         expires_delta=timedelta(hours=settings.security.email_verification_token_expires_hours),
     )
+
+
+def create_invite_token(data: dict[str, str]) -> str:
+    """Create a JWT governance invite token (accept-invite / set-password flow)."""
+    return _encode_token(
+        dict(data),
+        token_type="invite",
+        expires_delta=timedelta(hours=settings.security.invite_token_expires_hours),
+    )

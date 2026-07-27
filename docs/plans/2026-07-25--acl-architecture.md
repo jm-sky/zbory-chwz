@@ -256,8 +256,16 @@ i `deny` nie mogą współistnieć i nie trzeba rozstrzygać remisu.
 (audit log zostaje w #010).
 
 **UI na MVP:** picker przy „Utwórz konto" pokazuje **tylko wybór roli** — odpowiedź na open
-question z #007. Wyjątki `allow`/`deny` są dostępne wyłącznie dla admina (na start przez CLI).
-Model wchodzi od razu, żeby nie przepisywać resolvera, gdy wyjątki będą potrzebne.
+question z #007. Model wchodzi od razu, żeby nie przepisywać resolvera, gdy wyjątki będą potrzebne.
+
+> **Aktualizacja (G9, 2026-07-27):** powyższe „wyłącznie dla admina (na start przez CLI)" nie
+> zostało zrealizowane — nie istniało ani CLI, ani API do `user_permissions` (patrz sprostowanie
+> w [#010](../issues/2026-07-09--010--church-governance-actions.md)). Docelowa reguła, wdrożona w
+> `GET/PUT/DELETE /governance/user-permissions`: zasada podzbioru (§5.1) przeniesiona z ról na
+> pojedyncze uprawnienia — wołający musi mieć `services.manage` w danym zasięgu **oraz** sam
+> posiadać uprawnienie, którym operuje (dotyczy tak samo `allow`, jak i `deny`). Admin/owner bez
+> ograniczeń. Oznacza to, że biskupi i regionalni biskupi — nie tylko admin — mogą ustawiać
+> wyjątki, o ile sami trzymają dane uprawnienie w tym zasięgu.
 
 ---
 
@@ -415,3 +423,4 @@ Przypadki brzegowe do osobnych testów:
 | Data | Zmiana |
 |---|---|
 | 2026-07-25 | Dokument początkowy: algorytm rozwiązywania uprawnień, katalog uprawnień, reguły nadawania, `user_permissions`, cache, migracja membership → ACL |
+| 2026-07-27 | G10 (governance-ui-tasks.md): §6 skorygowane — wyjątki `user_permissions` dostępne dla każdego posiadacza `services.manage` trzymającego dane uprawnienie w zasięgu, nie tylko dla admina; zasada podzbioru (§5.1) przeniesiona z ról na pojedyncze uprawnienia |

@@ -19,7 +19,7 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 007 | [2026-07-09--007--acl-roles-permissions.md](2026-07-09--007--acl-roles-permissions.md) | ACL — role i rozwiązywanie uprawnień (architektura 2026-07-25) | `planned` |
 | 008 | [2026-07-09--008--visibility-layer.md](2026-07-09--008--visibility-layer.md) | Warstwa widoczności (public/authenticated/pastors) | `planned` |
 | 009 | [2026-07-09--009--public-hierarchical-urls.md](2026-07-09--009--public-hierarchical-urls.md) | Publiczne URL `/kraj/miasto/slug` — odłożone, blokowane przez #007 | `planned` |
-| 010 | [2026-07-09--010--church-governance-actions.md](2026-07-09--010--church-governance-actions.md) | Governance — tworzenie zboru, przenoszenie, pastor — odłożone, blokowane przez #007 | `planned` |
+| 010 | [2026-07-09--010--church-governance-actions.md](2026-07-09--010--church-governance-actions.md) | Governance UI — invite flow, ekran nadawania ról, picker wyjątków, audit log (plan G0–G13 dowieziony) | `done` |
 | 011 | [2026-07-09--011--postgres-full-text-search.md](2026-07-09--011--postgres-full-text-search.md) | Full-text search zborów (PostgreSQL tsvector) | `planned` |
 | 012 | [2026-07-09--012--unify-services-remove-contact-persons.md](2026-07-09--012--unify-services-remove-contact-persons.md) | Tylko służby — widoczność osoby/tel/e-mail na karcie zboru | `verification needed` |
 | 013 | [2026-07-09--013--service-type-select-not-visible.md](2026-07-09--013--service-type-select-not-visible.md) | Bug: niewidoczne pozycje selecta służb przy dodawaniu | `done` |
@@ -50,5 +50,6 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 038 | [2026-07-10--038--google-contacts-sync.md](2026-07-10--038--google-contacts-sync.md) | Synchronizacja z Google Contacts (import zborów/osób, export kontaktów) | `planned` |
 | 039 | [2026-07-20--039--backport-shared-core-security-fixes.md](2026-07-20--039--backport-shared-core-security-fixes.md) | Backport: rate limiting, admin auth bypass, WebAuthn login (shared core) | `done` |
 | 040 | [2026-07-22--040--oauth-session-and-state-backport.md](2026-07-22--040--oauth-session-and-state-backport.md) | Backport: OAuth session/jti/tv/2FA + CSRF state store (gear-stack 036+037) | `done` |
+| 041 | [2026-07-27--041--change-log-and-tenant-membership-bugs.md](2026-07-27--041--change-log-and-tenant-membership-bugs.md) | Zastane błędy: `NameError` w change-logu zboru, `_ensure_tenant_membership` do złego tenanta | `todo` |
 
 When adding a new issue: pick next `NNN`, create `YYYY-MM-DD--NNN--slug.md`, add a row here.

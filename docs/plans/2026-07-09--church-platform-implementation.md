@@ -512,7 +512,7 @@ Phase 1 (model) ──┬──► Phase 2 (ACL) ──► Phase 5 (governance U
 | 2 — ACL engine | `in progress` | tabele i seed ról są; `PermissionService`, `user_permissions`, enforcement i governance API — nie. Plan: [acl-implementation-tasks.md](./2026-07-25--acl-implementation-tasks.md) T1–T9 |
 | 3 — Widoczność | `in progress` | enum, `VisibilityService` i widoczność kontaktów są; publiczna lista dalej filtruje `tenant.status`. Plan: T10–T12 |
 | 4 — Publiczne URL-e | `planned` | tabele aliasów i backfill są, brak resolve'a i stron publicznych |
-| 5 — Governance UI | `planned` | blokowane przez Fazę 2 |
+| 5 — Governance UI | `done` | G0–G13 dowiezione — [governance-ui-tasks.md](./2026-07-27--governance-ui-tasks.md). „Multi-community admin" odłożony (poza zakresem MVP) |
 
 ### Phase 0 — Design review (no code)
 
@@ -568,12 +568,13 @@ Phase 1 (model) ──┬──► Phase 2 (ACL) ──► Phase 5 (governance U
 
 ### Phase 5 — Management UI & governance
 
-- [ ] Service assignment UI + invite flow for inactive pastor accounts
-- [ ] Multi-community admin (hidden by default)
-- [ ] User role assignment UI (admin + bishops)
-- [ ] Audit log for permission-sensitive changes (optional MVP+)
+- [x] Service assignment UI + invite flow for inactive pastor accounts
+- [ ] Multi-community admin (hidden by default) — deferred, out of MVP scope
+- [x] User role assignment UI (admin + bishops)
+- [x] Audit log for permission-sensitive changes
 
-**Issue:** [#010](../issues/2026-07-09--010--church-governance-actions.md)
+**Issue:** [#010](../issues/2026-07-09--010--church-governance-actions.md) — `done`.
+**Plan:** [governance-ui-tasks.md](./2026-07-27--governance-ui-tasks.md) G0–G13.
 
 ## Testing strategy
 
@@ -629,3 +630,4 @@ Phase 1 (model) ──┬──► Phase 2 (ACL) ──► Phase 5 (governance U
 | 2026-07-09 | `persons` entity; służba ≠ uprawnienia; „Inna”; wybór istniejącej osoby — [church-people-and-services.md](./2026-07-09--church-people-and-services.md) |
 | 2026-07-09 | `lider_mlodziezowy`: brak domyślnej roli ACL (`suggested_role_id` NULL) |
 | 2026-07-25 | Status faz zweryfikowany wobec kodu; Faza 2 i 3 przeniesione do [acl-architecture.md](./2026-07-25--acl-architecture.md) + [acl-implementation-tasks.md](./2026-07-25--acl-implementation-tasks.md); ACL jedynym źródłem prawdy (koniec autoryzacji przez `tenant_memberships`) |
+| 2026-07-27 | Faza 5 — Governance UI dowieziona (G0–G13: invite flow, ekran nadawania ról, picker wyjątków `user_permissions`, audit log ACL); status `done`. „Multi-community admin" odłożony |

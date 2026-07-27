@@ -37,6 +37,20 @@
     "concerns": "If you have any concerns about your account security, please contact support immediately.",
     "request_success": "If the email exists, a password reset link has been sent"
   },
+  "invitation": {
+    "title": "You've Been Invited - {{ app_name }}",
+    "subject": "You've been invited - {{ app_name }}",
+    "heading": "You've Been Invited",
+    "hello": "Hello {{ name }},",
+    "received": "You've been invited to set up your account for <strong>{{ email }}</strong>.",
+    "click_button": "Click the button below to set your password and activate your account:",
+    "accept_button": "Accept Invitation",
+    "copy_link": "Or copy and paste this link into your browser:",
+    "important": "⚠️ Important:",
+    "expires_in": "This link will expire in {{ expires_hours }} hour(s)",
+    "didnt_expect": "If you didn't expect this invitation, please ignore this email",
+    "concerns": "If you have any concerns about this invitation, please contact support."
+  },
   "password_changed": {
     "title": "Password Changed - {{ app_name }}",
     "subject": "Password Changed - {{ app_name }}",

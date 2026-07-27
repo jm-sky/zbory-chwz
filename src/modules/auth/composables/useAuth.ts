@@ -12,6 +12,7 @@ import {
 } from '@/modules/auth/utils/queryUtils'
 import type { IAuthService } from '@/modules/auth/types/auth.type'
 import type {
+  AcceptInviteData,
   ChangePasswordData,
   ForgotPasswordData,
   LoginCredentials,
@@ -165,6 +166,16 @@ export function useResetPassword(service?: IAuthService) {
 }
 
 /**
+ * Hook for accepting a governance invite (set password, activate account)
+ */
+export function useAcceptInvite(service?: IAuthService) {
+  return useMutation({
+    mutationFn: (data: AcceptInviteData) => (service ?? authService).acceptInvite(data),
+    retry: authMutationRetryFunction,
+  })
+}
+
+/**
  * Hook for change password
  */
 export function useChangePassword(service?: IAuthService) {
@@ -215,6 +226,7 @@ export function useAuth(service?: IAuthService) {
   const logoutMutation = useLogout(service)
   const forgotPasswordMutation = useForgotPassword(service)
   const resetPasswordMutation = useResetPassword(service)
+  const acceptInviteMutation = useAcceptInvite(service)
   const changePasswordMutation = useChangePassword(service)
   const deleteAccountMutation = useDeleteAccount(service)
   const verifyEmailMutation = useMutation({
@@ -264,6 +276,7 @@ export function useAuth(service?: IAuthService) {
     logout: logoutMutation.mutateAsync,
     forgotPassword: forgotPasswordMutation.mutateAsync,
     resetPassword: resetPasswordMutation.mutateAsync,
+    acceptInvite: acceptInviteMutation.mutateAsync,
     changePassword: changePasswordMutation.mutateAsync,
     deleteAccount: deleteAccountMutation.mutateAsync,
     fetchUser,
@@ -274,6 +287,7 @@ export function useAuth(service?: IAuthService) {
     isLoggingOut: logoutMutation.isPending,
     isForgotPasswordLoading: forgotPasswordMutation.isPending,
     isResetPasswordLoading: resetPasswordMutation.isPending,
+    isAcceptInviteLoading: acceptInviteMutation.isPending,
     isChangePasswordLoading: changePasswordMutation.isPending,
     isDeletingAccount: deleteAccountMutation.isPending,
     verifyEmail: verifyEmailMutation.mutateAsync,

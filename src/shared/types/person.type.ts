@@ -4,4 +4,5 @@ export interface IPersonSummary {
   lastName: string | null
   email: string | null
   phone: string | null
+  userId: string | null
 }

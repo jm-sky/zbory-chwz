@@ -37,6 +37,20 @@
     "concerns": "Jeśli masz obawy dotyczące bezpieczeństwa swojego konta, skontaktuj się natychmiast z pomocą techniczną.",
     "request_success": "Jeśli podany adres e-mail istnieje w naszej bazie, wysłaliśmy na niego link do resetowania hasła"
   },
+  "invitation": {
+    "title": "Zostałeś zaproszony - {{ app_name }}",
+    "subject": "Zostałeś zaproszony - {{ app_name }}",
+    "heading": "Zostałeś zaproszony",
+    "hello": "Witaj {{ name }},",
+    "received": "Zostałeś zaproszony do skonfigurowania konta dla <strong>{{ email }}</strong>.",
+    "click_button": "Kliknij przycisk poniżej, aby ustawić hasło i aktywować konto:",
+    "accept_button": "Zaakceptuj zaproszenie",
+    "copy_link": "Lub skopiuj i wklej ten link do przeglądarki:",
+    "important": "⚠️ Ważne:",
+    "expires_in": "Ten link wygaśnie za {{ expires_hours }} godzin(y)",
+    "didnt_expect": "Jeśli nie spodziewałeś się tego zaproszenia, zignoruj ten email",
+    "concerns": "Jeśli masz obawy dotyczące tego zaproszenia, skontaktuj się z pomocą techniczną."
+  },
   "password_changed": {
     "title": "Hasło zmienione - {{ app_name }}",
     "subject": "Hasło zmienione - {{ app_name }}",
