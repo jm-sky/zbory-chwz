@@ -1,6 +1,6 @@
 # ACL — roles and permission resolution
 
-**Status:** `planned`  
+**Status:** `done` (2026-07-25, commit `a69366c` / PR #32 — T1–T9)  
 **Created:** 2026-07-09  
 **Plan:** [2026-07-09--church-platform-implementation.md](../plans/2026-07-09--church-platform-implementation.md) (Phase 2)  
 **Spec:** [2026-07-09--church-people-and-services.md](../plans/2026-07-09--church-people-and-services.md)  
@@ -12,12 +12,12 @@ ACL must reflect **explicitly chosen** permissions when creating account — not
 
 ## Scope
 
-- [ ] ACL tables + `source_assignment_id`
-- [ ] `ServiceAssignmentService`: save assignment; if account checked, apply **UI-selected** roles/permissions
-- [ ] `suggested_role_id` on `service_types` — prefill only
-- [ ] Pastor: inactive account default; ACL from user selection applies before activation
-- [ ] Delete assignment → remove ACL rows with matching `source_assignment_id` only
-- [ ] `services.manage`, governance endpoints, tests
+- [x] ACL tables + `source_assignment_id`
+- [x] `ServiceAssignmentService`: save assignment; if account checked, apply **UI-selected** roles/permissions
+- [x] `suggested_role_id` on `service_types` — prefill only
+- [x] Pastor: inactive account default; ACL from user selection applies before activation
+- [x] Delete assignment → remove ACL rows with matching `source_assignment_id` only
+- [x] `services.manage`, governance endpoints, tests
 
 ## Key rule
 
@@ -65,8 +65,10 @@ Rozbicie na zadania: [acl-implementation-tasks.md](../plans/2026-07-25--acl-impl
   `service_types.suggested_role` — `bishop`/`regional_bishop` → `services.manage` na `community`,
   `pastor` → `services.manage`, reszta → `people.manage`.
 
-## Stan (2026-07-25)
+## Stan (2026-07-25 → update)
 
-Zrobione: tabele ACL (migracja 059), seed ról, punktowe bramki na `persons/search` i `POST /tenants`
-(commit `8b2f32f`). Brak: `PermissionService`, `user_permissions`, enforcement na zapisach,
-governance API.
+Zrobione wcześniej: tabele ACL (migracja 059), seed ról, punktowe bramki (`8b2f32f`).
+
+**Domknięte 2026-07-25 (`a69366c`):** `PermissionService`, `user_permissions`, Redis cache,
+enforcement zapisów, governance API (`POST /churches`, `PATCH` visibility/region), FE
+`GET /churches/me/permissions` + `usePermissions().can()`. UI governance (#010) — G0–G13 (`governance-ui-tasks.md`).

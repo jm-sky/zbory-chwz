@@ -16,9 +16,9 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 004 | [2026-07-07--004--oauth-github-login.md](2026-07-07--004--oauth-github-login.md) | OAuth GitHub — logowanie przez GitHub | `done` |
 | 005 | [2026-07-07--005--guest-layout-nav-z-index.md](2026-07-07--005--guest-layout-nav-z-index.md) | GuestLayout — pasek locale/dark mode pod logo (z-index) | `todo` |
 | 006 | [2026-07-09--006--org-hierarchy-data-model.md](2026-07-09--006--org-hierarchy-data-model.md) | Hierarchia organizacyjna — model danych | `done` |
-| 007 | [2026-07-09--007--acl-roles-permissions.md](2026-07-09--007--acl-roles-permissions.md) | ACL — role i rozwiązywanie uprawnień (architektura 2026-07-25) | `planned` |
-| 008 | [2026-07-09--008--visibility-layer.md](2026-07-09--008--visibility-layer.md) | Warstwa widoczności (public/authenticated/pastors) | `planned` |
-| 009 | [2026-07-09--009--public-hierarchical-urls.md](2026-07-09--009--public-hierarchical-urls.md) | Publiczne URL `/kraj/miasto/slug` — odłożone, blokowane przez #007 | `planned` |
+| 007 | [2026-07-09--007--acl-roles-permissions.md](2026-07-09--007--acl-roles-permissions.md) | ACL — role i rozwiązywanie uprawnień (`PermissionService` T1–T9) | `done` |
+| 008 | [2026-07-09--008--visibility-layer.md](2026-07-09--008--visibility-layer.md) | Warstwa widoczności (public/authenticated/pastors) — T10–T12 | `done` |
+| 009 | [2026-07-09--009--public-hierarchical-urls.md](2026-07-09--009--public-hierarchical-urls.md) | Publiczne URL `/kraj/miasto/slug` — odłożone | `planned` |
 | 010 | [2026-07-09--010--church-governance-actions.md](2026-07-09--010--church-governance-actions.md) | Governance UI — invite flow, ekran nadawania ról, picker wyjątków, audit log (plan G0–G13 dowieziony) | `done` |
 | 011 | [2026-07-09--011--postgres-full-text-search.md](2026-07-09--011--postgres-full-text-search.md) | Full-text search zborów (PostgreSQL tsvector) | `planned` |
 | 012 | [2026-07-09--012--unify-services-remove-contact-persons.md](2026-07-09--012--unify-services-remove-contact-persons.md) | Tylko służby — widoczność osoby/tel/e-mail na karcie zboru | `verification needed` |

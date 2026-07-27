@@ -1,6 +1,6 @@
 # ACL — plan implementacji (zadania T1–T12)
 
-**Status:** `planned`
+**Status:** `done` (2026-07-25, commit `a69366c` / PR #32 — T1–T12)
 **Created:** 2026-07-25
 **Architektura:** [2026-07-25--acl-architecture.md](./2026-07-25--acl-architecture.md) — **przeczytaj przed T1**
 **Issues:** [#007](../issues/2026-07-09--007--acl-roles-permissions.md) (T1–T9) · [#008](../issues/2026-07-09--008--visibility-layer.md) (T10–T12)

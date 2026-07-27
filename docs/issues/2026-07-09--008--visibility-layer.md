@@ -1,6 +1,6 @@
 # Unified visibility layer
 
-**Status:** `planned`  
+**Status:** `done` (2026-07-25, commit `a69366c` / PR #32 — T10–T12)  
 **Created:** 2026-07-09  
 **Plan:** [2026-07-09--church-platform-implementation.md](../plans/2026-07-09--church-platform-implementation.md) (Phase 3)  
 **Depends on:** [#007](./2026-07-09--007--acl-roles-permissions.md)
@@ -13,10 +13,13 @@ Current public list (`GET /congregations/detailed`) filters by `address.status i
 
 ## Scope
 
-- [ ] PostgreSQL enum or check constraint: `hidden | public | authenticated | pastors`
-- [ ] Add `visibility` to `churches`, `service_assignments` (show on card), `persons` or assignment (phone/email), `congregation_service_times`
+Backend T10–T12 (2026-07-25) pokrywa enum, `churches.visibility`, backfill i publiczną listę.
+Pozostałe checkboxy poniżej = historyczny zakres; deprecjacja `contact_persons` → [#012](./2026-07-09--012--unify-services-remove-contact-persons.md).
+
+- [x] PostgreSQL enum or check constraint: `hidden | public | authenticated | pastors`
+- [x] Add `visibility` to `churches`, `service_assignments` (show on card), assignment phone/email
 - [ ] Deprecate `congregation_contact_persons` — see [#012](./2026-07-09--012--unify-services-remove-contact-persons.md)
-- [ ] Migration script — map existing states:
+- [x] Migration script — map existing states (migracja 080):
 
   | Source | Target |
   |--------|--------|
@@ -25,14 +28,14 @@ Current public list (`GET /congregations/detailed`) filters by `address.status i
   | service assignments (ex contact persons) | default `public` on card; phone/email per [#012](./2026-07-09--012--unify-services-remove-contact-persons.md) |
   | service times | default `public` |
 
-- [ ] Keep `address.status` for workflow (verification queue) — **do not** remove
-- [ ] `VisibilityService.can_view(level, user, church_scope)` 
-- [ ] `VisibilityService.filter_fields(serializer, user)` for API responses
-- [ ] Public endpoints: only `public` content for guests
-- [ ] Authenticated: `public` + `authenticated`
-- [ ] `pastors` visibility: users with bishop/pastor/diacon service (via ACL), in scope
-- [ ] Editor UI: visibility selector per entity on congregation edit forms
-- [ ] Communities default to `hidden`
+- [x] Keep `address.status` for workflow (verification queue) — **do not** remove
+- [x] `VisibilityService.can_view(level, user, church_scope)` 
+- [x] `VisibilityService.filter_fields(serializer, user)` for API responses
+- [x] Public endpoints: only `public` content for guests
+- [x] Authenticated: `public` + `authenticated`
+- [x] `pastors` visibility: users with bishop/pastor/diacon service (via ACL), in scope
+- [x] Editor UI: visibility selector na osobach/służbach (`VisibilityLevelSelect` w `ChurchPeopleSection`)
+- [x] Communities default to `hidden`
 
 ## Acceptance criteria
 

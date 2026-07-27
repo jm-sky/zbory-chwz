@@ -1,6 +1,6 @@
 # Architektura ACL — platforma zborów CHWZ
 
-**Status:** `planned`
+**Status:** `done` (zaimplementowane 2026-07-25 — dokument architektury zostaje jako źródło prawdy)
 **Created:** 2026-07-25
 **Zastępuje (dla Fazy 2):** sekcję „2. Służby, People i ACL" w [church-platform-implementation.md](./2026-07-09--church-platform-implementation.md)
 **Plan zadań:** [2026-07-25--acl-implementation-tasks.md](./2026-07-25--acl-implementation-tasks.md)
@@ -17,7 +17,7 @@ nie — a kod w międzyczasie dostał kilka punktowych łatek autoryzacyjnych. T
 projekt warstwy uprawnień na tyle, żeby dało się ją zaimplementować bez kolejnych decyzji
 produktowych.
 
-### Stan faktyczny (zweryfikowany w kodzie 2026-07-25)
+### Stan faktyczny (zweryfikowany w kodzie; update po `a69366c` 2026-07-25)
 
 | Element | Stan |
 |---|---|
@@ -26,12 +26,14 @@ produktowych.
 | Tabele ACL `roles` / `role_permissions` / `user_role_assignments` | ✅ `churches/acl_models.py` |
 | `VisibilityService` + enum `hidden\|public\|authenticated\|pastors` | ✅ `churches/visibility.py` |
 | Punktowe użycia ACL (`persons/search`, `POST /tenants`, karta zboru) | ✅ commit `8b2f32f` |
-| `PermissionService.resolve(user, permission, scope)` | ❌ nie istnieje |
-| `user_permissions` (wyjątki allow/deny) | ❌ nie istnieje |
-| Autoryzacja zapisów zborowych | ❌ `_verify_church_access` (`churches/router.py:34`) i `verify_tenant_access` (`tenants/access.py`) patrzą **wyłącznie na członkostwo w tenancie** — dowolny `member` edytuje placówki, ludzi i służby |
-| „Diakon nie nadaje służb pasterskich" (P-2 z review) | ❌ brak |
-| Governance API (`POST /churches`, `PATCH .../region`) | ❌ brak |
-| Publiczna lista po `churches.visibility` (P-6) | ❌ dalej `tenant.status` (`tenants/repositories.py:48`) |
+| `PermissionService.resolve(user, permission, scope)` | ✅ `permission_service.py` + Redis cache |
+| `user_permissions` (wyjątki allow/deny) | ✅ migracja 078 |
+| Autoryzacja zapisów zborowych | ✅ przez `PermissionService` / `RequirePermission` (nie samo członkostwo) |
+| „Diakon nie nadaje służb pasterskich" (P-2 z review) | ✅ `acl_grant_rules.py` |
+| Governance API (`POST /churches`, `PATCH .../region`) | ✅ `churches/router.py` |
+| Publiczna lista po `churches.visibility` (P-6) | ✅ migracja 080 + filtr po visibility |
+| FE `GET /churches/me/permissions` + `usePermissions().can()` | ✅ |
+| Governance UI (#010 — invite, audit, pełny picker) | ✅ [governance-ui-tasks.md](./2026-07-27--governance-ui-tasks.md) G0–G13 |
 
 ---
 

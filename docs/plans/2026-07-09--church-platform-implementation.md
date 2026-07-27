@@ -509,9 +509,9 @@ Phase 1 (model) ──┬──► Phase 2 (ACL) ──► Phase 5 (governance U
 |------|--------|-------|
 | 0 — Design review | `done` | decyzje potwierdzone; diagram canvas nadal opcjonalny |
 | 1 — Model danych i migracje | `done` | dowieziona w [#019](../issues/2026-07-09--019--church-phase-1-hierarchy.md), migracje 056–059; brakuje tylko UI wyszukiwarki osób → [#010](../issues/2026-07-09--010--church-governance-actions.md) |
-| 2 — ACL engine | `in progress` | tabele i seed ról są; `PermissionService`, `user_permissions`, enforcement i governance API — nie. Plan: [acl-implementation-tasks.md](./2026-07-25--acl-implementation-tasks.md) T1–T9 |
-| 3 — Widoczność | `in progress` | enum, `VisibilityService` i widoczność kontaktów są; publiczna lista dalej filtruje `tenant.status`. Plan: T10–T12 |
-| 4 — Publiczne URL-e | `planned` | tabele aliasów i backfill są, brak resolve'a i stron publicznych |
+| 2 — ACL engine | `done` | T1–T9 (`a69366c` 2026-07-25): `PermissionService`, cache, enforcement, governance API. Plan: [acl-implementation-tasks.md](./2026-07-25--acl-implementation-tasks.md) |
+| 3 — Widoczność | `done` | T10–T12: publiczna lista po `churches.visibility`, backfill 080 |
+| 4 — Publiczne URL-e | `planned` | tabele aliasów i backfill są, brak resolve'a i stron publicznych (#009) |
 | 5 — Governance UI | `done` | G0–G13 dowiezione — [governance-ui-tasks.md](./2026-07-27--governance-ui-tasks.md). „Multi-community admin" odłożony (poza zakresem MVP) |
 
 ### Phase 0 — Design review (no code)
