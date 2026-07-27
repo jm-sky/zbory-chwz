@@ -167,6 +167,8 @@ class PermissionScopeResponse(BaseModel):
     scopeType: str
     scopeId: str
     permissions: list[str]
+    name: str
+    source: str  # "acl" | "admin"
 
 
 class ChurchPermissionsResponse(BaseModel):

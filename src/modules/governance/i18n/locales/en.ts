@@ -14,6 +14,12 @@ export const governanceEn = {
         church: 'Church',
         branch: 'Branch',
       },
+      scopeGroup: {
+        community: 'Community',
+        adminElevated: 'Full access (admin)',
+      },
+      adminScopeBanner: 'As an administrator you also see regions and churches beyond ACL grants — marked “Admin”.',
+      adminBadge: 'Admin',
       noScopes: 'You do not manage any scope yet.',
       empty: 'No role assignments in this scope',
       add: 'Grant role',

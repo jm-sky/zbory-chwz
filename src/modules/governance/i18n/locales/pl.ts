@@ -14,6 +14,12 @@ export const governancePl = {
         church: 'Zbór',
         branch: 'Placówka',
       },
+      scopeGroup: {
+        community: 'Wspólnota',
+        adminElevated: 'Pełny dostęp (admin)',
+      },
+      adminScopeBanner: 'Jako administrator widzisz też rejony i zbory poza nadaniami ACL — oznaczone jako „Admin”.',
+      adminBadge: 'Admin',
       noScopes: 'Nie zarządzasz jeszcze żadnym zasięgiem.',
       empty: 'Brak nadań ról w tym zasięgu',
       add: 'Nadaj rolę',

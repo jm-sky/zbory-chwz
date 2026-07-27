@@ -8,6 +8,8 @@ import type { User } from '@/modules/auth/types/user.type'
 export interface PermissionScope {
   scopeType: string
   scopeId: string
+  name: string
+  source: 'acl' | 'admin'
   permissions: string[]
 }
 

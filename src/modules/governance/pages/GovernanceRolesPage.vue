@@ -10,7 +10,9 @@ import Button from '@/components/ui/button/Button.vue'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -27,7 +29,7 @@ import type { PermissionScope } from '@/shared/composables/usePermissions'
 
 const { t } = useI18n()
 const { handleError } = useHandleError()
-const { manageableScopes } = usePermissions()
+const { manageableScopes, isAdmin, isOwner } = usePermissions()
 
 const assignments = ref<IRoleAssignment[]>([])
 const loading = ref(true)
@@ -38,7 +40,21 @@ const permissionsPanelUserId = ref<string | null>(null)
 
 const scopeKey = ref<string>('')
 
+const isElevatedViewer = computed<boolean>(() => isAdmin.value || isOwner.value)
+
 const scopeOptions = computed<PermissionScope[]>(() => manageableScopes.value)
+
+const communityScopes = computed<PermissionScope[]>(() =>
+  scopeOptions.value.filter(scope => scope.scopeType === 'community'),
+)
+
+const elevatedScopes = computed<PermissionScope[]>(() =>
+  scopeOptions.value.filter(scope => scope.scopeType === 'region' || scope.scopeType === 'church'),
+)
+
+const useAdminScopeGroups = computed<boolean>(() =>
+  isElevatedViewer.value && elevatedScopes.value.length > 0,
+)
 
 function keyFor(scope: { scopeType: string, scopeId: string }): string {
   return `${scope.scopeType}:${scope.scopeId}`
@@ -50,7 +66,11 @@ const selectedScope = computed<PermissionScope | null>(() => {
 
 function scopeLabel(scope: PermissionScope): string {
   const typeLabel = t(`governance.roles.scopeType.${scope.scopeType}`, scope.scopeType)
-  return `${typeLabel} — ${scope.scopeId}`
+  return `${typeLabel} — ${scope.name || scope.scopeId}`
+}
+
+function isAdminElevatedScope(scope: PermissionScope): boolean {
+  return scope.source === 'admin' && (scope.scopeType === 'region' || scope.scopeType === 'church')
 }
 
 async function load() {
@@ -160,15 +180,55 @@ onMounted(load)
       </div>
 
       <template v-else>
+        <div
+          v-if="useAdminScopeGroups"
+          class="rounded-md border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-950 dark:text-blue-100"
+        >
+          {{ t('governance.roles.adminScopeBanner') }}
+        </div>
+
         <div class="max-w-sm space-y-1">
           <Select v-model="scopeKey">
             <SelectTrigger class="w-full">
               <SelectValue :placeholder="t('governance.roles.scopePlaceholder', 'Wybierz zasięg')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="scope in scopeOptions" :key="keyFor(scope)" :value="keyFor(scope)">
-                {{ scopeLabel(scope) }}
-              </SelectItem>
+              <template v-if="useAdminScopeGroups">
+                <SelectGroup v-if="communityScopes.length > 0">
+                  <SelectLabel>{{ t('governance.roles.scopeGroup.community') }}</SelectLabel>
+                  <SelectItem
+                    v-for="scope in communityScopes"
+                    :key="keyFor(scope)"
+                    :value="keyFor(scope)"
+                  >
+                    {{ scopeLabel(scope) }}
+                  </SelectItem>
+                </SelectGroup>
+                <SelectGroup v-if="elevatedScopes.length > 0">
+                  <SelectLabel>{{ t('governance.roles.scopeGroup.adminElevated') }}</SelectLabel>
+                  <SelectItem
+                    v-for="scope in elevatedScopes"
+                    :key="keyFor(scope)"
+                    :value="keyFor(scope)"
+                  >
+                    <span class="flex items-center gap-2">
+                      <span>{{ scopeLabel(scope) }}</span>
+                      <Badge v-if="isAdminElevatedScope(scope)" variant="secondary">
+                        {{ t('governance.roles.adminBadge') }}
+                      </Badge>
+                    </span>
+                  </SelectItem>
+                </SelectGroup>
+              </template>
+              <template v-else>
+                <SelectItem
+                  v-for="scope in scopeOptions"
+                  :key="keyFor(scope)"
+                  :value="keyFor(scope)"
+                >
+                  {{ scopeLabel(scope) }}
+                </SelectItem>
+              </template>
             </SelectContent>
           </Select>
         </div>

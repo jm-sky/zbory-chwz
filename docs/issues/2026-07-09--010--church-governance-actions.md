@@ -109,6 +109,8 @@ dowiezione:
   dostęp → odebranie → natychmiastowa odmowa); test zgodności `grantable-roles` z tym, co
   faktycznie przechodzi przez `POST /governance/role-assignments`.
 
-**Świadomie odłożone poza MVP:** „Multi-community admin" (przeglądanie zasięgów przez admina/
-ownera na ekranie ról — dziś `scopes: []` = „wszystko", bez dedykowanego UI do przeglądania po
-regionach/zborach).
+**Świadomie odłożone poza MVP:** zarządzanie wieloma wspólnotami jako osobny produkt
+(„multi-community admin"). Admin/owner na ekranie ról widzi już zasięgi
+`community` / `region` / `church` (wspólnota jak biskup; rejony i zbory oznaczone w UI
+jako rozszerzony dostęp administratora). Osobny produkt multi-community (przełączanie
+między wspólnotami) nadal poza zakresem.

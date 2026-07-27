@@ -155,3 +155,74 @@ async def test_query_count_does_not_grow_with_church_count(session: AsyncSession
     await _count_for(50, "large")
 
     assert counts["small"] == counts["large"]
+
+
+@pytest.mark.asyncio
+async def test_admin_gets_synthetic_community_region_church_scopes(session: AsyncSession) -> None:
+    world = await _seed_world(session, n_churches_outside_region=1)
+    await session.commit()
+
+    admin = User(
+        id="admin",
+        email="admin@example.com",
+        name="Admin",
+        isAdmin=True,
+        createdAt=datetime.now(UTC),
+    )
+    service = PermissionService(session, PermissionCache(None))
+    payload = await service.permissions_for_user(admin)
+
+    assert payload["isAdmin"] is True
+    assert payload["churches"] == []
+
+    scopes = payload["scopes"]
+    assert isinstance(scopes, list)
+    by_type: dict[str, list[dict[str, object]]] = {}
+    for scope in scopes:
+        assert scope["source"] == "admin"
+        assert Permission.SERVICES_MANAGE in scope["permissions"]
+        by_type.setdefault(str(scope["scopeType"]), []).append(scope)
+
+    assert len(by_type["community"]) == 1
+    assert by_type["community"][0]["scopeId"] == world["community_id"]
+    assert by_type["community"][0]["name"] == "CHWZ"
+
+    region_ids = {s["scopeId"] for s in by_type["region"]}
+    assert world["region_id"] in region_ids
+    assert len(by_type["region"]) == 2
+
+    church_ids = {s["scopeId"] for s in by_type["church"]}
+    assert world["church_in_region_id"] in church_ids
+    assert len(by_type["church"]) == 2
+
+    types_in_order = [str(s["scopeType"]) for s in scopes]
+    assert types_in_order == ["community"] + ["region"] * 2 + ["church"] * 2
+
+
+@pytest.mark.asyncio
+async def test_acl_scopes_include_name_and_source(session: AsyncSession) -> None:
+    world = await _seed_world(session, n_churches_outside_region=0)
+    roles = await ensure_acl_roles(session)
+    bishop = _user("bishop")
+    session.add(
+        UserRoleAssignmentDB(
+            id=generate_id(),
+            user_id=bishop.id,
+            role_id=roles["bishop"].id,
+            scope_type="community",
+            scope_id=world["community_id"],
+        )
+    )
+    await session.commit()
+
+    service = PermissionService(session, PermissionCache(None))
+    payload = await service.permissions_for_user(bishop)
+
+    scopes = payload["scopes"]
+    assert len(scopes) == 1
+    scope = scopes[0]
+    assert scope["scopeType"] == "community"
+    assert scope["scopeId"] == world["community_id"]
+    assert scope["name"] == "CHWZ"
+    assert scope["source"] == "acl"
+    assert Permission.SERVICES_MANAGE in scope["permissions"]

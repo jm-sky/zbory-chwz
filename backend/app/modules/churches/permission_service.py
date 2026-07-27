@@ -81,7 +81,7 @@ class PermissionService:
             return {
                 "isAdmin": user.isAdmin,
                 "isOwner": user.isOwner,
-                "scopes": [],
+                "scopes": await self._admin_scopes(),
                 "churches": [],
             }
 
@@ -95,10 +95,13 @@ class PermissionService:
             elif effect == "deny":
                 scope_perms.setdefault(key, set()).discard(perm)
 
+        names = await self._resolve_scope_names([scope for scope, perms in scope_perms.items() if perms])
         scopes = [
             {
                 "scopeType": st,
                 "scopeId": sid,
+                "name": names.get((st, sid), sid),
+                "source": "acl",
                 "permissions": sorted(perms),
             }
             for (st, sid), perms in sorted(scope_perms.items())
@@ -119,6 +122,85 @@ class PermissionService:
             "scopes": scopes,
             "churches": churches,
         }
+
+    async def _admin_scopes(self) -> list[dict[str, object]]:
+        """Synthetic scopes for admin/owner: every community, region, and church.
+
+        `churches` stays empty — `can()` short-circuits on isAdmin/isOwner. Branch
+        scopes are omitted so the governance picker stays usable (G6 depth).
+        """
+        all_perms = sorted(p.value for p in Permission)
+        scopes: list[dict[str, object]] = []
+
+        communities = await self.db.execute(select(CommunityDB.id, CommunityDB.name).order_by(CommunityDB.name))
+        for scope_id, name in communities.all():
+            scopes.append(
+                {
+                    "scopeType": "community",
+                    "scopeId": scope_id,
+                    "name": name,
+                    "source": "admin",
+                    "permissions": all_perms,
+                }
+            )
+
+        regions = await self.db.execute(select(RegionDB.id, RegionDB.name).order_by(RegionDB.name))
+        for scope_id, name in regions.all():
+            scopes.append(
+                {
+                    "scopeType": "region",
+                    "scopeId": scope_id,
+                    "name": name,
+                    "source": "admin",
+                    "permissions": all_perms,
+                }
+            )
+
+        churches = await self.db.execute(select(ChurchDB.id, ChurchDB.name).order_by(ChurchDB.name))
+        for scope_id, name in churches.all():
+            scopes.append(
+                {
+                    "scopeType": "church",
+                    "scopeId": scope_id,
+                    "name": name,
+                    "source": "admin",
+                    "permissions": all_perms,
+                }
+            )
+
+        return scopes
+
+    async def _resolve_scope_names(self, scopes: list[Scope]) -> dict[Scope, str]:
+        if not scopes:
+            return {}
+
+        by_type: dict[str, set[str]] = {}
+        for scope_type, scope_id in scopes:
+            by_type.setdefault(scope_type, set()).add(scope_id)
+
+        names: dict[Scope, str] = {}
+
+        if community_ids := by_type.get("community"):
+            result = await self.db.execute(select(CommunityDB.id, CommunityDB.name).where(CommunityDB.id.in_(community_ids)))
+            for scope_id, name in result.all():
+                names[("community", scope_id)] = name
+
+        if region_ids := by_type.get("region"):
+            result = await self.db.execute(select(RegionDB.id, RegionDB.name).where(RegionDB.id.in_(region_ids)))
+            for scope_id, name in result.all():
+                names[("region", scope_id)] = name
+
+        if church_ids := by_type.get("church"):
+            result = await self.db.execute(select(ChurchDB.id, ChurchDB.name).where(ChurchDB.id.in_(church_ids)))
+            for scope_id, name in result.all():
+                names[("church", scope_id)] = name
+
+        if branch_ids := by_type.get("branch"):
+            result = await self.db.execute(select(BranchDB.id, BranchDB.name).where(BranchDB.id.in_(branch_ids)))
+            for scope_id, name in result.all():
+                names[("branch", scope_id)] = name
+
+        return names
 
     @staticmethod
     def _church_chain(church_id: str, region_id: str | None, community_id: str) -> list[Scope]:
