@@ -2,14 +2,13 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Pagination } from '@/components/data-table'
-import { useHandleError } from '@/shared/composables/useHandleError'
+import { logSafeError } from '@/shared/utils/logSafeError'
 import type { IPersonChangeLogBatch } from '../types/directory.types'
 import { directoryApiService } from '../services/directoryApiService'
 
 const { personId } = defineProps<{ personId: string }>()
 
 const { t } = useI18n()
-const { handleError } = useHandleError()
 
 const loading = ref(true)
 // null while unresolved/loading; empty array once loaded means "visible but no history yet".
@@ -37,7 +36,9 @@ async function load() {
     batches.value = response.batches
     total.value = response.total
   } catch (error) {
-    handleError(error, { fallbackMessage: t('directory.changeHistory.loadError', 'Nie udało się pobrać historii zmian') })
+    logSafeError('Failed to load person change history:', error)
+    visible.value = false
+    batches.value = null
   } finally {
     loading.value = false
   }

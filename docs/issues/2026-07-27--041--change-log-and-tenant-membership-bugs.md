@@ -1,9 +1,9 @@
 # Zastane błędy: `NameError` w change-logu zboru i błędny tenant przy tworzeniu konta
 
-**Status:** `todo`
+**Status:** `in progress` (Bug 1 done 2026-08-01; Bug 2 still open)
 **Created:** 2026-07-27
 **Component:** `backend/app/modules/congregations/router.py`, `backend/app/modules/churches/repositories.py`, `backend/app/modules/churches/backfill.py`
-**Related:** [#010](./2026-07-09--010--church-governance-actions.md) · [governance-ui-tasks plan](../plans/2026-07-27--governance-ui-tasks.md) (znalezione przy scopingu G0-G13, poza zakresem tego planu)
+**Related:** [#010](./2026-07-09--010--church-governance-actions.md) · [#042](./2026-08-01--042--congregation-list-stale-after-edit.md) · [governance-ui-tasks plan](../plans/2026-07-27--governance-ui-tasks.md) (znalezione przy scopingu G0-G13, poza zakresem tego planu)
 
 ## Kontekst
 
@@ -11,24 +11,20 @@ Oba błędy zastane, wykryte przy scopingu planu governance UI dla #010. Nie są
 blokują G0-G13, ale dotyczą tego samego obszaru (change log / tworzenie kont przy przypisywaniu
 służby), więc łatwo je pomylić z nowym UI audytu — stąd osobne issue.
 
-## Bug 1 — `NameError` w `GET /congregations/{tenant_id}/change-log`
+## Bug 1 — `NameError` w `GET /congregations/{tenant_id}/change-log` — `done` (2026-08-01)
 
-`congregations/router.py:610`:
+`congregations/router.py` — `get_change_log` wołał `_verify_change_log_access(..., access, ...)`,
+ale **nie wstrzykiwał** `access: TenantAccessChecker`. Każde żądanie → 500 → czerwony toast
+„Nie udało się pobrać historii zmian” (to **nie** był pusty brak historii).
 
-```python
-await _verify_change_log_access(tenant_id, current_user, access, acl_service)
-```
+### Fix
 
-`access` nie jest parametrem funkcji `get_change_log` (sygnatura `:601-609`: `tenant_id`,
-`current_user`, `repo`, `tenant_repo`, `acl_service`, `skip`, `limit`) ani nazwą modułową.
-Historia zmian adresu/kontaktu zboru jest zepsuta na każdym żądaniu (`NameError` w runtime, nie
-tylko w edge case'ie).
-
-- [ ] Ustalić, co `_verify_change_log_access` miało dostać jako `access` — prawdopodobnie wynik
-  wywołania `acl_service` (np. `has_pastoral_access` / poziom widoczności), które zgubiono przy
-  jakiejś wcześniejszej refaktoryzacji.
-- [ ] Naprawić wywołanie, dodać test regresyjny na `GET /congregations/{tenant_id}/change-log`
-  (dziś brak testu, który by to złapał — inaczej `NameError` nie przeszedłby review).
+- [x] Dodać `access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)]` do `get_change_log`
+- [x] Usunąć nieużywany `tenant_repo` z sygnatury
+- [x] Zaktualizować seed testów ACL (`ensure_acl_roles` + override `PermissionCache(None)`)
+- [x] `tests/integration/congregations/test_change_log.py` — 6/6 pass
+- [x] UI: `ChangeHistorySection` / `PersonChangeHistorySection` — przy residualnym błędzie chować
+  sekcję bez czerwonego toastu (historia to UI poboczne)
 
 ## Bug 2 — `_ensure_tenant_membership` dopina do złego tenanta
 

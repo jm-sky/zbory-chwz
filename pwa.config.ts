@@ -116,7 +116,9 @@ export const pwaPlugin = VitePWA({
         // address) — must never be written to Cache Storage. Workbox matches
         // runtimeCaching rules in array order and stops at the first match,
         // so this has to come before the generic api-cache rule below.
-        urlPattern: /^https:\/\/api\.[^/]+\/(api\/)?(congregations\/[^/]+\/detailed|people-directory|churches\/persons)/i,
+        // Match both the public list (`/congregations/detailed`) and any
+        // per-id detailed path; the previous `[^/]+/detailed` pattern missed the list.
+        urlPattern: /^https:\/\/api\.[^/]+\/(api\/)?(congregations\/detailed|congregations\/[^/]+\/detailed|people-directory|churches\/persons)/i,
         handler: 'NetworkOnly',
       },
       {

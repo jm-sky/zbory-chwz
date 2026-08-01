@@ -601,8 +601,8 @@ async def get_full_congregation(
 async def get_change_log(
     tenant_id: str,
     current_user: CurrentUser,
+    access: Annotated[TenantAccessChecker, Depends(get_tenant_access_checker)],
     repo: Annotated[CongregationRepository, Depends(get_congregation_repository)],
-    tenant_repo: Annotated[TenantRepository, Depends(get_tenant_repository)],
     acl_service: Annotated[AclService, Depends(get_acl_service)],
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),

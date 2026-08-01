@@ -13,7 +13,9 @@ export function useCongregations() {
   const isAuthenticated = computed<boolean>(() => !!authStore.user)
 
   return useQuery<ICongregationDetailed[]>({
-    queryKey: congregationKeys.list(isAuthenticated),
+    // Plain boolean in the key (via toValue in congregationKeys) so
+    // invalidateQueries({ queryKey: congregationKeys.all }) always matches.
+    queryKey: computed(() => congregationKeys.list(isAuthenticated.value)),
     queryFn: () => congregationApiService.getCongregationsDetailed(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   })

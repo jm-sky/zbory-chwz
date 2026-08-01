@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 
 import pytest
 import pytest_asyncio
+from fastapi import Depends
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -22,8 +23,12 @@ from app.common.id_utils import generate_id
 from app.core.database import Base, get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
-from app.modules.churches.acl_models import RoleDB, UserRoleAssignmentDB
+from app.modules.churches.acl_models import UserRoleAssignmentDB
+from app.modules.churches.acl_seed import ensure_acl_roles
+from app.modules.churches.acl_service import AclService, get_acl_service
 from app.modules.churches.db_models import ChurchDB, CommunityDB
+from app.modules.churches.permission_cache import PermissionCache
+from app.modules.churches.permission_service import PermissionService, get_permission_service
 from app.modules.congregations.email_import_db_models import CongregationChangeLogDB
 from app.modules.tenants.db_models import TenantDB, TenantMembershipDB
 from main import app
@@ -64,20 +69,29 @@ async def _seed(session: AsyncSession) -> None:
             id=TENANT_ID,
             community_id=community.id,
             region_id=None,
-            tenant_id=OWNER_MEMBER_ID,
+            tenant_id=TENANT_ID,
             name="Zbór w Świebodzinie",
         )
     )
     session.add(TenantMembershipDB(tenant_id=TENANT_ID, user_id=OWNER_MEMBER_ID, role="owner"))
 
-    role = RoleDB(id=generate_id(), name="bishop", scope_type="community")
-    session.add(role)
-    await session.flush()
+    # PermissionService resolves church.edit / pastoral view from seeded ACL roles,
+    # not from TenantMembership alone or a bare RoleDB without permissions.
+    roles = await ensure_acl_roles(session)
+    session.add(
+        UserRoleAssignmentDB(
+            id=generate_id(),
+            user_id=OWNER_MEMBER_ID,
+            role_id=roles["pastor"].id,
+            scope_type="church",
+            scope_id=TENANT_ID,
+        )
+    )
     session.add(
         UserRoleAssignmentDB(
             id=generate_id(),
             user_id=BISHOP_ID,
-            role_id=role.id,
+            role_id=roles["bishop"].id,
             scope_type="community",
             scope_id=community.id,
         )
@@ -117,6 +131,15 @@ async def ctx():
                 raise
 
     app.dependency_overrides[get_db] = override_get_db
+
+    def override_permission_service(db: AsyncSession = Depends(get_db)) -> PermissionService:
+        return PermissionService(db, PermissionCache(None))
+
+    def override_acl_service(db: AsyncSession = Depends(get_db)) -> AclService:
+        return AclService(PermissionService(db, PermissionCache(None)))
+
+    app.dependency_overrides[get_permission_service] = override_permission_service
+    app.dependency_overrides[get_acl_service] = override_acl_service
 
     async with session_factory() as session:
         await _seed(session)

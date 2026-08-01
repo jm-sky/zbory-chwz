@@ -50,6 +50,7 @@ Błędy, usprawnienia i backporty ze wspólnego core — śledzone lokalnie.
 | 038 | [2026-07-10--038--google-contacts-sync.md](2026-07-10--038--google-contacts-sync.md) | Synchronizacja z Google Contacts (import zborów/osób, export kontaktów) | `planned` |
 | 039 | [2026-07-20--039--backport-shared-core-security-fixes.md](2026-07-20--039--backport-shared-core-security-fixes.md) | Backport: rate limiting, admin auth bypass, WebAuthn login (shared core) | `done` |
 | 040 | [2026-07-22--040--oauth-session-and-state-backport.md](2026-07-22--040--oauth-session-and-state-backport.md) | Backport: OAuth session/jti/tv/2FA + CSRF state store (gear-stack 036+037) | `done` |
-| 041 | [2026-07-27--041--change-log-and-tenant-membership-bugs.md](2026-07-27--041--change-log-and-tenant-membership-bugs.md) | Zastane błędy: `NameError` w change-logu zboru, `_ensure_tenant_membership` do złego tenanta | `todo` |
+| 041 | [2026-07-27--041--change-log-and-tenant-membership-bugs.md](2026-07-27--041--change-log-and-tenant-membership-bugs.md) | Zastane błędy: change-log `NameError` (done) + `_ensure_tenant_membership` do złego tenanta | `in progress` |
+| 042 | [2026-08-01--042--congregation-list-stale-after-edit.md](2026-08-01--042--congregation-list-stale-after-edit.md) | Lista zborów stale po edycji — query key + PWA NetworkOnly | `done` |
 
 When adding a new issue: pick next `NNN`, create `YYYY-MM-DD--NNN--slug.md`, add a row here.

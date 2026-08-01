@@ -3,14 +3,13 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Pagination } from '@/components/data-table'
 import { Badge } from '@/components/ui/badge'
-import { useHandleError } from '@/shared/composables/useHandleError'
+import { logSafeError } from '@/shared/utils/logSafeError'
 import type { IChangeLogBatch } from '../types/congregation.types'
 import { congregationApiService } from '../services/congregationApiService'
 
 const { tenantId } = defineProps<{ tenantId: string }>()
 
 const { t } = useI18n()
-const { handleError } = useHandleError()
 
 const loading = ref(true)
 // null while unresolved/loading; empty array once loaded means "visible but no history yet".
@@ -42,6 +41,7 @@ async function load() {
     const skip = (page.value - 1) * pageSize.value
     const response = await congregationApiService.getChangeLog(tenantId, { skip, limit: pageSize.value })
     if (response === null) {
+      // 403 / not allowed — hide quietly (no toast; history is optional UI)
       visible.value = false
       return
     }
@@ -49,7 +49,10 @@ async function load() {
     batches.value = response.batches
     total.value = response.total
   } catch (error) {
-    handleError(error, { fallbackMessage: t('congregations.changeHistory.loadError', 'Nie udało się pobrać historii zmian') })
+    // Secondary section: fail closed without a red toast (empty/unavailable ≠ critical)
+    logSafeError('Failed to load congregation change history:', error)
+    visible.value = false
+    batches.value = null
   } finally {
     loading.value = false
   }
