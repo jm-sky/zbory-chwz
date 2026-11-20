@@ -47,6 +47,7 @@ COMMAND_GROUPS = {
             "change-password": "Change a user's password",
             "verify-email": "Show or confirm email verification",
             "set-role": "Set user role (user, premium, admin, owner)",
+            "approve": "Approve (activate) an account awaiting approval",
             "toggle-admin": "Toggle admin status for a user",
             "toggle-owner": "Toggle owner status for a user",
         },

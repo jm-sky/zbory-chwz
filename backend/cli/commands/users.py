@@ -831,6 +831,77 @@ async def _change_password_in_db(user_id: str, new_password: str) -> None:
         break
 
 
+@users_app.command("approve")
+def users_approve(
+    identifier: str | None = typer.Argument(None, help="User email or ID"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
+    deactivate: bool = typer.Option(False, "--deactivate", help="Deactivate the user instead of approving"),
+) -> None:
+    """Approve (activate) an account awaiting approval, by email or ID.
+
+    With REGISTRATION_REQUIRES_APPROVAL=true, self-registered and OAuth-created
+    accounts stay inactive until approved. Use `users list --inactive` to see them.
+
+    Examples:
+        python -m cli users approve user@example.com
+        python -m cli users approve 01HQX... --yes
+        python -m cli users approve user@example.com --deactivate
+    """
+    asyncio.run(_users_approve_async(identifier, yes, not deactivate))
+
+
+async def _users_approve_async(identifier: str | None, yes: bool, activate: bool) -> None:
+    """Async implementation of approve/deactivate."""
+    from rich.console import Console
+
+    console = Console()
+
+    try:
+        if not identifier:
+            identifier = Prompt.ask("[cyan]Enter user email or ID[/cyan]")
+
+        with console.status("[bold green]Finding user...", spinner="dots"):
+            user = await _find_user(identifier)
+
+        if not user:
+            console.print(f"\n[red]User not found:[/red] {identifier}\n")
+            raise typer.Exit(1)
+
+        verb = "approve (activate)" if activate else "deactivate"
+        if user["isActive"] == activate:
+            console.print(f"\n[yellow]Nothing to do:[/yellow] {user['email']} is already {'active' if activate else 'inactive'}\n")
+            return
+
+        console.print(f"\n[bold]{user['email']}[/bold] ({user['name']}) - currently {'active' if user['isActive'] else 'inactive'}")
+        if not yes and not Confirm.ask(f"Do you want to {verb} this account?", default=True):
+            console.print("[yellow]Cancelled[/yellow]")
+            return
+
+        await _set_active_in_db(user["id"], activate)
+        console.print(f"\n[bold green]✓[/bold green] Account {'approved' if activate else 'deactivated'}: {user['email']}\n")
+
+    except typer.Exit:
+        raise
+    except Exception as e:
+        console.print(f"\n[red]Error updating account:[/red] {e}\n")
+        raise typer.Exit(1) from None
+
+
+async def _set_active_in_db(user_id: str, is_active: bool) -> None:
+    """Set the isActive flag for a user."""
+    from app.core.database import get_db
+    from app.modules.auth.repositories import UserRepository
+
+    async for db in get_db():
+        repo = UserRepository(db)
+        user = await repo.get_user_by_id(user_id)
+        if not user:
+            raise ValueError(f"User with id {user_id} not found")
+        user.isActive = is_active
+        await repo.update_user(user)
+        break
+
+
 @users_app.command("toggle-admin")
 def users_toggle_admin(
     identifier: str | None = typer.Argument(None, help="User email or ID"),
